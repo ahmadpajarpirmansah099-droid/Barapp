@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><title>Absensi BAR · Lazy Jennie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{box-sizing:border-box;--fn:'Pixelify Sans';--lt:#dfdfdf;color-scheme:light;
+--bv:inset -1px -1px var(--dk),inset 1px 1px var(--hl),inset -2px -2px var(--sh),inset 2px 2px var(--lt);
+--bp:inset -1px -1px var(--hl),inset 1px 1px var(--dk),inset -2px -2px var(--lt),inset 2px 2px var(--sh);
+--bi:inset -1px -1px var(--hl),inset 1px 1px var(--sh),inset -2px -2px var(--lt),inset 2px 2px var(--dk);
+--bs:inset -1px -1px var(--lt),inset 1px 1px var(--sh);
+--bw:inset -1px -1px var(--dk),inset 1px 1px var(--lt),inset -2px -2px var(--sh),inset 2px 2px var(--hl);
+--ck:repeating-conic-gradient(var(--bg) 0 25%,var(--cd) 0 50%) 0 0/2px 2px;--sf:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;border-radius:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--cd);color:var(--tx);font:14px/1.25 var(--fn),Tahoma,'MS Sans Serif',sans-serif;-webkit-font-smoothing:none;text-rendering:optimizeSpeed}
+#app.in{padding-bottom:calc(64px + var(--sf))}
+button,input,select,textarea{font:inherit;color:var(--tx)}button{cursor:pointer}
+h1,h2,h3{font-family:var(--fh,var(--fn)),Tahoma,sans-serif;margin:0}h1{font-size:20px}
+.mu{color:var(--mu)}.empty{text-align:center;padding:14px 8px;color:var(--mu)}
+/* ---- jendela aplikasi ---- */
+.app-top{position:sticky;top:0;z-index:5;background:var(--cd);box-shadow:var(--bw);padding:3px;padding-top:calc(3px + env(safe-area-inset-top,0px))}
+.tbar{display:flex;align-items:center;gap:4px;background:var(--tt);color:#fff;font-weight:bold;height:20px;padding:0 2px 0 3px;user-select:none;-webkit-user-select:none}
+.tbar .tt{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tbar .ic{flex:none}
+.cb{width:18px;height:16px;min-height:0;min-width:0;padding:0;border:0;background:var(--cd);color:#000;box-shadow:var(--bv);font:bold 12px/1 var(--fn),sans-serif;display:grid;place-items:center}.cb:active{box-shadow:var(--bp)}
+.menubar{display:flex;padding:1px 0}.mn{position:relative}
+.mb2{padding:2px 8px;min-height:20px;background:none;border:0;color:#000;box-shadow:none}.mb2:hover{box-shadow:inset 1px 1px var(--hl),inset -1px -1px var(--sh)}.mn.open>.mb2{box-shadow:inset 1px 1px var(--sh),inset -1px -1px var(--hl)}
+.dd,.sdi{display:none;position:absolute;left:0;top:100%;background:var(--cd);box-shadow:var(--bw);padding:3px;min-width:190px;z-index:30}.mn.open .dd{display:block}
+.dd button,.sdi button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;padding:5px 20px 5px 6px;color:#000;box-shadow:none;min-height:28px}
+.dd button:hover,.sdi button:hover{background:var(--ac2);color:#fff}.dd hr{border:0;border-top:1px solid var(--sh);border-bottom:1px solid var(--hl);margin:3px 0}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:3px 2px;border-top:1px solid var(--sh);box-shadow:inset 0 1px var(--hl)}
+.toolbar input[type=date]{width:auto;flex:1 1 112px;max-width:150px;min-width:0}.af{flex:1;min-width:0;background:var(--bg);box-shadow:var(--bi);padding:2px 6px;min-height:24px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+main{padding:8px 6px;max-width:1100px;margin:0 auto}
+.statusbar{position:fixed;left:0;right:0;bottom:calc(34px + var(--sf));z-index:8;display:flex;gap:2px;padding:2px 3px;background:var(--cd)}
+.sf{box-shadow:var(--bs);padding:1px 6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px}.sf:first-child{flex:1}
+.taskbar{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--cd);box-shadow:inset 0 1px var(--lt),inset 0 2px var(--hl);padding:4px 3px calc(3px + var(--sf));display:flex;gap:3px;align-items:center}
+.start,.task{display:flex;align-items:center;gap:5px;min-height:26px;padding:1px 8px;background:var(--cd);color:#000;border:0;box-shadow:var(--bv)}.start{font-weight:bold}
+.task{flex:0 1 150px;min-width:0;text-align:left}.task span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.task.on{box-shadow:var(--bp);background:var(--ck);font-weight:bold}
+.start:active{box-shadow:var(--bp)}.sep{width:2px;height:22px;box-shadow:inset 1px 0 var(--sh),inset -1px 0 var(--hl)}
+.tray{margin-left:auto;box-shadow:var(--bs);padding:2px 8px;min-height:24px;display:flex;align-items:center;gap:6px;font-size:13px}
+.fab{position:fixed;right:10px;bottom:calc(60px + var(--sf));width:38px;height:38px;min-width:0;padding:0;border:0;background:var(--cd);color:#000;font:bold 24px/1 var(--fn),sans-serif;box-shadow:var(--bv);z-index:11}.fab:active{box-shadow:var(--bp)}
+.sdw{position:fixed;inset:0;pointer-events:none;z-index:10}.sdw .fab{pointer-events:auto}.sdw.open{pointer-events:auto}.sdb{position:absolute;inset:0}
+.sdw .sdi{left:auto;right:10px;top:auto;bottom:calc(104px + var(--sf));position:fixed}.sdw.open .sdi{display:block}
+/* ---- jendela / kartu ---- */
+.card{background:var(--cd);box-shadow:var(--bw);padding:8px;margin-bottom:8px;position:relative}
+.card>h3:first-child,.md>h3:first-child{margin:-5px -5px 8px;height:20px;line-height:20px;padding:0 24px 0 22px;background:var(--tt);color:#fff;font-size:13px;font-weight:bold;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-user-select:none}
+.card>h3:first-child::before,.md>h3:first-child::before{content:'';position:absolute;left:3px;top:2px;width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Cpath%20d%3D%27M1%203h5l1%202h8v9H1z%27%20fill%3D%27%23ffff00%27%20stroke%3D%27black%27/%3E%3C/svg%3E") no-repeat}
+.card>h3:first-child::after,.md>h3:first-child::after{content:'';position:absolute;right:2px;top:2px;width:18px;height:16px;background:var(--cd) url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2718%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20x%3D%274%27%20y%3D%2710%27%20width%3D%277%27%20height%3D%272%27%20fill%3D%27black%27/%3E%3C/svg%3E") no-repeat center;box-shadow:var(--bv)}
+.md>h3:first-child::after{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2718%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Cpath%20d%3D%27M5%204h2v1h1v1h2V5h1V4h2v1h-1v1h-1v1h-1v2h1v1h1v1h1v1h-2v-1h-1v-1h-2v1H8v1H6v-1h1v-1h1V9h1V8H8V7H7V6H6V5H5z%27%20fill%3D%27black%27/%3E%3C/svg%3E")}.dlgw>h3:first-child::after{display:none}
+.card.cl>*:not(h3:first-child){display:none}.card.cl{padding-bottom:3px}.card.cl>h3:first-child{margin-bottom:0}
+.card.st{padding:6px 8px}.st b{font-size:22px;display:block;font-weight:normal}.st span{font-size:12px;color:var(--mu)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin-bottom:8px}.grid>.card{margin-bottom:0}
+.ov{position:fixed;inset:0;background:repeating-conic-gradient(#0000 0 25%,#0008 0 50%) 0 0/2px 2px;z-index:20;display:flex;align-items:center;justify-content:center;padding:8px}
+.md{background:var(--cd);box-shadow:var(--bw);padding:8px;width:100%;max-width:460px;max-height:92vh;overflow:auto}
+.dlg{display:flex;gap:12px;align-items:center;margin:6px 0 12px}.dlg p{margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>*{flex:1;min-width:104px}.row>.btn{flex:none}
+.btns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+/* ---- tombol & isian ---- */
+.btn{min-width:75px;min-height:28px;padding:3px 12px;background:var(--cd);color:#000;border:0;box-shadow:0 0 0 1px #000,var(--bv);margin:1px}
+.btn.s,.btn.o,.btn.d{box-shadow:var(--bv)}.btn.d{color:var(--dg)}.btn:active{box-shadow:var(--bp);padding:4px 11px 2px 13px}.btn.s:active,.btn.o:active,.btn.d:active{box-shadow:var(--bp)}
+.btn.x{min-width:0;min-height:22px;padding:1px 8px;font-size:13px}.btn:focus-visible,.task:focus-visible{outline:1px dotted #000;outline-offset:-5px}
+label{display:block;font-size:13px;margin-bottom:8px;color:var(--tx)}
+input,select,textarea{width:100%;min-height:26px;padding:3px 5px;background:var(--bg);color:#000;border:0;box-shadow:var(--bi);outline:0;border-radius:0}
+select{-webkit-appearance:none;appearance:none;padding-right:22px;background:var(--bg) url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M4%206h8l-4%204z%27%20fill%3D%27black%27/%3E%3C/svg%3E") no-repeat right 2px center}
+input[type=color]{padding:2px;height:26px}input[type=range]{padding:0;box-shadow:none;background:none;accent-color:var(--tt)}input[type=checkbox]{width:auto;min-height:0;box-shadow:none;background:none;accent-color:var(--tt)}
+.ck{display:flex;gap:8px;align-items:center;padding:3px 0}.ck input{flex:none}
+.fr{display:flex;align-items:center;gap:8px;margin-bottom:8px}.fr label{width:84px;margin:0;flex:none}.wlc{display:flex;gap:14px;align-items:center;margin:6px 0 12px}
+.lg0{min-height:100vh;display:grid;align-content:center;max-width:430px;margin:auto!important}
+/* ---- tabel ---- */
+.tw{background:var(--bg);box-shadow:var(--bi);overflow:auto;padding:2px;margin-bottom:8px;scroll-behavior:smooth;overscroll-behavior-x:contain}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;color:#000}
+th{background:var(--cd);box-shadow:var(--bv);font-weight:normal;padding:3px 6px;text-align:center;white-space:nowrap;color:#000}td{padding:3px 6px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--br)}
+th:first-child,td:first-child{position:sticky;left:0;text-align:left;min-width:110px;max-width:150px;overflow:hidden;text-overflow:ellipsis;z-index:1}td:first-child{background:var(--bg)}th:first-child{background:var(--cd)}
+td.c{cursor:pointer;min-width:34px}td.c:hover{background:var(--ac2);color:#fff}
+.rk{box-shadow:var(--bi);background:var(--bg)}.rk th,.rk td{text-align:left}.rk th:nth-child(n+3),.rk td:nth-child(n+3){text-align:center}.rk th:first-child,.rk td:first-child{position:static;min-width:0;max-width:none}
+.b{display:inline-block;min-width:24px;padding:0 3px;border:1px solid #000;font-weight:bold;font-size:12px;text-align:center}
+.tag{display:inline-block;padding:0 6px;box-shadow:var(--bs);font-size:12px}.tag.r{color:var(--dg);font-weight:bold}
+a.nm{color:var(--ac);text-decoration:underline;cursor:pointer}img.ph{max-width:100%;margin-top:6px;padding:2px;background:var(--bg);box-shadow:var(--bi)}
+.bar{height:12px;border:1px solid #000;margin:3px 0 6px}.vch{display:flex;gap:10px;align-items:flex-end;height:220px;overflow-x:auto;padding:4px;background:var(--bg);box-shadow:var(--bi)}
+.vcol{flex:1 0 52px;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}.vstk{width:100%;display:flex;flex-direction:column-reverse;height:calc(100% - 24px);border:1px solid #000;background:var(--bg)}.vstk i{display:block;width:100%}
+.vn{height:24px;line-height:24px;font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;margin-top:8px}.lg i{display:inline-block;width:10px;height:10px;border:1px solid #000;margin-right:4px}
+.sb{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.sb button{flex:1;min-width:56px;padding:6px 4px;border:0;background:var(--cd);box-shadow:var(--bv);font-weight:bold}.sb button.on{box-shadow:var(--bp);background:var(--ck)}
+/* ---- editor tema ---- */
+.ts{margin:14px 0 6px;font-weight:bold;border-top:1px solid var(--sh);box-shadow:0 -1px var(--hl);padding-top:5px}
+details{margin:6px 0}summary{cursor:pointer;padding:5px 8px;background:var(--cd);box-shadow:var(--bv)}
+.fl{display:flex;flex-wrap:wrap;gap:6px;max-height:240px;overflow:auto;padding:6px;margin:6px 0;background:var(--bg);box-shadow:var(--bi)}.fcat{width:100%;font-size:11px;color:var(--mu);text-transform:uppercase;margin-top:4px}
+.fb,.pc{padding:5px 10px;background:var(--cd);color:#000;box-shadow:var(--bv);border:0;font-size:14px;min-height:30px}.fb.on{box-shadow:var(--bp);background:var(--ck);font-weight:bold}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.pc{text-align:left;padding:8px}.pc i{display:inline-block;width:22px;height:22px;margin:6px 4px 0 0;box-shadow:var(--bi)}
+.cr{display:flex;justify-content:space-between;align-items:center;gap:10px}.cr small{display:block;color:var(--mu);font-size:11px}.cr input{width:64px;flex:none}
+/* ---- pesan (toast) ---- */
+#t{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:6px;width:min(94vw,390px)}
+#t .w{background:var(--cd);box-shadow:var(--bw);padding:3px}#t .mbx{display:flex;gap:12px;align-items:center;padding:12px 8px}
+/* ---- scrollbar klasik ---- */
+::-webkit-scrollbar{width:16px;height:16px}::-webkit-scrollbar-track{background:repeating-conic-gradient(#fff 0 25%,#c0c0c0 0 50%) 0 0/2px 2px}
+::-webkit-scrollbar-thumb{background:#c0c0c0;box-shadow:inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf}::-webkit-scrollbar-corner{background:#c0c0c0}
+::-webkit-scrollbar-button:single-button{display:block;width:16px;height:16px;background-color:#c0c0c0;background-repeat:no-repeat;background-position:center}
+::-webkit-scrollbar-button:vertical:decrement{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M4%209h8l-4-4z%27%20fill%3D%27black%27/%3E%3C/svg%3E")}::-webkit-scrollbar-button:vertical:increment{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M4%206h8l-4%204z%27%20fill%3D%27black%27/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:horizontal:decrement{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M9%203v8l-4-4z%27%20fill%3D%27black%27%20transform%3D%27translate%280%201%29%27/%3E%3C/svg%3E")}::-webkit-scrollbar-button:horizontal:increment{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M6%203v8l4-4z%27%20fill%3D%27black%27%20transform%3D%27translate%280%201%29%27/%3E%3C/svg%3E")}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head><body>
+<div id="t"></div><div id="m"></div><div id="app"></div>
+<script>
+const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#008000',L:'#808080',I:'#ffff00',S:'#ff0000',PH:'#0000ff'},SK=Object.keys(ST);
+let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
+try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+/* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
+const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Pixelify Sans',hfont:'Pixelify Sans',mode:'light',radius:0,speed:0,
+nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
+v:4,light:{bg:'#ffffff',cd:'#c0c0c0',tx:'#000000',mu:'#404040',br:'#dfdfdf',ac:'#0000ff',ac2:'#000080',dg:'#800000',gd:'#ffff00',tt:'#000080',tt2:'#000080',hl:'#ffffff',lt:'#dfdfdf',sh:'#808080',dk:'#0a0a0a'},
+dark:{bg:'#000000',cd:'#404040',tx:'#ffffff',mu:'#c0c0c0',br:'#808080',ac:'#6666ff',ac2:'#000080',dg:'#ff6666',gd:'#ffff00',tt:'#000080',tt2:'#000080',hl:'#808080',lt:'#606060',sh:'#202020',dk:'#000000'}};
+let TH=JSON.parse(JSON.stringify(THEME));if(D.th&&D.th.v==THEME.v)TH={...TH,...D.th,nav:{...THEME.nav,...D.th.nav},light:{...THEME.light,...D.th.light},dark:{...THEME.dark,...D.th.dark}};
+let LANG=D.lang||'id';const LANGS={id:'Bahasa Indonesia',en:'English'},L=(a,b)=>LANG=='en'?b:a;
+/* ===== FONT (nama, kategori, 1 = punya bobot tebal) — tambah font Google Fonts baru di sini ===== */
+const FONTS=[['Pixelify Sans','Retro Piksel',1],['Press Start 2P','Retro Piksel',0],['VT323','Retro Piksel',0],['Silkscreen','Retro Piksel',1],['DotGothic16','Retro Piksel',0],
+['Inter','Modern',1],['Poppins','Modern',1],['Plus Jakarta Sans','Modern',1],['DM Sans','Modern',1],['Manrope','Modern',1],['Outfit','Modern',1],['Montserrat','Modern',1],['Roboto','Modern',1],['Work Sans','Modern',1],['Rubik','Modern',1],['Lato','Modern',1],['Open Sans','Modern',1],['Nunito','Modern',1],['Quicksand','Modern',1],['Space Grotesk','Modern',1],
+['Fraunces','Klasik (Serif)',1],['Playfair Display','Klasik (Serif)',1],['Merriweather','Klasik (Serif)',1],['Lora','Klasik (Serif)',1],['DM Serif Display','Klasik (Serif)',0],
+['Caveat','Tulisan Tangan',1],['Pacifico','Tulisan Tangan',0],['Space Mono','Kode (Monospasi)',1],['JetBrains Mono','Kode (Monospasi)',1],['IBM Plex Mono','Kode (Monospasi)',1],['Bebas Neue','Tegas (Judul)',0],['Righteous','Tegas (Judul)',0]];
+const FCN={'Retro Piksel':'Retro / Pixel','Modern':'Modern','Klasik (Serif)':'Classic (Serif)','Tulisan Tangan':'Handwriting','Kode (Monospasi)':'Code (Monospace)','Tegas (Judul)':'Bold (Headlines)'};
+/* ===== TEMA WARNA SIAP PAKAI — mk(latar, jendela, titlebar awal, titlebar akhir) ===== */
+const mix=(a,b,t)=>{const p=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16)),A=p(a),B=p(b);return'#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('')};
+const mk=(bg,cd,tt,tt2)=>{const k='#000000',w='#ffffff',tx=mix(tt,k,.85);return{light:{bg,cd,tx,mu:mix(tx,cd,.4),br:mix(cd,w,.45),ac:tt2,ac2:tt,dg:'#9f251d',gd:mix(tt2,w,.7),tt,tt2:tt,hl:mix(cd,w,.85),lt:mix(cd,w,.45),sh:mix(cd,k,.45),dk:mix(cd,k,.85)},dark:{...THEME.dark,tt,ac2:tt}}};
+const PRESETS=[['Windows 98 Klasik','Windows 98 Classic',null],['Marun Retro','Retro Maroon',mk('#fffdf7','#e6d6c4','#7f251e','#be4c3c')],['Hutan Pinus','Pine Forest',mk('#ffffff','#cfd8c8','#1e4d2b','#3f8f5a')],['Samudra Dalam','Deep Ocean',mk('#ffffff','#c4d2da','#0b3c5d','#2a7fa8')],['Senja Jingga','Orange Dusk',mk('#fffaf2','#e6d3b8','#a34a0b','#e8862a')],['Matcha Latte','Matcha Latte',mk('#fffff6','#d8dcc0','#4d6b2a','#8fae4f')],['Anggur Malam','Grape Night',mk('#fcf9fe','#d8cce0','#4a1d6b','#8a4fb8')],['Kopi Susu','Milk Coffee',mk('#fffaf3','#dccbb6','#4b2e1c','#9a6a43')],['Permen Sakura','Sakura Candy',mk('#fffafc','#ebd0db','#a1245c','#e0649c')],['Batu Arang','Charcoal',mk('#ffffff','#c8c8c8','#222831','#4f5d75')]];
+/* ===== TERJEMAHAN — tambah bahasa baru: tambah di LANGS + kamus seperti EN ===== */
+const EN=Object.fromEntries(`Login => Login
+Setup Awal => Initial Setup
+Setup awal: buat akun ADMIN. => First-time setup: create the ADMIN account.
+Simpan & Masuk => Save & Sign in
+Masuk sebagai Admin => Sign in as Admin
+atau => or
+Masuk sebagai Guest (lihat saja) => Sign in as Guest (view only)
+Masuk sebagai Karyawan => Sign in as Employee
+Masuk sebagai karyawan (nama) => Sign in as employee (name)
+Password (min. 4 karakter) => Password (min. 4 characters)
+Ulangi password => Repeat password
+Nama karyawan => Employee name
+Dashboard Absensi BAR => BAR Attendance Dashboard
+Atur => Settings
+Keluar => Sign out
+Reset => Reset
+Dari tanggal => From date
+Sampai tanggal => To date
+Menu fitur absensi => Attendance feature menu
+Rekap => Summary
+Input Harian => Daily Input
+Karyawan => Employees
+Lembur / Extend => Overtime / Extend
+Atur & Laporan => Settings & Reports
+Fitur => Features
+Segera hadir => Coming soon
+Absensi => Attendance
+Tutup => Close
+Hadir (M) => Present (M)
+Libur => Off
+Sakit => Sick
+Izin => Leave
+Belum diisi => Not filled
+Rekap Karyawan => Employee Summary
+Nama => Name
+Total Data => Total Data
+Belum => Pending
+Lembur (jam) => Overtime (hrs)
+Ketuk nama untuk melihat detail. => Tap a name to see details.
+Tidak ada hasil. => No results.
+Rekap per Karyawan => Summary per Employee
+Belum ada data => No data yet
+Distribusi status => Status distribution
+BELUM ADA DATA => NO DATA YET
+Jumlah hadir per periode => Attendance per period
+Bandingkan periode => Compare periods
+Periode A => Period A
+Periode B => Period B
+Masuk => Present
+Belum ada karyawan. => No employees yet.
+Tambah karyawan pertama => Add the first employee
+Tidak ada karyawan pada filter ini. => No employees match this filter.
+Tanggal mulai harus sebelum tanggal akhir. => Start date must be before end date.
+Semua karyawan => All employees
+Cari nama => Search name
+Hari Kerja (M) => Work Days (M)
+M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk). => M=Present · L=Off · PH=Public Holiday · S=Sick (with note/proof) · I=Leave (incl. sick without note). — = NO DATA YET (not Off/Present).
+Ketuk sel untuk isi/ubah. => Tap a cell to fill/edit.
++ Input Absensi => + Add Attendance
+Belum ada data absensi pada rentang ini. => No attendance data in this range.
+Tambahkan absensi untuk mulai menggunakan sistem. => Add attendance to start using the system.
+Rentang lebih dari 93 hari terlalu panjang untuk tabel harian. Persempit rentang, atau lihat di Rekap / Export. => Ranges over 93 days are too long for the daily table. Narrow the range, or use Summary.
+Belum ada karyawan. Tambahkan karyawan terlebih dahulu. => No employees yet. Add employees first.
++ Tambah karyawan => + Add employee
+Jabatan => Position
+Detail => Details
+Hapus => Delete
+Tambah Karyawan => Add Employee
+Edit Karyawan => Edit Employee
+Batal => Cancel
+Simpan => Save
+Tambah karyawan pertama dengan tombol +. => Add the first employee with the + button.
+Nama wajib diisi => Name is required
+Nama sudah ada => Name already exists
+Karyawan tersimpan => Employee saved
+Karyawan dihapus => Employee deleted
+Akses ditolak: hanya ADMIN => Access denied: ADMIN only
+Ada data di periode LOCKED. Unlock dulu. => Data exists in a LOCKED period. Unlock first.
+Konfirmasi => Confirm
+Ya, hapus => Yes, delete
+? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan. => ? All attendance & overtime of this employee will also be deleted. This cannot be undone.
+Hapus data absensi ini? => Delete this attendance record?
+Hapus data lembur ini? => Delete this overtime record?
+Hapus SEMUA data karyawan, absensi, lembur, dan periode? Tidak bisa dibatalkan. => Delete ALL employees, attendance, overtime and periods? This cannot be undone.
+Riwayat => History
+Belum ada data absensi. => No attendance data yet.
+Jam lembur => Overtime hours
+Tambah Absensi => Add Attendance
+Edit Absensi => Edit Attendance
+Tanggal (WIB) => Date (WIB)
+Status kehadiran (Masuk / tidak masuk) => Attendance status (Present / absent)
+Bukti foto sakit (pilih dari galeri / kamera) => Sick proof photo (choose from gallery / camera)
+Hapus foto => Remove photo
+Tambah karyawan dulu => Add employees first
+Pilih karyawan => Select employee
+Tanggal wajib diisi => Date is required
+Status wajib dipilih => Status is required
+Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak) => This employee already has a record on that date (duplicate rejected)
+Data asli ada di periode LOCKED. Unlock di Atur & Laporan. => Original record is in a LOCKED period. Unlock in Settings & Reports.
+Tanggal bertumpuk dengan periode lain. Cek di Atur & Laporan. => Date overlaps another period. Check Settings & Reports.
+Periode LOCKED. Unlock di Atur & Laporan. => Period LOCKED. Unlock in Settings & Reports.
+Periode LOCKED => Period LOCKED
+Absensi tersimpan => Attendance saved
+Absensi dihapus => Attendance deleted
+File bukan gambar => File is not an image
++ Tambah lembur => + Add overtime
+Tanggal => Date
+Jam => Hours
+Tambah Lembur / Extend => Add Overtime / Extend
+Edit Lembur / Extend => Edit Overtime / Extend
+Pilih karyawan (boleh lebih dari satu) · => Select employees (one or more) ·
+Pilih semua => Select all
+Total jam lembur => Total overtime hours
+mis. 2.5 => e.g. 2.5
+Belum ada lembur pada rentang ini. => No overtime in this range.
+Pilih minimal satu karyawan => Select at least one employee
+Total jam harus antara 0 dan 24 => Total hours must be between 0 and 24
+Lembur dihapus => Overtime deleted
+Periode absensi => Attendance periods
+Belum ada periode. => No periods yet.
+Mulai => Start
+Akhir => End
+Buat periode => Create period
+Terbuka => Open
+Reset data => Reset data
+Hapus semua karyawan, absensi, lembur, dan periode (akun admin & tema tetap). Berguna setelah uji coba selesai. => Delete all employees, attendance, overtime and periods (admin account & theme stay). Useful after testing.
+Hapus semua data => Delete all data
+Tema & Tampilan => Theme & Appearance
+Ubah bahasa, judul, font, warna, dan animasi. => Change language, titles, fonts, colors and animation.
+Edit tema => Edit theme
+Tanggal akhir tidak boleh sebelum mulai => End date cannot be before start date
+Periode bertumpuk dengan periode lain => Period overlaps another period
+Periode dibuat => Period created
+Periode dikunci => Period locked
+Periode dibuka => Period unlocked
+Periode dihapus => Period deleted
+Unlock dulu => Unlock first
+Semua data dihapus => All data deleted
+Tema tersimpan => Theme saved
+Username wajib diisi => Username is required
+Password minimal 4 karakter => Password must be at least 4 characters
+Password tidak sama => Passwords do not match
+Username atau password salah => Wrong username or password
+Nama karyawan tidak ditemukan => Employee name not found
+Karyawan nonaktif => Employee is inactive
+Tidak ada data untuk diekspor => No data to export`.split('\n').map(l=>l.split(' => ')));
+const PAT=[[/^Rekap (.+) · (\d+) hari$/,'Summary $1 · $2 days'],[/^Total jam lembur: (.+)$/,'Total overtime: $1'],[/^Lembur tersimpan \((\d+) karyawan\)$/,'Overtime saved ($1 employees)'],[/^Hapus periode (.+)\? Data absensi di rentang ini ikut terhapus\.$/,'Delete period $1? Attendance data in this range will also be deleted.']];
+function trTxt(t){if(LANG!='en')return t;const k=t.trim();if(!k)return t;let o=EN[k];if(o==null)for(const [re,rep] of PAT)if(re.test(k)){o=k.replace(re,rep);break}return o==null?t:t.replace(k,o)}
+function trDom(root){if(LANG!='en')return;if(root.nodeType==3){const v=trTxt(root.nodeValue);if(v!==root.nodeValue)root.nodeValue=v;return}if(root.nodeType!=1)return;const w=document.createTreeWalker(root,4);let n;while(n=w.nextNode()){const v=trTxt(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}[root,...root.querySelectorAll('[placeholder],[title],[aria-label]')].forEach(e=>['placeholder','title','aria-label'].forEach(a=>{const x=e.getAttribute(a);if(x){const y=trTxt(x);if(y!==x)e.setAttribute(a,y)}}))}
+function setLang(x){LANG=x;D.lang=x;sv();document.documentElement.lang=x;R();if(T.bk)openTheme()}
+function applyTheme(){let e=document.getElementById('th');if(!e){e=document.createElement('style');e.id='th';document.head.append(e)}
+const vs=o=>Object.entries(o).map(([k,x])=>`--${k}:${x}`).join(';'),hf=String(TH.hfont||'Fraunces').replace(/[^\w ]/g,''),f=String(TH.font||'Inter').replace(/['"<>;{}\\]/g,'');
+e.textContent=`:root{${vs(TH.light)};--fn:'${f}';--fh:'${hf}';--r:${+TH.radius||0}px;--sp:${+TH.speed}}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){${vs(TH.dark)}}}:root[data-theme="dark"]{${vs(TH.dark)}}:root[data-theme="light"]{${vs(TH.light)}}`;
+document.documentElement.dataset.theme=TH.mode=='auto'?'':TH.mode;document.title=TH.name+' · '+TH.sub;
+let l=document.getElementById('gf');if(!l){l=document.createElement('link');l.id='gf';l.rel='stylesheet';document.head.append(l)}
+const fam=n=>{const o=FONTS.find(x=>x[0]==n);return'family='+encodeURIComponent(n).replace(/%20/g,'+')+(o&&o[2]?':wght@400;700':'')};l.href='https://fonts.googleapis.com/css2?'+[...new Set([fam(f),fam(hf)])].join('&')+'&display=swap'}
+/* ===== IKON klasik Win95/98 (SVG 16x16, berwarna) — tambah ikon baru di ICP ===== */
+const ICP={folder:'<path d="M1 3h5l1 2h8v9H1z" fill="#ffff00" stroke="#000"/>',doc:'<path d="M3 1h7l3 3v11H3z" fill="#fff" stroke="#000"/><path d="M5 7h6M5 9h6M5 11h6" stroke="#808080"/>',abs:'<path d="M2 1h7l3 3v10H2z" fill="#fff" stroke="#000"/><path d="M4 6h5M4 8h5" stroke="#808080"/><path d="M9 14l5-5 1 1-5 5-2 1z" fill="#ffff00" stroke="#000"/>',pc:'<rect x="2" y="2" width="12" height="9" fill="#c0c0c0" stroke="#000"/><rect x="4" y="4" width="8" height="5" fill="#0000ff"/><rect x="5" y="12" width="6" height="2" fill="#c0c0c0" stroke="#000"/><rect x="3" y="14" width="10" height="1" fill="#000"/>',kar:'<circle cx="8" cy="5" r="3" fill="#ffcc99" stroke="#000"/><path d="M2 15v-2c0-3 3-4 6-4s6 1 6 4v2z" fill="#000080" stroke="#000"/>',ot:'<circle cx="8" cy="8" r="6.5" fill="#fff" stroke="#000"/><path d="M8 4v4h3" stroke="#000" fill="none"/>',lap:'<rect x="1" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000"/><path d="M3 5h10M3 8h10M3 11h10" stroke="#808080"/><rect x="4" y="3" width="2" height="4" fill="#000080"/><rect x="9" y="6" width="2" height="4" fill="#000080"/><rect x="6" y="9" width="2" height="4" fill="#000080"/>',cal:'<rect x="2" y="3" width="12" height="11" fill="#fff" stroke="#000"/><rect x="2" y="3" width="12" height="3" fill="#ff0000" stroke="#000"/><path d="M5 8h2M9 8h2M5 11h2M9 11h2" stroke="#000"/>',lock:'<rect x="3" y="7" width="10" height="8" fill="#ffff00" stroke="#000"/><path d="M5 7V5a3 3 0 016 0v2" fill="none" stroke="#000"/>',cam:'<rect x="1" y="4" width="14" height="10" fill="#c0c0c0" stroke="#000"/><circle cx="8" cy="9" r="3" fill="#000080" stroke="#000"/>',check:'<circle cx="8" cy="8" r="7" fill="#00a000" stroke="#005000"/><path d="M4 8l3 3 5-6" stroke="#fff" stroke-width="2" fill="none"/>',err:'<circle cx="8" cy="8" r="7" fill="#ff0000" stroke="#800000"/><path d="M5 5l6 6M11 5l-6 6" stroke="#fff" stroke-width="2"/>',warn:'<path d="M8 1l7 13H1z" fill="#ffff00" stroke="#000"/><path d="M8 6v4M8 11.5v1.5" stroke="#000" stroke-width="1.5"/>',key:'<circle cx="5" cy="5" r="3.5" fill="#ffff00" stroke="#000"/><path d="M7 7l7 7M11 11l2-2M13 13l1-1" stroke="#000" stroke-width="1.5" fill="none"/>'};
+const IC=(n,z=16)=>`<svg class="ic" width="${z}" height="${z}" viewBox="0 0 16 16" shape-rendering="crispEdges">${ICP[n]||ICP.pc}</svg>`;
+const sv=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
+const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
+const days=(a,b)=>{const r=[];for(let t=U(a);t<=U(b);t+=864e5)r.push(iso(t));return r};
+const fd=d=>d?new Date(U(d)).toLocaleDateString(LANG=='en'?'en-GB':'id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):'-';
+const age=b=>{if(!b)return'-';const n=today();let a=+n.slice(0,4)-+b.slice(0,4);if(n.slice(5)<b.slice(5))a--;return a};
+function toast(m,k){const e=document.createElement('div');e.className='w';e.innerHTML=`<div class="tbar"><span class="tt"></span><button class="cb" onclick="this.closest('.w').remove()">×</button></div><div class="mbx">${IC(k=='err'?'err':k=='warn'?'warn':'check',32)}<span class="mt"></span></div>`;e.querySelector('.tt').textContent=TH.name;e.querySelector('.mt').textContent=m;$('#t').append(e);setTimeout(()=>e.remove(),3500)}
+const adm=()=>D.me&&D.me.r=='A',guard=()=>adm()||(toast('Akses ditolak: hanya ADMIN','err'),false);
+const P=id=>D.per.find(p=>p.id==(id||D.cur)),pl=p=>p?fd(p.s)+' – '+fd(p.e):'',perOf=d=>D.per.find(p=>d>=p.s&&d<=p.e);
+const vis=()=>adm()||D.me.r=='G'?D.emp:D.emp.filter(e=>e.id==D.me.id),rec=(e,d)=>D.att.find(a=>a.e==e&&a.d==d);
+const pEmps=p=>vis().filter(e=>e.aktif||D.att.some(a=>a.e==e.id&&a.d>=p.s&&a.d<=p.e));
+const cntR=(f,t,l)=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0},ds=f<=t?days(f,t):[];l.forEach(e=>ds.forEach(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++}));return c};
+const cnt=(p,l)=>cntR(p.s,p.e,l);
+const std=d=>{let y=+d.slice(0,4),m=+d.slice(5,7);if(+d.slice(8)<24){m--;if(!m){m=12;y--}}const z=n=>String(n).padStart(2,'0');return{s:`${y}-${z(m)}-24`,e:`${m==12?y+1:y}-${z(m%12+1)}-23`}};
+const rng=()=>{const p=std(today());return{f:F.f||p.s,t:F.t||p.e}};
+const rEmps=(f,t)=>vis().filter(e=>(e.aktif||D.att.some(a=>a.e==e.id&&a.d>=f&&a.d<=t))&&(!F.e||e.id==F.e));
+const hrs=o=>o.h!=null?+o.h:dur(o.a,o.b)/60,fh=h=>(Math.round(h*100)/100)+(LANG=='en'?' hrs':' jam'),otH=(e,f,t)=>Math.round(D.ot.filter(o=>o.e==e.id&&o.d>=f&&o.d<=t).reduce((s,o)=>s+hrs(o),0)*100)/100;
+const ensurePer=d=>{let p=perOf(d);if(p)return p;const q=std(d);if(D.per.some(x=>q.s<=x.e&&q.e>=x.s))return null;p={id:'p'+Date.now(),s:q.s,e:q.e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);if(!D.cur)D.cur=p.id;return p};
+const jump=d=>{const {f,t}=rng();if(d<f||d>t){const q=std(d);F.f=q.s;F.t=q.e;const p=perOf(d);if(p)D.cur=p.id}};
+const lockedD=d=>{const p=perOf(d);return p&&p.lock};
+const name=id=>(D.emp.find(e=>e.id==id)||{nama:'(dihapus)'}).nama;
+function modal(h){$('#m').innerHTML='<div class="ov" onmousedown="if(event.target==this)closeM()"><div class="md">'+h+'</div></div>'}
+const closeM=()=>{$('#m').innerHTML='';if(T.bk){TH=JSON.parse(T.bk);T.bk=null;applyTheme();R()}};
+function cf(msg,fn){T.cb=fn;modal(`<h3>Konfirmasi</h3><div class="dlg">${IC('warn',32)}<p>${msg}</p></div><div class="btns"><button class="btn d" onclick="T.cb();closeM()">Ya, hapus</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}
+const dur=(a,b)=>{const m=(+b.slice(0,2)*60+ +b.slice(3))-(+a.slice(0,2)*60+ +a.slice(3));return m},dtx=m=>Math.floor(m/60)+'j '+m%60+'m';
+const badge=s=>`<span class="b" style="background:${SC[s]};color:${s=='I'?'#000':'#fff'}">${s}</span>`;
+
+/* ---------- Login ---------- */
+function login(){const lg=`<div style="text-align:right;margin-bottom:6px"><button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">${LANG=='id'?'English':'Indonesia'}</button></div>`;
+if(!D.pin)return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${L('Setup Awal','Initial Setup')}</h3>${lg}<div class="wlc">${IC('key',32)}<div>Setup awal: buat akun ADMIN.</div></div><div class="fr"><label>Username:</label><input id="su" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="p1" type="password"></div><div class="fr"><label>${L('Ulangi:','Repeat:')}</label><input id="p2" type="password"></div><div class="btns"><button class="btn" onclick="setPin()">Simpan & Masuk</button></div></div></main>`;
+return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${esc(TH.sub)}</h3>${lg}<div class="wlc">${IC('key',32)}<div>${L('Ketik username dan password untuk masuk.','Type a user name and password to log in.')}</div></div><div class="fr"><label>Username:</label><input id="lu" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="lp" type="password"></div><div class="btns"><button class="btn" onclick="lgA()">Masuk sebagai Admin</button><button class="btn s" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div>${T.kl?`<div class="fr" style="margin-top:12px"><label>${L('Nama:','Name:')}</label><input id="li" placeholder="Nama karyawan"></div><div class="btns"><button class="btn s" onclick="lgK()">Masuk sebagai Karyawan</button></div>`:`<p style="text-align:center;margin-bottom:0"><a class="nm" onclick="T.kl=1;R()">Masuk sebagai karyawan (nama)</a></p>`}</div></main>`}
+function setPin(){const u=v('su').trim(),a=v('p1');if(!u)return toast('Username wajib diisi','err');if(a.length<4)return toast('Password minimal 4 karakter','err');if(a!=v('p2'))return toast('Password tidak sama','err');D.user=u;D.pin=a;D.me={r:'A'};sv();R()}
+function lgA(){const u=v('lu').trim();if(v('lp')!=D.pin||(D.user&&u!=D.user))return toast('Username atau password salah','err');if(!D.user)D.user=u||'admin';D.me={r:'A'};sv();R()}
+const lgG=()=>{D.me={r:'G'};pg='dash';sv();R()};
+function lgK(){const e=D.emp.find(x=>x.nama.toLowerCase()==v('li').trim().toLowerCase());if(!e)return toast('Nama karyawan tidak ditemukan','err');if(!e.aktif)return toast('Karyawan nonaktif','warn');D.me={r:'K',id:e.id};pg='dash';sv();R()}
+const out=()=>{D.me=null;sv();R()};
+
+/* ---------- Shell ---------- */
+/* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Segera hadir',ic:'lock',page:null},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'};
+const allowed=()=>adm()?Object.keys(PAGES):D.me.r=='G'?['dash']:['dash','abs','ot'];
+const go=p=>{pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
+function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
+const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
+function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
+function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Data tersimpan di browser perangkat ini.','Data is stored in this device browser.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
+function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
+a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
+if(!allowed().includes(pg))pg='dash';
+const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':D.me.r=='G'?'GUEST':esc(name(D.me.id)),pgs=allowed(),pic=k=>k=='dash'?'pc':k;
+const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('doc')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
+const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
+[L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
+[L('Bantuan','Help'),`<button onclick="about()">${IC('pc')}${L('Tentang...','About...')}</button>`]];
+a.innerHTML=`<div class="app-top"><div class="tbar">${IC('folder')}<span class="tt">${esc(TH.name)} - ${esc(TH.sub)}</span><button class="cb" onclick="about()">?</button><button class="cb" onclick="out()" title="${L('Keluar','Exit')}">×</button></div>
+<div class="menubar">${mnu.map(m=>`<div class="mn"><button class="mb2" onclick="omn(this,event)"><u>${m[0][0]}</u>${m[0].slice(1)}</button><div class="dd">${m[1]}</div></div>`).join('')}</div>
+<div class="toolbar"><span>${L('Dari:','From:')}</span><input type="date" value="${rg.f}" onchange="F.f=this.value;R()" aria-label="Dari tanggal"><span>${L('Sampai:','To:')}</span><input type="date" value="${rg.t}" onchange="F.t=this.value;R()" aria-label="Sampai tanggal">${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>
+<div class="toolbar"><span>${L('Alamat:','Address:')}</span><div class="af">C:\\ABSENSI\\${lab(pg)}</div></div></div>
+<main class="${an?'in':''}">${V[pg]()}</main>
+<div class="statusbar"><span class="sf">${L('Siap','Ready')}</span><span class="sf">${role}</span><span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span></div>
+<div class="taskbar"><button class="start" onclick="openMods()">${IC('cal')}<b>${L('Fitur','Features')}</b></button><span class="sep"></span><button class="task ${pg=='dash'?'on':''}" onclick="go('dash')">${IC('pc')}<span>${lab('dash')}</span></button>${pg!='dash'?`<button class="task on">${IC(pic(pg))}<span>${lab(pg)}</span></button>`:''}<span class="tray">${IC('pc',14)}<span id="clk">${clk()}</span></span></div>
+${pgs.length>1?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${pgs.filter(k=>k!='dash').map(k=>`<button onclick="go('${k}')">${IC(k)}<span>${lab(k)}</span></button>`).join('')}</div><button class="fab" onclick="tsd()" aria-label="Menu fitur absensi">+</button></div>`:''}`}
+const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
+
+/* ---------- Views ---------- */
+const V={};
+V.dash=()=>{const {f,t}=rng(),bad=f>t,l=bad?[]:rEmps(f,t),nd=bad?0:days(f,t).length,c=cntR(f,t,l),tot=c.M+c.L+c.I+c.S+c.PH+c.B,
+cards=[['Karyawan',l.length],['Hadir (M)',c.M],['Libur',c.L],['Sakit',c.S],['Izin',c.I],['Public Holiday',c.PH],['Belum diisi',c.B]],
+dist=tot?SK.concat('B').map(k=>`<div>${k=='B'?'BELUM ADA DATA':ST[k]} <b>${c[k]}</b><div class="bar" style="width:${Math.max(c[k]/tot*100,c[k]?2:0)}%;background:${k=='B'?'#aaa':SC[k]}"></div></div>`).join(''):'<div class="empty">BELUM ADA DATA</div>',
+qq=F.q.toLowerCase(),rows=l.filter(e=>e.nama.toLowerCase().includes(qq)).map(e=>({e,c:cntR(f,t,[e]),h:otH(e,f,t)})),
+rk=!l.length?'':`<div class="card"><h3>Rekap Karyawan</h3>${rows.length?`<div style="overflow-x:auto"><table class="rk"><tr><th>No</th><th>Nama</th><th>M</th><th>L</th><th>S</th><th>PH</th><th>I</th><th>Total Data</th><th>Belum</th><th>Lembur (jam)</th></tr>${rows.map((x,i)=>`<tr><td>${i+1}</td><td><a class="nm" onclick="detEmp(${D.emp.indexOf(x.e)})">${esc(x.e.nama)}</a></td><td>${x.c.M}</td><td>${x.c.L}</td><td>${x.c.S}</td><td>${x.c.PH}</td><td>${x.c.I}</td><td><b>${nd-x.c.B}</b></td><td>${x.c.B}</td><td>${x.h}</td></tr>`).join('')}</table></div><p class="mu">Ketuk nama untuk melihat detail.</p>`:'<div class="empty">Tidak ada hasil.</div>'}</div>`,
+ch=!rows.length?'':`<div class="card"><h3>Rekap per Karyawan</h3><div class="vch">${rows.map(x=>`<div class="vcol" title="${esc(x.e.nama)}"><div class="vstk">${['M','L','S','PH','I','B'].map(k=>x.c[k]?`<i style="height:${x.c[k]/nd*100}%;background:${k=='B'?'#ffffff':SC[k]}" title="${k}: ${x.c[k]}"></i>`:'').join('')}</div><div class="vn">${esc(x.e.nama)}</div></div>`).join('')}</div><div class="lg">${['M','L','S','PH','I','B'].map(k=>`<span><i style="background:${k=='B'?'#ffffff':SC[k]}"></i>${k=='B'?'Belum ada data':k}</span>`).join('')}</div></div>`,
+per=D.per.map(q=>[pl(q),cnt(q,pEmps(q)).M]),mx=Math.max(1,...per.map(x=>x[1]));
+if(D.per.length>1){if(!P(T.c1))T.c1=D.cur;if(!P(T.c2))T.c2=D.per[Math.max(0,D.per.findIndex(q=>q.id==D.cur)-1)].id}
+return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}<div class="grid">${cards.map(x=>`<div class="card st"><b>${x[1]}</b><span>${x[0]}</span></div>`).join('')}</div>${fbar(1)}${rk}${ch}<div class="card"><h3>Distribusi status</h3>${dist}</div>${D.per.length?`<div class="card"><h3>Jumlah hadir per periode</h3>${per.map(x=>`<div>${x[0]} <b>${x[1]}</b><div class="bar" style="width:${x[1]/mx*100}%;background:var(--ac)"></div></div>`).join('')}</div>`:''}${D.per.length>1?cmp():''}`)};
+function cmp(){const a=P(T.c1),b=P(T.c2),sel=(id,s)=>`<select onchange="T.${id}=this.value;R()">${D.per.map(q=>`<option value="${q.id}" ${q.id==s?'selected':''}>${pl(q)}</option>`).join('')}</select>`;
+let t='';if(a&&b){const x=cnt(a,pEmps(a)),y=cnt(b,pEmps(b)),has=q=>q.M+q.L+q.I+q.S+q.PH>0;t=`<div class="tw"><table><tr><th>Status</th><th>Periode A</th><th>Periode B</th></tr>${SK.concat('B').map(k=>`<tr><td>${k=='B'?'Belum ada data':ST[k]}</td><td>${has(x)||k=='B'&&x.B?x[k]:'BELUM ADA DATA'}</td><td>${has(y)||k=='B'&&y.B?y[k]:'BELUM ADA DATA'}</td></tr>`).join('')}</table></div>`}
+return`<div class="card"><h3>Bandingkan periode</h3><div class="row"><label>A${sel('c1',T.c1)}</label><label>B${sel('c2',T.c2)}</label></div>${t}</div>`}
+
+function flt(f,t){let l=rEmps(f,t);if(F.q)l=l.filter(e=>e.nama.toLowerCase().includes(F.q.toLowerCase()));return l}
+const fbar=(emp)=>{const {f,t}=rng();return`<div class="card"><div class="row">${emp&&D.me.r!='K'?`<label>Karyawan<select onchange="F.e=this.value;R()"><option value="">Semua karyawan</option>${D.emp.map(e=>`<option value="${esc(e.id)}" ${e.id==F.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label>`:''}<label>Cari nama<input value="${esc(F.q)}" oninput="F.q=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div></div>`};
+V.abs=()=>{const {f,t}=rng(),bad=f>t,ds=bad?[]:days(f,t),big=ds.length>93,l=bad||big?[]:flt(f,t),lk=D.per.filter(p=>p.lock&&p.s<=t&&p.e>=f);
+const msg=bad?'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':big?'<div class="card empty">Rentang lebih dari 93 hari terlalu panjang untuk tabel harian. Persempit rentang, atau lihat di Rekap / Export.</div>':'';
+const tb=l.length?`<div class="tw"><table><tr><th>Nama</th>${ds.map(d=>`<th>${+d.slice(8)}<br><small class="mu">${(LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'])[new Date(U(d)).getUTCDay()]}</small></th>`).join('')}<th>Hari Kerja (M)</th><th>L</th><th>I</th><th>S</th><th>PH</th><th>Belum</th></tr>${l.map(e=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0};return`<tr><td title="${esc(e.nama)}">${esc(e.nama)}</td>${ds.map(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++;return`<td class="c" ${adm()?`onclick="cell('${esc(e.id)}','${d}')"`:''} title="${a?ST[a.s]:'BELUM ADA DATA'}">${a?badge(a.s)+(a.ph?IC('cam',12):''):'<span class="mu">—</span>'}</td>`}).join('')}<td>${c.M}</td><td>${c.L}</td><td>${c.I}</td><td>${c.S}</td><td>${c.PH}</td><td><b>${c.B}</b></td></tr>`}).join('')}</table></div><p class="mu"><span>M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk).</span> ${adm()?'<span>Ketuk sel untuk isi/ubah.</span>':''}</p>`:(msg?'':'<div class="card empty">'+(D.emp.length?'Tidak ada hasil.':'Belum ada karyawan. Tambahkan karyawan terlebih dahulu.')+'</div>');
+const any=!bad&&D.att.some(a=>a.d>=f&&a.d<=t);
+return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openAtt(-1)">+ Input Absensi</button></div>':''}${lk.length?`<div class="card"><span class="tag r">LOCKED</span> ${lk.map(pl).join(', ')}</div>`:''}${fbar(1)}${msg}${tb}${!any&&l.length?'<div class="card empty">Belum ada data absensi pada rentang ini.<br>Tambahkan absensi untuk mulai menggunakan sistem.</div>':''}`};
+function cell(e,d){const a=D.att.findIndex(x=>x.e==e&&x.d==d);T.pre={e,d};openAtt(a)}
+
+V.kar=()=>{let l=D.emp.filter(e=>(!F.q||(e.nama+e.id).toLowerCase().includes(F.q.toLowerCase()))&&(!T.fs||(T.fs=='a')==e.aktif));
+return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>':''}<div class="card"><div class="row"><label>Cari nama<input value="${esc(F.q)}" oninput="F.q=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div></div>`+
+(l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
+function openEmp(i){if(!guard())return;const e=i>=0?D.emp[i]:{};T.i=i;
+modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
+function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim();if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=T.i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
+if(T.i<0)D.emp.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),nama:n,jab:j,aktif:true});else D.emp[T.i]={...D.emp[T.i],nama:n,jab:j};sv();closeM();toast('Karyawan tersimpan');R()}
+function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp.splice(i,1);sv();toast('Karyawan dihapus');R()})}
+function detEmp(i){const e=D.emp[i],{f,t}=rng(),c=cntR(f,t,[e]),hs=D.att.filter(a=>a.e==e.id&&a.d>=f&&a.d<=t).sort((a,b)=>a.d<b.d?-1:1);
+modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b><div class="grid" style="margin:8px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${k}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>BELUM ADA DATA</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div><b>Riwayat</b>${hs.length?hs.map(a=>`<div>${fd(a.d)} ${badge(a.s)} ${esc(a.n||'')}${a.ph&&D.me.r!='G'?`<br><img class="ph" src="${a.ph}">`:''}</div>`).join(''):'<p class="mu">Belum ada data absensi.</p>'}<br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+
+/* ---------- Absensi form ---------- */
+function openAtt(k){if(!guard())return;if(!D.emp.some(e=>e.aktif))return toast('Tambah karyawan dulu','warn');
+const a=k>=0?D.att[k]:(T.pre||{});T.k=k;T.ph=a.ph||'';T.st=a.s||'';const dd=a.d||today();T.pre=null;
+modal(`<h3>${k>=0?'Edit':'Tambah'} Absensi</h3><label>Karyawan<select id="ae">${D.emp.filter(e=>e.aktif||e.id==a.e).map(e=>`<option value="${esc(e.id)}" ${e.id==a.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label><label>Tanggal (WIB)<input id="ad" type="date" value="${dd}"></label><div class="mu" style="font-size:12px;margin-bottom:4px">Status kehadiran (Masuk / tidak masuk)</div><div class="sb" id="sb">${SK.map(s=>`<button class="${s==T.st?'on':''}" onclick="setSt('${s}')">${s}<br><small>${ST[s]}</small></button>`).join('')}</div><div id="pw" style="display:${T.st=='S'?'block':'none'}"><label>Bukti foto sakit (pilih dari galeri / kamera)<input type="file" accept="image/*" onchange="pic(this)"></label><button class="btn s x" onclick="T.ph='';$('#pv').innerHTML=''">Hapus foto</button><div id="pv">${T.ph?`<img class="ph" src="${T.ph}">`:''}</div></div><div class="row">${k>=0?'<button class="btn d" onclick="delAtt()">Hapus</button>':''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveAtt()">Simpan</button></div>`)}
+function setSt(s){T.st=s;document.querySelectorAll('#sb button').forEach(b=>b.classList.toggle('on',b.textContent.startsWith(s+ST[s])));$('#pw').style.display=s=='S'?'block':'none'}
+function pic(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,700/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);T.ph=c.toDataURL('image/jpeg',.6);$('#pv').innerHTML=`<img class="ph" src="${T.ph}">`};im.onerror=()=>toast('File bukan gambar','err');im.src=r.result};r.readAsDataURL(f)}
+function saveAtt(){if(!guard())return;const e=v('ae'),d=v('ad');if(!e)return toast('Pilih karyawan','err');if(!d)return toast('Tanggal wajib diisi','err');if(!T.st)return toast('Status wajib dipilih','err');
+const dup=D.att.findIndex((a,i)=>a.e==e&&a.d==d&&i!=T.k);if(dup>=0)return toast('Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak)','warn');
+if(T.k>=0&&lockedD(D.att[T.k].d))return toast('Data asli ada di periode LOCKED. Unlock di Atur & Laporan.','err');const p=ensurePer(d);if(!p)return toast('Tanggal bertumpuk dengan periode lain. Cek di Atur & Laporan.','err');if(p.lock)return toast('Periode LOCKED. Unlock di Atur & Laporan.','err');
+const o={e,d,s:T.st,n:v('an').trim(),ph:T.st=='S'?T.ph:''};if(T.k>=0)D.att[T.k]=o;else D.att.push(o);jump(d);sv();closeM();toast('Absensi tersimpan');R()}
+function delAtt(){if(!guard())return;const a=D.att[T.k];if(lockedD(a.d))return toast('Periode LOCKED','err');cf('Hapus data absensi ini?',()=>{D.att.splice(T.k,1);sv();toast('Absensi dihapus');R()})}
+
+/* ---------- Lembur ---------- */
+V.ot=()=>{const {f,t}=rng(),l=D.ot.map((o,i)=>({...o,i})).filter(o=>(adm()||D.me.r=='G'||o.e==D.me.id)&&o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)&&(!F.q||(name(o.e)+(o.n||'')).toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>a.d<b.d?1:-1),tot=l.reduce((s,o)=>s+hrs(o),0),ids=[...new Set(l.map(o=>o.e))];
+return(adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openOt(-1)">+ Tambah lembur</button></div>':'')+fbar(1)+(l.length?`<div class="card"><b>Total jam lembur: ${fh(tot)}</b>${ids.map(e=>`<div>${esc(name(e))}: <b>${fh(l.filter(o=>o.e==e).reduce((s,o)=>s+hrs(o),0))}</b></div>`).join('')}</div><div class="tw"><table><tr><th>Nama</th><th>Tanggal</th><th>Jam</th>${adm()?'<th></th>':''}</tr>${l.map(o=>`<tr><td>${esc(name(o.e))}</td><td>${fd(o.d)}</td><td>${Math.round(hrs(o)*100)/100}</td>${adm()?`<td><button class="btn s x" onclick="openOt(${o.i})">Edit</button> <button class="btn d x" onclick="delOt(${o.i})">Hapus</button></td>`:''}</tr>`).join('')}</table></div>`:'<div class="card empty">Belum ada lembur pada rentang ini.</div>')};
+function openOt(i){if(!guard())return;if(!D.emp.length)return toast('Tambah karyawan dulu','warn');const o=i>=0?D.ot[i]:{d:today()};T.i=i;
+modal(`<h3>${i>=0?'Edit':'Tambah'} Lembur / Extend</h3>${i>=0?`<label>Karyawan<select id="oe">${D.emp.map(e=>`<option value="${esc(e.id)}" ${e.id==o.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label>`:`<label>Pilih karyawan (boleh lebih dari satu) · <a class="nm" onclick="document.querySelectorAll('#oc input').forEach(x=>x.checked=true)">Pilih semua</a></label><div id="oc" style="margin-bottom:10px">${D.emp.filter(e=>e.aktif).map(e=>`<label class="ck"><input type="checkbox" value="${esc(e.id)}"> ${esc(e.nama)}</label>`).join('')}</div>`}<label>Tanggal<input id="od" type="date" value="${o.d}"></label><label>Total jam lembur<input id="oh" type="number" min="0.25" max="24" step="0.25" inputmode="decimal" value="${i>=0?Math.round(hrs(o)*100)/100:''}" placeholder="mis. 2.5"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveOt()">Simpan</button></div>`)}
+function saveOt(){if(!guard())return;const d=v('od'),h=+v('oh'),n=v('on').trim(),ids=T.i>=0?[v('oe')]:[...document.querySelectorAll('#oc input:checked')].map(x=>x.value);
+if(!ids.length||!ids[0])return toast('Pilih minimal satu karyawan','err');if(!d)return toast('Tanggal wajib diisi','err');if(!(h>0&&h<=24))return toast('Total jam harus antara 0 dan 24','err');if(lockedD(d)||(T.i>=0&&lockedD(D.ot[T.i].d)))return toast('Periode LOCKED','err');
+if(T.i>=0)D.ot[T.i]={e:ids[0],d,h,n};else ids.forEach(e=>D.ot.push({e,d,h,n}));jump(d);sv();closeM();toast('Lembur tersimpan ('+ids.length+' karyawan)');R()}
+function delOt(i){if(!guard())return;cf('Hapus data lembur ini?',()=>{if(lockedD(D.ot[i].d))return toast('Periode LOCKED','err');D.ot.splice(i,1);sv();toast('Lembur dihapus');R()})}
+
+/* ---------- Laporan: periode, export, import ---------- */
+V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
+return`<div class="card"><h3>Periode absensi</h3>${D.per.length?D.per.map(p=>`<div class="row" style="margin-bottom:6px"><div>${pl(p)} ${p.lock?'<span class="tag r">LOCKED</span>':'<span class="tag">Terbuka</span>'}</div><button class="btn s x" onclick="lockP('${p.id}')">${p.lock?'Unlock':'Lock'}</button><button class="btn d x" onclick="delP('${p.id}')">Hapus</button></div>`).join(''):'<p class="mu">Belum ada periode.</p>'}<div class="row"><label>Mulai<input id="ps1" type="date" value="${s}"></label><label>Akhir<input id="ps2" type="date" value="${e}"></label><button class="btn" onclick="addP()">Buat periode</button></div></div>
+<div class="card"><h3>Reset data</h3><p class="mu">Hapus semua karyawan, absensi, lembur, dan periode (akun admin & tema tetap). Berguna setelah uji coba selesai.</p><button class="btn d" onclick="resetAll()">Hapus semua data</button></div>
+<div class="card"><h3>Tema & Tampilan</h3><p class="mu">Ubah bahasa, judul, font, warna, dan animasi.</p><button class="btn" onclick="openTheme()">Edit tema</button></div>`};
+function addP(){if(!guard())return;const s=v('ps1'),e=v('ps2');if(!s||!e)return toast('Tanggal wajib diisi','err');if(e<s)return toast('Tanggal akhir tidak boleh sebelum mulai','err');if(D.per.some(p=>s<=p.e&&e>=p.s))return toast('Periode bertumpuk dengan periode lain','err');const p={id:'p'+Date.now(),s,e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);D.cur=p.id;sv();toast('Periode dibuat');R()}
+function lockP(id){if(!guard())return;const p=P(id);p.lock=!p.lock;sv();toast(p.lock?'Periode dikunci':'Periode dibuka');R()}
+function delP(id){if(!guard())return;const p=P(id);cf(`Hapus periode ${pl(p)}? Data absensi di rentang ini ikut terhapus.`,()=>{if(p.lock)return toast('Unlock dulu','err');D.att=D.att.filter(a=>a.d<p.s||a.d>p.e);D.per=D.per.filter(q=>q.id!=id);sv();toast('Periode dihapus');R()})}
+function resetAll(){if(!guard())return;cf('Hapus SEMUA data karyawan, absensi, lembur, dan periode? Tidak bisa dibatalkan.',()=>{D.emp=[];D.att=[];D.ot=[];D.per=[];D.cur='';F.f=F.t=F.q=F.e='';sv();toast('Semua data dihapus');R()})}
+function ex(k){if(!guard())return;const {f,t}=rng();if(f>t)return toast('Tanggal mulai harus sebelum tanggal akhir','err');const l=flt(f,t),ds=days(f,t),R_=[];let n='absensi';
+if(k=='matrix'){n='rekap-absensi';R_.push(['Nama',...ds.map(d=>d.slice(5)),'M','L','I','S','PH','Belum ada data']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.nama,...ds.map(d=>(rec(e.id,d)||{s:'BELUM ADA DATA'}).s),c.M,c.L,c.I,c.S,c.PH,c.B])})}
+if(k=='emp'){n='rekap-karyawan';R_.push(['ID','Nama','Total Hari Kerja (M)','L','I','S','PH','Belum ada data','Jam lembur','Sisa PH']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.id,e.nama,c.M,c.L,c.I,c.S,c.PH,c.B,otH(e,f,t),e.sph||0])})}
+if(k=='det'){n='detail-absensi';R_.push(['ID','Nama','Tanggal','Status','Catatan']);l.forEach(e=>ds.forEach(d=>{const a=rec(e.id,d);a&&R_.push([e.id,e.nama,d,a.s,a.n])}))}
+if(k=='blank'){n='belum-ada-data';R_.push(['ID','Nama','Tanggal']);l.forEach(e=>ds.forEach(d=>rec(e.id,d)||R_.push([e.id,e.nama,d])))}
+if(k=='ot'){n='lembur';R_.push(['Tanggal','Nama','Jam lembur','Catatan']);D.ot.filter(o=>o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)).sort((a,b)=>a.d<b.d?-1:1).forEach(o=>R_.push([o.d,name(o.e),hrs(o),o.n||'']))}
+if(R_.length<2)return toast('Tidak ada data untuk diekspor','warn');dl(n+'-'+f+'_'+t,R_)}
+let DL=null;try{window.claude&&claude.use('downloads').then(x=>DL=x).catch(()=>{})}catch(e){}
+async function dl(n,rows){const t='\ufeff'+rows.map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+if(DL){try{await DL.save({filename:n+'.csv',data:new Blob([t],{type:'text/csv'})});return}catch(e){if(e&&e.code=='declined')return}}
+modal(`<h3>${esc(n)}.csv</h3><p class="mu">Unduhan langsung tidak tersedia di sini. Salin teks CSV ini.</p><textarea readonly rows="10" onfocus="this.select()">${esc(t)}</textarea><br><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function csvp(t){const r=[];let row=[],c='',q=0;t=t.replace(/^\ufeff/,'');for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch=='"'&&t[i+1]=='"'){c+='"';i++}else if(ch=='"')q=0;else c+=ch}else if(ch=='"')q=1;else if(ch==','||ch==';'){row.push(c);c=''}else if(ch=='\n'){row.push(c);r.push(row);row=[];c=''}else if(ch!='\r')c+=ch}if(c||row.length){row.push(c);r.push(row)}return r.filter(x=>x.some(y=>y.trim()))}
+function imp(inp,k){if(!guard())return;const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let rows=csvp(r.result),ok=0,sk=0;if(rows.length&&/^(id|nama)/i.test(rows[0][0].trim()))rows.shift();
+rows.forEach(x=>{const [a,b,c,d,e,g]=x.map(y=>y.trim());if(k=='emp'){if(!a||!b||D.emp.some(z=>z.id==a))return sk++;D.emp.push({id:a,nama:b,jab:c||'',lahir:d||'',gabung:e||'',kontak:g||'',sph:Math.max(0,+x[6]||0),aktif:true});ok++}
+else{const s=(c||'').toUpperCase();if(!D.emp.some(z=>z.id==a)||!/^\d{4}-\d{2}-\d{2}$/.test(b)||!ST[s]||!perOf(b)||lockedD(b)||rec(a,b))return sk++;D.att.push({e:a,d:b,s,n:d||'',ph:''});ok++}});
+sv();inp.value='';toast(`Import selesai: ${ok} masuk, ${sk} dilewati (tidak valid/duplikat/locked)`,ok?'':'warn');R()};r.readAsText(f)}
+const sanF=x=>x.replace(/[^\w ]/g,'').trim(),MN={dash:['Menu Rekap','Summary menu'],abs:['Menu Input Harian','Daily Input menu'],kar:['Menu Karyawan','Employees menu'],ot:['Menu Lembur','Overtime menu'],lap:['Menu Atur & Laporan','Settings & Reports menu']};
+const CN=[['bg','Kolom isian & tabel','Input fields & tables','Warna dasar area putih','Base color of the white areas'],['cd','Warna jendela','Window color','Badan jendela, tombol, dan menu','Window body, buttons and menus'],['tx','Warna tulisan','Text color','Teks utama','Main text'],['mu','Tulisan redup','Muted text','Keterangan kecil','Small captions'],['br','Garis tabel','Table lines','Pemisah antar baris','Row separators'],['ac','Warna tautan','Link color','Nama yang bisa diketuk','Tappable names'],['ac2','Sorotan terpilih','Selection highlight','Menu yang disorot & sel terpilih','Highlighted menu items and cells'],['dg','Hapus / peringatan','Delete / warning','Teks tombol Hapus','Delete button text'],['tt','Bar judul jendela','Window title bar','Warna biru bar judul','Title bar color'],['hl','Tepi terang','Light edge','Sisi atas/kiri tombol timbul','Top/left of raised buttons'],['lt','Tepi dalam terang','Inner light edge','Garis terang bagian dalam','Inner light line'],['sh','Tepi bayangan','Shadow edge','Sisi bawah/kanan tombol timbul','Bottom/right of raised buttons'],['dk','Tepi gelap','Dark edge','Garis paling gelap di tepi','Darkest border line']];
+function pvFonts(){if(document.getElementById('pf'))return;const l=document.createElement('link');l.id='pf';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+FONTS.map(f=>'family='+encodeURIComponent(f[0]).replace(/%20/g,'+')).join('&')+'&display=swap';document.head.append(l)}
+function fontsHtml(k){return[...new Set(FONTS.map(f=>f[1]))].map(c=>`<div class="fcat">${L(c,FCN[c])}</div>`+FONTS.filter(f=>f[1]==c).map(f=>`<button class="fb ${TH[k]==f[0]?'on':''}" style="font-family:'${f[0]}'" onclick="setF('${k}','${f[0]}')">${f[0]}</button>`).join('')).join('')}
+function setF(k,n){TH[k]=n;applyTheme();$('#f_'+k).innerHTML=fontsHtml(k);$('#fv_'+k).textContent=n}
+function colorsHtml(){const m=TH.mode=='dark'?'dark':'light';return CN.map(c=>`<label class="cr"><span><b>${L(c[1],c[2])}</b><small>${L(c[3],c[4])}</small></span><input type="color" value="${TH[m][c[0]]}" oninput="TH.${m}['${c[0]}']=this.value;applyTheme()"></label>`).join('')}
+function setMode(x){TH.mode=x;applyTheme();document.querySelectorAll('.mb').forEach(b=>b.classList.toggle('on',b.dataset.m==x));$('#cs').innerHTML=colorsHtml()}
+function pre(i){const p=PRESETS[i][2]||THEME;TH.light={...p.light};TH.dark={...p.dark};applyTheme();$('#cs').innerHTML=colorsHtml()}
+function fontBox(k,a,b){return`<details><summary>${L(a,b)}: <b id="fv_${k}">${esc(TH[k])}</b></summary><div class="fl" id="f_${k}">${fontsHtml(k)}</div><input placeholder="${L('Font lain (nama persis di Google Fonts)','Other font (exact Google Fonts name)')}" onchange="setF('${k}',sanF(this.value)||TH.${k})"></details>`}
+function openTheme(){if(!guard())return;T.bk=T.bk||JSON.stringify(TH);pvFonts();
+modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3>
+<div class="ts">${L('1. Bahasa','1. Language')}</div><select onchange="setLang(this.value)">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${k==LANG?'selected':''}>${n}</option>`).join('')}</select>
+<div class="ts">${L('2. Judul & nama menu','2. Titles & menu names')}</div><label>${L('Judul aplikasi','App title')}<input value="${esc(TH.name)}" oninput="TH.name=this.value;R()"></label><label>${L('Nama usaha (tulisan kecil di header)','Business name (small text in header)')}<input value="${esc(TH.sub)}" oninput="TH.sub=this.value;R()"></label><div class="grid">${Object.keys(THEME.nav).map(k=>`<label>${L(MN[k][0],MN[k][1])}<input value="${esc(TH.nav[k])}" oninput="TH.nav['${k}']=this.value;R()"></label>`).join('')}</div>
+<div class="ts">${L('3. Font (ketuk untuk memilih)','3. Fonts (tap to choose)')}</div>${fontBox('font','Font tulisan isi','Body font')}${fontBox('hfont','Font judul','Heading font')}
+<div class="ts">${L('4. Warna','4. Colors')}</div><div class="mu">${L('Pilih tema warna siap pakai:','Pick a ready-made color theme:')}</div><div class="pg">${PRESETS.map((p,i)=>{const c=(p[2]||THEME).light;return`<button class="pc" onclick="pre(${i})"><b>${L(p[0],p[1])}</b><br>${[c.bg,c.cd,c.tt,c.ac].map(x=>`<i style="background:${x}"></i>`).join('')}</button>`}).join('')}</div>
+<div class="mu" style="margin-top:10px">${L('Tampilan terang / gelap:','Light / dark appearance:')}</div><div class="sb">${[['light','Terang','Light'],['dark','Gelap','Dark'],['auto','Ikuti HP','Follow phone']].map(m=>`<button class="mb ${TH.mode==m[0]?'on':''}" data-m="${m[0]}" onclick="setMode('${m[0]}')">${L(m[1],m[2])}</button>`).join('')}</div>
+<details><summary>${L('Atur warna sendiri (lanjutan)','Custom colors (advanced)')}</summary><div id="cs">${colorsHtml()}</div></details>
+<div class="ts">${L('5. Bentuk & animasi','5. Shape & animation')}</div><label>${L('Kebulatan sudut','Corner roundness')}<input type="range" min="0" max="40" value="${TH.radius}" oninput="TH.radius=+this.value;applyTheme()"></label><label>${L('Kecepatan animasi (0 = mati)','Animation speed (0 = off)')}<input type="range" min="0" max="2" step="0.1" value="${TH.speed}" oninput="TH.speed=+this.value;applyTheme()"></label>
+<div class="row" style="margin-top:12px"><button class="btn s" onclick="TH=JSON.parse(JSON.stringify(THEME));applyTheme();R();openTheme()">${L('Kembalikan bawaan','Restore defaults')}</button><button class="btn s" onclick="closeM()">${L('Batal','Cancel')}</button><button class="btn" onclick="saveTheme()">${L('Simpan','Save')}</button></div>`)}
+function saveTheme(){if(!guard())return;D.th=JSON.parse(JSON.stringify(TH));T.bk=null;sv();closeM();toast(L('Tema tersimpan','Theme saved'));R()}
+if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(trDom))).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-22){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
+if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
+applyTheme();R();
+</script></body></html>
