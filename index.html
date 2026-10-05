@@ -97,12 +97,17 @@ details{margin:6px 0}summary{cursor:pointer;padding:5px 8px;background:var(--cd)
 ::-webkit-scrollbar-button:horizontal:decrement{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M9%203v8l-4-4z%27%20fill%3D%27black%27%20transform%3D%27translate%280%201%29%27/%3E%3C/svg%3E")}::-webkit-scrollbar-button:horizontal:increment{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20shape-rendering%3D%27crispEdges%27%3E%3Crect%20width%3D%2716%27%20height%3D%2716%27%20fill%3D%27%23c0c0c0%27/%3E%3Cpath%20d%3D%27M0%200h15v1H1v14H0z%27%20fill%3D%27%23fff%27/%3E%3Cpath%20d%3D%27M15%200h1v16H0v-1h15z%27%20fill%3D%27%230a0a0a%27/%3E%3Cpath%20d%3D%27M1%201h13v1H2v12H1z%27%20fill%3D%27%23dfdfdf%27/%3E%3Cpath%20d%3D%27M14%201h1v14H1v-1h13z%27%20fill%3D%27%23808080%27/%3E%3Cpath%20d%3D%27M6%203v8l4-4z%27%20fill%3D%27black%27%20transform%3D%27translate%280%201%29%27/%3E%3C/svg%3E")}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .cgr{display:grid;grid-template-columns:1fr 64px 62px 28px;gap:4px;margin-bottom:4px}.cgr input{min-width:0}.cgr .btn{min-width:0;padding:0}.cgt input{width:92px;min-height:22px}
+.prog{height:18px;padding:2px;background:var(--bg);box-shadow:var(--bi);overflow:hidden}.prog i{display:block;height:100%;width:35%;background:repeating-linear-gradient(90deg,var(--tt) 0 8px,transparent 8px 10px);animation:pgm 1.4s linear infinite}@keyframes pgm{from{margin-left:-35%}to{margin-left:100%}}
 </style></head><body>
 <div id="t"></div><div id="m"></div><div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#008000',L:'#808080',I:'#ffff00',S:'#ff0000',PH:'#0000ff'},SK=Object.keys(ST);
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+/* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
+   Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
+const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
 const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Pixelify Sans',hfont:'Pixelify Sans',mode:'light',radius:0,speed:0,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
@@ -204,7 +209,7 @@ Ya, hapus => Yes, delete
 ? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan. => ? All attendance & overtime of this employee will also be deleted. This cannot be undone.
 Hapus data absensi ini? => Delete this attendance record?
 Hapus data lembur ini? => Delete this overtime record?
-Hapus SEMUA data karyawan, absensi, lembur, dan periode? Tidak bisa dibatalkan. => Delete ALL employees, attendance, overtime and periods? This cannot be undone.
+Hapus SEMUA data karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal? Tidak bisa dibatalkan. => Delete ALL employees & attendance in Supabase (all devices), plus local overtime and periods? This cannot be undone.
 Riwayat => History
 Belum ada data absensi. => No attendance data yet.
 Jam lembur => Overtime hours
@@ -246,7 +251,7 @@ Akhir => End
 Buat periode => Create period
 Terbuka => Open
 Reset data => Reset data
-Hapus semua karyawan, absensi, lembur, dan periode (akun admin & tema tetap). Berguna setelah uji coba selesai. => Delete all employees, attendance, overtime and periods (admin account & theme stay). Useful after testing.
+Hapus semua karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal (akun admin & tema tetap). Berguna setelah uji coba selesai. => Delete all employees & attendance in Supabase (all devices), plus local overtime and periods (admin account & theme stay). Useful after testing.
 Hapus semua data => Delete all data
 Tema & Tampilan => Theme & Appearance
 Ubah bahasa, judul, font, warna, dan animasi. => Change language, titles, fonts, colors and animation.
@@ -288,7 +293,7 @@ const IC=(n,z=16)=>`<svg class="ic" width="${z}" height="${z}" viewBox="0 0 16 1
 /* localStorage COGS: data COGS disimpan di key terpisah (CGK) agar tidak pernah menimpa/merusak data absensi (key K) */
 const CGK='absensi_bar_cogs_v1';
 try{const c=localStorage.getItem(CGK);if(c)D.cg=JSON.parse(c)}catch(e){}
-const sv=()=>{try{const {cg,...rest}=D;localStorage.setItem(K,JSON.stringify(rest));if(cg)localStorage.setItem(CGK,JSON.stringify(cg))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const sv=()=>{try{const {cg,emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}));if(cg)localStorage.setItem(CGK,JSON.stringify(cg))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
@@ -316,14 +321,89 @@ function cf(msg,fn,yes){T.cb=fn;modal(`<h3>Konfirmasi</h3><div class="dlg">${IC(
 const dur=(a,b)=>{const m=(+b.slice(0,2)*60+ +b.slice(3))-(+a.slice(0,2)*60+ +a.slice(3));return m},dtx=m=>Math.floor(m/60)+'j '+m%60+'m';
 const badge=s=>`<span class="b" style="background:${SC[s]};color:${s=='I'?'#000':'#fff'}">${s}</span>`;
 
+/* ====================== SUPABASE (database online) ======================
+   Isi 2 konstanta di bawah dengan Project URL & Publishable (anon) key dari Supabase > Project Settings > API.
+   JANGAN PERNAH memasukkan service_role / secret key / password database ke file ini (key ini tampil publik di GitHub Pages).
+   Kalau dikosongkan, URL & key bisa diisi lewat menu Alat > Sambungan Supabase (tersimpan di perangkat itu saja). */
+const SUPABASE_URL='';
+const SUPABASE_ANON_KEY='';
+/* Pemetaan tabel: employees(name=nama, role=jabatan, active=aktif)  attendance(employee_id, attendance_date, status M/L/I/S/PH, notes). */
+const SBK='absensi_bar_sbcache_v1',SBCFGK='absensi_bar_sbcfg_v1',PHK='absensi_bar_photos_v1';
+let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:''},SBC=null,PH={};
+try{PH=JSON.parse(localStorage.getItem(PHK)||'{}')}catch(e){}
+const savePH=()=>{try{localStorage.setItem(PHK,JSON.stringify(PH))}catch(e){}};
+const sbCfg=()=>{let c={};try{c=JSON.parse(localStorage.getItem(SBCFGK)||'{}')}catch(e){}return{url:String(SUPABASE_URL||c.url||'').trim().replace(/\/+$/,''),key:String(SUPABASE_ANON_KEY||c.key||'').trim()}};
+function sbKeyBad(k){if(/^sb_secret_/i.test(k))return true;try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='service_role'}catch(e){return false}}
+const sbEr=(code)=>Object.assign(new Error(code),{code});
+/* Beberapa sandbox/pratinjau (mis. viewer file di aplikasi chat) meneruskan fetch lewat postMessage dan gagal meng-clone objek Headers/AbortSignal
+   ("DataCloneError"). Pembungkus ini mengubah headers menjadi objek biasa sebelum memanggil fetch. Di browser biasa/GitHub Pages perilakunya sama saja. */
+const sbFetch=(url,opts)=>{const o={...(opts||{})};const h=o.headers;if(h&&typeof h.forEach=='function'&&!Array.isArray(h)){const p={};h.forEach((val,key)=>{p[key]=val});o.headers=p}if(!o.signal)delete o.signal;return fetch(typeof url=='string'?url:String(url&&url.url||url),o)};
+function sb(){if(SBC)return SBC;const c=sbCfg();if(!c.url||!c.key)throw sbEr('NOCFG');if(sbKeyBad(c.key))throw sbEr('SECRETKEY');if(!(window.supabase&&window.supabase.createClient))throw sbEr('NOLIB');SBC=window.supabase.createClient(c.url,c.key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:sbFetch}});return SBC}
+function errText(e){const m=String((e&&e.message)||e||''),c=e&&e.code;
+if(c=='NOCFG')return L('Supabase belum dikonfigurasi (Project URL & anon key masih kosong).','Supabase is not configured (Project URL & anon key are empty).');
+if(c=='SECRETKEY')return L('Key yang dimasukkan adalah key RAHASIA (service_role/secret). Pakai Publishable/anon key saja.','The key is a SECRET key (service_role/secret). Use the Publishable/anon key only.');
+if(c=='NOLIB')return L('Library Supabase gagal dimuat (cek internet atau pemblokir iklan).','Supabase library failed to load (check internet or ad blocker).');
+if(c=='DUP')return 'Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak)';
+if(/Failed to fetch|NetworkError|Load failed|fetch/i.test(m))return L('Tidak bisa terhubung ke Supabase. Cek internet dan Project URL.','Cannot reach Supabase. Check your internet and Project URL.');
+if(/Invalid API key|invalid.*key|JWT/i.test(m))return L('API key Supabase tidak valid.','Invalid Supabase API key.');
+if(c=='42501'||/row-level security|permission denied/i.test(m))return L('Ditolak oleh Supabase (RLS). Tambahkan policy untuk tabel employees & attendance.','Denied by Supabase (RLS). Add policies for the employees & attendance tables.');
+if(c=='42P01'||c=='PGRST205'||(/does not exist|schema cache/i.test(m)&&!/column/i.test(m)))return L('Tabel employees/attendance tidak ditemukan di Supabase.','employees/attendance tables not found in Supabase.');
+return 'Supabase: '+m}
+const SYN={m:'M',masuk:'M',hadir:'M',present:'M',l:'L',libur:'L',off:'L',i:'I',izin:'I',leave:'I',s:'S',sakit:'S',sick:'S',ph:'PH','public holiday':'PH',holiday:'PH'};
+const normSt=s=>{const k=String(s||'').trim();return ST[k.toUpperCase()]?k.toUpperCase():(SYN[k.toLowerCase()]||'')};
+const mapEmp=r=>({id:r.id,nama:r.name||'',jab:r.role||'',aktif:r.active!==false});
+const mapAtt=r=>({id:r.id,e:r.employee_id,d:String(r.attendance_date).slice(0,10),s:normSt(r.status),n:r.notes||'',ph:r.photo||PH[r.id]||''});
+const sbLabel=()=>SB.state=='loading'?L('Memuat…','Loading…'):SB.state=='ok'?(SB.stale?L('Offline (data terakhir)','Offline (last data)'):L('Terhubung ke Supabase','Connected to Supabase')):SB.state=='err'?L('Gagal terhubung','Connection failed'):L('Siap','Ready');
+function sbCacheSave(){try{localStorage.setItem(SBK,JSON.stringify({emp:D.emp,att:D.att.map(a=>({...a,ph:''})),ts:Date.now()}))}catch(e){}}
+function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null');if(c&&Array.isArray(c.emp)&&Array.isArray(c.att)){D.emp=c.emp;D.att=c.att.map(a=>({...a,ph:PH[a.id]||''}));SB.cached=true;return true}}catch(e){}return false}
+function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=false;ds.forEach(d=>{if(!perOf(d)&&ensurePer(d))ch=true});if(ch)sv()}
+async function fetchAll(tbl,ord){const out=[];for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select('*').order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
+const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
+async function sbLoad(silent){
+if(SB.loading)return;SB.loading=true;
+try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err';SB.msg=m;SB.loading=false;if(!silent||ch)R();return}
+if(!silent){SB.state='loading';R()}
+try{
+const [er,ar]=await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]);
+const emp=er.map(mapEmp),att=ar.map(mapAtt).filter(a=>a.s);
+const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
+if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
+if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
+D.emp=emp;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
+if(D.me&&D.me.r=='K'&&!D.emp.some(e=>e.id==D.me.id)){D.me=null;sv()}
+derivePeriods();sbCacheSave()
+}catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
+if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
+SB.loading=false;R()}
+async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
+SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
+const sbLoadCard=()=>`<div class="card"><h3>${L('Memuat data','Loading data')}</h3><div class="dlg">${IC('pc',32)}<p>${L('Mengambil data karyawan & absensi dari Supabase…','Fetching employees & attendance from Supabase…')}</p></div><div class="prog"><i></i></div></div>`;
+const sbBanner=()=>SB.state!='err'?'':`<div class="card"><h3>${L('Sambungan Supabase bermasalah','Supabase connection problem')}</h3><div class="dlg">${IC('warn',32)}<p>${esc(SB.msg)}${D.emp.length||D.att.length?'<br><b>'+L('Menampilkan data tersimpan terakhir.','Showing last saved data.')+'</b>':''}</p></div><div class="btns"><button class="btn" onclick="sbLoad()">${L('Coba lagi','Retry')}</button><button class="btn s" onclick="openSb()">${L('Atur sambungan','Connection settings')}</button></div></div>`;
+function openSb(){cmn();const c=sbCfg(),fixed=!!(SUPABASE_URL&&SUPABASE_ANON_KEY);
+modal(`<h3>${L('Sambungan Supabase','Supabase connection')}</h3>${fixed?`<p class="mu">${L('URL & key diatur langsung di index.html (konstanta SUPABASE_URL / SUPABASE_ANON_KEY).','URL & key are set in index.html (SUPABASE_URL / SUPABASE_ANON_KEY constants).')}</p>`:''}<label>Project URL<input id="sbu" value="${esc(c.url)}" placeholder="https://xxxx.supabase.co" ${fixed?'disabled':''} autocomplete="off"></label><label>Publishable / anon key<input id="sbk" value="${esc(c.key)}" placeholder="sb_publishable_... / eyJ..." ${fixed?'disabled':''} autocomplete="off"></label><p class="mu">${L('Jangan masukkan service_role / secret key. Hanya Publishable/anon key.','Never enter the service_role / secret key. Publishable/anon key only.')}</p><div class="btns">${fixed?'':`<button class="btn" onclick="saveSb()">${L('Simpan & uji','Save & test')}</button>`}<button class="btn s" onclick="closeM()">${fixed?'Tutup':'Batal'}</button></div>`)}
+function saveSb(){const u=v('sbu').trim().replace(/\/+$/,''),k=v('sbk').trim();if(!/^https:\/\/\S+$/.test(u))return toast(L('Project URL harus diawali https://','Project URL must start with https://'),'err');if(!k)return toast(L('Key wajib diisi','Key is required'),'err');if(sbKeyBad(k))return toast(errText({code:'SECRETKEY'}),'err');
+try{localStorage.setItem(SBCFGK,JSON.stringify({url:u,key:k}))}catch(e){}SBC=null;closeM();sbLoad()}
+function migrateLocal(){if(!guard())return;cmn();const ne=LEG.emp.length,na=LEG.att.length;if(!ne&&!na)return toast(L('Tidak ada data lokal lama untuk disalin.','No old local data to copy.'),'warn');
+cf(L(`Salin ${ne} karyawan & ${na} absensi dari penyimpanan lokal perangkat ini ke Supabase? Data lokal tidak dihapus. Duplikat dilewati.`,`Copy ${ne} employees & ${na} attendance records from this device to Supabase? Local data is not deleted. Duplicates are skipped.`),async()=>{
+let added=0,skipped=0;const ok=await sbRun(async()=>{const c=sb(),map={};
+for(const le of LEG.emp){const ex=D.emp.find(x=>norm(x.nama)==norm(le.nama));if(ex){map[le.id]=ex.id;continue}
+const {data,error}=await c.from('employees').insert({name:le.nama,role:le.jab||'',active:le.aktif!==false}).select().single();if(error)throw error;const m=mapEmp(data);D.emp.push(m);map[le.id]=m.id}
+const rows=[],seen=new Set(D.att.map(a=>a.e+'|'+a.d)),phk={};
+LEG.att.forEach(a=>{const eid=map[a.e],st=normSt(a.s);if(!eid||!st||!a.d)return skipped++;const k=eid+'|'+a.d;if(seen.has(k))return skipped++;seen.add(k);rows.push({employee_id:eid,attendance_date:a.d,status:st,notes:a.n||null});if(a.ph)phk[k]=a.ph});
+for(let i=0;i<rows.length;i+=200){const {data,error}=await c.from('attendance').insert(rows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(rw=>{const m=mapAtt(rw),k=m.e+'|'+m.d;if(phk[k]&&!m.ph){PH[m.id]=phk[k];m.ph=phk[k]}D.att.push(m);added++})}
+savePH();D.ot.forEach(o=>{if(map[o.e])o.e=map[o.e]});if(D.me&&D.me.r=='K'&&map[D.me.id])D.me.id=map[D.me.id];
+derivePeriods();sbCacheSave();sv()});
+if(ok){toast(L(`Selesai: ${added} absensi disalin, ${skipped} dilewati`,`Done: ${added} attendance copied, ${skipped} skipped`));R()}})}
+
 /* ---------- Login ---------- */
-function login(){const lg=`<div style="text-align:right;margin-bottom:6px"><button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">${LANG=='id'?'English':'Indonesia'}</button></div>`;
-if(!D.pin)return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${L('Setup Awal','Initial Setup')}</h3>${lg}<div class="wlc">${IC('key',32)}<div>Setup awal: buat akun ADMIN.</div></div><div class="fr"><label>Username:</label><input id="su" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="p1" type="password"></div><div class="fr"><label>${L('Ulangi:','Repeat:')}</label><input id="p2" type="password"></div><div class="btns"><button class="btn" onclick="setPin()">Simpan & Masuk</button></div></div></main>`;
-return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${esc(TH.sub)}</h3>${lg}<div class="wlc">${IC('key',32)}<div>${L('Ketik username dan password untuk masuk.','Type a user name and password to log in.')}</div></div><div class="fr"><label>Username:</label><input id="lu" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="lp" type="password"></div><div class="btns"><button class="btn" onclick="lgA()">Masuk sebagai Admin</button><button class="btn s" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div>${T.kl?`<div class="fr" style="margin-top:12px"><label>${L('Nama:','Name:')}</label><input id="li" placeholder="Nama karyawan"></div><div class="btns"><button class="btn s" onclick="lgK()">Masuk sebagai Karyawan</button></div>`:`<p style="text-align:center;margin-bottom:0"><a class="nm" onclick="T.kl=1;R()">Masuk sebagai karyawan (nama)</a></p>`}</div></main>`}
-function setPin(){const u=v('su').trim(),a=v('p1');if(!u)return toast('Username wajib diisi','err');if(a.length<4)return toast('Password minimal 4 karakter','err');if(a!=v('p2'))return toast('Password tidak sama','err');D.user=u;D.pin=a;D.me={r:'A'};sv();R()}
+function login(){const lg=`<div style="text-align:right;margin-bottom:6px"><button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">${LANG=='id'?'English':'Indonesia'}</button></div>`,
+st=`<div class="mu" style="margin:0 0 10px">${sbLabel()}${SB.state=='err'?' - '+esc(SB.msg)+`<br><a class="nm" onclick="sbLoad()">${L('Coba lagi','Retry')}</a> · <a class="nm" onclick="openSb()">${L('Atur sambungan','Connection settings')}</a>`:''}</div>${SB.state=='loading'?'<div class="prog" style="margin-bottom:10px"><i></i></div>':''}`;
+if(!D.pin&&T.su)return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${L('Setup Awal','Initial Setup')}</h3>${lg}<div class="wlc">${IC('key',32)}<div>Setup awal: buat akun ADMIN.</div></div><div class="fr"><label>Username:</label><input id="su" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="p1" type="password"></div><div class="fr"><label>${L('Ulangi:','Repeat:')}</label><input id="p2" type="password"></div><div class="btns"><button class="btn" onclick="setPin()">Simpan & Masuk</button><button class="btn s" onclick="T.su=0;R()">Batal</button></div></div></main>`;
+return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${esc(TH.sub)}</h3>${lg}${st}<div class="wlc">${IC('key',32)}<div>${L('Ketik username dan password untuk masuk.','Type a user name and password to log in.')}</div></div>${D.pin?`<div class="fr"><label>Username:</label><input id="lu" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="lp" type="password"></div><div class="btns"><button class="btn" onclick="lgA()">Masuk sebagai Admin</button><button class="btn s" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div>`:`<div class="btns"><button class="btn" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div><p style="text-align:center"><a class="nm" onclick="T.su=1;R()">${L('Buat akun Admin di perangkat ini','Create an Admin account on this device')}</a></p>`}${T.kl?`<div class="fr" style="margin-top:12px"><label>${L('Nama:','Name:')}</label><input id="li" placeholder="Nama karyawan"></div><div class="btns"><button class="btn s" onclick="lgK()">Masuk sebagai Karyawan</button></div>`:`<p style="text-align:center;margin-bottom:0"><a class="nm" onclick="T.kl=1;R()">Masuk sebagai karyawan (nama)</a></p>`}</div></main>`}
+function setPin(){const u=v('su').trim(),a=v('p1');if(!u)return toast('Username wajib diisi','err');if(a.length<4)return toast('Password minimal 4 karakter','err');if(a!=v('p2'))return toast('Password tidak sama','err');D.user=u;D.pin=a;D.me={r:'A'};T.su=0;sv();R()}
 function lgA(){const u=v('lu').trim();if(v('lp')!=D.pin||(D.user&&u!=D.user))return toast('Username atau password salah','err');if(!D.user)D.user=u||'admin';D.me={r:'A'};sv();R()}
 const lgG=()=>{D.me={r:'G'};pg='dash';sv();R()};
-function lgK(){const e=D.emp.find(x=>x.nama.toLowerCase()==v('li').trim().toLowerCase());if(!e)return toast('Nama karyawan tidak ditemukan','err');if(!e.aktif)return toast('Karyawan nonaktif','warn');D.me={r:'K',id:e.id};pg='dash';sv();R()}
+function lgK(){if(SB.state=='loading'&&!D.emp.length)return toast(L('Data karyawan sedang dimuat, coba lagi sebentar.','Employee data is loading, try again shortly.'),'warn');const e=D.emp.find(x=>x.nama.toLowerCase()==v('li').trim().toLowerCase());if(!e)return toast(SB.state=='err'?SB.msg:'Nama karyawan tidak ditemukan','err');if(!e.aktif)return toast('Karyawan nonaktif','warn');D.me={r:'K',id:e.id};pg='dash';sv();R()}
 const out=()=>{D.me=null;sv();R()};
 
 /* ---------- Shell ---------- */
@@ -336,22 +416,22 @@ function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.a
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
 function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
-function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Data tersimpan di browser perangkat ini.','Data is stored in this device browser.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
+function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Karyawan & absensi tersimpan di Supabase (sama di semua perangkat). Pengaturan lain tersimpan di browser perangkat ini.','Employees & attendance are stored in Supabase (same on all devices). Other settings are stored in this device browser.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':D.me.r=='G'?'GUEST':esc(name(D.me.id)),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':D.me.r=='G'?'GUEST':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('doc')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
-const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
-[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('cg_bahan')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('err')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button>`}<button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
+const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
+[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('cg_bahan')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('err')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="openSb()">${IC('pc')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('doc')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
 [L('Bantuan','Help'),`<button onclick="about()">${IC('pc')}${L('Tentang...','About...')}</button>`]];
 a.innerHTML=`<div class="app-top"><div class="tbar">${IC('folder')}<span class="tt">${cg?'COGS':esc(TH.name)} - ${esc(TH.sub)}</span><button class="cb" onclick="about()">?</button><button class="cb" onclick="out()" title="${L('Keluar','Exit')}">×</button></div>
 <div class="menubar">${mnu.map(m=>`<div class="mn"><button class="mb2" onclick="omn(this,event)"><u>${m[0][0]}</u>${m[0].slice(1)}</button><div class="dd">${m[1]}</div></div>`).join('')}</div>
 ${cg?'':`<div class="toolbar"><span>${L('Dari:','From:')}</span><input type="date" value="${rg.f}" onchange="F.f=this.value;R()" aria-label="Dari tanggal"><span>${L('Sampai:','To:')}</span><input type="date" value="${rg.t}" onchange="F.t=this.value;R()" aria-label="Sampai tanggal">${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 <div class="toolbar"><span>${L('Alamat:','Address:')}</span><div class="af">C:\\${cg?'COGS':'ABSENSI'}\\${lab(pg)}</div></div></div>
-<main class="${an?'in':''}">${V[pg]()}</main>
-<div class="statusbar"><span class="sf">${L('Siap','Ready')}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
+<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
+<div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
 <div class="taskbar"><button class="start" onclick="openMods()">${IC('cal')}<b>${L('Fitur','Features')}</b></button><span class="sep"></span><button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home))}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg))}<span>${lab(pg)}</span></button>`:''}<span class="tray">${IC('pc',14)}<span id="clk">${clk()}</span></span></div>
 ${pgs.length>1||cg?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():pgs.filter(k=>k!='dash').map(k=>`<button onclick="go('${k}')">${IC(k)}<span>${lab(k)}</span></button>`).join('')}</div><button class="fab" onclick="tsd()" aria-label="Menu fitur absensi">+</button></div>`:''}`}
 const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
@@ -382,12 +462,16 @@ function cell(e,d){const a=D.att.findIndex(x=>x.e==e&&x.d==d);T.pre={e,d};openAt
 
 V.kar=()=>{let l=D.emp.filter(e=>(!F.q||(e.nama+e.id).toLowerCase().includes(F.q.toLowerCase()))&&(!T.fs||(T.fs=='a')==e.aktif));
 return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>':''}<div class="card"><div class="row"><label>Cari nama<input value="${esc(F.q)}" oninput="F.q=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div></div>`+
-(l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
+(l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th>${L('Aktif','Active')}</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><input type="checkbox" ${e.aktif?'checked':''} onchange="togEmp(${i},this.checked)"></td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
 function openEmp(i){if(!guard())return;const e=i>=0?D.emp[i]:{};T.i=i;
 modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
-function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim();if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=T.i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
-if(T.i<0)D.emp.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),nama:n,jab:j,aktif:true});else D.emp[T.i]={...D.emp[T.i],nama:n,jab:j};sv();closeM();toast('Karyawan tersimpan');R()}
-function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp.splice(i,1);sv();toast('Karyawan dihapus');R()})}
+async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
+const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
+if(ok){closeM();toast('Karyawan tersimpan');R()}}
+async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select().single();if(error)throw error;D.emp[i]=mapEmp(data);sbCacheSave()});R()}
+function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,async()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
+const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().eq('employee_id',e.id);if(q.error)throw q.error;q=await c.from('employees').delete().eq('id',e.id);if(q.error)throw q.error;D.att.filter(a=>a.e==e.id).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp=D.emp.filter(x=>x.id!=e.id);sbCacheSave();sv()});
+if(ok){toast('Karyawan dihapus');R()}})}
 function detEmp(i){const e=D.emp[i],{f,t}=rng(),c=cntR(f,t,[e]),hs=D.att.filter(a=>a.e==e.id&&a.d>=f&&a.d<=t).sort((a,b)=>a.d<b.d?-1:1);
 modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b><div class="grid" style="margin:8px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${k}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>BELUM ADA DATA</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div><b>Riwayat</b>${hs.length?hs.map(a=>`<div>${fd(a.d)} ${badge(a.s)} ${esc(a.n||'')}${a.ph&&D.me.r!='G'?`<br><img class="ph" src="${a.ph}">`:''}</div>`).join(''):'<p class="mu">Belum ada data absensi.</p>'}<br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 
@@ -397,11 +481,20 @@ const a=k>=0?D.att[k]:(T.pre||{});T.k=k;T.ph=a.ph||'';T.st=a.s||'';const dd=a.d|
 modal(`<h3>${k>=0?'Edit':'Tambah'} Absensi</h3><label>Karyawan<select id="ae">${D.emp.filter(e=>e.aktif||e.id==a.e).map(e=>`<option value="${esc(e.id)}" ${e.id==a.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label><label>Tanggal (WIB)<input id="ad" type="date" value="${dd}"></label><div class="mu" style="font-size:12px;margin-bottom:4px">Status kehadiran (Masuk / tidak masuk)</div><div class="sb" id="sb">${SK.map(s=>`<button class="${s==T.st?'on':''}" onclick="setSt('${s}')">${s}<br><small>${ST[s]}</small></button>`).join('')}</div><div id="pw" style="display:${T.st=='S'?'block':'none'}"><label>Bukti foto sakit (pilih dari galeri / kamera)<input type="file" accept="image/*" onchange="pic(this)"></label><button class="btn s x" onclick="T.ph='';$('#pv').innerHTML=''">Hapus foto</button><div id="pv">${T.ph?`<img class="ph" src="${T.ph}">`:''}</div></div><div class="row">${k>=0?'<button class="btn d" onclick="delAtt()">Hapus</button>':''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveAtt()">Simpan</button></div>`)}
 function setSt(s){T.st=s;document.querySelectorAll('#sb button').forEach(b=>b.classList.toggle('on',b.textContent.startsWith(s+ST[s])));$('#pw').style.display=s=='S'?'block':'none'}
 function pic(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,700/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);T.ph=c.toDataURL('image/jpeg',.6);$('#pv').innerHTML=`<img class="ph" src="${T.ph}">`};im.onerror=()=>toast('File bukan gambar','err');im.src=r.result};r.readAsDataURL(f)}
-function saveAtt(){if(!guard())return;const e=v('ae'),d=v('ad');if(!e)return toast('Pilih karyawan','err');if(!d)return toast('Tanggal wajib diisi','err');if(!T.st)return toast('Status wajib dipilih','err');
-const dup=D.att.findIndex((a,i)=>a.e==e&&a.d==d&&i!=T.k);if(dup>=0)return toast('Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak)','warn');
-if(T.k>=0&&lockedD(D.att[T.k].d))return toast('Data asli ada di periode LOCKED. Unlock di Atur & Laporan.','err');const p=ensurePer(d);if(!p)return toast('Tanggal bertumpuk dengan periode lain. Cek di Atur & Laporan.','err');if(p.lock)return toast('Periode LOCKED. Unlock di Atur & Laporan.','err');
-const o={e,d,s:T.st,n:v('an').trim(),ph:T.st=='S'?T.ph:''};if(T.k>=0)D.att[T.k]=o;else D.att.push(o);jump(d);sv();closeM();toast('Absensi tersimpan');R()}
-function delAtt(){if(!guard())return;const a=D.att[T.k];if(lockedD(a.d))return toast('Periode LOCKED','err');cf('Hapus data absensi ini?',()=>{D.att.splice(T.k,1);sv();toast('Absensi dihapus');R()})}
+async function saveAtt(){if(!guard())return;const e=v('ae'),d=v('ad');if(!e)return toast('Pilih karyawan','err');if(!d)return toast('Tanggal wajib diisi','err');if(!T.st)return toast('Status wajib dipilih','err');
+const self=T.k>=0?D.att[T.k]:null,dup=D.att.findIndex((a,i)=>a.e==e&&a.d==d&&i!=T.k);if(dup>=0)return toast('Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak)','warn');
+if(self&&lockedD(self.d))return toast('Data asli ada di periode LOCKED. Unlock di Atur & Laporan.','err');const p=ensurePer(d);if(!p)return toast('Tanggal bertumpuk dengan periode lain. Cek di Atur & Laporan.','err');if(p.lock)return toast('Periode LOCKED. Unlock di Atur & Laporan.','err');
+const photo=T.st=='S'?T.ph:'',row={employee_id:e,attendance_date:d,status:T.st,notes:v('an').trim()||(self&&self.n)||null};
+const ok=await sbRun(async()=>{const c=sb();let q=c.from('attendance').select('id').eq('employee_id',e).eq('attendance_date',d);if(self)q=q.neq('id',self.id);const x=await q.limit(1);if(x.error)throw x.error;if(x.data&&x.data.length)throw sbEr('DUP');
+const write=body=>self?c.from('attendance').update(body).eq('id',self.id).select().single():c.from('attendance').insert(body).select().single();
+const usePh=SB.photoCol===true||(!!photo&&SB.photoCol!==false);let res=await write(usePh?{...row,photo:photo||null}:row);
+if(res.error&&usePh&&(res.error.code=='PGRST204'||/photo/i.test(res.error.message||''))){SB.photoCol=false;res=await write(row);if(!res.error)toast(L('Kolom "photo" belum ada di tabel attendance: foto hanya tersimpan di perangkat ini.','No "photo" column in the attendance table: the photo is stored on this device only.'),'warn')}
+else if(!res.error&&usePh)SB.photoCol=true;
+if(res.error)throw res.error;const m=mapAtt(res.data);
+if(photo&&!m.ph){PH[m.id]=photo;m.ph=photo;savePH()}else if(!photo&&PH[m.id]){delete PH[m.id];savePH()}
+if(self)D.att[T.k]=m;else D.att.push(m);jump(d);sbCacheSave();sv()});
+if(ok){closeM();toast('Absensi tersimpan');R()}}
+function delAtt(){if(!guard())return;const a=D.att[T.k];if(lockedD(a.d))return toast('Periode LOCKED','err');cf('Hapus data absensi ini?',async()=>{const ok=await sbRun(async()=>{const {error}=await sb().from('attendance').delete().eq('id',a.id);if(error)throw error;D.att=D.att.filter(x=>x.id!=a.id);delete PH[a.id];savePH();sbCacheSave()});if(ok){toast('Absensi dihapus');R()}})}
 
 /* ---------- Lembur ---------- */
 V.ot=()=>{const {f,t}=rng(),l=D.ot.map((o,i)=>({...o,i})).filter(o=>(adm()||D.me.r=='G'||o.e==D.me.id)&&o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)&&(!F.q||(name(o.e)+(o.n||'')).toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>a.d<b.d?1:-1),tot=l.reduce((s,o)=>s+hrs(o),0),ids=[...new Set(l.map(o=>o.e))];
@@ -486,12 +579,17 @@ function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data COGS (men
 /* ---------- Laporan: periode, export, import ---------- */
 V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
 return`<div class="card"><h3>Periode absensi</h3>${D.per.length?D.per.map(p=>`<div class="row" style="margin-bottom:6px"><div>${pl(p)} ${p.lock?'<span class="tag r">LOCKED</span>':'<span class="tag">Terbuka</span>'}</div><button class="btn s x" onclick="lockP('${p.id}')">${p.lock?'Unlock':'Lock'}</button><button class="btn d x" onclick="delP('${p.id}')">Hapus</button></div>`).join(''):'<p class="mu">Belum ada periode.</p>'}<div class="row"><label>Mulai<input id="ps1" type="date" value="${s}"></label><label>Akhir<input id="ps2" type="date" value="${e}"></label><button class="btn" onclick="addP()">Buat periode</button></div></div>
-<div class="card"><h3>Reset data</h3><p class="mu">Hapus semua karyawan, absensi, lembur, dan periode (akun admin & tema tetap). Berguna setelah uji coba selesai.</p><button class="btn d" onclick="resetAll()">Hapus semua data</button></div>
+<div class="card"><h3>Supabase</h3><p class="mu">${sbLabel()} · ${(()=>{try{return esc(new URL(sbCfg().url).host)}catch(e){return '-'}})()}</p><div class="btns"><button class="btn" onclick="openSb()">${L('Atur sambungan','Connection settings')}</button><button class="btn s" onclick="sbLoad()">${L('Muat ulang','Reload')}</button><button class="btn s" onclick="migrateLocal()">${L('Salin data lokal lama...','Copy old local data...')}</button></div></div>
+<div class="card"><h3>Reset data</h3><p class="mu">Hapus semua karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal (akun admin & tema tetap). Berguna setelah uji coba selesai.</p><button class="btn d" onclick="resetAll()">Hapus semua data</button></div>
 <div class="card"><h3>Tema & Tampilan</h3><p class="mu">Ubah bahasa, judul, font, warna, dan animasi.</p><button class="btn" onclick="openTheme()">Edit tema</button></div>`};
 function addP(){if(!guard())return;const s=v('ps1'),e=v('ps2');if(!s||!e)return toast('Tanggal wajib diisi','err');if(e<s)return toast('Tanggal akhir tidak boleh sebelum mulai','err');if(D.per.some(p=>s<=p.e&&e>=p.s))return toast('Periode bertumpuk dengan periode lain','err');const p={id:'p'+Date.now(),s,e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);D.cur=p.id;sv();toast('Periode dibuat');R()}
 function lockP(id){if(!guard())return;const p=P(id);p.lock=!p.lock;sv();toast(p.lock?'Periode dikunci':'Periode dibuka');R()}
-function delP(id){if(!guard())return;const p=P(id);cf(`Hapus periode ${pl(p)}? Data absensi di rentang ini ikut terhapus.`,()=>{if(p.lock)return toast('Unlock dulu','err');D.att=D.att.filter(a=>a.d<p.s||a.d>p.e);D.per=D.per.filter(q=>q.id!=id);sv();toast('Periode dihapus');R()})}
-function resetAll(){if(!guard())return;cf('Hapus SEMUA data karyawan, absensi, lembur, dan periode? Tidak bisa dibatalkan.',()=>{D.emp=[];D.att=[];D.ot=[];D.per=[];D.cur='';F.f=F.t=F.q=F.e='';sv();toast('Semua data dihapus');R()})}
+function delP(id){if(!guard())return;const p=P(id);cf(`Hapus periode ${pl(p)}? Data absensi di rentang ini ikut terhapus.`,async()=>{if(p.lock)return toast('Unlock dulu','err');
+const ok=await sbRun(async()=>{const {error}=await sb().from('attendance').delete().gte('attendance_date',p.s).lte('attendance_date',p.e);if(error)throw error;D.att.filter(a=>a.d>=p.s&&a.d<=p.e).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.d<p.s||a.d>p.e);D.per=D.per.filter(q=>q.id!=id);sv();sbCacheSave()});
+if(ok){toast('Periode dihapus');R()}})}
+function resetAll(){if(!guard())return;cf('Hapus SEMUA data karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal? Tidak bisa dibatalkan.',async()=>{
+const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().not('id','is',null);if(q.error)throw q.error;q=await c.from('employees').delete().not('id','is',null);if(q.error)throw q.error;D.emp=[];D.att=[];D.ot=[];D.per=[];D.cur='';F.f=F.t=F.q=F.e='';PH={};savePH();sv();sbCacheSave()});
+if(ok){toast('Semua data dihapus');R()}})}
 function ex(k){if(!guard())return;const {f,t}=rng();if(f>t)return toast('Tanggal mulai harus sebelum tanggal akhir','err');const l=flt(f,t),ds=days(f,t),R_=[];let n='absensi';
 if(k=='matrix'){n='rekap-absensi';R_.push(['Nama',...ds.map(d=>d.slice(5)),'M','L','I','S','PH','Belum ada data']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.nama,...ds.map(d=>(rec(e.id,d)||{s:'BELUM ADA DATA'}).s),c.M,c.L,c.I,c.S,c.PH,c.B])})}
 if(k=='emp'){n='rekap-karyawan';R_.push(['ID','Nama','Total Hari Kerja (M)','L','I','S','PH','Belum ada data','Jam lembur','Sisa PH']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.id,e.nama,c.M,c.L,c.I,c.S,c.PH,c.B,otH(e,f,t),e.sph||0])})}
@@ -503,11 +601,6 @@ let DL=null;try{window.claude&&claude.use('downloads').then(x=>DL=x).catch(()=>{
 async function dl(n,rows){const t='\ufeff'+rows.map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
 if(DL){try{await DL.save({filename:n+'.csv',data:new Blob([t],{type:'text/csv'})});return}catch(e){if(e&&e.code=='declined')return}}
 modal(`<h3>${esc(n)}.csv</h3><p class="mu">Unduhan langsung tidak tersedia di sini. Salin teks CSV ini.</p><textarea readonly rows="10" onfocus="this.select()">${esc(t)}</textarea><br><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
-function csvp(t){const r=[];let row=[],c='',q=0;t=t.replace(/^\ufeff/,'');for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch=='"'&&t[i+1]=='"'){c+='"';i++}else if(ch=='"')q=0;else c+=ch}else if(ch=='"')q=1;else if(ch==','||ch==';'){row.push(c);c=''}else if(ch=='\n'){row.push(c);r.push(row);row=[];c=''}else if(ch!='\r')c+=ch}if(c||row.length){row.push(c);r.push(row)}return r.filter(x=>x.some(y=>y.trim()))}
-function imp(inp,k){if(!guard())return;const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let rows=csvp(r.result),ok=0,sk=0;if(rows.length&&/^(id|nama)/i.test(rows[0][0].trim()))rows.shift();
-rows.forEach(x=>{const [a,b,c,d,e,g]=x.map(y=>y.trim());if(k=='emp'){if(!a||!b||D.emp.some(z=>z.id==a))return sk++;D.emp.push({id:a,nama:b,jab:c||'',lahir:d||'',gabung:e||'',kontak:g||'',sph:Math.max(0,+x[6]||0),aktif:true});ok++}
-else{const s=(c||'').toUpperCase();if(!D.emp.some(z=>z.id==a)||!/^\d{4}-\d{2}-\d{2}$/.test(b)||!ST[s]||!perOf(b)||lockedD(b)||rec(a,b))return sk++;D.att.push({e:a,d:b,s,n:d||'',ph:''});ok++}});
-sv();inp.value='';toast(`Import selesai: ${ok} masuk, ${sk} dilewati (tidak valid/duplikat/locked)`,ok?'':'warn');R()};r.readAsText(f)}
 const sanF=x=>x.replace(/[^\w ]/g,'').trim(),MN={dash:['Menu Rekap','Summary menu'],abs:['Menu Input Harian','Daily Input menu'],kar:['Menu Karyawan','Employees menu'],ot:['Menu Lembur','Overtime menu'],lap:['Menu Atur & Laporan','Settings & Reports menu']};
 const CN=[['bg','Kolom isian & tabel','Input fields & tables','Warna dasar area putih','Base color of the white areas'],['cd','Warna jendela','Window color','Badan jendela, tombol, dan menu','Window body, buttons and menus'],['tx','Warna tulisan','Text color','Teks utama','Main text'],['mu','Tulisan redup','Muted text','Keterangan kecil','Small captions'],['br','Garis tabel','Table lines','Pemisah antar baris','Row separators'],['ac','Warna tautan','Link color','Nama yang bisa diketuk','Tappable names'],['ac2','Sorotan terpilih','Selection highlight','Menu yang disorot & sel terpilih','Highlighted menu items and cells'],['dg','Hapus / peringatan','Delete / warning','Teks tombol Hapus','Delete button text'],['tt','Bar judul jendela','Window title bar','Warna biru bar judul','Title bar color'],['hl','Tepi terang','Light edge','Sisi atas/kiri tombol timbul','Top/left of raised buttons'],['lt','Tepi dalam terang','Inner light edge','Garis terang bagian dalam','Inner light line'],['sh','Tepi bayangan','Shadow edge','Sisi bawah/kanan tombol timbul','Bottom/right of raised buttons'],['dk','Tepi gelap','Dark edge','Garis paling gelap di tepi','Darkest border line']];
 function pvFonts(){if(document.getElementById('pf'))return;const l=document.createElement('link');l.id='pf';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+FONTS.map(f=>'family='+encodeURIComponent(f[0]).replace(/%20/g,'+')).join('&')+'&display=swap';document.head.append(l)}
@@ -531,5 +624,7 @@ function saveTheme(){if(!guard())return;D.th=JSON.parse(JSON.stringify(TH));T.bk
 if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(trDom))).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-22){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
-applyTheme();R();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)sbLoad(true)});
+if(typeof setInterval!='undefined')setInterval(()=>{if(!document.hidden)sbLoad(true)},60000);
+applyTheme();sbCacheLoad();R();sbLoad();
 </script></body></html>
