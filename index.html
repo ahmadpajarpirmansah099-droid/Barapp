@@ -338,7 +338,7 @@ const sbEr=(code)=>Object.assign(new Error(code),{code});
 /* Beberapa sandbox/pratinjau (mis. viewer file di aplikasi chat) meneruskan fetch lewat postMessage dan gagal meng-clone objek Headers/AbortSignal
    ("DataCloneError"). Pembungkus ini mengubah headers menjadi objek biasa sebelum memanggil fetch. Di browser biasa/GitHub Pages perilakunya sama saja. */
 const sbFetch=(url,opts)=>{const o={...(opts||{})};const h=o.headers;if(h&&typeof h.forEach=='function'&&!Array.isArray(h)){const p={};h.forEach((val,key)=>{p[key]=val});o.headers=p}if(!o.signal)delete o.signal;return fetch(typeof url=='string'?url:String(url&&url.url||url),o)};
-function sb(){if(SBC)return SBC;const c=sbCfg();if(!c.url||!c.key)throw sbEr('NOCFG');if(sbKeyBad(c.key))throw sbEr('SECRETKEY');if(!(window.supabase&&window.supabase.createClient))throw sbEr('NOLIB');SBC=window.supabase.createClient(c.url,c.key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:sbFetch}});return SBC}
+function sb(){if(SBC)return SBC;const c=sbCfg();if(!c.url||!c.key)throw sbEr('NOCFG');if(sbKeyBad(c.key))throw sbEr('SECRETKEY');if(!(window.supabase&&window.supabase.createClient))throw sbEr('NOLIB');SBC=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},global:{fetch:sbFetch}});return SBC}
 function errText(e){const m=String((e&&e.message)||e||''),c=e&&e.code;
 if(c=='NOCFG')return L('Supabase belum dikonfigurasi (Project URL & anon key masih kosong).','Supabase is not configured (Project URL & anon key are empty).');
 if(c=='SECRETKEY')return L('Key yang dimasukkan adalah key RAHASIA (service_role/secret). Pakai Publishable/anon key saja.','The key is a SECRET key (service_role/secret). Use the Publishable/anon key only.');
@@ -396,15 +396,199 @@ derivePeriods();sbCacheSave();sv()});
 if(ok){toast(L(`Selesai: ${added} absensi disalin, ${skipped} dilewati`,`Done: ${added} attendance copied, ${skipped} skipped`));R()}})}
 
 /* ---------- Login ---------- */
-function login(){const lg=`<div style="text-align:right;margin-bottom:6px"><button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">${LANG=='id'?'English':'Indonesia'}</button></div>`,
-st=`<div class="mu" style="margin:0 0 10px">${sbLabel()}${SB.state=='err'?' - '+esc(SB.msg)+`<br><a class="nm" onclick="sbLoad()">${L('Coba lagi','Retry')}</a> · <a class="nm" onclick="openSb()">${L('Atur sambungan','Connection settings')}</a>`:''}</div>${SB.state=='loading'?'<div class="prog" style="margin-bottom:10px"><i></i></div>':''}`;
-if(!D.pin&&T.su)return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${L('Setup Awal','Initial Setup')}</h3>${lg}<div class="wlc">${IC('key',32)}<div>Setup awal: buat akun ADMIN.</div></div><div class="fr"><label>Username:</label><input id="su" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="p1" type="password"></div><div class="fr"><label>${L('Ulangi:','Repeat:')}</label><input id="p2" type="password"></div><div class="btns"><button class="btn" onclick="setPin()">Simpan & Masuk</button><button class="btn s" onclick="T.su=0;R()">Batal</button></div></div></main>`;
-return`<main class="lg0"><div class="card dlgw"><h3>${esc(TH.name)} - ${esc(TH.sub)}</h3>${lg}${st}<div class="wlc">${IC('key',32)}<div>${L('Ketik username dan password untuk masuk.','Type a user name and password to log in.')}</div></div>${D.pin?`<div class="fr"><label>Username:</label><input id="lu" autocomplete="username"></div><div class="fr"><label>Password:</label><input id="lp" type="password"></div><div class="btns"><button class="btn" onclick="lgA()">Masuk sebagai Admin</button><button class="btn s" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div>`:`<div class="btns"><button class="btn" onclick="lgG()">Masuk sebagai Guest (lihat saja)</button></div><p style="text-align:center"><a class="nm" onclick="T.su=1;R()">${L('Buat akun Admin di perangkat ini','Create an Admin account on this device')}</a></p>`}${T.kl?`<div class="fr" style="margin-top:12px"><label>${L('Nama:','Name:')}</label><input id="li" placeholder="Nama karyawan"></div><div class="btns"><button class="btn s" onclick="lgK()">Masuk sebagai Karyawan</button></div>`:`<p style="text-align:center;margin-bottom:0"><a class="nm" onclick="T.kl=1;R()">Masuk sebagai karyawan (nama)</a></p>`}</div></main>`}
-function setPin(){const u=v('su').trim(),a=v('p1');if(!u)return toast('Username wajib diisi','err');if(a.length<4)return toast('Password minimal 4 karakter','err');if(a!=v('p2'))return toast('Password tidak sama','err');D.user=u;D.pin=a;D.me={r:'A'};T.su=0;sv();R()}
-function lgA(){const u=v('lu').trim();if(v('lp')!=D.pin||(D.user&&u!=D.user))return toast('Username atau password salah','err');if(!D.user)D.user=u||'admin';D.me={r:'A'};sv();R()}
-const lgG=()=>{D.me={r:'G'};pg='dash';sv();R()};
-function lgK(){if(SB.state=='loading'&&!D.emp.length)return toast(L('Data karyawan sedang dimuat, coba lagi sebentar.','Employee data is loading, try again shortly.'),'warn');const e=D.emp.find(x=>x.nama.toLowerCase()==v('li').trim().toLowerCase());if(!e)return toast(SB.state=='err'?SB.msg:'Nama karyawan tidak ditemukan','err');if(!e.aktif)return toast('Karyawan nonaktif','warn');D.me={r:'K',id:e.id};pg='dash';sv();R()}
-const out=()=>{D.me=null;sv();R()};
+/* ---------- Login ---------- */
+async function initAuth(){
+  try{
+    const c=sb();
+    const {data,error}=await c.auth.getSession();
+    if(error)throw error;
+
+    if(data.session){
+      D.me={r:'A'};
+      sv();
+      R();
+    }else if(D.me&&D.me.r=='A'){
+      D.me=null;
+      sv();
+      R();
+    }
+
+    c.auth.onAuthStateChange((event,session)=>{
+      if(event=='SIGNED_IN'&&session){
+        D.me={r:'A'};
+        sv();
+        R();
+      }else if(event=='SIGNED_OUT'&&D.me&&D.me.r=='A'){
+        D.me=null;
+        sv();
+        R();
+      }
+    });
+  }catch(e){
+    console.warn('Supabase Auth:',e);
+  }
+}
+
+function login(){
+  const lg=`<div style="text-align:right;margin-bottom:6px">
+    <button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">
+      ${LANG=='id'?'English':'Indonesia'}
+    </button>
+  </div>`;
+
+  const st=`<div class="mu" style="margin:0 0 10px">
+    ${sbLabel()}
+    ${SB.state=='err'?' - '+esc(SB.msg)+`<br>
+    <a class="nm" onclick="sbLoad()">${L('Coba lagi','Retry')}</a> ·
+    <a class="nm" onclick="openSb()">${L('Atur sambungan','Connection settings')}</a>`:''}
+  </div>
+  ${SB.state=='loading'?'<div class="prog" style="margin-bottom:10px"><i></i></div>':''}`;
+
+  return `<main class="lg0">
+    <div class="card dlgw">
+      <h3>${esc(TH.name)} - ${esc(TH.sub)}</h3>
+
+      ${lg}
+      ${st}
+
+      <div class="wlc">
+        ${IC('key',32)}
+        <div>${L(
+          'Pilih cara masuk ke aplikasi.',
+          'Choose how to enter the application.'
+        )}</div>
+      </div>
+
+      <div class="fr">
+        <label>Email Admin:</label>
+        <input id="lu" type="email" autocomplete="username">
+      </div>
+
+      <div class="fr">
+        <label>Password:</label>
+        <input id="lp" type="password" autocomplete="current-password">
+      </div>
+
+      <div class="btns">
+        <button class="btn" onclick="lgA()">
+          Login Admin
+        </button>
+
+        <button class="btn s" onclick="lgG()">
+          Guest
+        </button>
+
+        <button class="btn s" onclick="T.kl=1;R()">
+          Karyawan
+        </button>
+      </div>
+
+      ${T.kl?`
+      <div class="fr" style="margin-top:12px">
+        <label>${L('Nama:','Name:')}</label>
+        <input id="li" placeholder="${L('Nama karyawan','Employee name')}">
+      </div>
+
+      <div class="btns">
+        <button class="btn" onclick="lgK()">
+          ${L('Masuk sebagai Karyawan','Sign in as Employee')}
+        </button>
+
+        <button class="btn s" onclick="T.kl=0;R()">
+          ${L('Batal','Cancel')}
+        </button>
+      </div>`:''}
+
+    </div>
+  </main>`;
+}
+
+async function lgA(){
+  const email=v('lu').trim();
+  const password=v('lp');
+
+  if(!email)
+    return toast('Email Admin wajib diisi','err');
+
+  if(!password)
+    return toast('Password wajib diisi','err');
+
+  try{
+    const {data,error}=await sb().auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if(error)throw error;
+
+    if(!data.session)
+      throw new Error('Login Admin gagal');
+
+    D.me={r:'A'};
+    sv();
+    R();
+
+  }catch(e){
+    const m=String(e.message||e);
+
+    if(/invalid login credentials/i.test(m))
+      return toast('Email atau password Admin salah','err');
+
+    toast('Login Admin gagal: '+m,'err');
+  }
+}
+
+const lgG=()=>{
+  D.me={r:'G'};
+  pg='dash';
+  sv();
+  R();
+};
+
+function lgK(){
+  if(SB.state=='loading'&&!D.emp.length)
+    return toast(
+      L(
+        'Data karyawan sedang dimuat, coba lagi sebentar.',
+        'Employee data is loading, try again shortly.'
+      ),
+      'warn'
+    );
+
+  const e=D.emp.find(
+    x=>x.nama.toLowerCase()==v('li').trim().toLowerCase()
+  );
+
+  if(!e)
+    return toast(
+      SB.state=='err'?SB.msg:'Nama karyawan tidak ditemukan',
+      'err'
+    );
+
+  if(!e.aktif)
+    return toast('Karyawan nonaktif','warn');
+
+  D.me={r:'K',id:e.id};
+  pg='dash';
+  sv();
+  R();
+}
+
+async function out(){
+  const wasAdmin=!!(D.me&&D.me.r=='A');
+
+  if(wasAdmin){
+    try{
+      await sb().auth.signOut();
+    }catch(e){
+      console.warn('Auth signOut:',e);
+    }
+  }
+
+  D.me=null;
+  sv();
+  R();
+}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
@@ -626,5 +810,15 @@ document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)sbLoad(true)});
 if(typeof setInterval!='undefined')setInterval(()=>{if(!document.hidden)sbLoad(true)},60000);
-applyTheme();sbCacheLoad();R();sbLoad();
+applyTheme();
+sbCacheLoad();
+
+if(D.me&&D.me.r=='A'){
+  D.me=null;
+  sv();
+}
+
+R();
+sbLoad();
+initAuth();
 </script></body></html>
