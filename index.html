@@ -101,6 +101,7 @@ details{margin:6px 0}summary{cursor:pointer;padding:5px 8px;background:var(--cd)
 </style></head><body>
 <div id="t"></div><div id="m"></div><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#008000',L:'#808080',I:'#ffff00',S:'#ff0000',PH:'#0000ff'},SK=Object.keys(ST);
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
@@ -855,6 +856,27 @@ if(use)return toast(L('Tidak bisa dihapus: dipakai di '+use+' resep','Cannot del
 cf(`Hapus <b>${esc(o.nama)}</b>?`,()=>{g[kind].splice(i,1);sv();cogsSave();closeM();toast(L('Dihapus','Deleted'));R()})}
 function cgSeed(){if(!guard())return;cmn();cf(L('Muat resep awal dari spreadsheet? Data COGS sekarang akan DITIMPA.','Load starter recipes from the spreadsheet? Current COGS data will be OVERWRITTEN.'),()=>{D.cg=JSON.parse(JSON.stringify(CG_SEED));sv();cogsSave();toast(L('Resep awal dimuat','Starter recipes loaded'));R()},L('Ya, muat','Yes, load'))}
 function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data COGS (menu, WIP, bahan)? Data absensi tidak terpengaruh.','Clear ALL COGS data (menus, WIP, ingredients)? Attendance data is not affected.'),()=>{D.cg={bahan:[],wip:[],menu:[]};sv();cogsSave();toast(L('Data COGS dikosongkan','COGS data cleared'));R()},L('Ya, kosongkan','Yes, clear'))}
+
+
+/* ---------- Excel COGS: template / import tambahan / export ---------- */
+function xlsxReady(){if(window.XLSX)return true;toast('Library Excel belum siap. Coba lagi.','err');return false}
+function cogsRowsForExcel(){const g=cgInit();return {bahan:[['Nama','Harga Beli','Isi','Satuan','Aktif'],...g.bahan.map(b=>[b.nama,b.beli,b.isi,b.sat,b.aktif!==false?'YA':'TIDAK'])],wip:[['Nama WIP','Yield','Bahan/Resep','Qty','Satuan'],...g.wip.flatMap(w=>w.items.map(it=>[w.nama,w.yield,it.n,it.q,it.u]))],menu:[['Nama Menu','Harga Jual','Bahan/Resep','Qty','Satuan'],...g.menu.flatMap(m=>m.items.map(it=>[m.nama,m.harga,it.n,it.q,it.u]))]}}
+function xlsxDownload(name,rowsBySheet){if(!xlsxReady())return;const wb=XLSX.utils.book_new();Object.entries(rowsBySheet).forEach(([n,rows])=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:24},{wch:16},{wch:28},{wch:12},{wch:12}];XLSX.utils.book_append_sheet(wb,ws,n.slice(0,31))});XLSX.writeFile(wb,name+'.xlsx')}
+function cgExcelTemplate(){if(!guard())return;const rows={Bahan:[['Nama','Harga Beli','Isi','Satuan','Aktif'],['Contoh bahan','','','gram','YA']],WIP:[['Nama WIP','Yield','Bahan/Resep','Qty','Satuan'],['Contoh WIP','','Contoh bahan','100','gram']],Menu:[['Nama Menu','Harga Jual','Bahan/Resep','Qty','Satuan'],['Contoh Menu','25000','Contoh bahan','100','gram']]};xlsxDownload('template-cogs-barapp',rows)}
+function cgExcelExport(){if(!guard())return;const r=cogsRowsForExcel();xlsxDownload('barapp-cogs-backup', {Bahan:r.bahan,WIP:r.wip,Menu:r.menu})}
+function excelRows(ws){const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});return a.filter((r,i)=>i===0||r.some(x=>String(x).trim()!==''))}
+function normExcel(v){return norm(String(v??''))}
+async function cgExcelImport(input){if(!guard()||!input.files?.[0]||!xlsxReady())return;const file=input.files[0];try{
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),g=cgInit();let addB=0,addW=0,addM=0,skip=0;
+ const get=(n)=>{const sh=wb.Sheets[n]||wb.Sheets[n.toLowerCase()]||wb.Sheets[Object.keys(wb.Sheets).find(k=>k.toLowerCase()==n.toLowerCase())];return sh?excelRows(sh):[]};
+ const b=get('Bahan');
+ b.slice(1).forEach(r=>{const nama=String(r[0]??'').trim().toLowerCase();if(!nama)return;if(g.bahan.some(x=>norm(x.nama)==nama)||g.wip.some(x=>norm(x.nama)==nama)){skip++;return}g.bahan.push({nama,beli:r[1]===''?'':Math.max(0,+r[1]||0),isi:r[2]===''?'':Math.max(0,+r[2]||0),sat:String(r[3]||'gram').trim()||'gram',aktif:String(r[4]||'YA').toUpperCase()!=='TIDAK'});addB++});
+ const importRecipe=(rows,kind)=>{const groups={};rows.slice(1).forEach(r=>{const nama=String(r[0]??'').trim();if(!nama)return;(groups[nama]??=[]).push({n:norm(String(r[2]??'')),q:+r[3]||0,u:String(r[4]||'gram').trim()||'gram'})});Object.entries(groups).forEach(([nama,items])=>{if(!items.some(x=>x.n&&x.q>0))return;if(g[kind].some(x=>norm(x.nama)==norm(nama))){skip++;return}const h=rows===get('WIP')?+((rows.find(r=>String(r[0]??'').trim()==nama)||[])[1]||0):+((rows.find(r=>String(r[0]??'').trim()==nama)||[])[1]||0);g[kind].push(kind==='wip'?{nama,yield:h,items:items.filter(x=>x.n&&x.q>0)}:{nama,harga:h,items:items.filter(x=>x.n&&x.q>0)});if(kind==='wip')addW++;else addM++})};
+ importRecipe(get('WIP'),'wip');importRecipe(get('Menu'),'menu');
+ const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));[...g.wip,...g.menu].forEach(x=>x.items.forEach(it=>{if(it.n&&!known.has(it.n)){g.bahan.push({nama:it.n,beli:'',isi:'',sat:it.u||'gram',aktif:true});known.add(it.n);addB++}}));
+ sv();await cogsSave();closeM();toast(`Import selesai: +${addM} menu, +${addW} WIP, +${addB} bahan${skip?` · ${skip} data dilewati karena sudah ada`:''}`);R();
+ }catch(e){toast('Import Excel gagal: '+String(e.message||e),'err')}finally{input.value=''}}
+function cgExcelOpen(){if(!guard())return;modal(`<h3>Excel COGS</h3><p class="mu">Import hanya menambahkan data baru. Data dengan nama yang sudah ada tidak ditimpa.</p><div class="btns"><button class="btn" onclick="cgExcelTemplate()">Download template</button><button class="btn s" onclick="cgExcelExport()">Export data COGS</button></div><label style="margin-top:12px">Upload Excel (.xlsx)<input type="file" accept=".xlsx,.xls" onchange="cgExcelImport(this)"></label><div class="mu">Format sheet: Bahan, WIP, Menu. Satu resep boleh memiliki beberapa baris bahan.</div><div class="row"><button class="btn s" onclick="closeM()">Tutup</button></div>`)}
 
 /* ---------- Laporan: periode, export, import ---------- */
 V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
