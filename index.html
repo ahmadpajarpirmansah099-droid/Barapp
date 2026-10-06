@@ -132,7 +132,6 @@ Setup awal: buat akun ADMIN. => First-time setup: create the ADMIN account.
 Simpan & Masuk => Save & Sign in
 Masuk sebagai Admin => Sign in as Admin
 atau => or
-Masuk sebagai Guest (lihat saja) => Sign in as Guest (view only)
 Masuk sebagai Karyawan => Sign in as Employee
 Masuk sebagai karyawan (nama) => Sign in as employee (name)
 Password (min. 4 karakter) => Password (min. 4 characters)
@@ -303,7 +302,7 @@ const age=b=>{if(!b)return'-';const n=today();let a=+n.slice(0,4)-+b.slice(0,4);
 function toast(m,k){const e=document.createElement('div');e.className='w';e.innerHTML=`<div class="tbar"><span class="tt"></span><button class="cb" onclick="this.closest('.w').remove()">×</button></div><div class="mbx">${IC(k=='err'?'err':k=='warn'?'warn':'check',32)}<span class="mt"></span></div>`;e.querySelector('.tt').textContent=TH.name;e.querySelector('.mt').textContent=m;$('#t').append(e);setTimeout(()=>e.remove(),3500)}
 const adm=()=>D.me&&D.me.r=='A',guard=()=>adm()||(toast('Akses ditolak: hanya ADMIN','err'),false);
 const P=id=>D.per.find(p=>p.id==(id||D.cur)),pl=p=>p?fd(p.s)+' – '+fd(p.e):'',perOf=d=>D.per.find(p=>d>=p.s&&d<=p.e);
-const vis=()=>adm()||D.me.r=='G'?D.emp:D.emp.filter(e=>e.id==D.me.id),rec=(e,d)=>D.att.find(a=>a.e==e&&a.d==d);
+const vis=()=>adm()?D.emp:D.emp.filter(e=>e.id==D.me.id),rec=(e,d)=>D.att.find(a=>a.e==e&&a.d==d);
 const pEmps=p=>vis().filter(e=>e.aktif||D.att.some(a=>a.e==e.id&&a.d>=p.s&&a.d<=p.e));
 const cntR=(f,t,l)=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0},ds=f<=t?days(f,t):[];l.forEach(e=>ds.forEach(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++}));return c};
 const cnt=(p,l)=>cntR(p.s,p.e,l);
@@ -377,6 +376,68 @@ if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
 SB.loading=false;R()}
 async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
 SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
+
+/* ---------- COGS CLOUD STORAGE ----------
+   Supabase is the shared source of truth for COGS. localStorage CGK remains only a cache. */
+let CGSAVE=Promise.resolve(), CGLOADING=false;
+function cogsNormalize(x){
+  if(!x||typeof x!='object')return null;
+  return {
+    bahan:Array.isArray(x.bahan)?x.bahan:[],
+    wip:Array.isArray(x.wip)?x.wip:[],
+    menu:Array.isArray(x.menu)?x.menu:[]
+  };
+}
+async function cogsLoad(){
+  if(!adm()||CGLOADING)return false;
+  CGLOADING=true;
+  try{
+    const c=sb();
+    const {data,error}=await c.from('cogs_data').select('id,data,updated_at').eq('id',1).maybeSingle();
+    if(error)throw error;
+    if(data&&data.data){
+      const cloud=cogsNormalize(data.data);
+      if(cloud){
+        D.cg=cloud;
+        try{localStorage.setItem(CGK,JSON.stringify(D.cg))}catch(e){}
+        sv();
+        return true;
+      }
+    }
+    // First-time cloud initialization: use existing device data if present;
+    // otherwise use the existing starter dataset. Never overwrite an existing cloud row.
+    const local=cogsNormalize(D.cg);
+    const seed=local||JSON.parse(JSON.stringify(CG_SEED));
+    D.cg=seed;
+    const {error:upErr}=await c.from('cogs_data').upsert({id:1,data:seed,updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(upErr)throw upErr;
+    try{localStorage.setItem(CGK,JSON.stringify(seed))}catch(e){}
+    sv();
+    return true;
+  }catch(e){
+    console.warn('COGS cloud load:',e);
+    // Offline fallback: retain the device cache; cloud remains authoritative when reachable.
+    return false;
+  }finally{CGLOADING=false}
+}
+function cogsSave(){
+  if(!adm()||!D.cg)return Promise.resolve(false);
+  CGSAVE=CGSAVE.then(async()=>{
+    const snapshot=cogsNormalize(D.cg);
+    if(!snapshot)return false;
+    try{
+      const {error}=await sb().from('cogs_data').upsert({id:1,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'id'});
+      if(error)throw error;
+      try{localStorage.setItem(CGK,JSON.stringify(snapshot))}catch(e){}
+      return true;
+    }catch(e){
+      console.warn('COGS cloud save:',e);
+      return false;
+    }
+  }).catch(()=>false);
+  return CGSAVE;
+}
+
 const sbLoadCard=()=>`<div class="card"><h3>${L('Memuat data','Loading data')}</h3><div class="dlg">${IC('pc',32)}<p>${L('Mengambil data karyawan & absensi dari Supabase…','Fetching employees & attendance from Supabase…')}</p></div><div class="prog"><i></i></div></div>`;
 const sbBanner=()=>SB.state!='err'?'':`<div class="card"><h3>${L('Sambungan Supabase bermasalah','Supabase connection problem')}</h3><div class="dlg">${IC('warn',32)}<p>${esc(SB.msg)}${D.emp.length||D.att.length?'<br><b>'+L('Menampilkan data tersimpan terakhir.','Showing last saved data.')+'</b>':''}</p></div><div class="btns"><button class="btn" onclick="sbLoad()">${L('Coba lagi','Retry')}</button><button class="btn s" onclick="openSb()">${L('Atur sambungan','Connection settings')}</button></div></div>`;
 function openSb(){cmn();const c=sbCfg(),fixed=!!(SUPABASE_URL&&SUPABASE_ANON_KEY);
@@ -403,32 +464,34 @@ async function initAuth(){
     const {data,error}=await c.auth.getSession();
     if(error)throw error;
 
+    // localStorage is NEVER trusted as proof of Admin authentication.
+    // Only a live Supabase Auth session can create D.me.r='A'.
     if(data.session){
-      D.me={r:'A'};
+      D.me={r:'A',uid:data.session.user.id,email:data.session.user.email||''};
       sv();
+      await cogsLoad();
       R();
-    }else if(D.me&&D.me.r=='A'){
-      D.me=null;
-      sv();
+    }else{
+      if(D.me&&D.me.r=='A'){D.me=null;sv()}
       R();
     }
 
     c.auth.onAuthStateChange((event,session)=>{
       if(event=='SIGNED_IN'&&session){
-        D.me={r:'A'};
+        D.me={r:'A',uid:session.user.id,email:session.user.email||''};
         sv();
-        R();
-      }else if(event=='SIGNED_OUT'&&D.me&&D.me.r=='A'){
-        D.me=null;
-        sv();
+        setTimeout(async()=>{await cogsLoad();R()},0);
+      }else if(event=='SIGNED_OUT'){
+        if(D.me&&D.me.r=='A'){D.me=null;sv()}
         R();
       }
     });
   }catch(e){
     console.warn('Supabase Auth:',e);
+    if(D.me&&D.me.r=='A'){D.me=null;sv()}
+    R();
   }
 }
-
 function login(){
   const lg=`<div style="text-align:right;margin-bottom:6px">
     <button class="btn x" onclick="setLang(LANG=='id'?'en':'id')">
@@ -472,10 +535,6 @@ function login(){
       <div class="btns">
         <button class="btn" onclick="lgA()">
           Login Admin
-        </button>
-
-        <button class="btn s" onclick="lgG()">
-          Guest
         </button>
 
         <button class="btn s" onclick="T.kl=1;R()">
@@ -538,13 +597,6 @@ async function lgA(){
   }
 }
 
-const lgG=()=>{
-  D.me={r:'G'};
-  pg='dash';
-  sv();
-  R();
-};
-
 function lgK(){
   if(SB.state=='loading'&&!D.emp.length)
     return toast(
@@ -593,8 +645,8 @@ async function out(){
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu',adm:1},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'COGS MENU',cg_wip:'RESEP WIP',cg_bahan:'BAHAN'};
-const allowed=()=>adm()?Object.keys(PAGES):D.me.r=='G'?['dash']:['dash','abs','ot'];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS'};
+const allowed=()=>adm()?Object.keys(PAGES):['dash','abs','ot'];
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.adm||adm()).map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
@@ -605,7 +657,7 @@ function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();retu
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':D.me.r=='G'?'GUEST':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('doc')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('cg_bahan')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('err')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="openSb()">${IC('pc')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('doc')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
@@ -657,7 +709,7 @@ function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama
 const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().eq('employee_id',e.id);if(q.error)throw q.error;q=await c.from('employees').delete().eq('id',e.id);if(q.error)throw q.error;D.att.filter(a=>a.e==e.id).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp=D.emp.filter(x=>x.id!=e.id);sbCacheSave();sv()});
 if(ok){toast('Karyawan dihapus');R()}})}
 function detEmp(i){const e=D.emp[i],{f,t}=rng(),c=cntR(f,t,[e]),hs=D.att.filter(a=>a.e==e.id&&a.d>=f&&a.d<=t).sort((a,b)=>a.d<b.d?-1:1);
-modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b><div class="grid" style="margin:8px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${k}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>BELUM ADA DATA</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div><b>Riwayat</b>${hs.length?hs.map(a=>`<div>${fd(a.d)} ${badge(a.s)} ${esc(a.n||'')}${a.ph&&D.me.r!='G'?`<br><img class="ph" src="${a.ph}">`:''}</div>`).join(''):'<p class="mu">Belum ada data absensi.</p>'}<br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b><div class="grid" style="margin:8px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${k}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>BELUM ADA DATA</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div><b>Riwayat</b>${hs.length?hs.map(a=>`<div>${fd(a.d)} ${badge(a.s)} ${esc(a.n||'')}${a.ph?`<br><img class="ph" src="${a.ph}">`:''}</div>`).join(''):'<p class="mu">Belum ada data absensi.</p>'}<br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 
 /* ---------- Absensi form ---------- */
 function openAtt(k){if(!guard())return;if(!D.emp.some(e=>e.aktif))return toast('Tambah karyawan dulu','warn');
@@ -681,7 +733,7 @@ if(ok){closeM();toast('Absensi tersimpan');R()}}
 function delAtt(){if(!guard())return;const a=D.att[T.k];if(lockedD(a.d))return toast('Periode LOCKED','err');cf('Hapus data absensi ini?',async()=>{const ok=await sbRun(async()=>{const {error}=await sb().from('attendance').delete().eq('id',a.id);if(error)throw error;D.att=D.att.filter(x=>x.id!=a.id);delete PH[a.id];savePH();sbCacheSave()});if(ok){toast('Absensi dihapus');R()}})}
 
 /* ---------- Lembur ---------- */
-V.ot=()=>{const {f,t}=rng(),l=D.ot.map((o,i)=>({...o,i})).filter(o=>(adm()||D.me.r=='G'||o.e==D.me.id)&&o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)&&(!F.q||(name(o.e)+(o.n||'')).toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>a.d<b.d?1:-1),tot=l.reduce((s,o)=>s+hrs(o),0),ids=[...new Set(l.map(o=>o.e))];
+V.ot=()=>{const {f,t}=rng(),l=D.ot.map((o,i)=>({...o,i})).filter(o=>(adm()||o.e==D.me.id)&&o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)&&(!F.q||(name(o.e)+(o.n||'')).toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>a.d<b.d?1:-1),tot=l.reduce((s,o)=>s+hrs(o),0),ids=[...new Set(l.map(o=>o.e))];
 return(adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openOt(-1)">+ Tambah lembur</button></div>':'')+fbar(1)+(l.length?`<div class="card"><b>Total jam lembur: ${fh(tot)}</b>${ids.map(e=>`<div>${esc(name(e))}: <b>${fh(l.filter(o=>o.e==e).reduce((s,o)=>s+hrs(o),0))}</b></div>`).join('')}</div><div class="tw"><table><tr><th>Nama</th><th>Tanggal</th><th>Jam</th>${adm()?'<th></th>':''}</tr>${l.map(o=>`<tr><td>${esc(name(o.e))}</td><td>${fd(o.d)}</td><td>${Math.round(hrs(o)*100)/100}</td>${adm()?`<td><button class="btn s x" onclick="openOt(${o.i})">Edit</button> <button class="btn d x" onclick="delOt(${o.i})">Hapus</button></td>`:''}</tr>`).join('')}</table></div>`:'<div class="card empty">Belum ada lembur pada rentang ini.</div>')};
 function openOt(i){if(!guard())return;if(!D.emp.length)return toast('Tambah karyawan dulu','warn');const o=i>=0?D.ot[i]:{d:today()};T.i=i;
 modal(`<h3>${i>=0?'Edit':'Tambah'} Lembur / Extend</h3>${i>=0?`<label>Karyawan<select id="oe">${D.emp.map(e=>`<option value="${esc(e.id)}" ${e.id==o.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label>`:`<label>Pilih karyawan (boleh lebih dari satu) · <a class="nm" onclick="document.querySelectorAll('#oc input').forEach(x=>x.checked=true)">Pilih semua</a></label><div id="oc" style="margin-bottom:10px">${D.emp.filter(e=>e.aktif).map(e=>`<label class="ck"><input type="checkbox" value="${esc(e.id)}"> ${esc(e.nama)}</label>`).join('')}</div>`}<label>Tanggal<input id="od" type="date" value="${o.d}"></label><label>Total jam lembur<input id="oh" type="number" min="0.25" max="24" step="0.25" inputmode="decimal" value="${i>=0?Math.round(hrs(o)*100)/100:''}" placeholder="mis. 2.5"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveOt()">Simpan</button></div>`)}
@@ -714,14 +766,14 @@ return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('menu
 ${np?`<div class="card"><div class="dlg" style="margin:0">${IC('warn',32)}<p>${L(np+' bahan belum punya harga, jadi COGS menu belum lengkap.',np+' ingredients have no price yet, so menu COGS is incomplete.')} <a class="nm" onclick="go('cg_bahan')">${L('Isi harga bahan','Enter prices')}</a></p></div></div>`:''}
 ${cgSearch()}
 ${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>No</th><th>Menu</th><th>${L('Harga jual','Price')}</th><th>COGS</th><th>COGS %</th><th>Gross profit</th><th>Gross margin %</th></tr>${rows.map((x,k)=>{const c=cgCells(x.m,x.r);return`<tr><td>${k+1}</td><td><a class="nm" onclick="cgDet('menu',${x.i})">${esc(x.m.nama)}</a>${x.r.miss?' <span class="tag r">!</span>':''}</td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.m.harga}" onchange="cgSetM(${x.i},this.value)"></td><td>${x.r.miss?'-':rp(x.r.total)}</td><td id="mp${x.i}">${c.cp}</td><td id="mg${x.i}">${c.gp}</td><td id="mm${x.i}">${c.gm}</td></tr>`}).join('')}</table></div><p class="mu">! = ${L('ada bahan tanpa harga: COGS ditampilkan "-" sampai harga lengkap','an ingredient has no price: COGS shows "-" until prices are complete')}</p>`:`<div class="card empty">${g.menu.length?L('Tidak ada hasil.','No results.'):L('Belum ada menu.','No menus yet.')}</div>`}`};
-function cgSetM(i,val){if(!guard())return;const m=D.cg.menu[i];m.harga=val===''?'':Math.max(0,+val||0);sv();const c=cgCells(m,cgEng().lines(m.items));[['mp',c.cp],['mg',c.gp],['mm',c.gm]].forEach(([p,t])=>{const e=$('#'+p+i);if(e)e.textContent=t})}
+function cgSetM(i,val){if(!guard())return;const m=D.cg.menu[i];m.harga=val===''?'':Math.max(0,+val||0);sv();cogsSave();const c=cgCells(m,cgEng().lines(m.items));[['mp',c.cp],['mg',c.gp],['mm',c.gm]].forEach(([p,t])=>{const e=$('#'+p+i);if(e)e.textContent=t})}
 V.cg_wip=()=>{if(!adm())return'';const g=cgInit(),E=cgEng(),q=norm(T.cq),rows=g.wip.map((w,i)=>({w,i,r:E.lines(w.items),u:E.unit(w.nama)})).filter(x=>norm(x.w.nama).includes(q));
 return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('wip',-1)">+ ${L('Tambah resep WIP','Add WIP recipe')}</button></div>${cgSearch()}
 ${rows.length?`<div class="tw"><table class="rk"><tr><th>No</th><th>WIP</th><th>Recipe</th><th>Yield</th><th>${L('Total cost','Total cost')}</th><th>${L('Cost per unit','Cost per unit')}</th></tr>${rows.map((x,k)=>{const n=x.w.items.map(i=>i.n);return`<tr><td>${k+1}</td><td><a class="nm" onclick="cgDet('wip',${x.i})">${esc(x.w.nama)}</a>${x.r.miss?' <span class="tag r">!</span>':''}</td><td style="white-space:normal;text-align:left;min-width:150px">${n.length} ${L('komponen','components')}: ${esc(n.slice(0,3).join(', '))}${n.length>3?'…':''}</td><td>${x.w.yield}</td><td>${x.r.miss?'-':rp(x.r.total)}</td><td>${x.r.miss?'-':rp2(x.u.c)}</td></tr>`}).join('')}</table></div><p class="mu">! = ${L('ada bahan/WIP tanpa harga','an ingredient/WIP has no price')}</p>`:`<div class="card empty">${g.wip.length?L('Tidak ada hasil.','No results.'):L('Belum ada resep WIP.','No WIP recipes yet.')}</div>`}`};
 V.cg_bahan=()=>{if(!adm())return'';const g=cgInit(),q=norm(T.cq),rows=g.bahan.map((b,i)=>({b,i})).filter(x=>norm(x.b.nama).includes(q)&&(!T.cno||!(+x.b.beli>0&&+x.b.isi>0)));
 return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('bahan',-1)">+ ${L('Tambah bahan','Add ingredient')}</button></div>${cgSearch()}<label class="ck"><input type="checkbox" ${T.cno?'checked':''} onchange="T.cno=this.checked;R()"> ${L('Hanya yang belum ada harga','Only without price')}</label>
 ${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>${L('Bahan','Ingredient')}</th><th>${L('Harga beli (Rp)','Purchase price (Rp)')}</th><th>${L('Isi','Qty')}</th><th>${L('Satuan','Unit')}</th><th>${L('Harga per unit','Price per unit')}</th><th>${L('Aktif','Active')}</th><th></th></tr>${rows.map(x=>`<tr style="${x.b.aktif===false?'color:#808080':''}"><td>${esc(x.b.nama)}</td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.b.beli}" onchange="cgSetB(${x.i},'beli',this.value)"></td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.b.isi}" onchange="cgSetB(${x.i},'isi',this.value)"></td><td><input list="cgu" value="${esc(x.b.sat)}" style="width:70px" onchange="cgSetB(${x.i},'sat',this.value)"></td><td id="cb${x.i}">${+x.b.beli>0&&+x.b.isi>0?rp2(x.b.beli/x.b.isi):'-'}</td><td><input type="checkbox" ${x.b.aktif===false?'':'checked'} onchange="cgSetB(${x.i},'aktif',this.checked)"></td><td><button class="btn d x" onclick="cgDelRec('bahan',${x.i})">Hapus</button></td></tr>`).join('')}</table></div><datalist id="cgu"><option value="gram"><option value="ml"><option value="pcs"><option value="botol"><option value="can"></datalist><p class="mu">${L('Contoh: beli 1 kg gula Rp 18.000 → Harga beli 18000, Isi 1000, Satuan gram. Bahan nonaktif tidak muncul saat menambah resep baru, tetapi resep lama tetap dihitung.','Example: 1 kg sugar for Rp 18,000 → Price 18000, Qty 1000, Unit gram. Inactive ingredients are hidden when adding new recipes, but existing recipes are still calculated.')}</p>`:`<div class="card empty">${g.bahan.length?L('Tidak ada hasil.','No results.'):L('Belum ada bahan.','No ingredients yet.')}</div>`}`};
-function cgSetB(i,k,val){if(!guard())return;const b=D.cg.bahan[i];b[k]=k=='sat'?String(val).trim():k=='aktif'?!!val:(val===''?'':Math.max(0,+val||0));sv();if(k=='aktif'){R();return}const c=$('#cb'+i);if(c)c.textContent=+b.beli>0&&+b.isi>0?rp2(b.beli/b.isi):'-'}
+function cgSetB(i,k,val){if(!guard())return;const b=D.cg.bahan[i];b[k]=k=='sat'?String(val).trim():k=='aktif'?!!val:(val===''?'':Math.max(0,+val||0));sv();cogsSave();if(k=='aktif'){R();return}const c=$('#cb'+i);if(c)c.textContent=+b.beli>0&&+b.isi>0?rp2(b.beli/b.isi):'-'}
 function cgDet(kind,i){if(!guard())return;const g=cgInit(),E=cgEng(),o=g[kind][i],r=E.lines(o.items),u=kind=='wip'?E.unit(o.nama):null;
 let info;if(kind=='wip')info=`Yield: ${o.yield} · Total cost: ${r.miss?'-':rp(r.total)} · Cost per unit: ${r.miss?'-':rp2(u.c)}`;else{const c=cgCells(o,r);info=`${L('Harga jual','Price')}: ${+o.harga>0?rp(o.harga):'-'} · COGS: ${r.miss?'-':rp(r.total)} · COGS % ${c.cp} · Gross profit ${c.gp} · Gross margin % ${c.gm}`}
 modal(`<h3>${esc(o.nama)}</h3><p class="mu">${info}</p>
@@ -749,16 +801,16 @@ if(kind=='wip'&&items.some(x=>x.n==norm(nama)))return toast(L('WIP tidak boleh m
 const o=kind=='wip'?{nama,yield:y,items}:{nama,harga:v('cy')===''?'':y,items};
 if(f.i>=0){const old=g[kind][f.i].nama;g[kind][f.i]=o;if(kind=='wip'&&norm(old)!=norm(nama))cgRename(old,nama)}else g[kind].push(o);
 const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));items.forEach(x=>{if(!known.has(x.n)){g.bahan.push({nama:x.n,beli:'',isi:'',sat:x.u,aktif:true});known.add(x.n)}});
-sv();closeM();toast(L('Tersimpan','Saved'));R()}
+sv();cogsSave();closeM();toast(L('Tersimpan','Saved'));R()}
 function cgSaveB(){if(!guard())return;const g=cgInit(),i=T.cgi,nama=v('cgn1').trim().toLowerCase();if(!nama)return toast('Nama wajib diisi','err');
 if([...g.bahan.filter((x,k)=>k!=i),...g.wip].some(x=>norm(x.nama)==nama))return toast('Nama sudah ada','err');
 const o={nama,beli:v('cgb1')===''?'':Math.max(0,+v('cgb1')||0),isi:v('cgi1')===''?'':Math.max(0,+v('cgi1')||0),sat:v('cgs1').trim()||'gram',aktif:v('cga')!='0'};
-if(i>=0){const old=g.bahan[i].nama;g.bahan[i]=o;if(norm(old)!=nama)cgRename(old,nama)}else g.bahan.push(o);sv();closeM();toast(L('Tersimpan','Saved'));R()}
+if(i>=0){const old=g.bahan[i].nama;g.bahan[i]=o;if(norm(old)!=nama)cgRename(old,nama)}else g.bahan.push(o);sv();cogsSave();closeM();toast(L('Tersimpan','Saved'));R()}
 function cgDelRec(kind,i){if(!guard())return;const g=cgInit(),o=g[kind][i],n=norm(o.nama),use=kind=='menu'?0:[...g.wip,...g.menu].filter(x=>x.items.some(it=>norm(it.n)==n)).length;
 if(use)return toast(L('Tidak bisa dihapus: dipakai di '+use+' resep','Cannot delete: used in '+use+' recipes'),'err');
-cf(`Hapus <b>${esc(o.nama)}</b>?`,()=>{g[kind].splice(i,1);sv();closeM();toast(L('Dihapus','Deleted'));R()})}
-function cgSeed(){if(!guard())return;cmn();cf(L('Muat resep awal dari spreadsheet? Data COGS sekarang akan DITIMPA.','Load starter recipes from the spreadsheet? Current COGS data will be OVERWRITTEN.'),()=>{D.cg=JSON.parse(JSON.stringify(CG_SEED));sv();toast(L('Resep awal dimuat','Starter recipes loaded'));R()},L('Ya, muat','Yes, load'))}
-function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data COGS (menu, WIP, bahan)? Data absensi tidak terpengaruh.','Clear ALL COGS data (menus, WIP, ingredients)? Attendance data is not affected.'),()=>{D.cg={bahan:[],wip:[],menu:[]};sv();toast(L('Data COGS dikosongkan','COGS data cleared'));R()},L('Ya, kosongkan','Yes, clear'))}
+cf(`Hapus <b>${esc(o.nama)}</b>?`,()=>{g[kind].splice(i,1);sv();cogsSave();closeM();toast(L('Dihapus','Deleted'));R()})}
+function cgSeed(){if(!guard())return;cmn();cf(L('Muat resep awal dari spreadsheet? Data COGS sekarang akan DITIMPA.','Load starter recipes from the spreadsheet? Current COGS data will be OVERWRITTEN.'),()=>{D.cg=JSON.parse(JSON.stringify(CG_SEED));sv();cogsSave();toast(L('Resep awal dimuat','Starter recipes loaded'));R()},L('Ya, muat','Yes, load'))}
+function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data COGS (menu, WIP, bahan)? Data absensi tidak terpengaruh.','Clear ALL COGS data (menus, WIP, ingredients)? Attendance data is not affected.'),()=>{D.cg={bahan:[],wip:[],menu:[]};sv();cogsSave();toast(L('Data COGS dikosongkan','COGS data cleared'));R()},L('Ya, kosongkan','Yes, clear'))}
 
 /* ---------- Laporan: periode, export, import ---------- */
 V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
