@@ -389,7 +389,7 @@ function cogsNormalize(x){
   };
 }
 async function cogsLoad(){
-  if(!adm()||CGLOADING)return false;
+  if(!D.me||CGLOADING)return false;
   CGLOADING=true;
   try{
     const c=sb();
@@ -624,6 +624,7 @@ function lgK(){
   pg='dash';
   sv();
   R();
+  cogsLoad().then(()=>R());
 }
 
 async function out(){
@@ -644,9 +645,9 @@ async function out(){
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu',adm:1},{name:'Segera hadir',ic:'lock',page:null}];
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu'},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS'};
-const allowed=()=>adm()?Object.keys(PAGES):['dash','abs','ot'];
+const allowed=()=>adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.adm||adm()).map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
@@ -755,17 +756,60 @@ return memo[n]={c:0,miss:true}};
 const lines=items=>{let total=0,miss=false;const rows=items.map(it=>{const u=unit(it.n),sub=u.c*(+it.q||0);total+=sub;if(u.miss)miss=true;return{...it,price:u.c,sub,miss:u.miss}});return{rows,total,miss}};
 return{unit,lines,bm,wm}}
 const cgSearch=()=>`<div class="card"><label>${L('Cari','Search')}<input value="${esc(T.cq||'')}" oninput="T.cq=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div>`;
-const cgQuick=()=>[['menu',L('Tambah menu','Add menu'),'cg_menu'],['wip',L('Tambah resep WIP','Add WIP recipe'),'cg_wip'],['bahan',L('Tambah bahan','Add ingredient'),'cg_bahan']].map(x=>`<button onclick="cgOpen('${x[0]}',-1)">${IC(x[2])}<span>${x[1]}</span></button>`).join('');
+const cgQuick=()=>!adm()?'':[['menu',L('Tambah menu','Add menu'),'cg_menu'],['wip',L('Tambah resep WIP','Add WIP recipe'),'cg_wip'],['bahan',L('Tambah bahan','Add ingredient'),'cg_bahan']].map(x=>`<button onclick="cgOpen('${x[0]}',-1)">${IC(x[2])}<span>${x[1]}</span></button>`).join('');
 /* cost bahan = harga beli / isi (per satuan). cost WIP = total cost / yield. nested WIP didukung: WIP boleh memakai WIP lain (rekursif, ada penjaga siklus).
    Bahan tanpa harga TIDAK dianggap Rp0: hasilnya ditandai "-" (belum lengkap). Semua rumus mengambil harga langsung dari halaman BAHAN. */
 const cgM=(m,r)=>{const h=+m.harga;if(!(h>0)||r.miss||!(r.total>0))return null;const gp=h-r.total;return{cp:r.total/h*100,gp,gm:gp/h*100}};
 const cgCells=(m,r)=>{const x=cgM(m,r);return x?{cp:pct(x.cp),gp:rp(x.gp),gm:pct(x.gm)}:{cp:'-',gp:'-',gm:'-'}};
-V.cg_menu=()=>{if(!adm())return'';const g=cgInit(),E=cgEng(),q=norm(T.cq),rows=g.menu.map((m,i)=>({m,i,r:E.lines(m.items)})).filter(x=>norm(x.m.nama).includes(q)),np=g.bahan.filter(b=>!(+b.beli>0&&+b.isi>0)).length;
-return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('menu',-1)">+ ${L('Tambah menu','Add menu')}</button></div>
-<div class="grid"><div class="card st"><b>${g.menu.length}</b><span>${L('Menu','Menus')}</span></div><div class="card st"><b>${g.wip.length}</b><span>${L('Resep WIP','WIP recipes')}</span></div><div class="card st"><b>${g.bahan.length}</b><span>${L('Bahan','Ingredients')}</span></div><div class="card st"><b>${np}</b><span>${L('Bahan tanpa harga','Ingredients w/o price')}</span></div></div>
-${np?`<div class="card"><div class="dlg" style="margin:0">${IC('warn',32)}<p>${L(np+' bahan belum punya harga, jadi COGS menu belum lengkap.',np+' ingredients have no price yet, so menu COGS is incomplete.')} <a class="nm" onclick="go('cg_bahan')">${L('Isi harga bahan','Enter prices')}</a></p></div></div>`:''}
-${cgSearch()}
-${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>No</th><th>Menu</th><th>${L('Harga jual','Price')}</th><th>COGS</th><th>COGS %</th><th>Gross profit</th><th>Gross margin %</th></tr>${rows.map((x,k)=>{const c=cgCells(x.m,x.r);return`<tr><td>${k+1}</td><td><a class="nm" onclick="cgDet('menu',${x.i})">${esc(x.m.nama)}</a>${x.r.miss?' <span class="tag r">!</span>':''}</td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.m.harga}" onchange="cgSetM(${x.i},this.value)"></td><td>${x.r.miss?'-':rp(x.r.total)}</td><td id="mp${x.i}">${c.cp}</td><td id="mg${x.i}">${c.gp}</td><td id="mm${x.i}">${c.gm}</td></tr>`}).join('')}</table></div><p class="mu">! = ${L('ada bahan tanpa harga: COGS ditampilkan "-" sampai harga lengkap','an ingredient has no price: COGS shows "-" until prices are complete')}</p>`:`<div class="card empty">${g.menu.length?L('Tidak ada hasil.','No results.'):L('Belum ada menu.','No menus yet.')}</div>`}`};
+function cgMenuRecipeRows(items,E,depth=0,scale=1,stack={}){
+  const out=[];
+  (items||[]).forEach(it=>{
+    const n=norm(it.n), q=(+it.q||0)*scale, w=E.wm[n];
+    const u=E.unit(it.n), sub=u.miss?0:u.c*q;
+    out.push({n:it.n,q,u:it.u||'',price:u.c,sub,miss:u.miss,wip:!!w,depth});
+    if(w&&!stack[n]){
+      const next={...stack,[n]:true},ys=+w.yield||0;
+      if(ys>0)out.push(...cgMenuRecipeRows(w.items,E,depth+1,q/ys,next));
+    }
+  });
+  return out;
+}
+V.cg_menu=()=>{
+  const g=cgInit(),E=cgEng(),menus=g.menu||[];
+  if(!menus.length)return `<div class="card empty">${L('Belum ada menu COGS.','No COGS menus yet.')}${adm()?`<br><button class="btn" style="margin-top:10px" onclick="cgOpen('menu',-1)">+ ${L('Tambah menu','Add menu')}</button>`:''}</div>`;
+  let idx=Number.isInteger(T.cgm)?T.cgm:0;
+  if(idx<0||idx>=menus.length)idx=0;
+  T.cgm=idx;
+  const m=menus[idx],r=E.lines(m.items),c=cgCells(m,r),rows=cgMenuRecipeRows(m.items,E),complete=!r.miss&&+m.harga>0;
+  const menuOptions=menus.map((x,i)=>`<option value="${i}" ${i==idx?'selected':''}>${esc(x.nama)}</option>`).join('');
+  const money=x=>x==null||x===''?'-':rp(x);
+  const metric=(label,value,sub='')=>`<div class="card" style="margin:0;min-width:0;padding:12px"><div class="mu" style="margin-bottom:4px">${label}</div><div style="font-size:20px;font-weight:700;overflow-wrap:anywhere">${value}</div>${sub?`<div class="mu" style="margin-top:3px">${sub}</div>`:''}</div>`;
+  return `<div class="card" style="margin-bottom:10px">
+    <div class="mu" style="margin-bottom:5px">${L('Pilih menu','Select menu')}</div>
+    <select onchange="T.cgm=+this.value;R()" style="width:100%;font-size:16px;padding:9px">${menuOptions}</select>
+  </div>
+  <div class="card" style="margin-bottom:10px">
+    <h3 style="margin:0 0 10px">${esc(m.nama)}</h3>
+    <div class="grid" style="margin:0">
+      ${metric(L('Nama Menu','Menu Name'),esc(m.nama))}
+      ${metric(L('Harga Menu','Menu Price'),+m.harga>0?money(m.harga):'-')}
+      ${metric(L('Total Cost','Total Cost'),r.miss?'-':money(r.total),r.miss?L('Belum lengkap','Incomplete'):'')}
+      ${metric(L('COGS %','COGS %'),c.cp)}
+      ${metric(L('Profit','Profit'),c.gp)}
+    </div>
+    <div class="grid" style="margin-top:10px">
+      ${metric(L('Margin %','Margin %'),c.gm)}
+      ${metric(L('Status','Status'),complete?L('Lengkap','Complete'):L('Belum lengkap','Incomplete'))}
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:8px">${L('Recipe / Gramasi','Recipe / Portions')}</h3>
+    ${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>No</th><th>${L('Bahan / WIP','Ingredient / WIP')}</th><th>${L('Gramasi / Qty','Qty')}</th><th>${L('Satuan','Unit')}</th><th>${L('Cost / Unit','Cost / Unit')}</th><th>${L('Subtotal','Subtotal')}</th></tr>${rows.map((x,k)=>`<tr><td>${k+1}</td><td style="text-align:left;white-space:normal;padding-left:${12+x.depth*22}px">${x.depth?`↳ `:''}${esc(x.n)}${x.wip?' <span class="tag">WIP</span>':''}${x.miss?' <span class="tag r">!</span>':''}</td><td>${Number.isInteger(x.q)?x.q:+x.q.toFixed(4)}</td><td>${esc(x.u||'')}</td><td>${x.miss?'-':rp2(x.price)}</td><td>${x.miss?'-':rp(x.sub)}</td></tr>`).join('')}</table></div>`:`<div class="empty">${L('Recipe belum diisi.','Recipe is empty.')}</div>`}
+    ${r.miss?`<p class="mu">! = ${L('Ada bahan/WIP yang belum memiliki harga lengkap, sehingga Total Cost, COGS %, dan Profit ditampilkan sebagai -','Some ingredients/WIP have incomplete pricing, so Total Cost, COGS %, and Profit are shown as -')}</p>`:''}
+    <p class="mu">${L('WIP ditampilkan sampai komponen di dalamnya, termasuk gramasi pemakaian yang sudah disesuaikan dengan yield.','WIP is expanded to its components, including usage quantities adjusted to the WIP yield.')}</p>
+    ${adm()?`<div class="btns"><button class="btn" onclick="cgOpen('menu',${idx})">${L('Edit menu / recipe','Edit menu / recipe')}</button></div>`:''}
+  </div>`;
+};
 function cgSetM(i,val){if(!guard())return;const m=D.cg.menu[i];m.harga=val===''?'':Math.max(0,+val||0);sv();cogsSave();const c=cgCells(m,cgEng().lines(m.items));[['mp',c.cp],['mg',c.gp],['mm',c.gm]].forEach(([p,t])=>{const e=$('#'+p+i);if(e)e.textContent=t})}
 V.cg_wip=()=>{if(!adm())return'';const g=cgInit(),E=cgEng(),q=norm(T.cq),rows=g.wip.map((w,i)=>({w,i,r:E.lines(w.items),u:E.unit(w.nama)})).filter(x=>norm(x.w.nama).includes(q));
 return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('wip',-1)">+ ${L('Tambah resep WIP','Add WIP recipe')}</button></div>${cgSearch()}
