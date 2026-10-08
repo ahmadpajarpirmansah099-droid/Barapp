@@ -101,7 +101,7 @@ details{margin:6px 0}summary{cursor:pointer;padding:5px 8px;background:var(--cd)
 </style></head><body>
 <div id="t"></div><div id="m"></div><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#008000',L:'#808080',I:'#ffff00',S:'#ff0000',PH:'#0000ff'},SK=Object.keys(ST);
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
@@ -662,7 +662,7 @@ const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smo
 const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('doc')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
-[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('cg_bahan')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('err')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="openSb()">${IC('pc')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('doc')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
+[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('cg_bahan')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('err')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('doc')}Import / Export Excel</button><button onclick="openSb()">${IC('pc')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('doc')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('folder')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
 [L('Bantuan','Help'),`<button onclick="about()">${IC('pc')}${L('Tentang...','About...')}</button>`]];
 a.innerHTML=`<div class="app-top"><div class="tbar">${IC('folder')}<span class="tt">${cg?'COGS':esc(TH.name)} - ${esc(TH.sub)}</span><button class="cb" onclick="about()">?</button><button class="cb" onclick="out()" title="${L('Keluar','Exit')}">×</button></div>
 <div class="menubar">${mnu.map(m=>`<div class="mn"><button class="mb2" onclick="omn(this,event)"><u>${m[0][0]}</u>${m[0].slice(1)}</button><div class="dd">${m[1]}</div></div>`).join('')}</div>
@@ -857,31 +857,11 @@ cf(`Hapus <b>${esc(o.nama)}</b>?`,()=>{g[kind].splice(i,1);sv();cogsSave();close
 function cgSeed(){if(!guard())return;cmn();cf(L('Muat resep awal dari spreadsheet? Data COGS sekarang akan DITIMPA.','Load starter recipes from the spreadsheet? Current COGS data will be OVERWRITTEN.'),()=>{D.cg=JSON.parse(JSON.stringify(CG_SEED));sv();cogsSave();toast(L('Resep awal dimuat','Starter recipes loaded'));R()},L('Ya, muat','Yes, load'))}
 function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data COGS (menu, WIP, bahan)? Data absensi tidak terpengaruh.','Clear ALL COGS data (menus, WIP, ingredients)? Attendance data is not affected.'),()=>{D.cg={bahan:[],wip:[],menu:[]};sv();cogsSave();toast(L('Data COGS dikosongkan','COGS data cleared'));R()},L('Ya, kosongkan','Yes, clear'))}
 
-
-/* ---------- Excel COGS: template / import tambahan / export ---------- */
-function xlsxReady(){if(window.XLSX)return true;toast('Library Excel belum siap. Coba lagi.','err');return false}
-function cogsRowsForExcel(){const g=cgInit();return {bahan:[['Nama','Harga Beli','Isi','Satuan','Aktif'],...g.bahan.map(b=>[b.nama,b.beli,b.isi,b.sat,b.aktif!==false?'YA':'TIDAK'])],wip:[['Nama WIP','Yield','Bahan/Resep','Qty','Satuan'],...g.wip.flatMap(w=>w.items.map(it=>[w.nama,w.yield,it.n,it.q,it.u]))],menu:[['Nama Menu','Harga Jual','Bahan/Resep','Qty','Satuan'],...g.menu.flatMap(m=>m.items.map(it=>[m.nama,m.harga,it.n,it.q,it.u]))]}}
-function xlsxDownload(name,rowsBySheet){if(!xlsxReady())return;const wb=XLSX.utils.book_new();Object.entries(rowsBySheet).forEach(([n,rows])=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:24},{wch:16},{wch:28},{wch:12},{wch:12}];XLSX.utils.book_append_sheet(wb,ws,n.slice(0,31))});XLSX.writeFile(wb,name+'.xlsx')}
-function cgExcelTemplate(){if(!guard())return;const rows={Bahan:[['Nama','Harga Beli','Isi','Satuan','Aktif'],['Contoh bahan','','','gram','YA']],WIP:[['Nama WIP','Yield','Bahan/Resep','Qty','Satuan'],['Contoh WIP','','Contoh bahan','100','gram']],Menu:[['Nama Menu','Harga Jual','Bahan/Resep','Qty','Satuan'],['Contoh Menu','25000','Contoh bahan','100','gram']]};xlsxDownload('template-cogs-barapp',rows)}
-function cgExcelExport(){if(!guard())return;const r=cogsRowsForExcel();xlsxDownload('barapp-cogs-backup', {Bahan:r.bahan,WIP:r.wip,Menu:r.menu})}
-function excelRows(ws){const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});return a.filter((r,i)=>i===0||r.some(x=>String(x).trim()!==''))}
-function normExcel(v){return norm(String(v??''))}
-async function cgExcelImport(input){if(!guard()||!input.files?.[0]||!xlsxReady())return;const file=input.files[0];try{
- const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),g=cgInit();let addB=0,addW=0,addM=0,skip=0;
- const get=(n)=>{const sh=wb.Sheets[n]||wb.Sheets[n.toLowerCase()]||wb.Sheets[Object.keys(wb.Sheets).find(k=>k.toLowerCase()==n.toLowerCase())];return sh?excelRows(sh):[]};
- const b=get('Bahan');
- b.slice(1).forEach(r=>{const nama=String(r[0]??'').trim().toLowerCase();if(!nama)return;if(g.bahan.some(x=>norm(x.nama)==nama)||g.wip.some(x=>norm(x.nama)==nama)){skip++;return}g.bahan.push({nama,beli:r[1]===''?'':Math.max(0,+r[1]||0),isi:r[2]===''?'':Math.max(0,+r[2]||0),sat:String(r[3]||'gram').trim()||'gram',aktif:String(r[4]||'YA').toUpperCase()!=='TIDAK'});addB++});
- const importRecipe=(rows,kind)=>{const groups={};rows.slice(1).forEach(r=>{const nama=String(r[0]??'').trim();if(!nama)return;(groups[nama]??=[]).push({n:norm(String(r[2]??'')),q:+r[3]||0,u:String(r[4]||'gram').trim()||'gram'})});Object.entries(groups).forEach(([nama,items])=>{if(!items.some(x=>x.n&&x.q>0))return;if(g[kind].some(x=>norm(x.nama)==norm(nama))){skip++;return}const h=rows===get('WIP')?+((rows.find(r=>String(r[0]??'').trim()==nama)||[])[1]||0):+((rows.find(r=>String(r[0]??'').trim()==nama)||[])[1]||0);g[kind].push(kind==='wip'?{nama,yield:h,items:items.filter(x=>x.n&&x.q>0)}:{nama,harga:h,items:items.filter(x=>x.n&&x.q>0)});if(kind==='wip')addW++;else addM++})};
- importRecipe(get('WIP'),'wip');importRecipe(get('Menu'),'menu');
- const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));[...g.wip,...g.menu].forEach(x=>x.items.forEach(it=>{if(it.n&&!known.has(it.n)){g.bahan.push({nama:it.n,beli:'',isi:'',sat:it.u||'gram',aktif:true});known.add(it.n);addB++}}));
- sv();await cogsSave();closeM();toast(`Import selesai: +${addM} menu, +${addW} WIP, +${addB} bahan${skip?` · ${skip} data dilewati karena sudah ada`:''}`);R();
- }catch(e){toast('Import Excel gagal: '+String(e.message||e),'err')}finally{input.value=''}}
-function cgExcelOpen(){if(!guard())return;modal(`<h3>Excel COGS</h3><p class="mu">Import hanya menambahkan data baru. Data dengan nama yang sudah ada tidak ditimpa.</p><div class="btns"><button class="btn" onclick="cgExcelTemplate()">Download template</button><button class="btn s" onclick="cgExcelExport()">Export data COGS</button></div><label style="margin-top:12px">Upload Excel (.xlsx)<input type="file" accept=".xlsx,.xls" onchange="cgExcelImport(this)"></label><div class="mu">Format sheet: Bahan, WIP, Menu. Satu resep boleh memiliki beberapa baris bahan.</div><div class="row"><button class="btn s" onclick="closeM()">Tutup</button></div>`)}
-
 /* ---------- Laporan: periode, export, import ---------- */
 V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
 return`<div class="card"><h3>Periode absensi</h3>${D.per.length?D.per.map(p=>`<div class="row" style="margin-bottom:6px"><div>${pl(p)} ${p.lock?'<span class="tag r">LOCKED</span>':'<span class="tag">Terbuka</span>'}</div><button class="btn s x" onclick="lockP('${p.id}')">${p.lock?'Unlock':'Lock'}</button><button class="btn d x" onclick="delP('${p.id}')">Hapus</button></div>`).join(''):'<p class="mu">Belum ada periode.</p>'}<div class="row"><label>Mulai<input id="ps1" type="date" value="${s}"></label><label>Akhir<input id="ps2" type="date" value="${e}"></label><button class="btn" onclick="addP()">Buat periode</button></div></div>
 <div class="card"><h3>Supabase</h3><p class="mu">${sbLabel()} · ${(()=>{try{return esc(new URL(sbCfg().url).host)}catch(e){return '-'}})()}</p><div class="btns"><button class="btn" onclick="openSb()">${L('Atur sambungan','Connection settings')}</button><button class="btn s" onclick="sbLoad()">${L('Muat ulang','Reload')}</button><button class="btn s" onclick="migrateLocal()">${L('Salin data lokal lama...','Copy old local data...')}</button></div></div>
+<div class="card"><h3>Import / Export Excel</h3><p class="mu">Import hanya menambah data baru. Data existing tidak dihapus dan duplikat dilewati.</p><div class="btns"><button class="btn" onclick="openExcelImport()">Import Excel</button><button class="btn s" onclick="downloadExcelTemplate()">Template Excel</button></div><div class="ts">Export Database</div><div class="btns"><button class="btn s" onclick="exportExcel('emp')">Karyawan</button><button class="btn s" onclick="exportExcel('att')">Absensi</button><button class="btn s" onclick="exportExcel('ot')">Lembur</button><button class="btn s" onclick="exportExcel('cogs')">COGS</button><button class="btn" onclick="exportExcel('full')">Full Database</button></div><div class="ts">Backup / Restore</div><div class="btns"><button class="btn" onclick="exportExcel('full')">Download Full Backup</button><button class="btn s" onclick="openExcelRestore()">Restore / Merge Backup</button></div><input id="excelImportInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(this.files[0])"></div>
 <div class="card"><h3>Reset data</h3><p class="mu">Hapus semua karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal (akun admin & tema tetap). Berguna setelah uji coba selesai.</p><button class="btn d" onclick="resetAll()">Hapus semua data</button></div>
 <div class="card"><h3>Tema & Tampilan</h3><p class="mu">Ubah bahasa, judul, font, warna, dan animasi.</p><button class="btn" onclick="openTheme()">Edit tema</button></div>`};
 function addP(){if(!guard())return;const s=v('ps1'),e=v('ps2');if(!s||!e)return toast('Tanggal wajib diisi','err');if(e<s)return toast('Tanggal akhir tidak boleh sebelum mulai','err');if(D.per.some(p=>s<=p.e&&e>=p.s))return toast('Periode bertumpuk dengan periode lain','err');const p={id:'p'+Date.now(),s,e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);D.cur=p.id;sv();toast('Periode dibuat');R()}
@@ -892,6 +872,93 @@ if(ok){toast('Periode dihapus');R()}})}
 function resetAll(){if(!guard())return;cf('Hapus SEMUA data karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal? Tidak bisa dibatalkan.',async()=>{
 const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().not('id','is',null);if(q.error)throw q.error;q=await c.from('employees').delete().not('id','is',null);if(q.error)throw q.error;D.emp=[];D.att=[];D.ot=[];D.per=[];D.cur='';F.f=F.t=F.q=F.e='';PH={};savePH();sv();sbCacheSave()});
 if(ok){toast('Semua data dihapus');R()}})}
+/* ---------- Excel Import / Export ---------- */
+function xlsxReady(){
+  if(!window.XLSX){toast('Library Excel belum siap. Coba muat ulang halaman.','err');return false}
+  return true
+}
+function xDate(v){
+  if(v==null||v==='')return '';
+  if(v instanceof Date)return iso(v.getTime());
+  if(typeof v==='number' && window.XLSX && XLSX.SSF){
+    const d=XLSX.SSF.parse_date_code(v); if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const z=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(z))return z.slice(0,10);
+  const m=z.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/); if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  const d=new Date(z); return isNaN(d)?'':iso(d.getTime());
+}
+function xRows(ws){return XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});}
+function xVal(r,keys){for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&String(r[k]).trim()!=='')return r[k]}const low=Object.fromEntries(Object.keys(r).map(k=>[k.toLowerCase().replace(/\s+/g,'_'),r[k]]));for(const k of keys){const q=k.toLowerCase().replace(/\s+/g,'_');if(low[q]!==undefined)return low[q]}return ''}
+function xBool(v){return !(v===false||v===0||/^(false|0|no|nonaktif|inactive)$/i.test(String(v).trim()))}
+function xNum(v){return v===''||v==null?'':Math.max(0,+v||0)}
+function sheetRows(wb,names){for(const n of names){if(wb.Sheets[n])return xRows(wb.Sheets[n])}const want=names.map(n=>n.toLowerCase());const hit=wb.SheetNames.find(n=>want.includes(n.toLowerCase()));return hit?xRows(wb.Sheets[hit]):[]}
+function excelBook(){const wb=XLSX.utils.book_new(),add=(name,rows)=>{const ws=XLSX.utils.json_to_sheet(rows||[]);XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31))};return {wb,add}}
+function downloadWb(wb,name){XLSX.writeFile(wb,name.endsWith('.xlsx')?name:name+'.xlsx')}
+function exportExcel(kind){
+  if(!guard())return; if(!xlsxReady())return;
+  const {wb,add}=excelBook(),stamp=today();
+  if(kind==='emp'||kind==='full')add('Karyawan',D.emp.map(e=>({ID:e.id,Nama:e.nama,Jabatan:e.jab||'',Aktif:e.aktif!==false})));
+  if(kind==='att'||kind==='full')add('Absensi',D.att.map(a=>({ID:a.id,'Employee ID':a.e,Nama:name(a.e),Tanggal:a.d,Status:a.s,Catatan:a.n||''})));
+  if(kind==='ot'||kind==='full')add('Lembur',D.ot.map(o=>({'Employee ID':o.e,Nama:name(o.e),Tanggal:o.d,'Jam lembur':hrs(o),Catatan:o.n||''})));
+  if(kind==='full')add('Periode',D.per.map(p=>({ID:p.id,Mulai:p.s,Akhir:p.e,Locked:p.lock?'Ya':'Tidak'})));
+  if(kind==='cogs'||kind==='full'){
+    const g=cgInit();
+    add('Bahan',g.bahan.map(b=>({Nama:b.nama,'Harga Beli':b.beli,Isi:b.isi,Satuan:b.sat||'',Aktif:b.aktif===false?'Tidak':'Ya'})));
+    add('WIP',g.wip.map(w=>({Nama:w.nama,Yield:w.yield})));
+    add('WIP_Recipe',g.wip.flatMap(w=>w.items.map(i=>({WIP:w.nama,'Bahan/WIP':i.n,Qty:i.q,Satuan:i.u||''}))));
+    add('Menu',g.menu.map(m=>({Nama:m.nama,'Harga Menu':m.harga})));
+    add('Menu_Recipe',g.menu.flatMap(m=>m.items.map(i=>({Menu:m.nama,'Bahan/WIP':i.n,Qty:i.q,Satuan:i.u||''}))));
+  }
+  const label={emp:'Karyawan',att:'Absensi',ot:'Lembur',cogs:'COGS',full:'FULL_DATABASE'}[kind]||'BARAPP';
+  downloadWb(wb,`BARAPP_${label}_${stamp}.xlsx`);toast(`Export ${label} berhasil`)
+}
+function downloadExcelTemplate(){
+  if(!guard()||!xlsxReady())return;
+  const {wb,add}=excelBook();
+  add('Karyawan',[{ID:'',Nama:'',Jabatan:'',Aktif:'Ya'}]);
+  add('Absensi',[{ID:'','Employee ID':'','Nama':'',Tanggal:'YYYY-MM-DD',Status:'M/L/I/S/PH',Catatan:''}]);
+  add('Lembur',[{'Employee ID':'',Nama:'',Tanggal:'YYYY-MM-DD','Jam lembur':'',Catatan:''}]);
+  add('Bahan',[{Nama:'','Harga Beli':'','Isi':'',Satuan:'gram/ml/pcs/botol',Aktif:'Ya'}]);
+  add('WIP',[{Nama:'',Yield:''}]); add('WIP_Recipe',[{WIP:'','Bahan/WIP':'',Qty:'',Satuan:'gram/ml/pcs'}]);
+  add('Menu',[{Nama:'','Harga Menu':''}]); add('Menu_Recipe',[{Menu:'','Bahan/WIP':'',Qty:'',Satuan:'gram/ml/pcs'}]);
+  downloadWb(wb,`BARAPP_Template_Import.xlsx`);toast('Template Excel berhasil dibuat')
+}
+function openExcelImport(){if(!guard())return;modal(`<h3>Import Excel</h3><p class="mu">Upload workbook .xlsx/.xls. Sistem akan membaca sheet yang dikenali dan hanya menambahkan data yang belum ada.</p><div class="dlg">${IC('doc',32)}<p>Pilih file Excel dari HP.</p></div><div class="btns"><button class="btn" onclick="$('#excelImportInput').click();closeM()">Pilih File Excel</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}
+function openExcelRestore(){if(!guard())return;openExcelImport()}
+function planExcel(wb){
+  const g=cgInit(),plan={emp:[],att:[],ot:[],bahan:[],wip:[],wipR:[],menu:[],menuR:[],errors:[]};
+  const er=sheetRows(wb,['Karyawan','Employees']);
+  er.forEach((r,i)=>{const nama=String(xVal(r,['Nama','name'])).trim();if(!nama)return;if(plan.emp.some(e=>norm(e.nama)==norm(nama))||D.emp.some(e=>norm(e.nama)==norm(nama)))return;plan.emp.push({id:xVal(r,['ID','id']),nama,jab:String(xVal(r,['Jabatan','role'])).trim(),aktif:xBool(xVal(r,['Aktif','active']))})});
+  const resolveEmp=r=>{const id=xVal(r,['Employee ID','employee_id','ID Karyawan']);const nama=String(xVal(r,['Nama','name'])).trim();return D.emp.find(e=>String(e.id)==String(id))||D.emp.find(e=>norm(e.nama)==norm(nama))||plan.emp.find(e=>String(e.id)==String(id))||plan.emp.find(e=>norm(e.nama)==norm(nama))};
+  sheetRows(wb,['Absensi','Attendance']).forEach(r=>{const e=resolveEmp(r),d=xDate(xVal(r,['Tanggal','attendance_date','Date'])),st=normSt(xVal(r,['Status','status']));if(!e||!d||!st){plan.errors.push('Absensi: baris tidak valid');return}if(D.att.some(a=>String(a.e)==String(e.id)&&a.d==d)||plan.att.some(a=>String(a._eid)==String(e.id)&&a.d==d))return;plan.att.push({_eid:e.id,d,s:st,n:String(xVal(r,['Catatan','notes'])).trim()})});
+  sheetRows(wb,['Lembur','Overtime']).forEach(r=>{const e=resolveEmp(r),d=xDate(xVal(r,['Tanggal','date'])),h=xNum(xVal(r,['Jam lembur','Jam','hours']));if(!e||!d||h===''){plan.errors.push('Lembur: baris tidak valid');return}if(D.ot.some(o=>String(o.e)==String(e.id)&&o.d==d&&+hrs(o)==+h)||plan.ot.some(o=>String(o._eid)==String(e.id)&&o.d==d&&+o.h==+h))return;plan.ot.push({_eid:e.id,d,h,n:String(xVal(r,['Catatan','notes'])).trim()})});
+  sheetRows(wb,['Bahan','Ingredients']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim();if(!nama)return;if(g.bahan.some(b=>norm(b.nama)==norm(nama))||plan.bahan.some(b=>norm(b.nama)==norm(nama)))return;plan.bahan.push({nama,beli:xNum(xVal(r,['Harga Beli','beli','purchase_price'])),isi:xNum(xVal(r,['Isi','isi','qty'])),sat:String(xVal(r,['Satuan','sat','unit'])).trim()||'gram',aktif:xBool(xVal(r,['Aktif','active']))})});
+  const parseRecipes=(rows,target)=>rows.forEach(r=>{const parent=String(xVal(r,[target==='wip'?'WIP':'Menu',target])).trim(),n=String(xVal(r,['Bahan/WIP','Bahan','Ingredient','item','Nama'])).trim(),q=xNum(xVal(r,['Qty','Jumlah','quantity'])),u=String(xVal(r,['Satuan','Unit','unit'])).trim()||'gram';if(!parent||!n||q==='')plan.errors.push(`${target==='wip'?'WIP_Recipe':'Menu_Recipe'}: baris tidak valid`);else plan[target+'R'].push({parent,n,q,u})});
+  sheetRows(wb,['WIP','WIP Recipes']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim(),y=xNum(xVal(r,['Yield','yield']));if(!nama)return;if(g.wip.some(w=>norm(w.nama)==norm(nama))||plan.wip.some(w=>norm(w.nama)==norm(nama)))return;plan.wip.push({nama,yield:y,items:[]})});
+  parseRecipes(sheetRows(wb,['WIP_Recipe','WIP Recipe','WIP_Recipes']),'wip');
+  sheetRows(wb,['Menu','Menus']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim(),harga=xNum(xVal(r,['Harga Menu','Harga','harga']));if(!nama)return;if(g.menu.some(m=>norm(m.nama)==norm(nama))||plan.menu.some(m=>norm(m.nama)==norm(nama)))return;plan.menu.push({nama,harga,items:[]})});
+  parseRecipes(sheetRows(wb,['Menu_Recipe','Menu Recipe','Menu_Recipes']),'menu');
+  plan.wip.forEach(w=>w.items=plan.wipR.filter(x=>norm(x.parent)==norm(w.nama)).map(x=>({n:norm(x.n),q:x.q,u:x.u})));
+  plan.menu.forEach(m=>m.items=plan.menuR.filter(x=>norm(x.parent)==norm(m.nama)).map(x=>({n:norm(x.n),q:x.q,u:x.u})));
+  return plan;
+}
+function planSummary(p){const total=p.emp.length+p.att.length+p.ot.length+p.bahan.length+p.wip.length+p.menu.length;return `<div class="dlg"><b>Data baru: ${total}</b><br>Karyawan ${p.emp.length} · Absensi ${p.att.length} · Lembur ${p.ot.length}<br>Bahan ${p.bahan.length} · WIP ${p.wip.length} · Menu ${p.menu.length}<br><br>Baris bermasalah: ${p.errors.length}</div>`}
+async function handleExcelFile(file){if(!file||!guard())return;if(!xlsxReady())return;try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const p=planExcel(wb);T.excelPlan=p;modal(`<h3>Preview Import</h3>${planSummary(p)}<p class="mu">Data existing tidak dihapus. Duplikat dilewati.</p><div class="btns"><button class="btn" onclick="applyExcelPlan()">Import Data</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}catch(e){toast('File Excel tidak bisa dibaca: '+e.message,'err')}}
+async function applyExcelPlan(){if(!guard()||!T.excelPlan)return;const p=T.excelPlan;let added=0,skip=0;const ok=await sbRun(async()=>{
+  const c=sb(),emap=new Map(D.emp.map(e=>[norm(e.nama),e.id]));
+  for(const x of p.emp){if(emap.has(norm(x.nama))){skip++;continue}const {data,error}=await c.from('employees').insert({name:x.nama,role:x.jab||'',active:x.aktif!==false}).select().single();if(error)throw error;const e=mapEmp(data);D.emp.push(e);emap.set(norm(e.nama),e.id);added++}
+  const attRows=[];for(const x of p.att){const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||emap.get(norm(pe?.nama||''))||x._eid;if(!eid||D.att.some(a=>String(a.e)==String(eid)&&a.d==x.d)){skip++;continue}attRows.push({employee_id:eid,attendance_date:x.d,status:x.s,notes:x.n||null})}
+  for(let i=0;i<attRows.length;i+=200){const {data,error}=await c.from('attendance').insert(attRows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(r=>{D.att.push(mapAtt(r));added++})}
+  const otEmp=emap; p.ot.forEach(x=>{const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||otEmp.get(norm(pe?.nama||''))||x._eid;if(!eid||D.ot.some(o=>String(o.e)==String(eid)&&o.d==x.d&&+hrs(o)==+x.h))skip++;else{D.ot.push({e:eid,d:x.d,h:x.h,n:x.n});added++}});
+  const g=cgInit(),addB=new Set(g.bahan.map(b=>norm(b.nama)));p.bahan.forEach(b=>{if(addB.has(norm(b.nama))){skip++;return}g.bahan.push(b);addB.add(norm(b.nama));added++});
+  const addItems=(arr,kind)=>{const names=new Set(g[kind].map(x=>norm(x.nama)));arr.forEach(o=>{if(names.has(norm(o.nama))){skip++;return}const items=o.items.filter(i=>i.n&&+i.q>0);g[kind].push({...o,items});names.add(norm(o.nama));added++})};
+  addItems(p.wip,'wip');addItems(p.menu,'menu');
+  // Automatically create missing ingredient placeholders referenced by imported recipes.
+  const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));[...p.wip,...p.menu].flatMap(x=>x.items||[]).forEach(i=>{if(i.n&&!known.has(norm(i.n))){g.bahan.push({nama:norm(i.n),beli:'',isi:'',sat:i.u||'gram',aktif:true});known.add(norm(i.n));added++}});
+  sv();sbCacheSave();derivePeriods();await cogsSave();
+});
+if(ok){delete T.excelPlan;closeM();toast(`Import selesai: ${added} ditambahkan, ${skip} dilewati`);R()}}
 function ex(k){if(!guard())return;const {f,t}=rng();if(f>t)return toast('Tanggal mulai harus sebelum tanggal akhir','err');const l=flt(f,t),ds=days(f,t),R_=[];let n='absensi';
 if(k=='matrix'){n='rekap-absensi';R_.push(['Nama',...ds.map(d=>d.slice(5)),'M','L','I','S','PH','Belum ada data']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.nama,...ds.map(d=>(rec(e.id,d)||{s:'BELUM ADA DATA'}).s),c.M,c.L,c.I,c.S,c.PH,c.B])})}
 if(k=='emp'){n='rekap-karyawan';R_.push(['ID','Nama','Total Hari Kerja (M)','L','I','S','PH','Belum ada data','Jam lembur','Sisa PH']);l.forEach(e=>{const c=cntR(f,t,[e]);R_.push([e.id,e.nama,c.M,c.L,c.I,c.S,c.PH,c.B,otH(e,f,t),e.sph||0])})}
