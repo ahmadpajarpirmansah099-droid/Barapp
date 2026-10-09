@@ -638,12 +638,17 @@ function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null')
 function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=false;ds.forEach(d=>{if(!perOf(d)&&ensurePer(d))ch=true});if(ch)sv()}
 async function fetchAll(tbl,ord){const out=[];for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select('*').order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
+async function staffEmployeeList(){const {data,error}=await sb().rpc('staff_employee_list');if(error)throw error;return Array.isArray(data)?data:[]}
+async function staffAttendance(id){const {data,error}=await sb().rpc('staff_attendance',{p_employee:String(id)});if(error)throw error;return Array.isArray(data)?data:[]}
 async function sbLoad(silent){
 if(SB.loading)return;SB.loading=true;
 try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err';SB.msg=m;SB.loading=false;if(!silent||ch)R();return}
 if(!silent){SB.state='loading';R()}
 try{
-const [er,ar]=await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]);
+const {data:{session}}=await sb().auth.getSession();
+const [er,ar]=session
+ ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
+ :[await staffEmployeeList(),(D.me&&D.me.r=='K')?await staffAttendance(D.me.id):[]];
 const emp=er.map(mapEmp),att=ar.map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
