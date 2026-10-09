@@ -338,6 +338,9 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
+/* Roles are assigned only to explicitly approved Supabase Auth emails. */
+const DEVELOPER_EMAIL='ahmadpajarpirmansah@gmail.com', OPERATOR_ADMIN_EMAIL='admin@lazy.jennie';
+const roleForEmail=email=>{const e=String(email||'').trim().toLowerCase();return e===DEVELOPER_EMAIL?'D':e===OPERATOR_ADMIN_EMAIL?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 /* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
@@ -576,7 +579,7 @@ const days=(a,b)=>{const r=[];for(let t=U(a);t<=U(b);t+=864e5)r.push(iso(t));ret
 const fd=d=>d?new Date(U(d)).toLocaleDateString(LANG=='en'?'en-GB':'id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):'-';
 const age=b=>{if(!b)return'-';const n=today();let a=+n.slice(0,4)-+b.slice(0,4);if(n.slice(5)<b.slice(5))a--;return a};
 function toast(m,k){const e=document.createElement('div');e.className='w';e.innerHTML=`<div class="mbx">${IC(k=='err'?'err':k=='warn'?'warn':'check',22)}<span class="mt"></span><button class="cb" aria-label="Tutup" onclick="this.closest('.w').remove()">${IC('x',16)}</button></div>`;e.querySelector('.mt').textContent=m;$('#t').append(e);setTimeout(()=>e.remove(),3500)}
-const adm=()=>D.me&&D.me.r=='A',guard=()=>adm()||(toast('Akses ditolak: hanya ADMIN','err'),false);
+const isDeveloper=()=>!!(D.me&&D.me.r=='D'),adm=()=>!!(D.me&&(D.me.r=='A'||D.me.r=='D')),guard=()=>adm()||(toast('Akses ditolak: hanya ADMIN','err'),false),developerGuard=()=>isDeveloper()||(toast('Akses ini khusus DEVELOPER','err'),false);
 const P=id=>D.per.find(p=>p.id==(id||D.cur)),pl=p=>p?fd(p.s)+' – '+fd(p.e):'',perOf=d=>D.per.find(p=>d>=p.s&&d<=p.e);
 const vis=()=>adm()?D.emp:D.emp.filter(e=>e.id==D.me.id),rec=(e,d)=>D.att.find(a=>a.e==e&&a.d==d);
 const pEmps=p=>vis().filter(e=>e.aktif||D.att.some(a=>a.e==e.id&&a.d>=p.s&&a.d<=p.e));
@@ -714,13 +717,44 @@ function cogsSave(){
   return CGSAVE;
 }
 
+/* ---------- SHARED APP SETTINGS ----------
+   The app_settings row stores only public presentation settings (theme, title, logo).
+   Read is public so employee-name sessions see the same theme; writes are restricted by RLS to the developer email. */
+let SHARED_SETTINGS_SIG='';
+function mergeTheme(x){return {...THEME,...x,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
+async function loadSharedSettings(silent=false){
+  try{
+    const {data,error}=await sb().from('app_settings').select('data,updated_at').eq('id','global').maybeSingle();
+    if(error)throw error;
+    if(!data||!data.data||!data.data.theme)return false;
+    const sig=String(data.updated_at||JSON.stringify(data.data.theme));
+    if(sig===SHARED_SETTINGS_SIG)return true;
+    if(T.bk)return true; // don't overwrite an unsaved theme edit currently open
+    const remote=data.data.theme;
+    if(remote.v!==THEME.v)return false;
+    TH=mergeTheme(remote);D.th=JSON.parse(JSON.stringify(TH));SHARED_SETTINGS_SIG=sig;
+    applyTheme();sv();R();
+    return true;
+  }catch(e){
+    if(!silent)console.warn('Shared settings load:',e);
+    return false;
+  }
+}
+async function saveSharedSettings(theme){
+  if(!isDeveloper())throw new Error('Hanya developer yang boleh mengubah identitas dan tampilan aplikasi.');
+  const snapshot=JSON.parse(JSON.stringify(theme));
+  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{theme:snapshot},updated_at:new Date().toISOString(),updated_by:D.me.uid||null},{onConflict:'id'}).select('updated_at').single();
+  if(error)throw error;
+  SHARED_SETTINGS_SIG=String(data&&data.updated_at||JSON.stringify(snapshot));
+}
+
 const sbLoadCard=()=>`<div class="card"><h3>${L('Memuat data','Loading data')}</h3><div class="dlg">${IC('database',32)}<p>${L('Mengambil data karyawan & absensi dari Supabase…','Fetching employees & attendance from Supabase…')}</p></div><div class="prog"><i></i></div></div>`;
 const sbBanner=()=>SB.state!='err'?'':`<div class="card"><h3>${L('Sambungan Supabase bermasalah','Supabase connection problem')}</h3><div class="dlg">${IC('warn',32)}<p>${esc(SB.msg)}${D.emp.length||D.att.length?'<br><b>'+L('Menampilkan data tersimpan terakhir.','Showing last saved data.')+'</b>':''}</p></div><div class="btns"><button class="btn" onclick="sbLoad()">${L('Coba lagi','Retry')}</button><button class="btn s" onclick="openSb()">${L('Atur sambungan','Connection settings')}</button></div></div>`;
-function openSb(){cmn();const c=sbCfg(),fixed=!!(SUPABASE_URL&&SUPABASE_ANON_KEY);
+function openSb(){if(!developerGuard())return;cmn();const c=sbCfg(),fixed=!!(SUPABASE_URL&&SUPABASE_ANON_KEY);
 modal(`<h3>${L('Sambungan Supabase','Supabase connection')}</h3>${fixed?`<p class="mu">${L('URL & key diatur langsung di index.html (konstanta SUPABASE_URL / SUPABASE_ANON_KEY).','URL & key are set in index.html (SUPABASE_URL / SUPABASE_ANON_KEY constants).')}</p>`:''}<label>Project URL<input id="sbu" value="${esc(c.url)}" placeholder="https://xxxx.supabase.co" ${fixed?'disabled':''} autocomplete="off"></label><label>Publishable / anon key<input id="sbk" value="${esc(c.key)}" placeholder="sb_publishable_... / eyJ..." ${fixed?'disabled':''} autocomplete="off"></label><p class="mu">${L('Jangan masukkan service_role / secret key. Hanya Publishable/anon key.','Never enter the service_role / secret key. Publishable/anon key only.')}</p><div class="btns">${fixed?'':`<button class="btn" onclick="saveSb()">${L('Simpan & uji','Save & test')}</button>`}<button class="btn s" onclick="closeM()">${fixed?'Tutup':'Batal'}</button></div>`)}
 function saveSb(){const u=v('sbu').trim().replace(/\/+$/,''),k=v('sbk').trim();if(!/^https:\/\/\S+$/.test(u))return toast(L('Project URL harus diawali https://','Project URL must start with https://'),'err');if(!k)return toast(L('Key wajib diisi','Key is required'),'err');if(sbKeyBad(k))return toast(errText({code:'SECRETKEY'}),'err');
 try{localStorage.setItem(SBCFGK,JSON.stringify({url:u,key:k}))}catch(e){}SBC=null;closeM();sbLoad()}
-function migrateLocal(){if(!guard())return;cmn();const ne=LEG.emp.length,na=LEG.att.length;if(!ne&&!na)return toast(L('Tidak ada data lokal lama untuk disalin.','No old local data to copy.'),'warn');
+function migrateLocal(){if(!developerGuard())return;cmn();const ne=LEG.emp.length,na=LEG.att.length;if(!ne&&!na)return toast(L('Tidak ada data lokal lama untuk disalin.','No old local data to copy.'),'warn');
 cf(L(`Salin ${ne} karyawan & ${na} absensi dari penyimpanan lokal perangkat ini ke Supabase? Data lokal tidak dihapus. Duplikat dilewati.`,`Copy ${ne} employees & ${na} attendance records from this device to Supabase? Local data is not deleted. Duplicates are skipped.`),async()=>{
 let added=0,skipped=0;const ok=await sbRun(async()=>{const c=sb(),map={};
 for(const le of LEG.emp){const ex=D.emp.find(x=>norm(x.nama)==norm(le.nama));if(ex){map[le.id]=ex.id;continue}
@@ -739,32 +773,27 @@ async function initAuth(){
     const c=sb();
     const {data,error}=await c.auth.getSession();
     if(error)throw error;
-
-    // localStorage is NEVER trusted as proof of Admin authentication.
-    // Only a live Supabase Auth session can create D.me.r='A'.
-    if(data.session){
-      D.me={r:'A',uid:data.session.user.id,email:data.session.user.email||''};
-      sv();
-      await cogsLoad();
-      R();
-    }else{
-      if(D.me&&D.me.r=='A'){D.me=null;sv()}
-      R();
-    }
-
-    c.auth.onAuthStateChange((event,session)=>{
-      if(event=='SIGNED_IN'&&session){
-        D.me={r:'A',uid:session.user.id,email:session.user.email||''};
-        sv();
-        setTimeout(async()=>{await cogsLoad();R()},0);
-      }else if(event=='SIGNED_OUT'){
-        if(D.me&&D.me.r=='A'){D.me=null;sv()}
-        R();
+    const applySession=async session=>{
+      if(!session){if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}R();return}
+      const email=session.user.email||'',role=roleForEmail(email);
+      if(!role){
+        D.me=null;sv();R();
+        toast('Akun ini belum diberi akses aplikasi. Hubungi developer.','err');
+        setTimeout(()=>c.auth.signOut().catch(()=>{}),0);
+        return;
       }
+      D.me={r:role,uid:session.user.id,email};sv();
+      await Promise.all([cogsLoad(),loadSharedSettings(true)]);
+      R();
+    };
+    await applySession(data.session);
+    c.auth.onAuthStateChange((event,session)=>{
+      if(event=='SIGNED_IN')setTimeout(()=>applySession(session),0);
+      else if(event=='SIGNED_OUT'){if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}R()}
     });
   }catch(e){
     console.warn('Supabase Auth:',e);
-    if(D.me&&D.me.r=='A'){D.me=null;sv()}
+    if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}
     R();
   }
 }
@@ -822,8 +851,14 @@ async function lgA(){
     if(!data.session)
       throw new Error('Login Admin gagal');
 
-    D.me={r:'A'};
+    const role=roleForEmail(data.session.user.email||email);
+    if(!role){
+      await sb().auth.signOut();
+      throw new Error('Email ini belum terdaftar sebagai developer atau admin aplikasi.');
+    }
+    D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
     sv();
+    await Promise.all([cogsLoad(),loadSharedSettings(true)]);
     R();
 
   }catch(e){
@@ -867,7 +902,7 @@ function lgK(){
 }
 
 async function out(){
-  const wasAdmin=!!(D.me&&D.me.r=='A');
+  const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
 
   if(wasAdmin){
     try{
@@ -892,15 +927,15 @@ function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.a
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
 function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
-function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Karyawan & absensi tersimpan di Supabase (sama di semua perangkat). Pengaturan lain tersimpan di browser perangkat ini.','Employees & attendance are stored in Supabase (same on all devices). Other settings are stored in this device browser.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
+function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Karyawan, absensi, dan tema aplikasi tersimpan di Supabase agar sama di semua perangkat.','Employees, attendance, and app theme are stored in Supabase so they stay consistent across devices.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),home=cg?'cg_menu':'dash',pgs=allowed().filter(k=>k.startsWith('cg_')==cg),pic=k=>k=='dash'?'pc':k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
-[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('refresh')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('trash')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button><button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
+[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('refresh')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('trash')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}`}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
 [L('Bantuan','Help'),`<button onclick="about()">${IC('pc')}${L('Tentang...','About...')}</button>`]];
 a.innerHTML=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${logoHtml(22)}</span><span class="bt"><b>${cg?'COGS':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
@@ -1282,7 +1317,7 @@ TH.logo=c.toDataURL('image/png');logoDone()};im.src=T.lgsrc}
 function logoDone(){applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
 function logoDel(){TH.logo='';T.lgsrc=null;applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
 function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Tampil di login, sidebar, dan header.','Shown on login, sidebar and header.')}</small></div>`}
-function openTheme(){if(!guard())return;T.bk=T.bk||JSON.stringify(TH);pvFonts();
+function openTheme(){if(!developerGuard())return;T.bk=T.bk||JSON.stringify(TH);pvFonts();
 modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3>
 <div class="ts">${L('1. Bahasa','1. Language')}</div><select onchange="setLang(this.value)">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${k==LANG?'selected':''}>${n}</option>`).join('')}</select>
 <div class="ts">${L('Logo aplikasi','App logo')}</div><div class="lgpv" id="lgpv">${logoPv()}</div><label class="ck"><input type="checkbox" id="lgrm" checked onchange="logoProc()">${L('Hapus latar putih / kotak-kotak otomatis','Auto-remove white / checkerboard background')}</label><div class="row"><label class="btn s" style="margin:2px">${IC('upload',16)}${L('Pilih gambar','Choose image')}<input type="file" accept="image/*" style="display:none" onchange="logoSrc(this.files[0]);this.value=''"></label><button class="btn s" onclick="logoDel()">${IC('trash',16)}${L('Pakai logo bawaan','Use default logo')}</button></div>
@@ -1293,16 +1328,16 @@ modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3>
 <details><summary>${L('Atur warna sendiri (lanjutan)','Custom colors (advanced)')}</summary><div id="cs">${colorsHtml()}</div></details>
 <div class="ts">${L('5. Bentuk & animasi','5. Shape & animation')}</div><label>${L('Kebulatan sudut','Corner roundness')}<input type="range" min="0" max="40" value="${TH.radius}" oninput="TH.radius=+this.value;applyTheme()"></label><label>${L('Kecepatan animasi (0 = mati)','Animation speed (0 = off)')}<input type="range" min="0" max="2" step="0.1" value="${TH.speed}" oninput="TH.speed=+this.value;applyTheme()"></label>
 <div class="row" style="margin-top:12px"><button class="btn s" onclick="TH=JSON.parse(JSON.stringify(THEME));applyTheme();R();openTheme()">${L('Kembalikan bawaan','Restore defaults')}</button><button class="btn s" onclick="closeM()">${L('Batal','Cancel')}</button><button class="btn" onclick="saveTheme()">${L('Simpan','Save')}</button></div>`)}
-function saveTheme(){if(!guard())return;D.th=JSON.parse(JSON.stringify(TH));T.bk=null;sv();closeM();toast(L('Tema tersimpan','Theme saved'));R()}
+async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse(JSON.stringify(TH));try{await saveSharedSettings(snapshot);D.th=snapshot;T.bk=null;sv();closeM();toast(L('Tema tersimpan dan disinkronkan ke semua akun','Theme saved and synced to all accounts'));R()}catch(e){toast('Gagal menyimpan pengaturan bersama: '+(e.message||e)+' — jalankan SQL setup yang disertakan.','err')}}
 if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(trDom))).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-40){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)sbLoad(true)});
-if(typeof setInterval!='undefined')setInterval(()=>{if(!document.hidden)sbLoad(true)},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){sbLoad(true);loadSharedSettings(true)}});
+if(typeof setInterval!='undefined'){setInterval(()=>{if(!document.hidden)sbLoad(true)},60000);setInterval(()=>{if(!document.hidden)loadSharedSettings(true)},30000)}
 applyTheme();
 sbCacheLoad();
 
-if(D.me&&D.me.r=='A'){
+if(D.me&&(D.me.r=='A'||D.me.r=='D')){
   D.me=null;
   sv();
 }
@@ -1310,6 +1345,7 @@ if(D.me&&D.me.r=='A'){
 R();
 sbLoad();
 initAuth();
+loadSharedSettings(true);
 </script>
 <script id="komorebi-motion">
 (()=>{
