@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <meta name="theme-color" content="#FDFBF7">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <style id="komorebi-ui">
 /* =====================================================================
    KOMORÉBI UI — mengikuti "Komorebi Workspace" (Ghibli-inspired studio)
@@ -103,6 +106,35 @@ main{padding:18px 14px;max-width:1180px;margin:0 auto}
 .card.st{padding:14px 16px}.st b{display:block;font:600 24px/1.2 var(--fh)}.st span{font-size:12px;color:var(--mu)}
 #app.in .card.st{display:none}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:12px}.grid>.card{margin-bottom:0}
+.calw{display:flex;flex-direction:column;gap:14px;margin-bottom:12px}
+.cm{background:var(--cd);border:1px solid var(--line);border-radius:16px;padding:12px}
+.cmh{font:600 15px var(--fh);color:var(--tx);margin-bottom:8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cw{font-size:11px;color:var(--mu);text-align:center;padding-bottom:2px}
+.cal>span{aspect-ratio:1}
+.cd{aspect-ratio:1;min-height:0;padding:0;border-radius:10px;border:1px solid var(--line);font:600 13px var(--fn);cursor:pointer;transition:transform .15s}
+.cd:active{transform:scale(.92)}
+.cd.nd{background:var(--in)!important;color:var(--mu)!important;font-weight:500}
+.cd.sel{outline:2px solid var(--ac);outline-offset:2px}
+.lgd{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mu);margin-bottom:6px}
+.lgd span{display:inline-flex;align-items:center;gap:5px}
+.lgd i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.lgd i.lgn{background:var(--in);border:1px solid var(--line)}
+.ed{background:var(--in);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:4px}
+.ed>b{font:600 15px var(--fh)}
+.edr{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px}
+.edn{margin:8px 0 0;font-size:14px;white-space:pre-wrap}
+.ehint{margin:6px 0 0;font-size:13px}
+.cm .cmh{font:700 16px var(--fh);color:var(--tx);padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.cw.wk{color:#C0392B;font-weight:700}
+.cd.wk{border:2px solid #C0392B}
+.cd.nd.wk{color:#C0392B!important}
+#cdpop{position:fixed;display:none;z-index:300;box-sizing:border-box;background:var(--cd);border:1px solid var(--line);border-radius:16px;box-shadow:var(--cozy-lg);padding:14px 14px 12px;max-height:70vh;overflow:auto}
+#cdpop b{display:block;font:600 15px var(--fh);padding-right:24px}
+#cdpop .edr{margin-top:6px;font-size:14px}
+#cdpop .edn{margin:8px 0 0;font-size:14px;white-space:pre-wrap}
+#cdpop img.ph{margin-top:8px}
+.cdx{position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;line-height:1;color:var(--mu);cursor:pointer;padding:4px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>*{flex:1;min-width:104px}.row>.btn{flex:none}
 .btns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .dlg{display:flex;gap:14px;align-items:center;margin:8px 0 16px}.dlg p{margin:0}
@@ -207,6 +239,16 @@ details[open]>summary::after{transform:rotate(180deg)}
 .task{flex:0 1 170px;min-width:0;text-align:left;font-size:13px}.task span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .task.on{background:var(--tint);border-color:var(--line);color:var(--ac);font-weight:700}
 .start:active,.task:active{transform:scale(.96)}
+.task.ct{transition:transform .22s cubic-bezier(.2,.8,.3,1),background .25s,color .25s,border-color .25s,box-shadow .25s}
+.task.ct svg{transition:transform .35s cubic-bezier(.2,.8,.3,1)}
+.task.ct:active{transform:scale(.9)}
+.task.ct:active svg{transform:scale(1.18) rotate(-7deg)}
+.task.ct.on{animation:tabPop .38s cubic-bezier(.2,.8,.3,1)}
+.task.ct.on svg{animation:iconBob .5s cubic-bezier(.2,.8,.3,1)}
+.task.ct:not(.on):hover{background:color-mix(in srgb,var(--tint) 60%,transparent)}
+@keyframes tabPop{0%{transform:scale(.9)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes iconBob{0%{transform:translateY(0)}35%{transform:translateY(-3px) scale(1.12)}100%{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.task.ct,.task.ct svg,.task.ct.on,.task.ct.on svg{animation:none!important;transition:none!important}}
 .sep{width:1px;height:26px;background:var(--br)}
 .tray{margin-left:auto;display:flex;align-items:center;gap:6px;padding:7px 11px;font-size:12px;font-weight:600;color:var(--mu);background:var(--in);border:1px solid var(--line);border-radius:12px}
 
@@ -268,7 +310,7 @@ details[open]>summary::after{transform:rotate(180deg)}
  .fab{bottom:76px;right:28px}.sdi{bottom:144px;right:28px}
  .scene .cot{display:block}
 }
-@media(max-width:480px){.task.ct{padding:8px 6px;gap:5px;font-size:12px;justify-content:center}.taskbar{gap:4px}.start b{display:none}.start{padding:8px 12px}.tray .ic{display:none}.tray{padding:7px 10px}.task{flex:1 1 0}.toolbar{gap:6px}.toolbar>span{font-size:11px}.toolbar input[type=date]{font-size:13px;padding:6px 6px 6px 9px;min-height:40px}.toolbar input[type=date]::-webkit-calendar-picker-indicator{width:16px;height:16px;padding:0;margin-left:2px}}
+@media(max-width:480px){.start b{display:none}.start{padding:8px 12px}.tray .ic{display:none}.tray{padding:7px 10px}.task{flex:1 1 0}.toolbar{gap:6px}.toolbar>span{font-size:11px}.toolbar input[type=date]{font-size:13px;padding:6px 6px 6px 9px;min-height:40px}.toolbar input[type=date]::-webkit-calendar-picker-indicator{width:16px;height:16px;padding:0;margin-left:2px}}
 @media(max-width:420px){.card{padding:15px}.md{padding:16px}.lgc{padding:28px 20px 22px}.hd-r{gap:6px}.ibtn{width:40px;height:40px}.sf:nth-child(2),.sf:nth-child(4){display:none}.sf:first-child{flex:0 0 auto}.sf:nth-child(3){flex:1;text-align:right}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
@@ -869,7 +911,7 @@ ${cg?'':`<div class="toolbar"><span>${L('Dari:','From:')}</span><input type="dat
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
-<div class="taskbar"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${cg?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${{cg_menu:'Menu',cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k)}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
+<div class="taskbar"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${cg?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
 ${pgs.length>1||cg?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():pgs.filter(k=>k!='dash').map(k=>`<button onclick="go('${k}')">${IC(k,18)}<span>${lab(k)}</span></button>`).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
 if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
 const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
@@ -910,8 +952,38 @@ async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun
 function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,async()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
 const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().eq('employee_id',e.id);if(q.error)throw q.error;q=await c.from('employees').delete().eq('id',e.id);if(q.error)throw q.error;D.att.filter(a=>a.e==e.id).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp=D.emp.filter(x=>x.id!=e.id);sbCacheSave();sv()});
 if(ok){toast('Karyawan dihapus');R()}})}
-function detEmp(i){const e=D.emp[i],{f,t}=rng(),c=cntR(f,t,[e]),hs=D.att.filter(a=>a.e==e.id&&a.d>=f&&a.d<=t).sort((a,b)=>a.d<b.d?-1:1);
-modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b><div class="grid" style="margin:8px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${k}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>BELUM ADA DATA</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div><b>Riwayat</b>${hs.length?hs.map(a=>`<div>${fd(a.d)} ${badge(a.s)} ${esc(a.n||'')}${a.ph?`<br><img class="ph" src="${a.ph}">`:''}</div>`).join(''):'<p class="mu">Belum ada data absensi.</p>'}<br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function detEmp(i){detEmpShow(i,null)}
+function edBody(e,sel){const a=rec(e.id,sel);
+return `<b>${fd(sel)}</b><div class="edr">${a?`${badge(a.s)} <span>${ST[a.s]}</span>`:'<span class="mu">Belum ada data</span>'}</div>${a&&a.n?`<p class="edn">${esc(a.n)}</p>`:''}${a&&a.ph?`<img class="ph" src="${a.ph}">`:''}`}
+function detEmpSel(i,ds){const e=D.emp[i];if(!e)return;document.querySelectorAll('#m .cd.sel').forEach(b=>b.classList.remove('sel'));const btn=document.querySelector('#m .cd[aria-label="'+ds+'"]');if(btn)btn.classList.add('sel');
+let pop=document.getElementById('cdpop');if(!pop){pop=document.createElement('div');pop.id='cdpop';document.body.appendChild(pop)}
+pop.innerHTML='<button class="cdx" onclick="cdClose()" aria-label="Tutup">×</button>'+edBody(e,ds);
+pop.style.display='block';pop.classList.add('on');
+const r=btn?btn.getBoundingClientRect():{left:innerWidth/2-20,top:innerHeight/2-20,bottom:innerHeight/2+20,width:40};
+const w=Math.min(280,innerWidth-24);pop.style.width=w+'px';
+const left=Math.min(Math.max(12,r.left+r.width/2-w/2),innerWidth-w-12);
+const ph=pop.offsetHeight;let top=r.bottom+10;if(top+ph>innerHeight-12)top=Math.max(12,r.top-ph-10);
+pop.style.left=left+'px';pop.style.top=top+'px'}
+function cdClose(){const p=document.getElementById('cdpop');if(p){p.classList.remove('on');p.style.display='none'}document.querySelectorAll('#m .cd.sel').forEach(b=>b.classList.remove('sel'))}
+document.addEventListener('pointerdown',ev=>{const p=document.getElementById('cdpop');if(p&&p.classList.contains('on')&&!p.contains(ev.target)&&!ev.target.closest('.cd'))cdClose()});
+function detEmpShow(i,sel){cdClose();const e=D.emp[i],{f,t}=rng(),c=cntR(f,t,[e]);
+const DWN=LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'];
+const calHtml=()=>{if(f>t)return '<p class="mu">Periode tidak valid.</p>';let y=+f.slice(0,4),m=+f.slice(5,7)-1;const ty=+t.slice(0,4),tm=+t.slice(5,7)-1,out=[];
+while(y<ty||(y==ty&&m<=tm)){const first=new Date(Date.UTC(y,m,1)),dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+let cells=DWN.map((w,k)=>`<span class="cw${k==0||k==6?' wk':''}">${w}</span>`).join('');
+for(let k=0;k<first.getUTCDay();k++)cells+='<span></span>';
+for(let d=1;d<=dim;d++){const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+if(ds<f||ds>t){cells+='<span></span>';continue}
+const a=rec(e.id,ds),dow=new Date(Date.UTC(y,m,d)).getUTCDay(),wk=dow==0||dow==6,bg=a?SC[a.s]:'',col=a?(a.s=='I'||a.s=='L'?'#3b2a1e':'#fff'):'';
+cells+=`<button class="cd${sel==ds?' sel':''}${a?'':' nd'}${wk?' wk':''}" style="${bg?`background:${bg};`:''}${col?`color:${col}`:''}" onclick="detEmpSel(${i},'${ds}')" aria-label="${ds}">${d}</button>`}
+out.push(`<div class="cm"><div class="cmh">${new Date(Date.UTC(y,m,1)).toLocaleDateString(LANG=='en'?'en-GB':'id-ID',{month:'long',year:'numeric',timeZone:'UTC'})}</div><div class="cal">${cells}</div></div>`);
+m++;if(m>11){m=0;y++}}
+return out.join('')};
+modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} – ${fd(t)}</b>
+<div class="grid" style="margin:10px 0">${SK.map(k=>`<div class="card st"><b>${c[k]}</b><span>${ST[k]}</span></div>`).join('')}<div class="card st"><b>${c.B}</b><span>Belum ada data</span></div><div class="card st"><b>${otH(e,f,t)}</b><span>Jam lembur</span></div></div>
+<div class="lgd">${SK.map(k=>`<span><i style="background:${SC[k]}"></i>${k}</span>`).join('')}<span><i class="lgn"></i>–</span></div>
+<div class="calw">${calHtml()}</div>
+<div class="btns" style="margin-top:12px"><button class="btn s" onclick="closeM()">Tutup</button></div>`)}
 
 /* ---------- Absensi form ---------- */
 function openAtt(k){if(!guard())return;if(!D.emp.some(e=>e.aktif))return toast('Tambah karyawan dulu','warn');
@@ -1283,4 +1355,5 @@ initAuth();
 })();
 </script>
 
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
