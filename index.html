@@ -339,8 +339,9 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
-const DEVELOPER_EMAIL='ahmadpajarpirmansah@gmail.com', OPERATOR_ADMIN_EMAIL='admin@lazy.jennie';
-const roleForEmail=email=>{const e=String(email||'').trim().toLowerCase();return e===DEVELOPER_EMAIL?'D':e===OPERATOR_ADMIN_EMAIL?'A':null};
+const DEVELOPER_EMAILS=['ahmadpajarpirmansah@gmail.com','ahmadpajarpirmansah099@gmail.com'], ADMIN_EMAILS=['admin@lazy.jennie'];
+const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
+const roleForEmail=email=>{const e=normEmail(email);return DEVELOPER_EMAILS.includes(e)?'D':ADMIN_EMAILS.includes(e)?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 /* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
@@ -778,7 +779,7 @@ async function initAuth(){
       const email=session.user.email||'',role=roleForEmail(email);
       if(!role){
         D.me=null;sv();R();
-        toast('Akun ini belum diberi akses aplikasi. Hubungi developer.','err');
+        toast('Akun ('+(email||'tanpa email')+') belum diberi akses aplikasi. Hubungi developer.','err');
         setTimeout(()=>c.auth.signOut().catch(()=>{}),0);
         return;
       }
@@ -788,7 +789,7 @@ async function initAuth(){
     };
     await applySession(data.session);
     c.auth.onAuthStateChange((event,session)=>{
-      if(event=='SIGNED_IN')setTimeout(()=>applySession(session),0);
+      if(event=='SIGNED_IN'){if(session&&D.me&&D.me.uid===session.user.id&&roleForEmail(session.user.email))return;setTimeout(()=>applySession(session),0)}
       else if(event=='SIGNED_OUT'){if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}R()}
     });
   }catch(e){
@@ -854,7 +855,7 @@ async function lgA(){
     const role=roleForEmail(data.session.user.email||email);
     if(!role){
       await sb().auth.signOut();
-      throw new Error('Email ini belum terdaftar sebagai developer atau admin aplikasi.');
+      throw new Error('Email '+(data.session.user.email||email)+' belum terdaftar sebagai developer atau admin aplikasi.');
     }
     D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
     sv();
