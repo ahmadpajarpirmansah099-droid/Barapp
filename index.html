@@ -339,7 +339,7 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 <script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
-const DEVELOPER_EMAILS=['ahmadpajarpirmansah@gmail.com','ahmadpajarpirmansah099@gmail.com'], ADMIN_EMAILS=['admin@lazy.jennie'];
+const DEVELOPER_EMAILS=['ahmadpajarpirmansah@gmail.com','ahmadpajarpirmansah099@gmail.com'], ADMIN_EMAILS=['admin@lazy.jennie','admin@div.bar'];
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
 const roleForEmail=email=>{const e=normEmail(email);return DEVELOPER_EMAILS.includes(e)?'D':ADMIN_EMAILS.includes(e)?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
