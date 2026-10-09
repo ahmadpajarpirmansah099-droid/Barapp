@@ -278,6 +278,16 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 ::-webkit-scrollbar-track{background:color-mix(in srgb,var(--ac) 6%,transparent);border-radius:999px}
 ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ac) 40%,transparent);border-radius:999px}
 ::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--ac) 60%,transparent)}
+
+/* ---------- logo kustom ---------- */
+.lgimg{display:block;width:100%;height:100%;object-fit:contain}
+.tile .lgimg{width:30px;height:30px}.logo .lgimg{width:52px;height:52px}
+:root[data-theme="dark"] .tile:has(.lgimg),:root[data-theme="dark"] .logo:has(.lgimg){background:#F4F0E6}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile:has(.lgimg),:root:not([data-theme="light"]) .logo:has(.lgimg){background:#F4F0E6}}
+.lgpv{display:flex;align-items:center;gap:14px;padding:12px;margin:8px 0;background:var(--in);border:1px solid var(--line);border-radius:18px}
+.lgpv .tile{width:64px;height:64px;flex:none}.lgpv .tile .lgimg{width:46px;height:46px}.lgpv .tile .ic{width:30px;height:30px}
+.lgpv small{display:block;color:var(--mu);font-size:11px;line-height:1.4}
+.lgpv input[type=file]{display:none}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -294,7 +304,7 @@ const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
 const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
-v:6,light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
+v:6,logo:'',light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
 dark:{bg:'#1C2526',cd:'#273336',tx:'#EDE9DF',mu:'#B9B6A8',br:'#3A4A44',ac:'#9AB77C',ac2:'#35493D',dg:'#E08A75',gd:'#E2B66F',tt:'#31483B',tt2:'#7FA062',hl:'#43504B',lt:'#34413B',sh:'#131A1B',dk:'#101617'}};
 let TH=JSON.parse(JSON.stringify(THEME));if(D.th&&D.th.v==THEME.v)TH={...TH,...D.th,nav:{...THEME.nav,...D.th.nav},light:{...THEME.light,...D.th.light},dark:{...THEME.dark,...D.th.dark}};
 let LANG=D.lang||'id';const LANGS={id:'Bahasa Indonesia',en:'English'},L=(a,b)=>LANG=='en'?b:a;
@@ -510,6 +520,7 @@ cg_menu:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1
 cg_wip:'<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
 cg_bahan:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'};
 ICP.folder=ICP.trees;
+const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 
 /* localStorage COGS: data COGS disimpan di key terpisah (CGK) agar tidak pernah menimpa/merusak data absensi (key K) */
@@ -725,7 +736,7 @@ function login(){
   return `<section class="lgs">${scene}
     <div class="lgc">
       ${lg}
-      <div class="logo">${IC('trees',36)}</div>
+      <div class="logo">${logoHtml(36)}</div>
       <h1>${esc(TH.name)}</h1>
       <p class="sub">${esc(TH.sub)} · ${L('Pilih cara masuk ke aplikasi.','Choose how to enter the application.')}</p>
       ${st}
@@ -849,11 +860,11 @@ const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ 
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('refresh')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('trash')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button><button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`}<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button><hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
 [L('Bantuan','Help'),`<button onclick="about()">${IC('pc')}${L('Tentang...','About...')}</button>`]];
-a.innerHTML=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('trees',22)}</span><span class="bt"><b>${cg?'COGS':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
+a.innerHTML=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${logoHtml(22)}</span><span class="bt"><b>${cg?'COGS':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('grid',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${cg?L('Siap','Ready'):sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${IC('trees',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'COGS':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${mnu[1][1]}<hr><button onclick="about()">${IC('info',16)}${L('Tentang aplikasi','About')}</button></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'COGS':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${mnu[1][1]}<hr><button onclick="about()">${IC('info',16)}${L('Tentang aplikasi','About')}</button></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${cg?'':`<div class="toolbar"><span>${L('Dari:','From:')}</span><input type="date" value="${rg.f}" onchange="F.f=this.value;R()" aria-label="Dari tanggal"><span>${L('Sampai:','To:')}</span><input type="date" value="${rg.t}" onchange="F.t=this.value;R()" aria-label="Sampai tanggal">${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
@@ -1168,9 +1179,26 @@ function colorsHtml(){const m=TH.mode=='dark'?'dark':'light';return CN.map(c=>`<
 function setMode(x){TH.mode=x;applyTheme();document.querySelectorAll('.mb').forEach(b=>b.classList.toggle('on',b.dataset.m==x));$('#cs').innerHTML=colorsHtml()}
 function pre(i){const p=PRESETS[i][2]||THEME;TH.light={...p.light};TH.dark={...p.dark};applyTheme();$('#cs').innerHTML=colorsHtml()}
 function fontBox(k,a,b){return`<details><summary>${L(a,b)}: <b id="fv_${k}">${esc(TH[k])}</b></summary><div class="fl" id="f_${k}">${fontsHtml(k)}</div><input placeholder="${L('Font lain (nama persis di Google Fonts)','Other font (exact Google Fonts name)')}" onchange="setF('${k}',sanF(this.value)||TH.${k})"></details>`}
+function logoSrc(f){if(!f)return;const r=new FileReader();r.onload=()=>{T.lgsrc=r.result;logoProc()};r.onerror=()=>toast(L('File tidak bisa dibaca','Could not read file'),'err');r.readAsDataURL(f)}
+function logoProc(){if(!T.lgsrc)return;const im=new Image();im.onerror=()=>toast(L('File bukan gambar','Not an image file'),'err');im.onload=()=>{
+const M=256,sc=Math.min(1,M/Math.max(im.width,im.height)),w=Math.max(1,Math.round(im.width*sc)),h=Math.max(1,Math.round(im.height*sc)),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0,w,h);
+const rm=$('#lgrm')&&$('#lgrm').checked;
+if(rm){const d=x.getImageData(0,0,w,h),p=d.data,bg=new Uint8Array(w*h),st=[];
+const ok=i=>{const r=p[i*4],g=p[i*4+1],b=p[i*4+2],a=p[i*4+3];return a<16||(Math.max(r,g,b)-Math.min(r,g,b)<30&&Math.max(r,g,b)>150)};
+const push=i=>{if(!bg[i]&&ok(i)){bg[i]=1;st.push(i)}};
+for(let i=0;i<w;i++){push(i);push((h-1)*w+i)}for(let j=0;j<h;j++){push(j*w);push(j*w+w-1)}
+while(st.length){const i=st.pop(),px=i%w,py=(i-px)/w;if(px>0)push(i-1);if(px<w-1)push(i+1);if(py>0)push(i-w);if(py<h-1)push(i+w)}
+for(let i=0;i<w*h;i++)if(bg[i])p[i*4+3]=0;x.putImageData(d,0,0);
+let x0=w,y0=h,x1=0,y1=0;for(let i=0;i<w*h;i++)if(!bg[i]){const px=i%w,py=(i-px)/w;if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py}
+if(x1>x0&&y1>y0){const cw=x1-x0+1,ch=y1-y0+1,c2=document.createElement('canvas');c2.width=cw;c2.height=ch;c2.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,cw,ch);TH.logo=c2.toDataURL('image/png');logoDone();return}}
+TH.logo=c.toDataURL('image/png');logoDone()};im.src=T.lgsrc}
+function logoDone(){applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
+function logoDel(){TH.logo='';T.lgsrc=null;applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
+function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Tampil di login, sidebar, dan header.','Shown on login, sidebar and header.')}</small></div>`}
 function openTheme(){if(!guard())return;T.bk=T.bk||JSON.stringify(TH);pvFonts();
 modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3>
 <div class="ts">${L('1. Bahasa','1. Language')}</div><select onchange="setLang(this.value)">${Object.entries(LANGS).map(([k,n])=>`<option value="${k}" ${k==LANG?'selected':''}>${n}</option>`).join('')}</select>
+<div class="ts">${L('Logo aplikasi','App logo')}</div><div class="lgpv" id="lgpv">${logoPv()}</div><label class="ck"><input type="checkbox" id="lgrm" checked onchange="logoProc()">${L('Hapus latar putih / kotak-kotak otomatis','Auto-remove white / checkerboard background')}</label><div class="row"><label class="btn s" style="margin:2px">${IC('upload',16)}${L('Pilih gambar','Choose image')}<input type="file" accept="image/*" style="display:none" onchange="logoSrc(this.files[0]);this.value=''"></label><button class="btn s" onclick="logoDel()">${IC('trash',16)}${L('Pakai logo bawaan','Use default logo')}</button></div>
 <div class="ts">${L('2. Judul & nama menu','2. Titles & menu names')}</div><label>${L('Judul aplikasi','App title')}<input value="${esc(TH.name)}" oninput="TH.name=this.value;R()"></label><label>${L('Nama usaha (tulisan kecil di header)','Business name (small text in header)')}<input value="${esc(TH.sub)}" oninput="TH.sub=this.value;R()"></label><div class="grid">${Object.keys(THEME.nav).map(k=>`<label>${L(MN[k][0],MN[k][1])}<input value="${esc(TH.nav[k])}" oninput="TH.nav['${k}']=this.value;R()"></label>`).join('')}</div>
 <div class="ts">${L('3. Font (ketuk untuk memilih)','3. Fonts (tap to choose)')}</div>${fontBox('font','Font tulisan isi','Body font')}${fontBox('hfont','Font judul','Heading font')}
 <div class="ts">${L('4. Warna','4. Colors')}</div><div class="mu">${L('Pilih tema warna siap pakai:','Pick a ready-made color theme:')}</div><div class="pg">${PRESETS.map((p,i)=>{const c=(p[2]||THEME).light;return`<button class="pc" onclick="pre(${i})"><b>${L(p[0],p[1])}</b><br>${[c.bg,c.cd,c.tt,c.ac].map(x=>`<i style="background:${x}"></i>`).join('')}</button>`}).join('')}</div>
