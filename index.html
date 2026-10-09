@@ -789,7 +789,7 @@ async function initAuth(){
         return;
       }
       D.me={r:role,uid:session.user.id,email};sv();
-      await Promise.all([cogsLoad(),loadSharedSettings(true)]);
+      await Promise.all([sbLoad(true),cogsLoad(),loadSharedSettings(true)]);
       R();
     };
     await applySession(data.session);
@@ -864,7 +864,7 @@ async function lgA(){
     }
     D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
     sv();
-    await Promise.all([cogsLoad(),loadSharedSettings(true)]);
+    await Promise.all([sbLoad(true),cogsLoad(),loadSharedSettings(true)]);
     R();
 
   }catch(e){
