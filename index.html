@@ -677,12 +677,17 @@ function cogsNormalize(x){
     menu:Array.isArray(x.menu)?x.menu:[]
   };
 }
+async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
+  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const r=await payQ('divisions','id,code',q=>q.eq('code','BAR'));did=r[0]&&r[0].id}
+  else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
+  T.cogsDid=did;return did}
 async function cogsLoad(){
-  if(!D.me||CGLOADING)return false;
+  if(!D.me||CGLOADING||T.hasCogs===false)return false;
   CGLOADING=true;
   try{
     const c=sb();
-    const {data,error}=await c.from('cogs_data').select('id,data,updated_at').eq('id',1).maybeSingle();
+    const did=await cogsDid();if(!did)return false;
+    const {data,error}=await c.from('cogs_data').select('id,data,updated_at').eq('division_id',did).maybeSingle();
     if(error)throw error;
     if(data&&data.data){
       const cloud=cogsNormalize(data.data);
@@ -698,7 +703,7 @@ async function cogsLoad(){
     const local=cogsNormalize(D.cg);
     const seed=local||JSON.parse(JSON.stringify(CG_SEED));
     D.cg=seed;
-    const {error:upErr}=await c.from('cogs_data').upsert({id:1,data:seed,updated_at:new Date().toISOString()},{onConflict:'id'});
+    const {error:upErr}=await c.from('cogs_data').upsert({division_id:did,data:seed,updated_at:new Date().toISOString()},{onConflict:'division_id'});
     if(upErr)throw upErr;
     try{localStorage.setItem(CGK,JSON.stringify(seed))}catch(e){}
     sv();
@@ -710,12 +715,12 @@ async function cogsLoad(){
   }finally{CGLOADING=false}
 }
 function cogsSave(){
-  if(!adm()||!D.cg)return Promise.resolve(false);
+  if(!adm()||!D.cg||T.hasCogs===false)return Promise.resolve(false);
   CGSAVE=CGSAVE.then(async()=>{
     const snapshot=cogsNormalize(D.cg);
     if(!snapshot)return false;
     try{
-      const {error}=await sb().from('cogs_data').upsert({id:1,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'id'});
+      const did=await cogsDid();if(!did)throw new Error('Divisi COGS tidak ditemukan');const {error}=await sb().from('cogs_data').upsert({division_id:did,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'division_id'});
       if(error)throw error;
       try{localStorage.setItem(CGK,JSON.stringify(snapshot))}catch(e){}
       return true;
