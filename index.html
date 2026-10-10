@@ -936,6 +936,24 @@ const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-d
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
 function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
 function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Karyawan, absensi, dan tema aplikasi tersimpan di Supabase agar sama di semua perangkat.','Employees, attendance, and app theme are stored in Supabase so they stay consistent across devices.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
+/* Card tertutup: di semua menu, card pertama terbuka; card berikutnya tertutup dan dibuka dengan ketuk */
+function accFix(){const m=document.querySelector('main');if(!m)return;
+ const cards=[...m.children].filter(c=>c.classList.contains('card')&&!c.classList.contains('empty')&&!c.querySelector('.dlg,.prog'));
+ if(cards.length<2)return;T.acc3=T.acc3||{};
+ cards.forEach((c,i)=>{if(i==0)return;
+  const key=pg+':'+i,open=!!T.acc3[key];
+  const head=c.querySelector(':scope > h3, :scope > h4, :scope > b');
+  const hd=document.createElement('div');hd.style.cssText='display:flex;align-items:center;gap:12px;cursor:pointer;'+(open?'margin:0 0 12px':'margin:0');
+  const title=document.createElement('div');title.style.cssText='flex:1;font-weight:700';title.textContent=head?head.textContent.trim():'Detail';
+  const ch=document.createElement('span');ch.textContent=open?'▴':'▾';ch.style.cssText='font-size:18px;opacity:.6';
+  hd.append(title,ch);if(head)head.remove();
+  const body=document.createElement('div');body.style.display=open?'block':'none';
+  while(c.firstChild)body.appendChild(c.firstChild);
+  c.append(hd,body);c.style.cursor=open?'':'pointer';
+  const toggle=()=>{const now=!T.acc3[key];T.acc3[key]=now;body.style.display=now?'block':'none';ch.textContent=now?'▴':'▾';hd.style.margin=now?'0 0 12px':'0';c.style.cursor=now?'':'pointer';c.onclick=now?null:toggle};
+  hd.onclick=toggle;if(!open)c.onclick=toggle;
+ })}
+
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
@@ -956,7 +974,7 @@ ${(cg||px)?'':`<div class="toolbar"><span>${L('Dari:','From:')}</span><input typ
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
 <div class="taskbar"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
 ${pgs.length>1||cg?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():pgs.filter(k=>k!=home).map(k=>`<button onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
-if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
+accFix();if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
 const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
 
 /* ---------- Views ---------- */
@@ -969,6 +987,12 @@ const rupiah=n=>'Rp '+fmtN(n);
 const fdp=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'-';
 const payRpc=(fn,args)=>sb().rpc(fn,args||{}).then(r=>{if(r.error)throw r.error;return r.data});
 const payQ=async(tbl,sel,f)=>{let q=sb().from(tbl).select(sel);if(f)q=f(q);const {data,error}=await q;if(error)throw error;return data||[]};
+const payBlk=(k,title,html,def)=>{T.acc=T.acc||{};const o=(k in T.acc)?T.acc[k]:!!def;return `<div onclick="payAcc('${k}',${!!def})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px;margin:0 0 12px;background:#fffaf7;border:1px solid #ecd6cf;border-radius:18px"><b style="flex:1">${title}</b><span style="font-size:18px;color:#8a6f68">${o?'▴':'▾'}</span></div>`+(o?`<div style="margin:-4px 0 14px;padding:0 2px">${html}</div>`:'')};
+const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;T.acc[k]=!cur;R()};
+const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={};for(let k=0;k<7;k++){const [a,b]=perFor(mkd(y,mo-1-k,15));const key=a+'|'+b;if(!seen[key]){seen[key]=1;out.push([a,b])}}return out};
+const payPick=val=>{if(val=='custom'){T.rsel='custom';R();return}const [a,b]=val.split('|');T.rf=a;T.rt=b;T.rsel='';R()};
+const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t),custom=T.rsel=='custom'||!match;
+ return `<label style="display:block">Periode gaji<select onchange="payPick(this.value)">${opts.map(([a,b])=>`<option value="${a}|${b}" ${!custom&&a==f&&b==t?'selected':''}>${fdp(a)} s/d ${fdp(b)}</option>`).join('')}<option value="custom" ${custom?'selected':''}>Rentang bebas…</option></select></label>`+(custom?`<div style="display:flex;gap:10px;margin-top:8px"><label style="flex:1">Dari<input type="date" value="${f}" onchange="T.rf=this.value;R()"></label><label style="flex:1">Sampai<input type="date" value="${t}" onchange="T.rt=this.value;R()"></label></div>`:'')};
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
@@ -1002,7 +1026,9 @@ async function payLoad(){PAY.need=false;PAY.busy=true;
 
 /* ===== 2. DATA GAJI: gaji + uang makan + tunjangan per NAMA ===== */
 V.pay_data=()=>{if(!payOK())return payDenied();payEnsure();
- return payHead('Data Gaji')+`<div class="card"><p class="mu">Ketuk Isi / Ubah pada nama untuk mengisi gaji, uang makan, dan tunjangan sekaligus.</p>${D.emp.length?`<div class="tw"><table><tr><th>Nama</th><th>Gaji bulanan</th><th>Makan / hari</th><th>Tunjangan aktif</th><th></th></tr>${D.emp.map((e,i)=>{const p=PAY.pp[String(e.id)],al=PAY.allow.filter(x=>String(x.employee_id)==String(e.id)&&x.active);return `<tr><td>${esc(e.nama)}${e.aktif?'':' <span class="mu">(nonaktif)</span>'}</td><td>${p?fmtN(p.monthly_salary):'<span class="mu">belum</span>'}</td><td>${p?fmtN(p.meal_rate):'<span class="mu">belum</span>'}</td><td>${al.length?al.length+' jenis · '+fmtN(al.reduce((n,x)=>n+(+x.amount),0)):'-'}</td><td><button class="btn s x" onclick="payOpen(${i})">Isi / Ubah</button></td></tr>`}).join('')}</table></div>`:'<div class="empty">Belum ada karyawan.</div>'}</div>`};
+ if(!D.emp.length)return payBlk('dg_list','Daftar karyawan','<div class="empty">Belum ada karyawan.</div>',true);
+ const tabel=`<p class="mu" style="margin:0 0 8px">Ketuk Isi / Ubah pada nama untuk mengisi gaji, uang makan, dan tunjangan.</p><div class="tw" style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Gaji bulanan</th><th>Makan / hari</th><th>Tunjangan</th><th></th></tr>${D.emp.map((e,i)=>{const p=PAY.pp[String(e.id)],al=PAY.allow.filter(x=>String(x.employee_id)==String(e.id)&&x.active);return `<tr><td>${esc(e.nama)}${e.aktif?'':' <span class="mu">(nonaktif)</span>'}</td><td>${p?fmtN(p.monthly_salary):'<span class="mu">belum</span>'}</td><td>${p?fmtN(p.meal_rate):'<span class="mu">belum</span>'}</td><td>${al.length?al.length+' jenis · '+fmtN(al.reduce((n,x)=>n+(+x.amount),0)):'-'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="payOpen(${i})">Isi / Ubah</button></td></tr>`}).join('')}</table></div>`;
+ return payBlk('dg_list','Daftar karyawan',tabel,true)};
 
 function payOpen(i){const e=D.emp[i];if(!e)return;const p=PAY.pp[String(e.id)]||{};
  T.px={i,sal:p.monthly_salary==null?'':String(p.monthly_salary),meal:p.meal_rate==null?'':String(p.meal_rate),reason:'',
@@ -1116,18 +1142,34 @@ function payBuildUrls(){Object.values(PAY.urls).forEach(u=>{try{URL.revokeObject
  PAY.urls.all=URL.createObjectURL(pdfBuild(rekapPages(r.items,r.run,r.f,r.t)))}
 /* ===== Pengaturan (developer) ===== */
 V.pay_set=()=>{if(!isDeveloper())return payDenied();payEnsure();const s=PAY.s||{period_mode:'calendar',meal_codes:['M']},c=s.meal_codes||[];
- return payHead('Pengaturan Gaji')+`<div class="card"><h3>Periode & Uang Makan</h3><label>Mode periode<select id="pm"><option value="calendar" ${s.period_mode=='calendar'?'selected':''}>Tanggal 1 s/d akhir bulan</option><option value="day_24_23" ${s.period_mode=='day_24_23'?'selected':''}>Tanggal 24 s/d 23</option><option value="custom" ${s.period_mode=='custom'?'selected':''}>Rentang khusus</option></select></label><div class="row"><label>Tgl awal (khusus)<input id="cs" type="number" min="1" max="31" value="${s.custom_start_day??''}"></label><label>Tgl akhir (khusus)<input id="ce" type="number" min="1" max="31" value="${s.custom_end_day??''}"></label></div><p class="mu">Kode absensi yang mendapat uang makan:</p><div class="row">${['M','L','PH','S','I'].map(k=>`<label><input type="checkbox" id="mc_${k}" ${c.includes(k)?'checked':''}> ${k}</label>`).join('')}</div><label>Alamat perusahaan (dicetak di slip)<input id="co_addr" value="${esc((()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})())}" autocomplete="off"></label><div class="row"><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`};
-async function paySaveSet(){try{localStorage.setItem('bar_pay_addr',v('co_addr').trim())}catch(e){}const m=v('pm'),cs=v('cs').trim(),ce=v('ce').trim(),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
- if(m=='custom'&&(!cs||!ce))return toast('Tanggal awal & akhir khusus wajib diisi','err');
- const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_settings').update({period_mode:m,custom_start_day:m=='custom'?+cs:null,custom_end_day:m=='custom'?+ce:null,meal_codes:codes}).eq('id',true);if(error)throw error});
+ const chip=k=>`<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #ecd6cf;border-radius:12px;background:#fff;cursor:pointer;font-weight:600"><input type="checkbox" id="mc_${k}" ${c.includes(k)?'checked':''} style="width:auto;margin:0">${k}</label>`;
+ const body=`<div style="display:grid;gap:14px"><label>Mode periode<select id="pm"><option value="calendar" ${s.period_mode!='day_24_23'?'selected':''}>Tanggal 1 s/d akhir bulan</option><option value="day_24_23" ${s.period_mode=='day_24_23'?'selected':''}>Tanggal 24 s/d 23</option></select></label>
+ <div><div class="mu" style="margin-bottom:8px">Kode absensi yang dapat uang makan</div><div style="display:flex;gap:8px;flex-wrap:wrap">${['M','L','PH','S','I'].map(chip).join('')}</div></div>
+ <label>Alamat perusahaan (dicetak di slip)<input id="co_addr" value="${esc((()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})())}" autocomplete="off"></label>
+ <div><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`;
+ return payBlk('set_main','Periode & Uang Makan',body,true)};
+async function paySaveSet(){try{localStorage.setItem('bar_pay_addr',v('co_addr').trim())}catch(e){}const m=v('pm'),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
+ const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_settings').update({period_mode:m,custom_start_day:null,custom_end_day:null,meal_codes:codes}).eq('id',true);if(error)throw error});
  if(ok){toast('Aturan tersimpan');payLoad()}}
 
 /* ===== Kasbon ===== */
 V.pay_kas=()=>{if(!payOK())return payDenied();payEnsure();if(!D.emp.length)return '<div class="card empty">Belum ada karyawan.</div>';
- const i=T.pe??0,e=D.emp[i]||D.emp[0],sel=D.emp.indexOf(e),list=PAY.cash.filter(c=>String(c.employee_id)==String(e.id));
- return `<div class="card"><label>Karyawan<select onchange="T.pe=this.selectedIndex;R()">${D.emp.map((x,k)=>`<option value="${k}" ${k==sel?'selected':''}>${esc(x.nama)}</option>`).join('')}</select></label><div class="tw"><table><tr><th>Tgl</th><th>Pokok</th><th>Cicilan</th><th>Sisa</th><th></th></tr>${list.map(c=>`<tr><td>${c.issued_on}</td><td>${rupiah(c.principal)}</td><td>${rupiah(c.installment)}</td><td>${PAY.bal[c.id]==null?'-':rupiah(PAY.bal[c.id])}</td><td><button class="btn s x" onclick="cashPay('${c.id}')">Bayar</button></td></tr>`).join('')||'<tr><td colspan="5">Belum ada kasbon.</td></tr>'}</table></div></div><div class="card"><b>Kasbon baru untuk ${esc(e.nama)}</b><label>Pokok<input id="kp" type="number" min="1"></label><label>Cicilan per periode<input id="ki" type="number" min="0"></label><label>Tanggal<input id="kd" type="date" value="${today()}"></label><label>Keterangan<input id="kn" autocomplete="off"></label><div class="row"><button class="btn" onclick="cashAdd('${e.id}')">Simpan kasbon</button></div></div>`};
-async function cashAdd(eid){const p=+v('kp'),ins=v('ki').trim()===''?0:+v('ki'),d=v('kd'),n=v('kn').trim()||null;if(!(p>0))return toast('Pokok kasbon wajib lebih dari 0','err');if(!d)return toast('Tanggal wajib','err');
- const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvances').insert({employee_id:eid,principal:p,installment:ins,issued_on:d,notes:n});if(error)throw error});if(ok){toast('Kasbon dicatat');payLoad()}}
+ const i=T.pe??0,e=D.emp[i]||D.emp[0],sel=D.emp.indexOf(e),list=PAY.cash.filter(c=>String(c.employee_id)==String(e.id)&&c.status!='void');
+ const pilih=`<label style="margin-bottom:10px">Karyawan<select onchange="T.pe=this.selectedIndex;R()">${D.emp.map((x,k)=>`<option value="${k}" ${k==sel?'selected':''}>${esc(x.nama)}</option>`).join('')}</select></label>`;
+ const tabel=`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Tgl</th><th>Pokok</th><th>Potong / periode</th><th>Sisa</th><th></th></tr>${list.map(c=>{const b=PAY.bal[c.id];return `<tr><td>${c.issued_on}</td><td>${rupiah(c.principal)}</td><td>${rupiah(c.installment)}</td><td>${b==null?'-':b<=0?'<b>Lunas</b>':rupiah(b)}</td><td style="white-space:nowrap"><button class="btn s x" onclick="cashPay('${c.id}')">Bayar</button> <button class="btn s x" onclick="cashVoid('${c.id}')">Hapus</button></td></tr>`}).join('')||'<tr><td colspan="5">Belum ada kasbon.</td></tr>'}</table></div>`;
+ const form=`<label>Pokok (maks Rp 1.000.000)<input id="kp" type="number" min="1" max="1000000" inputmode="numeric"></label><label>Dipotong dalam berapa periode gaji<input id="kn2" type="number" min="1" max="60" inputmode="numeric" value="1"></label><p class="mu" style="margin:0 0 10px">Potongan per periode = pokok ÷ jumlah periode. Otomatis dipotong saat gaji dihitung sampai lunas.</p><label>Tanggal<input id="kd" type="date" value="${today()}"></label><label>Keterangan<input id="kn" autocomplete="off"></label><div style="margin-top:10px"><button class="btn" onclick="cashAdd('${e.id}')">Simpan kasbon</button></div>`;
+ return pilih+payBlk('kas_list','Daftar kasbon '+esc(e.nama),tabel,true)+payBlk('kas_baru','Tambah kasbon baru',form,false)};
+async function cashAdd(eid){const p=+v('kp'),n=+v('kn2'),d=v('kd'),note=v('kn').trim()||null;
+ if(!(p>0))return toast('Pokok kasbon wajib lebih dari 0','err');
+ if(p>1000000)return toast('Maksimal kasbon Rp 1.000.000','err');
+ if(!(n>=1&&Number.isInteger(n)))return toast('Jumlah periode potongan minimal 1','err');
+ if(!d)return toast('Tanggal wajib','err');
+ const cicil=Math.ceil(p/n);
+ const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvances').insert({employee_id:eid,principal:p,installment:cicil,issued_on:d,notes:note});if(error)throw error});
+ if(ok){toast('Kasbon dicatat');payLoad()}}
+function cashVoid(id){const c=PAY.cash.find(x=>x.id==id);if(!c)return;const b=PAY.bal[id];
+ if(b!=null&&+b!==+c.principal)return toast('Kasbon sudah ada pembayaran / potongan, tidak bisa dihapus','err');
+ cf('Hapus kasbon ini? Datanya tetap tersimpan sebagai dibatalkan.',async()=>{const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvances').update({status:'void',notes:'Dibatalkan dari aplikasi'}).eq('id',id);if(error)throw error});if(ok){toast('Kasbon dihapus');payLoad()}},'Ya, hapus')}
 async function cashPay(id){const sisa=PAY.bal[id]??0,a=prompt('Jumlah pembayaran (sisa '+rupiah(sisa)+'):');if(a===null)return;const n=+a;if(!(n>0))return toast('Jumlah tidak valid','err');if(n>sisa)return toast('Melebihi sisa kasbon','err');
  const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvance_transactions').insert({cashadvance_id:id,kind:'payment',amount:n,tx_date:today(),notes:'Pembayaran tunai'});if(error)throw error});if(ok){toast('Pembayaran dicatat');payLoad()}}
 
@@ -1139,13 +1181,13 @@ V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
   D.emp.filter(e=>e.aktif).map(e=>{const q=payEst(e,f,t);return {id:null,nm:e.nama,paid:q.paid,gaji:q.earned,meal:q.mt,allow:q.al,ot:q.ot,kas:q.ks,net:q.net,iss:q.has?'':'gaji belum diisi'}});
  const tot=rows.reduce((n,x)=>n+(+x.net||0),0);
  const stat=r?`Status: <b>${r.status}</b>${fin?' (final, terkunci)':' (draft)'}`:'Belum dihitung. Angka di bawah estimasi dari absensi.';
- return `<div class="card"><div class="row"><label>Dari<input type="date" value="${f}" onchange="T.rf=this.value;R()"></label><label>Sampai<input type="date" value="${t}" onchange="T.rt=this.value;R()"></label></div>
- <p class="mu">Periode ${fdp(f)} s/d ${fdp(t)} · ${stat}</p>
- <div class="row"><button class="btn" onclick="payCalc()">Hitung payroll</button><button class="btn s x" onclick="payFind()">Muat ulang</button></div>
- ${calc?`<label><input type="checkbox" id="pack"> Finalisasi walau ada item bermasalah</label><div class="row"><button class="btn d" onclick="payFinal()">Finalisasi &amp; kunci</button></div>`:''}
- ${fin&&isDeveloper()?`<label>Alasan void<input id="pvr" autocomplete="off"></label><div class="row"><button class="btn d" onclick="payVoid()">Void payroll (koreksi)</button></div>`:''}</div>
- <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><b>Rincian gaji ${rows.length} karyawan · total net ${rupiah(tot)}</b>${PAY.urls.all?`<a class="btn s" href="${PAY.urls.all}" download="Rekap_Gaji_${f}_${t}.pdf">Rekap semua (PDF)</a>`:''}</div>
- <div class="tw"><table><tr><th>Nama</th><th>Hari dibayar</th><th>Gaji</th><th>Uang makan</th><th>Tunjangan</th><th>Lembur</th><th>Kasbon</th><th>Net</th><th>Slip</th></tr>${rows.map(x=>`<tr><td>${esc(x.nm)}${x.iss?`<br><span class="mu">${esc(x.iss)}</span>`:''}</td><td>${x.paid}</td><td>${fmtN(x.gaji)}</td><td>${fmtN(x.meal)}</td><td>${fmtN(x.allow)}</td><td>${fmtN(x.ot)}</td><td>${fmtN(x.kas)}</td><td><b>${fmtN(x.net)}</b></td><td>${x.id&&PAY.urls[x.id]?`<a class="btn s x" href="${PAY.urls[x.id]}" download="Slip_${String(x.nm).replace(/[^A-Za-z0-9]+/g,'_')}_${f}_${t}.pdf">PDF</a>`:'<span class="mu">hitung dulu</span>'}</td></tr>`).join('')||'<tr><td colspan="8">Belum ada karyawan.</td></tr>'}</table></div></div>`};
+ const aksi=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" onclick="payCalc()">Hitung payroll</button><button class="btn s x" onclick="payFind()">Muat ulang</button></div>`+
+  (calc?`<label style="display:flex;align-items:center;gap:8px;margin-top:12px"><input type="checkbox" id="pack" style="width:auto"> Finalisasi walau ada item bermasalah</label><div style="margin-top:10px"><button class="btn d" onclick="payFinal()">Finalisasi &amp; kunci</button></div>`:'')+
+  (fin&&isDeveloper()?`<label style="margin-top:12px">Alasan void<input id="pvr" autocomplete="off"></label><div style="margin-top:10px"><button class="btn d" onclick="payVoid()">Void payroll</button></div>`:'');
+ const periode=`<div style="padding:4px 2px">${payPickers(f,t)}<p class="mu" style="margin:10px 0 0">${f?fdp(f)+' s/d '+fdp(t)+' · ':''}${stat}</p>${aksi}</div>`;
+ const tabel=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><b>${rows.length} karyawan · total net ${rupiah(tot)}</b>${PAY.urls.all?`<a class="btn s" href="${PAY.urls.all}" download="Rekap_Gaji_${f}_${t}.pdf">Rekap semua (PDF)</a>`:''}</div>
+ <div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Hari</th><th>Gaji</th><th>Makan</th><th>Tunjangan</th><th>Lembur</th><th>Kasbon</th><th>Net</th><th>Slip</th></tr>${rows.map(x=>`<tr><td style="white-space:normal;min-width:90px">${esc(x.nm)}${x.iss?`<br><span class="mu" style="font-size:11px">${esc(x.iss)}</span>`:''}</td><td>${x.paid}</td><td>${fmtN(x.gaji)}</td><td>${fmtN(x.meal)}</td><td>${fmtN(x.allow)}</td><td>${fmtN(x.ot)}</td><td>${fmtN(x.kas)}</td><td><b>${fmtN(x.net)}</b></td><td style="white-space:nowrap">${x.id&&PAY.urls[x.id]?`<a class="btn s x" href="${PAY.urls[x.id]}" download="Slip_${String(x.nm).replace(/[^A-Za-z0-9]+/g,'_')}_${f}_${t}.pdf">PDF</a>`:'<span class="mu">hitung dulu</span>'}</td></tr>`).join('')||'<tr><td colspan="9">Belum ada karyawan.</td></tr>'}</table></div>`;
+ return payBlk('lap_periode','Periode & aksi',periode,true)+payBlk('lap_rincian','Rincian gaji karyawan',tabel,false)};
 async function payFind(){try{const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const runs=await payQ('payroll_runs','*',q=>q.eq('period_start',f).eq('period_end',t).neq('status','void'));PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
 async function payCalc(){const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:null,p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
 async function payFinal(){if(!PAY.run)return;const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random(),ack=!!(document.getElementById('pack')&&document.getElementById('pack').checked);
