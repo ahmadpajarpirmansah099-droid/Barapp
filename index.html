@@ -1007,17 +1007,19 @@ function rPreset(i){const p=rPresets()[i],P=T.rp;P.f=p[1];P.t=p[2];P.st=0;P.y=+p
 function rMon(k){const P=T.rp,x=new Date(Date.UTC(P.y,P.m+k,1));P.y=x.getUTCFullYear();P.m=x.getUTCMonth();rPaint()}
 function rDay(c){const P=T.rp;if(P.st==0){P.f=c;P.t=c;P.st=1}else{if(c<P.f){P.t=P.f;P.f=c}else P.t=c;P.st=0}rPaint()}
 function rDone(){const P=T.rp;if(!P||!P.f||!P.t)return;if(P.tg=='F'){F.f=P.f;F.t=P.t}else{T.rf=P.f;T.rt=P.t}closeM();R()}
-function rPaint(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
  const first=new Date(Date.UTC(P.y,P.m,1)).getUTCDay(),dim=new Date(Date.UTC(P.y,P.m+1,0)).getUTCDate();
  const cells=[];for(let i=0;i<first;i++)cells.push('');for(let k=1;k<=dim;k++)cells.push(iso(Date.UTC(P.y,P.m,k)));
  const inR=x=>P.f&&P.t&&x>=P.f&&x<=P.t;
- modal(`<h3>Pilih rentang tanggal</h3>
+ return `<h3>Pilih rentang tanggal</h3>
  <div style="display:flex;gap:8px;overflow-x:auto;padding:6px 0">${rPresets().map((q,i)=>`<button class="btn s x" style="white-space:nowrap" onclick="rPreset(${i})">${q[0]}</button>`).join('')}</div>
  <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0"><button class="btn s x" onclick="rMon(-1)">‹</button><b>${RBULAN[P.m]} ${P.y}</b><button class="btn s x" onclick="rMon(1)">›</button></div>
  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px;color:#8a6f68">${lab.map(x=>`<div>${x}</div>`).join('')}</div>
- <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px">${cells.map(c=>{if(!c)return '<div></div>';const edge=c==P.f||c==P.t,mid=inR(c);return `<button onclick="rDay('${c}')" style="padding:9px 0;border:0;border-radius:10px;cursor:pointer;font-size:14px;background:${edge?'#c0503a':mid?'#f3d9cf':'transparent'};color:${edge?'#fff':'inherit'};font-weight:${edge?700:400}">${+c.slice(8)}</button>`}).join('')}</div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px">${cells.map(c=>{if(!c)return '<div></div>';const edge=c==P.f||c==P.t,mid=inR(c);return `<button onclick="rDay('${c}')" style="padding:9px 0;border:0;border-radius:10px;cursor:pointer;font-size:14px;transition:none;background:${edge?'#c0503a':mid?'#f3d9cf':'transparent'};color:${edge?'#fff':'inherit'};font-weight:${edge?700:400}">${+c.slice(8)}</button>`}).join('')}</div>
  <p class="mu" style="margin:12px 0 0;text-align:center">${P.f?fdp(P.f):'–'} s/d ${P.t?fdp(P.t):'–'}</p>
- <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px"><button class="btn s x" onclick="closeM()">Batal</button><button class="btn" onclick="rDone()">Konfirmasi</button></div>`)}
+ <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px"><button class="btn s x" onclick="closeM()">Batal</button><button class="btn" onclick="rDone()">Konfirmasi</button></div>`}
+function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
+
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
 async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role')]);
  const em={};ps.forEach(x=>em[x.user_id]=x.email);
