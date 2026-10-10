@@ -912,8 +912,8 @@ async function out(){
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||isDeveloper())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper()))};
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log'};
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||isDeveloper())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper()))};
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>(!m.adm||adm())&&(!m.pay||payOK())&&(!String(m.page||'').startsWith('cg_')||T.hasCogs!==false)).map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
@@ -942,7 +942,7 @@ function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();retu
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':'dash',pgs=allowed().filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':'dash',pgs=allowed().filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('refresh')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('trash')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}`}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
@@ -1021,6 +1021,14 @@ async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.g
 async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
  const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
  if(ok){toast('Admin divisi diatur');divLoad()}}
+
+/* ===== AUDIT LOG (dev, baca saja) ===== */
+async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
+V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa melihat audit log.</div>';
+ if(!T.audInit){T.audInit=1;setTimeout(audLoad,0)}
+ const rows=T.aud||[];
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Riwayat perubahan (100 terakhir)</b><button class="btn s x" onclick="audLoad()">Muat ulang</button></div></div>`+
+ `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
