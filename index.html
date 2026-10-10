@@ -342,6 +342,7 @@ const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public H
 const DEVELOPER_EMAILS=['ahmadpajarpirmansah@gmail.com','ahmadpajarpirmansah099@gmail.com'], ADMIN_EMAILS=['admin@lazy.jennie','admin@div.bar'];
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
 const roleForEmail=email=>{const e=normEmail(email);return DEVELOPER_EMAILS.includes(e)?'D':ADMIN_EMAILS.includes(e)?'A':null};
+const dbAdminRole=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return (r=='div_admin'||r=='hr'||r=='legacy_admin')?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 /* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
@@ -647,6 +648,7 @@ if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
+T.hasCogs=true;if(session&&T.dbRole=='div_admin'){const sc=await sb().from('user_scopes').select('division_id').limit(1);const did=sc.data&&sc.data[0]&&sc.data[0].division_id;if(did){const dv=await sb().from('divisions').select('has_cogs').eq('id',did).maybeSingle();T.hasCogs=!(dv.data&&dv.data.has_cogs===false)}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[await staffEmployeeList(),(D.me&&D.me.r=='K')?await staffAttendance(D.me.id):[]];
@@ -783,7 +785,7 @@ async function initAuth(){
     if(error)throw error;
     const applySession=async session=>{
       if(!session){if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}R();return}
-      const email=session.user.email||'',role=roleForEmail(email);
+      const email=session.user.email||'',role=roleForEmail(email)||(await dbAdminRole());
       if(!role){
         D.me=null;sv();R();
         toast('Akun ('+(email||'tanpa email')+') belum diberi akses aplikasi. Hubungi developer.','err');
@@ -859,7 +861,7 @@ async function lgA(){
     if(!data.session)
       throw new Error('Login Admin gagal');
 
-    const role=roleForEmail(data.session.user.email||email);
+    const role=roleForEmail(data.session.user.email||email)||(await dbAdminRole());
     if(!role){
       await sb().auth.signOut();
       throw new Error('Email '+(data.session.user.email||email)+' belum terdaftar sebagai developer atau admin aplikasi.');
@@ -928,10 +930,10 @@ async function out(){
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||isDeveloper())))};
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin'};
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||isDeveloper())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper()))};
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
-function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>(!m.adm||adm())&&(!m.pay||payOK())).map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>(!m.adm||adm())&&(!m.pay||payOK())&&(!String(m.page||'').startsWith('cg_')||T.hasCogs!==false)).map(m=>`<button class="btn ${m.page?'s':'o'}" style="${m.page?'':'opacity:.55'}" ${m.page?`onclick="closeM();go('${m.page}')"`:'disabled'}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(m.ic,32)}</div>${esc(m.name)}</button>`).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
 function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
@@ -958,7 +960,7 @@ function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();retu
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':'dash',pgs=allowed().filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':'dash',pgs=allowed().filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgSeed()">${IC('refresh')}${L('Muat ulang resep / data awal...','Reload recipes / starter data...')}</button><button onclick="cgReset()">${IC('trash')}${L('Kosongkan data COGS...','Clear COGS data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}`}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')],
@@ -993,6 +995,25 @@ const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={}
 const payPick=val=>{if(val=='custom'){T.rsel='custom';R();return}const [a,b]=val.split('|');T.rf=a;T.rt=b;T.rsel='';R()};
 const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t),custom=T.rsel=='custom'||!match;
  return `<label style="display:block">Periode gaji<select onchange="payPick(this.value)">${opts.map(([a,b])=>`<option value="${a}|${b}" ${!custom&&a==f&&b==t?'selected':''}>${fdp(a)} s/d ${fdp(b)}</option>`).join('')}<option value="custom" ${custom?'selected':''}>Rentang bebas…</option></select></label>`+(custom?`<div style="display:flex;gap:10px;margin-top:8px"><label style="flex:1">Dari<input type="date" value="${f}" onchange="T.rf=this.value;R()"></label><label style="flex:1">Sampai<input type="date" value="${t}" onchange="T.rt=this.value;R()"></label></div>`:'')};
+
+/* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
+async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role')]);
+ const em={};ps.forEach(x=>em[x.user_id]=x.email);
+ T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
+V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
+ if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
+ const ds=T.divs||[];
+ const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td></tr>`).join('');
+ return `<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>COGS</th><th>Admin</th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
+ `<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya COGS</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
+ `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
+async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.getElementById('dv_g').checked;
+ if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
+ const ok=await sbRun(async()=>{const outs=await payQ('outlets','id,code');const o=outs.find(x=>x.code=='LJ')||outs[0];if(!o)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:o.id,p_code:c,p_name:n,p_has_cogs:g})});
+ if(ok){toast('Divisi ditambahkan');divLoad()}}
+async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
+ const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
+ if(ok){toast('Admin divisi diatur');divLoad()}}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
