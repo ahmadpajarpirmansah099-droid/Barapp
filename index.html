@@ -951,7 +951,7 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
   while(c.firstChild)body.appendChild(c.firstChild);
   c.append(hd,body);c.style.cursor=open?'':'pointer';
   const toggle=()=>{const now=!T.acc3[key];T.acc3[key]=now;body.style.display=now?'block':'none';ch.textContent=now?'▴':'▾';hd.style.margin=now?'0 0 12px':'0';c.style.cursor=now?'':'pointer';c.onclick=now?null:toggle};
-  hd.onclick=toggle;if(!open)c.onclick=toggle;
+  hd.onclick=e=>{e.stopPropagation();toggle()};if(!open)c.onclick=toggle;
  })}
 
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
