@@ -918,7 +918,7 @@ async function out(){
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'COGS',ic:'cogs',page:'cg_menu'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'MENU COGS',cg_wip:'WIP RECIPES',cg_bahan:'INGREDIENTS',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||isDeveloper())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper()))};
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper()))};
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
@@ -1195,13 +1195,14 @@ function payBuildUrls(){Object.values(PAY.urls).forEach(u=>{try{URL.revokeObject
  r.items.forEach(it=>{PAY.urls[it.id]=URL.createObjectURL(pdfBuild([slipOps(it,r.al.filter(a=>a.item_id==it.id),r.run,r.f,r.t)]))});
  PAY.urls.all=URL.createObjectURL(pdfBuild(rekapPages(r.items,r.run,r.f,r.t)))}
 /* ===== Pengaturan (developer) ===== */
-V.pay_set=()=>{if(!isDeveloper())return payDenied();payEnsure();const s=PAY.s||{period_mode:'calendar',meal_codes:['M']},c=s.meal_codes||[];
+V.pay_set=()=>{if(!payOK())return payDenied();payEnsure();const s=PAY.s||{period_mode:'calendar',meal_codes:['M']},c=s.meal_codes||[];
  const chip=k=>`<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #ecd6cf;border-radius:12px;background:#fff;cursor:pointer;font-weight:600"><input type="checkbox" id="mc_${k}" ${c.includes(k)?'checked':''} style="width:auto;margin:0">${k}</label>`;
  const body=`<div style="display:grid;gap:14px"><label>Mode periode<select id="pm"><option value="calendar" ${s.period_mode!='day_24_23'?'selected':''}>Tanggal 1 s/d akhir bulan</option><option value="day_24_23" ${s.period_mode=='day_24_23'?'selected':''}>Tanggal 24 s/d 23</option></select></label>
  <div><div class="mu" style="margin-bottom:8px">Kode absensi yang dapat uang makan</div><div style="display:flex;gap:8px;flex-wrap:wrap">${['M','L','PH','S','I'].map(chip).join('')}</div></div>
  <label>Alamat perusahaan (dicetak di slip)<input id="co_addr" value="${esc((()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})())}" autocomplete="off"></label>
  <div><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`;
- return payBlk('set_main','Periode & Uang Makan',body,true)};
+ const emp=D.emp.length?`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Jabatan</th><th>Aktif</th><th></th></tr>${D.emp.map((e,i)=>`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td>${e.aktif?'Ya':'Tidak'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn s x" onclick="pinOpen(${i})">PIN</button></td></tr>`).join('')}</table></div><div style="margin-top:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`:`<div style="margin-bottom:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`;
+ return payBlk('set_main','Periode & Uang Makan',body,true)+payBlk('set_emp','Data karyawan',emp,false)};
 async function paySaveSet(){try{localStorage.setItem('bar_pay_addr',v('co_addr').trim())}catch(e){}const m=v('pm'),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
  const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_settings').update({period_mode:m,custom_start_day:null,custom_end_day:null,meal_codes:codes}).eq('id',true);if(error)throw error});
  if(ok){toast('Aturan tersimpan');payLoad()}}
