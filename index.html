@@ -45,7 +45,7 @@ a.nm:hover{text-decoration:underline;color:var(--ac)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) a.nm{color:var(--ac)}}
 
 /* ---------- animasi lembut ---------- */
-@keyframes komEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes komEnter{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes komFade{from{opacity:0}to{opacity:1}}
 @keyframes komRipple{to{transform:scale(2.4);opacity:0}}
 @keyframes komFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(.5deg)}}
@@ -54,7 +54,7 @@ a.nm:hover{text-decoration:underline;color:var(--ac)}
 @keyframes komSmoke{0%{transform:translateY(0) scale(1);opacity:.6}50%{transform:translateY(-6px) scale(1.1);opacity:.35}100%{transform:translateY(0) scale(1);opacity:.6}}
 @keyframes pgm{from{margin-left:-35%}to{margin-left:100%}}
 main{animation:komEnter .45s cubic-bezier(.16,1,.3,1) backwards}
-.card.kom-arrive{animation:komEnter .42s cubic-bezier(.16,1,.3,1) backwards}
+.card.kom-arrive{animation:komEnter .5s cubic-bezier(.34,1.45,.64,1) backwards}
 
 /* ---------- sidebar (desktop) ---------- */
 .side{display:none}
@@ -927,6 +927,8 @@ const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remov
 function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
 function about(){cmn();modal(`<h3>${L('Tentang','About')} ${esc(TH.name)}</h3><div class="dlg">${IC('pc',32)}<p><b>${esc(TH.name)} - ${esc(TH.sub)}</b><br>${L('Karyawan, absensi, dan tema aplikasi tersimpan di Supabase agar sama di semua perangkat.','Employees, attendance, and app theme are stored in Supabase so they stay consistent across devices.')}</p></div><div class="btns"><button class="btn" onclick="closeM()">OK</button></div>`)}
 /* Card tertutup: di semua menu, card pertama terbuka; card berikutnya tertutup dan dibuka dengan ketuk */
+
+function accToggle(b,open){if(!b)return;b.style.transition='grid-template-rows .5s cubic-bezier(.34,1.4,.64,1),opacity .35s ease';requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.gridTemplateRows=open?'1fr':'0fr';b.style.opacity=open?'1':'0'}))}
 function accFix(){const m=document.querySelector('main');if(!m)return;
  const cards=[...m.children].filter(c=>c.classList.contains('card')&&!c.classList.contains('empty')&&!c.querySelector('.dlg,.prog'));
  if(cards.length<2)return;T.acc3=T.acc3||{};
@@ -935,12 +937,12 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
   const head=c.querySelector(':scope > h3, :scope > h4, :scope > b');
   const hd=document.createElement('div');hd.style.cssText='display:flex;align-items:center;gap:12px;cursor:pointer;'+(open?'margin:0 0 12px':'margin:0');
   const title=document.createElement('div');title.style.cssText='flex:1;font-weight:700';title.textContent=head?head.textContent.trim():'Detail';
-  const ch=document.createElement('span');ch.textContent=open?'▴':'▾';ch.style.cssText='font-size:18px;opacity:.6';
+  const ch=document.createElement('span');ch.textContent='▾';ch.style.cssText='font-size:18px;opacity:.6;display:inline-block;transition:transform .5s cubic-bezier(.34,1.56,.64,1);transform:rotate('+(open?180:0)+'deg)';
   hd.append(title,ch);if(head)head.remove();
-  const body=document.createElement('div');body.style.display=open?'block':'none';
-  while(c.firstChild)body.appendChild(c.firstChild);
+  const body=document.createElement('div');body.style.cssText='display:grid;grid-template-rows:'+(open?'1fr':'0fr')+';opacity:'+(open?1:0);const inner=document.createElement('div');inner.style.cssText='min-height:0;overflow:hidden';body.append(inner);
+  while(c.firstChild)inner.appendChild(c.firstChild);
   c.append(hd,body);c.style.cursor=open?'':'pointer';
-  const toggle=()=>{const now=!T.acc3[key];T.acc3[key]=now;body.style.display=now?'block':'none';ch.textContent=now?'▴':'▾';hd.style.margin=now?'0 0 12px':'0';c.style.cursor=now?'':'pointer';c.onclick=now?null:toggle};
+  const toggle=()=>{const now=!T.acc3[key];T.acc3[key]=now;accToggle(body,now);ch.style.transform='rotate('+(now?180:0)+'deg)';hd.style.margin=now?'0 0 12px':'0';c.style.cursor=now?'':'pointer';c.onclick=now?null:toggle};
   hd.onclick=e=>{e.stopPropagation();toggle()};if(!open)c.onclick=toggle;
  })}
 
@@ -977,8 +979,8 @@ const rupiah=n=>'Rp '+fmtN(n);
 const fdp=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'-';
 const payRpc=(fn,args)=>sb().rpc(fn,args||{}).then(r=>{if(r.error)throw r.error;return r.data});
 const payQ=async(tbl,sel,f)=>{let q=sb().from(tbl).select(sel);if(f)q=f(q);const {data,error}=await q;if(error)throw error;return data||[]};
-const payBlk=(k,title,html,def)=>{T.acc=T.acc||{};const o=(k in T.acc)?T.acc[k]:!!def;return `<div onclick="payAcc('${k}',${!!def})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px;margin:0 0 12px;background:#fffaf7;border:1px solid #ecd6cf;border-radius:18px"><b style="flex:1">${title}</b><span id="pbc-${k}" style="font-size:18px;color:#8a6f68">${o?'▴':'▾'}</span></div><div id="pbb-${k}" style="display:${o?'block':'none'};margin:-4px 0 14px;padding:0 2px">${html}</div>`};
-const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;const now=!cur;T.acc[k]=now;const bd=document.getElementById('pbb-'+k),ch=document.getElementById('pbc-'+k);if(bd)bd.style.display=now?'block':'none';if(ch)ch.textContent=now?'▴':'▾'};
+const payBlk=(k,title,html,def)=>{T.acc=T.acc||{};const o=(k in T.acc)?T.acc[k]:!!def;return `<div onclick="payAcc('${k}',${!!def})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px;margin:0 0 12px;background:#fffaf7;border:1px solid #ecd6cf;border-radius:18px"><b style="flex:1">${title}</b><span id="pbc-${k}" style="font-size:18px;color:#8a6f68;display:inline-block;transition:transform .5s cubic-bezier(.34,1.56,.64,1);transform:rotate(${o?180:0}deg)">▾</span></div><div id="pbb-${k}" style="display:grid;grid-template-rows:${o?'1fr':'0fr'};opacity:${o?1:0};margin:-4px 0 14px;padding:0 2px"><div style="min-height:0;overflow:hidden">${html}</div></div>`};
+const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;const now=!cur;T.acc[k]=now;const bd=document.getElementById('pbb-'+k),ch=document.getElementById('pbc-'+k);if(bd)accToggle(bd,now);if(ch)ch.style.transform='rotate('+(now?180:0)+'deg)'};
 const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={};for(let k=0;k<7;k++){const [a,b]=perFor(mkd(y,mo-1-k,15));const key=a+'|'+b;if(!seen[key]){seen[key]=1;out.push([a,b])}}return out};
 const payPick=val=>{if(val=='custom')return;const [a,b]=val.split('|');T.rf=a;T.rt=b;R()};
 const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t);
