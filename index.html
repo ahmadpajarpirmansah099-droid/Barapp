@@ -45,13 +45,13 @@ a.nm:hover{text-decoration:underline;color:var(--ac)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) a.nm{color:var(--ac)}}
 
 /* ---------- animasi lembut ---------- */
-@keyframes komEnter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes komEnter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes komFade{from{opacity:0}to{opacity:1}}
-@keyframes komRipple{to{transform:scale(3.2);opacity:0}}
-@keyframes komFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(1deg)}}
-@keyframes komCloud{0%{transform:translateX(-10%)}50%{transform:translateX(10%)}100%{transform:translateX(-10%)}}
-@keyframes komSway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.5deg)}}
-@keyframes komSmoke{0%{transform:translateY(0) scale(1);opacity:.7}50%{transform:translateY(-15px) scale(1.3);opacity:.4}100%{transform:translateY(-30px) scale(1.6);opacity:0}}
+@keyframes komRipple{to{transform:scale(2.4);opacity:0}}
+@keyframes komFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(.5deg)}}
+@keyframes komCloud{0%{transform:translateX(-4%)}50%{transform:translateX(4%)}}
+@keyframes komSway{0%,100%{transform:rotate(0)}50%{transform:rotate(.6deg)}}
+@keyframes komSmoke{0%{transform:translateY(0) scale(1);opacity:.6}50%{transform:translateY(-6px) scale(1.1);opacity:.35}100%{transform:translateY(0) scale(1);opacity:.6}}
 @keyframes pgm{from{margin-left:-35%}to{margin-left:100%}}
 main{animation:komEnter .45s cubic-bezier(.16,1,.3,1) backwards}
 .card.kom-arrive{animation:komEnter .42s cubic-bezier(.16,1,.3,1) backwards}
@@ -216,7 +216,7 @@ details[open]>summary::after{transform:rotate(180deg)}
 .pc i{display:inline-block;width:22px;height:22px;margin:8px 5px 0 0;border:1px solid var(--line);border-radius:50%}
 .cr{display:flex;justify-content:space-between;align-items:center;gap:12px}.cr small{display:block;color:var(--mu);font-size:11px;font-weight:400}.cr input{width:64px;flex:none}
 .cgr{display:grid;grid-template-columns:1fr 64px 62px 34px;gap:6px;margin-bottom:6px}.cgw{margin-bottom:6px}.cgw .cgr{margin-bottom:0}.sg{max-height:190px;overflow-y:auto;margin-top:4px;border:1px solid var(--line);border-radius:10px;background:var(--cd)}.sg:empty{display:none}.sgi{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line)}.sgi:last-child{border-bottom:0}.sgi:active{background:var(--tint)}.sgi small{color:var(--mu);font-size:11px}.sgn{padding:9px 12px;font-size:12.5px;color:var(--mu)}.cgwarn{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--tint);font-size:13px}.cgwarn .row{margin-top:8px}.cgr input{min-width:0;margin-top:0}.cgr .btn{min-width:0;padding:0}.cgt input{width:92px;min-height:36px;margin-top:0}
-.prog{height:8px;border-radius:999px;background:var(--tint);overflow:hidden}.prog i{display:block;height:100%;width:35%;border-radius:999px;background:linear-gradient(90deg,var(--ac),var(--gd));animation:pgm 1.4s ease-in-out infinite}
+.prog{height:8px;border-radius:999px;background:var(--tint);overflow:hidden}.prog i{display:block;height:100%;width:35%;border-radius:999px;background:linear-gradient(90deg,var(--ac),var(--gd));animation:pgm 2.4s ease-in-out infinite}
 
 /* ---------- dialog ---------- */
 .ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(31,45,36,.38);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);animation:komFade .2s ease both}
@@ -243,11 +243,11 @@ details[open]>summary::after{transform:rotate(180deg)}
 .task.ct svg{transition:transform .35s cubic-bezier(.2,.8,.3,1)}
 .task.ct:active{transform:scale(.9)}
 .task.ct:active svg{transform:scale(1.18) rotate(-7deg)}
-.task.ct.on{animation:tabPop .38s cubic-bezier(.2,.8,.3,1)}
-.task.ct.on svg{animation:iconBob .5s cubic-bezier(.2,.8,.3,1)}
+.task.ct.on{animation:tabPop .28s ease-out}
+.task.ct.on svg{animation:iconBob .4s ease-out}
 .task.ct:not(.on):hover{background:color-mix(in srgb,var(--tint) 60%,transparent)}
-@keyframes tabPop{0%{transform:scale(.9)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
-@keyframes iconBob{0%{transform:translateY(0)}35%{transform:translateY(-3px) scale(1.12)}100%{transform:translateY(0)}}
+@keyframes tabPop{0%{transform:scale(.97);opacity:.6}100%{transform:scale(1);opacity:1}}
+@keyframes iconBob{0%{transform:translateY(0)}50%{transform:translateY(-1px)}100%{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.task.ct,.task.ct svg,.task.ct.on,.task.ct.on svg{animation:none!important;transition:none!important}}
 .sep{width:1px;height:26px;background:var(--br)}
 .tray{margin-left:auto;display:flex;align-items:center;gap:6px;padding:7px 11px;font-size:12px;font-weight:600;color:var(--mu);background:var(--in);border:1px solid var(--line);border-radius:12px}
@@ -266,7 +266,7 @@ details[open]>summary::after{transform:rotate(180deg)}
 .btn,.task,.start,.nvb,.ibtn,.sb button,.fb,.pc,summary,.dd button,.sdi button,td.c,a.nm{position:relative}
 .kom-ripple-host{overflow:hidden}
 .kom-ripple-host>:not(.kom-ripple){position:relative;z-index:1}
-.kom-ripple{position:absolute;pointer-events:none;z-index:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:color-mix(in srgb,var(--gd) 45%,transparent);transform:scale(0);animation:komRipple .58s cubic-bezier(.1,.6,.2,1) forwards}
+.kom-ripple{position:absolute;pointer-events:none;z-index:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:color-mix(in srgb,var(--gd) 45%,transparent);transform:scale(0);animation:komRipple .5s ease-out forwards}
 
 /* ---------- layar login ---------- */
 .lgs{position:relative;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px 14px 30px;overflow:hidden}
@@ -280,14 +280,14 @@ details[open]>summary::after{transform:rotate(180deg)}
 .scene .hill{position:absolute;bottom:0;left:0;width:100%;height:260px;color:color-mix(in srgb,var(--ac) 30%,transparent)}
 .scene .cot{position:absolute;bottom:46px;right:48px;width:190px;height:190px;display:none}
 .scene .sway{transform-origin:bottom center;animation:komSway 8s ease-in-out infinite}
-.scene .smoke{animation:komSmoke 4s cubic-bezier(.2,.8,.2,1) infinite}
+.scene .smoke{animation:komSmoke 7s ease-in-out infinite}
 .lgc{position:relative;z-index:2;width:100%;max-width:440px;padding:32px 28px 26px;text-align:center;background:color-mix(in srgb,var(--cd) 94%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);border-radius:calc(var(--r)*2);box-shadow:var(--cozy-lg);animation:komEnter .65s cubic-bezier(.16,1,.3,1) backwards}
 .lg-top{display:flex;justify-content:flex-end;margin:-14px -10px 0 0}
 .logo{width:68px;height:68px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;background:var(--tint);color:var(--ac);border:1px solid var(--line);animation:komFloat 6s ease-in-out infinite}
 .lgc h1{font-size:27px;line-height:1.2;margin-bottom:4px}
 .lgc .sub{margin:0 0 16px;font-size:13px;color:var(--mu)}
 .lg-st{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:center;margin-bottom:16px;padding:7px 12px;border-radius:12px;background:var(--in);font-size:12px;color:var(--mu)}
-.lg-st .dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 3px var(--tint)}.lg-st .dot.err{background:var(--dg);box-shadow:0 0 0 3px color-mix(in srgb,var(--dg) 20%,transparent)}.lg-st .dot.loading{background:var(--gd);animation:komFloat 1.2s ease-in-out infinite}
+.lg-st .dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 3px var(--tint)}.lg-st .dot.err{background:var(--dg);box-shadow:0 0 0 3px color-mix(in srgb,var(--dg) 20%,transparent)}.lg-st .dot.loading{background:var(--gd);animation:komFloat 6s ease-in-out infinite}
 .lg-ac{flex-basis:100%}
 .lgc form,.lgf{text-align:left}
 .fld{margin-bottom:14px;text-align:left}.fld>label{margin-bottom:6px}
@@ -1649,7 +1649,7 @@ loadSharedSettings(true);
    span.className='kom-ripple';span.style.left=(e.clientX-r.left)+'px';span.style.top=(e.clientY-r.top)+'px';
    el.classList.add('kom-ripple-host');el.appendChild(span);setTimeout(()=>{span.remove();if(!el.querySelector('.kom-ripple'))el.classList.remove('kom-ripple-host')},620);
  },{passive:true});
- const animateCards=()=>{const cards=document.querySelectorAll('#app.in main .card:not([data-kom-ready])');cards.forEach((c,i)=>{c.dataset.komReady='1';c.classList.add('kom-arrive');c.style.animationDelay=Math.min(i*35,210)+'ms';});};
+ let komLastK=null;const animateCards=()=>{const k=(typeof pg!=='undefined'?pg:'')+'|'+(typeof D!=='undefined'?D.cur:'');const fresh=k!==komLastK;komLastK=k;const cards=document.querySelectorAll('#app.in main .card:not([data-kom-ready])');cards.forEach((c,i)=>{c.dataset.komReady='1';if(fresh){c.classList.add('kom-arrive');c.style.animationDelay=Math.min(i*30,180)+'ms'}});};
  const app=document.getElementById('app'); if(app){new MutationObserver(()=>requestAnimationFrame(animateCards)).observe(app,{childList:true,subtree:true});animateCards();}
 })();
 </script>
