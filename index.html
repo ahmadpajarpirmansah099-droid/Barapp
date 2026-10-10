@@ -995,8 +995,7 @@ const payBlk=(k,title,html,def)=>{T.acc=T.acc||{};const o=(k in T.acc)?T.acc[k]:
 const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;const now=!cur;T.acc[k]=now;const bd=document.getElementById('pbb-'+k),ch=document.getElementById('pbc-'+k);if(bd)accToggle(bd,now);if(ch)ch.style.transform='rotate('+(now?180:0)+'deg)'};
 const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={};for(let k=0;k<7;k++){const [a,b]=perFor(mkd(y,mo-1-k,15));const key=a+'|'+b;if(!seen[key]){seen[key]=1;out.push([a,b])}}return out};
 const payPick=val=>{if(val=='custom')return;const [a,b]=val.split('|');T.rf=a;T.rt=b;R()};
-const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t);
- return `<label style="display:block">Periode gaji<select onchange="payPick(this.value)">${opts.map(([a,b])=>`<option value="${a}|${b}" ${a==f&&b==t?'selected':''}>${fdp(a)} s/d ${fdp(b)}</option>`).join('')}${match?'':`<option value="custom" selected>${fdp(f)} s/d ${fdp(t)}</option>`}</select></label><button class="btn s x" style="margin-top:8px" onclick="rOpen('T')">📅 Pilih rentang di kalender</button>`};
+const payPickers=(f,t)=>`<button class="btn s x" onclick="rOpen('T')">📅 ${fdp(f)} s/d ${fdp(t)}</button>`;
 
 /* ===== PEMILIH RENTANG TANGGAL (dipakai semua menu yang ada tanggal) ===== */
 const RBULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -1159,7 +1158,7 @@ function pdfBuild(pages){const o=[];o.push('<< /Type /Catalog /Pages 2 0 R >>');
  o.push('<< /Type /Pages /Kids ['+pages.map((_,i)=>(6+2*i)+' 0 R').join(' ')+'] /Count '+pages.length+' >>');
  o.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
  o.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
- pages.forEach((ops,i)=>{const cs=ops.map(p=>p.k=='l'?p.x1.toFixed(1)+' '+p.y1.toFixed(1)+' m '+p.x2.toFixed(1)+' '+p.y2.toFixed(1)+' l S':'BT /'+(p.b?'F2':'F1')+' '+p.z+' Tf '+p.x.toFixed(1)+' '+p.y.toFixed(1)+' Td ('+pdfEsc(p.s)+') Tj ET').join('\n');
+ pages.forEach((ops,i)=>{const cs=ops.map(p=>{if(p.k=='l')return p.x1.toFixed(1)+' '+p.y1.toFixed(1)+' m '+p.x2.toFixed(1)+' '+p.y2.toFixed(1)+' l S';if(p.k=='r')return (p.fill?p.fill+' rg '+p.x.toFixed(1)+' '+p.y.toFixed(1)+' '+p.w.toFixed(1)+' '+p.h.toFixed(1)+' re f\n':'')+'0.55 G '+p.x.toFixed(1)+' '+p.y.toFixed(1)+' '+p.w.toFixed(1)+' '+p.h.toFixed(1)+' re S';return (p.c||'0 0 0')+' rg BT /'+(p.b?'F2':'F1')+' '+p.z+' Tf '+p.x.toFixed(1)+' '+p.y.toFixed(1)+' Td ('+pdfEsc(p.s)+') Tj ET'}).join('\n');
   o.push('<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
   o.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+(5+2*i)+' 0 R >>')});
  let out='%PDF-1.4\n';const off=[];o.forEach((x,i)=>{off.push(out.length);out+=(i+1)+' 0 obj\n'+x+'\nendobj\n'});
@@ -1172,49 +1171,69 @@ const issTxt=a=>(a||[]).map(k=>({no_salary:'gaji belum diisi',recap_not_approved
 const pdfSt=run=>run&&run.status=='finalized'?'FINAL - periode dikunci':'DRAFT - belum difinalisasi';
 
 const payCo=()=>({nama:(typeof TH!='undefined'&&TH.name)||'BAR APP',alamat:(()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})()});
-function slipOps(it,als,run,f,t){const o=[],co=payCo(),full=it.salary_mode!='prorata',st=pdfSt(run),L=50,Rr=545;let y=800;
- const row=(l,k,v,b,z)=>{pdfT(o,L,y,l,z||10,b);if(k)pdfT(o,L+150,y,k,z||9);pdfR(o,Rr,y,v,z||10,b);y-=(z||10)+5};
- const sep=(w)=>{pdfL(o,y+4,L,Rr);y-=w||10};
- /* Judul & periode */
- pdfT(o,L,y,'SLIP GAJI',15,1);y-=18;
- pdfT(o,L,y,'Periode gaji: '+fdp(f)+' s/d '+fdp(t),10);y-=13;
- pdfT(o,L,y,'Status: '+st,8);y-=6;sep(8);
- /* Perusahaan & karyawan */
- pdfT(o,L,y,co.nama,12,1);y-=14;if(co.alamat){pdfT(o,L,y,co.alamat,9);y-=13}else y-=4;
- sep(8);
- pdfT(o,L,y,'Nama karyawan',10);pdfT(o,L+120,y,': '+it.employee_name,10,1);y-=14;
- const e=D.emp.find(x=>String(x.id)==String(it.employee_id));
- pdfT(o,L,y,'Jabatan',10);pdfT(o,L+120,y,': '+((e&&e.jab)||'-'),10);y-=10;sep(10);
- /* Ringkasan */
- pdfT(o,L,y,'RINGKASAN',10,1);y-=15;
- row('Jumlah gaji utuh','',rupiah(it.monthly_salary),0);
- row('Jumlah tunjangan','',rupiah(it.allowance_total),0);
- row('Jumlah kasbon','',rupiah(it.kasbon_deduction),0);
- row('Jumlah lembur','',rupiah(it.overtime_total||0),0);
- y-=2;sep(10);
- /* Rincian per hari */
- pdfT(o,L,y,'RINCIAN GAJI BERDASARKAN JUMLAH HARI YANG TERHITUNG',10,1);y-=14;
- pdfT(o,L,y,'Periode '+fdp(f)+' s/d '+fdp(t)+' = '+((+it.paid_days||0)+(+it.unpaid_days||0))+' hari',9);y-=14;
- pdfT(o,L,y,'Gaji per hari (gaji bulanan / 31)',9);pdfR(o,Rr,y,rupiah(it.daily_rate),9);y-=13;
- pdfT(o,L,y,'Hari masuk (M)',9);pdfR(o,Rr,y,String(it.cnt_m),9);y-=12;
- pdfT(o,L,y,'Hari libur (L)',9);pdfR(o,Rr,y,String(it.cnt_l),9);y-=12;
- pdfT(o,L,y,'Public holiday (PH)',9);pdfR(o,Rr,y,String(it.cnt_ph),9);y-=12;
- pdfT(o,L,y,'Sakit (S)',9);pdfR(o,Rr,y,String(it.cnt_s),9);y-=12;
- pdfT(o,L,y,'Izin (I)',9);pdfR(o,Rr,y,String(it.cnt_i),9);y-=12;
- pdfT(o,L,y,'Hari tidak dibayar (kosong / izin)',9);pdfR(o,Rr,y,String(it.unpaid_days||0),9);y-=14;
- if(full){row('Gaji bulanan','',rupiah(it.monthly_salary),0,10);row('Dikurangi hari tidak dibayar',(it.unpaid_days||0)+' hari x '+rupiah(it.daily_rate),'- '+rupiah(it.izin_deduction),0,10)}
- else{row('Gaji dibayar','',rupiah((+it.monthly_salary)-(+it.izin_deduction)),0,10);pdfT(o,L,y,'Gaji prorata: '+(it.paid_days||0)+' hari x '+rupiah(it.daily_rate),8);y-=12}
- row('Uang makan',(it.meal_days||0)+' hari x '+rupiah(it.meal_rate),'+ '+rupiah(it.meal_total),0,10);
- y-=2;pdfT(o,L,y,'Tunjangan',10,1);y-=14;
- if(als.length)als.forEach(x=>row('   '+x.name+(x.kind=='period_special'?' (khusus)':''),'','+ '+rupiah(x.amount),0,9));else{pdfT(o,L+10,y,'-',9);y-=13}
- row('Lembur ('+(it.overtime_hours||0)+' jam x '+rupiah(Math.round((+it.monthly_salary)/31/8*1.5))+' per jam)','','+ '+rupiah(it.overtime_total||0),0,10);
- row('Potongan kasbon','','- '+rupiah(it.kasbon_deduction),0,10);
- y-=2;sep(10);
+const pdfRc=(o,x,y,w,h,fill)=>o.push({k:'r',x,y,w,h,fill});
+const pdfCT=(o,x,y,s,z,b,c)=>o.push({k:'t',x,y,s,z:z||10,b:!!b,c});
+const pdfCTR=(o,xr,y,s,z,b,c)=>o.push({k:'t',x:xr-pdfW(s,z||10),y,s,z:z||10,b:!!b,c});
+const pdfCTC=(o,xc,y,s,z,b,c)=>o.push({k:'t',x:xc-pdfW(s,z||10)/2,y,s,z:z||10,b:!!b,c});
+const NAVY='0.12 0.22 0.42',LIGHT='0.86 0.9 0.96',WHITE='1 1 1';
+function slipOps(it,als,run,f,t){
+ const o=[],co=payCo(),st=pdfSt(run),L=50,R=545,M=297;
+ const dv=(T.divs||[]).find(d=>d.id==it.division_id),emp=D.emp.find(x=>String(x.id)==String(it.employee_id));
+ const izin=+it.izin_deduction||0,monthly=+it.monthly_salary||0,meal=+it.meal_total||0,ot=+it.overtime_total||0,kas=+it.kasbon_deduction||0,allow=+it.allowance_total||0;
+ let y=800;
+ pdfCTC(o,M,y,'SLIP GAJI',16,1);y-=20;
+ pdfCTC(o,M,y,co.nama,11,1);y-=14;
+ if(co.alamat){pdfCTC(o,M,y,co.alamat,9);y-=12}
+ pdfCTC(o,M,y,'Periode gaji: '+fdp(f)+' s/d '+fdp(t),9);y-=12;
+ pdfCTC(o,M,y,'Status: '+st,8);y-=8;
+ pdfL(o,y,L,R);y-=12;
+ /* Informasi karyawan */
+ pdfRc(o,L,y-14,R-L,16,NAVY);pdfCT(o,L+6,y-10,'INFORMASI KARYAWAN',9,1,WHITE);y-=24;
+ const info=[['Nama Karyawan',it.employee_name,'Divisi',dv?dv.name:'-'],['Jabatan',(emp&&emp.jab)||'-','Periode Gaji',fdp(f)+' - '+fdp(t)],['ID Karyawan',String(it.employee_id||'').slice(0,8).toUpperCase(),'Status',st.split(' - ')[0]]];
+ info.forEach(r=>{pdfRc(o,L,y-4,100,15,NAVY);pdfCT(o,L+5,y,r[0],8,1,WHITE);pdfCT(o,L+106,y,String(r[1]),9);pdfRc(o,300,y-4,100,15,NAVY);pdfCT(o,305,y,r[2],8,1,WHITE);pdfCT(o,406,y,String(r[3]),9);y-=18});
+ y-=6;
+ /* Ringkasan gaji */
+ pdfRc(o,L,y-14,R-L,16,NAVY);pdfCT(o,L+6,y-10,'RINGKASAN GAJI',9,1,WHITE);y-=16;
+ const pend=[['Gaji Pokok',monthly],['Tunjangan Makan ('+(it.meal_days||0)+' hari)',meal]].concat(als.map(a=>[a.name+(a.kind=='period_special'?' (khusus)':''),+a.amount||0])).concat([['Lembur ('+(it.overtime_hours||0)+' jam)',ot]]);
+ const pot=[['Potongan hari tidak dibayar ('+(it.unpaid_days||0)+' hari)',izin],['Kasbon / Pinjaman',kas]];
+ const n=Math.max(pend.length,pot.length),th=16+n*14+16,top=y;
+ pdfRc(o,L,top-th,R-L,th,null);
+ pdfRc(o,L,top-16,R-L,16,LIGHT);
+ pdfCT(o,L+6,top-11,'PENDAPATAN',8,1);pdfCTR(o,290,top-11,'JUMLAH',8,1);pdfCT(o,306,top-11,'POTONGAN',8,1);pdfCTR(o,R-6,top-11,'JUMLAH',8,1);
+ pdfL(o,top-16,L,R);
+ pdfL(o,top-th+16,L,R);
+ pdfL(o,top-th,L,L);
+ for(let i=0;i<n;i++){const yy=top-16-14*(i+1)+4;
+  if(pend[i]){pdfCT(o,L+6,yy,pend[i][0],9);pdfCTR(o,290,yy,rupiah(pend[i][1]),9)}
+  if(pot[i]){pdfCT(o,306,yy,pot[i][0],9);pdfCTR(o,R-6,yy,rupiah(pot[i][1]),9)}}
+ const totPend=pend.reduce((x,r)=>x+r[1],0),totPot=pot.reduce((x,r)=>x+r[1],0);
+ const yt=top-16-14*n-12;
+ pdfL(o,yt+12,L,R);
+ pdfCT(o,L+6,yt,'Total Pendapatan',9,1);pdfCTR(o,290,yt,rupiah(totPend),9,1);
+ pdfCT(o,306,yt,'Total Potongan',9,1);pdfCTR(o,R-6,yt,rupiah(totPot),9,1);
+ pdfL(o,top-th,L,R);
+ y=top-th-14;
+ /* Ringkasan kehadiran */
+ pdfRc(o,L,y-14,R-L,16,NAVY);pdfCT(o,L+6,y-10,'RINGKASAN KEHADIRAN',9,1,WHITE);y-=16;
+ const heads=['Hari Masuk','Hari Libur','PH','Sakit','Izin','Hari Dibayar','Tidak Dibayar'];
+ const vals=[it.cnt_m||0,it.cnt_l||0,it.cnt_ph||0,it.cnt_s||0,it.cnt_i||0,it.paid_days||0,it.unpaid_days||0];
+ const cw=(R-L)/7;
+ pdfRc(o,L,y-14,R-L,14,LIGHT);
+ heads.forEach((h,i)=>pdfCTC(o,L+cw*i+cw/2,y-10,h,7,1));
+ y-=14;
+ vals.forEach((v,i)=>pdfCTC(o,L+cw*i+cw/2,y-12,String(v),10,1));
+ pdfRc(o,L,y-18,R-L,18,null);
+ for(let i=1;i<7;i++)o.push({k:'l',x1:L+cw*i,y1:y+14,x2:L+cw*i,y2:y-18});
+ y-=26;
  /* Total final */
- const isNeg=+it.net_pay<0;
- pdfT(o,L,y,isNeg?'KEWAJIBAN (harus diselesaikan, bukan pembayaran tunai)':'TOTAL FINAL YANG DITERIMA',12,1);pdfR(o,Rr,y,rupiah(Math.abs(+it.net_pay)),12,1);y-=20;
- pdfT(o,L,y,'Dibayarkan kepada karyawan sesuai periode di atas.',8);
- pdfT(o,L,50,'Dokumen dibuat otomatis oleh BAR APP pada '+fdp(today())+'. Slip dibagikan oleh HR setelah periode ditutup.',7);
+ pdfRc(o,L,y-30,R-L,30,NAVY);
+ pdfCT(o,L+10,y-12,'TOTAL FINAL YANG DITERIMA',11,1,WHITE);
+ pdfCTR(o,R-10,y-12,rupiah(Math.abs(+it.net_pay)),13,1,WHITE);
+ y-=40;
+ pdfCT(o,L,y,'Dibayarkan kepada karyawan sesuai periode di atas.',8);
+ if(+it.net_pay<0){y-=12;pdfCT(o,L,y,'Nilai negatif: kewajiban karyawan yang harus diselesaikan, bukan pembayaran tunai.',8)}
+ pdfCTR(o,R,800,'Dokumen dibuat otomatis oleh BAR APP pada '+fdp(today()),7);
+ pdfCT(o,L,50,'Slip dibagikan oleh HR setelah periode ditutup. Dokumen ini tidak memerlukan tanda tangan.',7);
  return o}
 function rekapPages(items,run,f,t){const pages=[],edges=[235,292,349,406,463,545],hd=['Gaji','Potongan','Makan','Tunjangan','Kasbon','Net'];let o,y;
  const head=()=>{o=[];pages.push(o);y=800;pdfT(o,50,y,((typeof TH!='undefined'&&TH.name)||'BAR APP')+' - REKAP GAJI',13,1);y-=15;pdfT(o,50,y,'Periode: '+fdp(f)+' s/d '+fdp(t)+'    Status: '+pdfSt(run),9);y-=12;pdfL(o,y);y-=14;pdfT(o,50,y,'Nama',8,1);hd.forEach((h,i)=>pdfR(o,edges[i],y,h,8,1));y-=6;pdfL(o,y);y-=12};
