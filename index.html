@@ -639,8 +639,8 @@ function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null')
 function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=false;ds.forEach(d=>{if(!perOf(d)&&ensurePer(d))ch=true});if(ch)sv()}
 async function fetchAll(tbl,ord){const out=[];for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select('*').order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
-async function staffEmployeeList(){const {data,error}=await sb().rpc('staff_employee_list');if(error)throw error;return Array.isArray(data)?data:[]}
-async function staffAttendance(id){const {data,error}=await sb().rpc('staff_attendance',{p_employee:String(id)});if(error)throw error;return Array.isArray(data)?data:[]}
+async function staffMe(tok){const {data,error}=await sb().rpc('staff_me',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
+async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_attendance',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
 async function sbLoad(silent){
 if(SB.loading)return;SB.loading=true;
 try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err';SB.msg=m;SB.loading=false;if(!silent||ch)R();return}
@@ -651,14 +651,14 @@ T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null
 T.hasCogs=true;if(session&&T.dbRole=='div_admin'){const sc=await sb().from('user_scopes').select('division_id').limit(1);const did=sc.data&&sc.data[0]&&sc.data[0].division_id;if(did){const dv=await sb().from('divisions').select('has_cogs').eq('id',did).maybeSingle();T.hasCogs=!(dv.data&&dv.data.has_cogs===false)}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
- :[await staffEmployeeList(),(D.me&&D.me.r=='K')?await staffAttendance(D.me.id):[]];
+ :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
 const emp=er.map(mapEmp),att=ar.map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
 D.emp=emp;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
-if(D.me&&D.me.r=='K'&&!D.emp.some(e=>e.id==D.me.id)){D.me=null;sv()}
+if(D.me&&D.me.r=='K'&&(!D.me.tok||!D.emp.some(e=>e.id==D.me.id))){D.me=null;sv()}
 derivePeriods();sbCacheSave()
 }catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
 if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
@@ -881,37 +881,19 @@ async function lgA(){
   }
 }
 
-function lgK(){
-  if(SB.state=='loading'&&!D.emp.length)
-    return toast(
-      L(
-        'Data karyawan sedang dimuat, coba lagi sebentar.',
-        'Employee data is loading, try again shortly.'
-      ),
-      'warn'
-    );
 
-  const e=D.emp.find(
-    x=>x.nama.toLowerCase()==v('li').trim().toLowerCase()
-  );
-
-  if(!e)
-    return toast(
-      SB.state=='err'?SB.msg:'Nama karyawan tidak ditemukan',
-      'err'
-    );
-
-  if(!e.aktif)
-    return toast('Karyawan nonaktif','warn');
-
-  D.me={r:'K',id:e.id};
-  pg='dash';
-  sv();
-  R();
-  cogsLoad().then(()=>R());
-}
+/* ===== PIN LOGIN KARYAWAN ===== */
+function staffPinAsk(nm){modal(`<h3>Masuk sebagai ${esc(nm)}</h3><p class="mu">Masukkan PIN 4–6 angka.</p><label>PIN<input id="sp" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="staffPinGo('${encodeURIComponent(nm)}')">Masuk</button></div>`)}
+async function staffPinGo(enc){const nm=decodeURIComponent(enc),pin=v('sp').trim();if(!/^[0-9]{4,6}$/.test(pin))return toast('PIN harus 4–6 angka','err');
+ try{const {data,error}=await sb().rpc('staff_login',{p_name:nm,p_pin:pin});if(error)throw error;
+  if(!data||!data.ok)return toast((data&&data.msg)||'Nama atau PIN salah','err');
+  D.me={r:'K',id:data.id,tok:data.token};pg='dash';sv();closeM();await sbLoad(true);R()}catch(e){toast(errText(e),'err')}}
+function lgK(){const nm=v('li').trim();if(!nm)return toast('Masukkan nama karyawan','err');staffPinAsk(nm)}
+function pinOpen(i){if(!guard())return;const e=D.emp[i];if(!e)return;modal(`<h3>PIN login — ${esc(e.nama)}</h3><p class="mu">4–6 angka. Dipakai karyawan untuk masuk. PIN lama langsung tidak berlaku.</p><label>PIN baru<input id="pn" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><div class="row"><button class="btn s" onclick="openEmp(${i})">Kembali</button><button class="btn" onclick="pinSave('${e.id}')">Simpan PIN</button></div>`)}
+async function pinSave(id){const p=v('pn').trim();if(!/^[0-9]{4,6}$/.test(p))return toast('PIN harus 4–6 angka','err');const ok=await sbRun(async()=>{const {error}=await sb().rpc('staff_set_pin',{p_employee:String(id),p_pin:p});if(error)throw error});if(ok){closeM();toast('PIN disimpan')}}
 
 async function out(){
+  if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
 
   if(wasAdmin){
@@ -1270,7 +1252,7 @@ V.kar=()=>{let l=D.emp.filter(e=>(!F.q||(e.nama+e.id).toLowerCase().includes(F.q
 return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>':''}<div class="card"><div class="row"><label>Cari nama<input value="${esc(F.q)}" oninput="F.q=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div></div>`+
 (l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th>${L('Aktif','Active')}</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><input type="checkbox" ${e.aktif?'checked':''} onchange="togEmp(${i},this.checked)"></td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
 function openEmp(i){if(!guard())return;const e=i>=0?D.emp[i]:{};T.i=i;
-modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
+modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label><div class="row">${i>=0?`<button class="btn s" onclick="pinOpen(${i})">Atur PIN login</button>`:''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
 async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
 const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}
