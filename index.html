@@ -897,8 +897,18 @@ function lgK(){const nm=v('li').trim();if(!nm)return toast('Masukkan nama karyaw
 function pinOpen(i){if(!guard())return;const e=D.emp[i];if(!e)return;modal(`<h3>PIN login — ${esc(e.nama)}</h3><p class="mu">4–6 angka. Dipakai karyawan untuk masuk. PIN lama langsung tidak berlaku.</p><label>PIN baru<input id="pn" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><div class="row"><button class="btn s" onclick="openEmp(${i})">Kembali</button><button class="btn" onclick="pinSave('${e.id}')">Simpan PIN</button></div>`)}
 async function pinSave(id){const p=v('pn').trim();if(!/^[0-9]{4,6}$/.test(p))return toast('PIN harus 4–6 angka','err');const ok=await sbRun(async()=>{const {error}=await sb().rpc('staff_set_pin',{p_employee:String(id),p_pin:p});if(error)throw error});if(ok){closeM();toast('PIN disimpan')}}
 
+
+/* ===== LOGOUT OTOMATIS SETELAH 3 MENIT TIDAK AKTIF ===== */
+const IDLE_MS=3*60*1000;
+const idleSet=()=>{try{localStorage.setItem('bar_last',String(Date.now()))}catch(e){}};
+const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('bar_last')||0}catch(e){}
+ if(!t){idleSet();return}
+ if(Date.now()-t>IDLE_MS){toast('Sesi berakhir karena tidak aktif 3 menit. Silakan masuk lagi.','warn');out()}};
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
+setInterval(idleCheck,15000);
 async function out(){
-  D.cg=null;T.cogsDid=null;try{localStorage.removeItem(CGK)}catch(e){}
+  D.cg=null;T.cogsDid=null;try{localStorage.removeItem(CGK);localStorage.removeItem('bar_last')}catch(e){}
   if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
 
