@@ -1062,27 +1062,50 @@ const pdfL=(o,y,x1,x2)=>o.push({k:'l',x1:x1||50,y1:y,x2:x2||545,y2:y});
 const issTxt=a=>(a||[]).map(k=>({no_salary:'gaji belum diisi',recap_not_approved:'rekap absensi belum disetujui',blank_days:'ada absensi kosong',unknown_status:'ada kode absensi tidak dikenal'}[k]||k)).join(', ');
 const pdfSt=run=>run&&run.status=='finalized'?'FINAL - periode dikunci':'DRAFT - belum difinalisasi';
 
-function slipOps(it,als,run,f,t){const o=[],e=D.emp.find(x=>String(x.id)==String(it.employee_id));let y=790;
- pdfT(o,50,y,(typeof TH!='undefined'&&TH.name)||'BAR APP',14,1);y-=18;pdfT(o,50,y,'SLIP GAJI',11,1);y-=15;
- pdfT(o,50,y,'Periode: '+fdp(f)+' s/d '+fdp(t),10);y-=13;pdfT(o,50,y,'Status: '+pdfSt(run),9);y-=10;pdfL(o,y);y-=18;
- pdfT(o,50,y,'Nama',10);pdfT(o,130,y,': '+it.employee_name,10,1);y-=14;pdfT(o,50,y,'Jabatan',10);pdfT(o,130,y,': '+((e&&e.jab)||'-'),10);y-=18;
- pdfT(o,50,y,'KEHADIRAN',10,1);y-=14;
- pdfT(o,50,y,'Masuk (M): '+it.cnt_m+'    Libur (L): '+it.cnt_l+'    Public Holiday (PH): '+it.cnt_ph+'    Sakit (S): '+it.cnt_s+'    Izin (I): '+it.cnt_i,9);y-=12;
- pdfT(o,50,y,'Belum diisi: '+it.blank_days+(it.cnt_unknown?'    Kode tidak dikenal: '+it.cnt_unknown:'')+(it.paid_days>0?'    Hari dibayar: '+it.paid_days:''),9);y-=10;pdfL(o,y);y-=18;
- pdfT(o,50,y,'RINCIAN',10,1);y-=15;
- const row=(l,v,b)=>{pdfT(o,50,y,l,10,b);pdfR(o,545,y,v,10,b);y-=14};
- if(it.salary_mode=='prorata')row('Gaji prorata ('+it.paid_days+' hari x '+rupiah(it.daily_rate)+' per hari)',rupiah((+it.monthly_salary)-(+it.izin_deduction)));
- else{const ud=(it.paid_days>0||it.unpaid_days>0)?it.unpaid_days:it.cnt_i;row('Gaji bulanan',rupiah(it.monthly_salary));row('Potongan hari tidak dibayar ('+ud+' hari x '+rupiah(it.daily_rate)+')','- '+rupiah(it.izin_deduction))}
- row('Uang makan ('+it.meal_days+' hari x '+rupiah(it.meal_rate)+')','+ '+rupiah(it.meal_total));
- y-=4;pdfT(o,50,y,'Tunjangan',10,1);y-=14;
- if(als.length)als.forEach(a=>row('   '+a.name+(a.kind=='period_special'?' (khusus)':''),'+ '+rupiah(a.amount)));else{pdfT(o,50,y,'   -',10);y-=14}
- row('Total tunjangan','+ '+rupiah(it.allowance_total));
- row('Potongan kasbon','- '+rupiah(it.kasbon_deduction));
- y-=2;pdfL(o,y);y-=16;row('GAJI BERSIH',rupiah(it.net_pay),1);
- if(+it.liability>0){pdfT(o,50,y,'Kewajiban yang perlu diselesaikan: '+rupiah(it.liability)+' (bukan pembayaran tunai)',9);y-=14}
- else{pdfT(o,50,y,'Dibayarkan: '+rupiah(it.cash_payable),9);y-=14}
- if(run&&run.status!='finalized'&&it.issues&&it.issues.length){y-=4;pdfT(o,50,y,'Catatan: '+issTxt(it.issues),8);y-=12}
- pdfT(o,50,60,'Dokumen ini dibuat otomatis oleh BAR APP pada '+fdp(today())+'. Dibagikan oleh HR setelah periode ditutup.',7);
+const payCo=()=>({nama:(typeof TH!='undefined'&&TH.name)||'BAR APP',alamat:(()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})()});
+function slipOps(it,als,run,f,t){const o=[],co=payCo(),full=it.salary_mode!='prorata',st=pdfSt(run),L=50,Rr=545;let y=800;
+ const row=(l,k,v,b,z)=>{pdfT(o,L,y,l,z||10,b);if(k)pdfT(o,L+150,y,k,z||9);pdfR(o,Rr,y,v,z||10,b);y-=(z||10)+5};
+ const sep=(w)=>{pdfL(o,y+4,L,Rr);y-=w||10};
+ /* Judul & periode */
+ pdfT(o,L,y,'SLIP GAJI',15,1);y-=18;
+ pdfT(o,L,y,'Periode gaji: '+fdp(f)+' s/d '+fdp(t),10);y-=13;
+ pdfT(o,L,y,'Status: '+st,8);y-=6;sep(8);
+ /* Perusahaan & karyawan */
+ pdfT(o,L,y,co.nama,12,1);y-=14;if(co.alamat){pdfT(o,L,y,co.alamat,9);y-=13}else y-=4;
+ sep(8);
+ pdfT(o,L,y,'Nama karyawan',10);pdfT(o,L+120,y,': '+it.employee_name,10,1);y-=14;
+ const e=D.emp.find(x=>String(x.id)==String(it.employee_id));
+ pdfT(o,L,y,'Jabatan',10);pdfT(o,L+120,y,': '+((e&&e.jab)||'-'),10);y-=10;sep(10);
+ /* Ringkasan */
+ pdfT(o,L,y,'RINGKASAN',10,1);y-=15;
+ row('Jumlah gaji utuh','',rupiah(it.monthly_salary),0);
+ row('Jumlah tunjangan','',rupiah(it.allowance_total),0);
+ row('Jumlah kasbon','',rupiah(it.kasbon_deduction),0);
+ row('Jumlah lembur','',rupiah(it.overtime_total||0),0);
+ y-=2;sep(10);
+ /* Rincian per hari */
+ pdfT(o,L,y,'RINCIAN GAJI BERDASARKAN JUMLAH HARI YANG TERHITUNG',10,1);y-=14;
+ pdfT(o,L,y,'Periode '+fdp(f)+' s/d '+fdp(t)+' = '+((+it.paid_days||0)+(+it.unpaid_days||0))+' hari',9);y-=14;
+ pdfT(o,L,y,'Gaji per hari (gaji bulanan / 31)',9);pdfR(o,Rr,y,rupiah(it.daily_rate),9);y-=13;
+ pdfT(o,L,y,'Hari masuk (M)',9);pdfR(o,Rr,y,String(it.cnt_m),9);y-=12;
+ pdfT(o,L,y,'Hari libur (L)',9);pdfR(o,Rr,y,String(it.cnt_l),9);y-=12;
+ pdfT(o,L,y,'Public holiday (PH)',9);pdfR(o,Rr,y,String(it.cnt_ph),9);y-=12;
+ pdfT(o,L,y,'Sakit (S)',9);pdfR(o,Rr,y,String(it.cnt_s),9);y-=12;
+ pdfT(o,L,y,'Izin (I)',9);pdfR(o,Rr,y,String(it.cnt_i),9);y-=12;
+ pdfT(o,L,y,'Hari tidak dibayar (kosong / izin)',9);pdfR(o,Rr,y,String(it.unpaid_days||0),9);y-=14;
+ if(full){row('Gaji bulanan','',rupiah(it.monthly_salary),0,10);row('Dikurangi hari tidak dibayar',(it.unpaid_days||0)+' hari x '+rupiah(it.daily_rate),'- '+rupiah(it.izin_deduction),0,10)}
+ else{row('Gaji dibayar','',rupiah((+it.monthly_salary)-(+it.izin_deduction)),0,10);pdfT(o,L,y,'Gaji prorata: '+(it.paid_days||0)+' hari x '+rupiah(it.daily_rate),8);y-=12}
+ row('Uang makan',(it.meal_days||0)+' hari x '+rupiah(it.meal_rate),'+ '+rupiah(it.meal_total),0,10);
+ y-=2;pdfT(o,L,y,'Tunjangan',10,1);y-=14;
+ if(als.length)als.forEach(x=>row('   '+x.name+(x.kind=='period_special'?' (khusus)':''),'','+ '+rupiah(x.amount),0,9));else{pdfT(o,L+10,y,'-',9);y-=13}
+ row('Lembur',(it.overtime_hours||0)+' jam','+ '+rupiah(it.overtime_total||0),0,10);
+ row('Potongan kasbon','','- '+rupiah(it.kasbon_deduction),0,10);
+ y-=2;sep(10);
+ /* Total final */
+ const isNeg=+it.net_pay<0;
+ pdfT(o,L,y,isNeg?'KEWAJIBAN (harus diselesaikan, bukan pembayaran tunai)':'TOTAL FINAL YANG DITERIMA',12,1);pdfR(o,Rr,y,rupiah(Math.abs(+it.net_pay)),12,1);y-=20;
+ pdfT(o,L,y,'Dibayarkan kepada karyawan sesuai periode di atas.',8);
+ pdfT(o,L,50,'Dokumen dibuat otomatis oleh BAR APP pada '+fdp(today())+'. Slip dibagikan oleh HR setelah periode ditutup.',7);
  return o}
 function rekapPages(items,run,f,t){const pages=[],edges=[235,292,349,406,463,545],hd=['Gaji','Potongan','Makan','Tunjangan','Kasbon','Net'];let o,y;
  const head=()=>{o=[];pages.push(o);y=800;pdfT(o,50,y,((typeof TH!='undefined'&&TH.name)||'BAR APP')+' - REKAP GAJI',13,1);y-=15;pdfT(o,50,y,'Periode: '+fdp(f)+' s/d '+fdp(t)+'    Status: '+pdfSt(run),9);y-=12;pdfL(o,y);y-=14;pdfT(o,50,y,'Nama',8,1);hd.forEach((h,i)=>pdfR(o,edges[i],y,h,8,1));y-=6;pdfL(o,y);y-=12};
@@ -1107,8 +1130,8 @@ async function payRepFetch(){const f=v('rp_f'),t=v('rp_t');T.rf=f;T.rt=t;
 
 /* ===== Pengaturan (developer) ===== */
 V.pay_set=()=>{if(!isDeveloper())return payDenied();payEnsure();const s=PAY.s||{period_mode:'calendar',meal_codes:['M']},c=s.meal_codes||[];
- return payHead('Pengaturan Gaji')+`<div class="card"><h3>Periode & Uang Makan</h3><label>Mode periode<select id="pm"><option value="calendar" ${s.period_mode=='calendar'?'selected':''}>Tanggal 1 s/d akhir bulan</option><option value="day_24_23" ${s.period_mode=='day_24_23'?'selected':''}>Tanggal 24 s/d 23</option><option value="custom" ${s.period_mode=='custom'?'selected':''}>Rentang khusus</option></select></label><div class="row"><label>Tgl awal (khusus)<input id="cs" type="number" min="1" max="31" value="${s.custom_start_day??''}"></label><label>Tgl akhir (khusus)<input id="ce" type="number" min="1" max="31" value="${s.custom_end_day??''}"></label></div><p class="mu">Kode absensi yang mendapat uang makan:</p><div class="row">${['M','L','PH','S','I'].map(k=>`<label><input type="checkbox" id="mc_${k}" ${c.includes(k)?'checked':''}> ${k}</label>`).join('')}</div><div class="row"><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`};
-async function paySaveSet(){const m=v('pm'),cs=v('cs').trim(),ce=v('ce').trim(),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
+ return payHead('Pengaturan Gaji')+`<div class="card"><h3>Periode & Uang Makan</h3><label>Mode periode<select id="pm"><option value="calendar" ${s.period_mode=='calendar'?'selected':''}>Tanggal 1 s/d akhir bulan</option><option value="day_24_23" ${s.period_mode=='day_24_23'?'selected':''}>Tanggal 24 s/d 23</option><option value="custom" ${s.period_mode=='custom'?'selected':''}>Rentang khusus</option></select></label><div class="row"><label>Tgl awal (khusus)<input id="cs" type="number" min="1" max="31" value="${s.custom_start_day??''}"></label><label>Tgl akhir (khusus)<input id="ce" type="number" min="1" max="31" value="${s.custom_end_day??''}"></label></div><p class="mu">Kode absensi yang mendapat uang makan:</p><div class="row">${['M','L','PH','S','I'].map(k=>`<label><input type="checkbox" id="mc_${k}" ${c.includes(k)?'checked':''}> ${k}</label>`).join('')}</div><label>Alamat perusahaan (dicetak di slip)<input id="co_addr" value="${esc((()=>{try{return localStorage.getItem('bar_pay_addr')||''}catch(e){return ''}})())}" autocomplete="off"></label><div class="row"><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`};
+async function paySaveSet(){try{localStorage.setItem('bar_pay_addr',v('co_addr').trim())}catch(e){}const m=v('pm'),cs=v('cs').trim(),ce=v('ce').trim(),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
  if(m=='custom'&&(!cs||!ce))return toast('Tanggal awal & akhir khusus wajib diisi','err');
  const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_settings').update({period_mode:m,custom_start_day:m=='custom'?+cs:null,custom_end_day:m=='custom'?+ce:null,meal_codes:codes}).eq('id',true);if(error)throw error});
  if(ok){toast('Aturan tersimpan');payLoad()}}
