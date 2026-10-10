@@ -1053,8 +1053,8 @@ function accsCard(){const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admi
  const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>((T.divs||[]).find(d=>d.id==x.division_id)||{}).name).filter(Boolean).join(', ')||'-';
   const opts=a.role=='dev'?`<option>${rl('dev')}</option>`:['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>`<option value="${k}" ${a.role==k?'selected':''}>${rl(k)}</option>`).join('');
   const dis=a.role=='dev'?'disabled':'';
-  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td></tr>`}).join('');
- return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
+  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td><td><button class="btn s x" onclick="pwOpen('${a.user_id}','${esc(a.email)}')">Password</button></td></tr>`}).join('');
+ return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
 async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=document.getElementById('ac_a_'+uid);
  const ok=await sbRun(async()=>{await payRpc('dev_set_account',{p_user:uid,p_role:r?r.value:'hr',p_active:a?a.checked:true})});
  if(ok)toast('Akun diperbarui');divLoad()}
@@ -1078,6 +1078,12 @@ V.divdet=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer.
  return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button> <b style="margin-left:8px">${esc(d.name)}</b><p class="mu" style="margin:8px 0 0">COGS: ${d.has_cogs?'aktif':'tidak ada'}${det.cogsAt?' · terakhir diubah '+String(det.cogsAt).slice(0,10):''} · Admin: ${d.admins.map(esc).join(', ')||'belum ada'}</p></div>`+
  `<div class="card"><b>Karyawan (${det.emps.length})</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Nama</th><th>Aktif</th></tr>${det.emps.map(e=>`<tr><td>${esc(e.name)}</td><td>${e.active?'Ya':'Tidak'}</td></tr>`).join('')||'<tr><td colspan="2">Belum ada karyawan.</td></tr>'}</table></div></div>`+
  `<div class="card"><b>Absensi ${fdp(f)} s/d ${fdp(t)}</b><p class="mu" style="margin:8px 0 0">M ${cnt.M} · L ${cnt.L} · PH ${cnt.PH} · S ${cnt.S} · I ${cnt.I} · Lembur ${ot} jam</p></div>`};
+
+/* ===== GANTI PASSWORD AKUN (dev, lewat Edge Function set-password) ===== */
+function pwOpen(uid,email){modal(`<h3>Ganti password</h3><p class="mu" style="word-break:break-all">${esc(email)}</p><label>Password baru (minimal 8 karakter)<input id="pwn" type="password" autocomplete="new-password"></label><label>Ulangi password<input id="pwr" type="password" autocomplete="new-password"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="pwSave('${uid}')">Simpan password</button></div>`)}
+async function pwSave(uid){const a=v('pwn'),b=v('pwr');if(a.length<8)return toast('Password minimal 8 karakter','err');if(a!==b)return toast('Password tidak sama','err');
+ const ok=await sbRun(async()=>{const {data,error}=await sb().functions.invoke('set-password',{body:{user_id:uid,password:a}});if(error)throw error;if(data&&data.error)throw new Error(data.error)});
+ if(ok){closeM();toast('Password diganti')}}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
