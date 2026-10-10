@@ -1198,12 +1198,16 @@ async function paySaveSet(){try{localStorage.setItem('bar_pay_addr',v('co_addr')
  if(ok){toast('Aturan tersimpan');payLoad()}}
 
 /* ===== Kasbon ===== */
+const kasSemua=()=>{const rows=D.emp.map(e=>{const l=PAY.cash.filter(c=>String(c.employee_id)==String(e.id)&&c.status!='void'&&(PAY.bal[c.id]==null||PAY.bal[c.id]>0));return {e,n:l.length,sisa:l.reduce((t,c)=>t+(+PAY.bal[c.id]||0),0),pot:l.reduce((t,c)=>t+(+c.installment||0),0)}}).filter(r=>r.n>0);
+ if(!rows.length)return '<p class="mu">Belum ada karyawan yang punya kasbon aktif.</p>';
+ const tot=rows.reduce((t,r)=>t+r.sisa,0),pot=rows.reduce((t,r)=>t+r.pot,0);
+ return `<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Kasbon aktif</th><th>Total sisa</th><th>Potong / periode</th></tr>${rows.map(r=>`<tr><td>${esc(r.e.nama)}</td><td>${r.n}</td><td>${rupiah(r.sisa)}</td><td>${rupiah(r.pot)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td></td><td><b>${rupiah(tot)}</b></td><td><b>${rupiah(pot)}</b></td></tr></table></div>`};
 V.pay_kas=()=>{if(!payOK())return payDenied();payEnsure();if(!D.emp.length)return '<div class="card empty">Belum ada karyawan.</div>';
  const i=T.pe??0,e=D.emp[i]||D.emp[0],sel=D.emp.indexOf(e),list=PAY.cash.filter(c=>String(c.employee_id)==String(e.id)&&c.status!='void');
  const pilih=`<label style="margin-bottom:10px">Karyawan<select onchange="T.pe=this.selectedIndex;R()">${D.emp.map((x,k)=>`<option value="${k}" ${k==sel?'selected':''}>${esc(x.nama)}</option>`).join('')}</select></label>`;
  const tabel=`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Tgl</th><th>Pokok</th><th>Potong / periode</th><th>Sisa</th><th></th></tr>${list.map(c=>{const b=PAY.bal[c.id];return `<tr><td>${c.issued_on}</td><td>${rupiah(c.principal)}</td><td>${rupiah(c.installment)}</td><td>${b==null?'-':b<=0?'<b>Lunas</b>':rupiah(b)}</td><td style="white-space:nowrap"><button class="btn s x" onclick="cashPay('${c.id}')">Bayar</button> <button class="btn s x" onclick="cashVoid('${c.id}')">Hapus</button></td></tr>`}).join('')||'<tr><td colspan="5">Belum ada kasbon.</td></tr>'}</table></div>`;
  const form=`<label>Pokok (maks Rp 1.000.000)<input id="kp" type="number" min="1" max="1000000" inputmode="numeric"></label><label>Dipotong dalam berapa periode gaji<input id="kn2" type="number" min="1" max="60" inputmode="numeric" value="1"></label><p class="mu" style="margin:0 0 10px">Potongan per periode = pokok ÷ jumlah periode. Otomatis dipotong saat gaji dihitung sampai lunas.</p><label>Tanggal<input id="kd" type="date" value="${today()}"></label><label>Keterangan<input id="kn" autocomplete="off"></label><div style="margin-top:10px"><button class="btn" onclick="cashAdd('${e.id}')">Simpan kasbon</button></div>`;
- return pilih+payBlk('kas_list','Daftar kasbon '+esc(e.nama),tabel,true)+payBlk('kas_baru','Tambah kasbon baru',form,false)};
+ return payBlk('kas_semua','Siapa yang punya kasbon',kasSemua(),true)+pilih+payBlk('kas_list','Daftar kasbon '+esc(e.nama),tabel,true)+payBlk('kas_baru','Tambah kasbon baru',form,false)};
 async function cashAdd(eid){const p=+v('kp'),n=+v('kn2'),d=v('kd'),note=v('kn').trim()||null;
  if(!(p>0))return toast('Pokok kasbon wajib lebih dari 0','err');
  if(p>1000000)return toast('Maksimal kasbon Rp 1.000.000','err');
