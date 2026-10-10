@@ -1004,15 +1004,15 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role')]);
- const em={};ps.forEach(x=>em[x.user_id]=x.email);
+async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active')]);
+ const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
  const ds=T.divs||[];
  const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td></tr>`).join('');
  return `<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>COGS</th><th>Admin</th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
- `<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya COGS</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
+ `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya COGS</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.getElementById('dv_g').checked;
  if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
@@ -1029,6 +1029,17 @@ V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer y
  const rows=T.aud||[];
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Riwayat perubahan (100 terakhir)</b><button class="btn s x" onclick="audLoad()">Muat ulang</button></div></div>`+
  `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
+
+/* ===== MANAJEMEN AKUN (dev) ===== */
+function accsCard(){const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admin:'Admin divisi',legacy_admin:'Admin lama'})[k]||k;
+ const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>((T.divs||[]).find(d=>d.id==x.division_id)||{}).name).filter(Boolean).join(', ')||'-';
+  const opts=a.role=='dev'?`<option>${rl('dev')}</option>`:['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>`<option value="${k}" ${a.role==k?'selected':''}>${rl(k)}</option>`).join('');
+  const dis=a.role=='dev'?'disabled':'';
+  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td></tr>`}).join('');
+ return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
+async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=document.getElementById('ac_a_'+uid);
+ const ok=await sbRun(async()=>{await payRpc('dev_set_account',{p_user:uid,p_role:r?r.value:'hr',p_active:a?a.checked:true})});
+ if(ok)toast('Akun diperbarui');divLoad()}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
