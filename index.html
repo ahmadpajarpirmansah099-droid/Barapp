@@ -970,7 +970,7 @@ a.innerHTML=`<aside class="side"><button class="brand" onclick="go('${home}')"><
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('grid',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${cg?L('Siap','Ready'):sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'COGS':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${mnu[1][1]}<hr><button onclick="about()">${IC('info',16)}${L('Tentang aplikasi','About')}</button></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
-${(cg||px)?'':`<div class="toolbar"><span>${L('Dari:','From:')}</span><input type="date" value="${rg.f}" onchange="F.f=this.value;R()" aria-label="Dari tanggal"><span>${L('Sampai:','To:')}</span><input type="date" value="${rg.t}" onchange="F.t=this.value;R()" aria-label="Sampai tanggal">${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
+${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
@@ -992,10 +992,32 @@ const payQ=async(tbl,sel,f)=>{let q=sb().from(tbl).select(sel);if(f)q=f(q);const
 const payBlk=(k,title,html,def)=>{T.acc=T.acc||{};const o=(k in T.acc)?T.acc[k]:!!def;return `<div onclick="payAcc('${k}',${!!def})" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px;margin:0 0 12px;background:#fffaf7;border:1px solid #ecd6cf;border-radius:18px"><b style="flex:1">${title}</b><span style="font-size:18px;color:#8a6f68">${o?'▴':'▾'}</span></div>`+(o?`<div style="margin:-4px 0 14px;padding:0 2px">${html}</div>`:'')};
 const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;T.acc[k]=!cur;R()};
 const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={};for(let k=0;k<7;k++){const [a,b]=perFor(mkd(y,mo-1-k,15));const key=a+'|'+b;if(!seen[key]){seen[key]=1;out.push([a,b])}}return out};
-const payPick=val=>{if(val=='custom'){T.rsel='custom';R();return}const [a,b]=val.split('|');T.rf=a;T.rt=b;T.rsel='';R()};
-const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t),custom=T.rsel=='custom'||!match;
- return `<label style="display:block">Periode gaji<select onchange="payPick(this.value)">${opts.map(([a,b])=>`<option value="${a}|${b}" ${!custom&&a==f&&b==t?'selected':''}>${fdp(a)} s/d ${fdp(b)}</option>`).join('')}<option value="custom" ${custom?'selected':''}>Rentang bebas…</option></select></label>`+(custom?`<div style="display:flex;gap:10px;margin-top:8px"><label style="flex:1">Dari<input type="date" value="${f}" onchange="T.rf=this.value;R()"></label><label style="flex:1">Sampai<input type="date" value="${t}" onchange="T.rt=this.value;R()"></label></div>`:'')};
+const payPick=val=>{if(val=='custom')return;const [a,b]=val.split('|');T.rf=a;T.rt=b;R()};
+const payPickers=(f,t)=>{const opts=payPeriods(),match=opts.some(([a,b])=>a==f&&b==t);
+ return `<label style="display:block">Periode gaji<select onchange="payPick(this.value)">${opts.map(([a,b])=>`<option value="${a}|${b}" ${a==f&&b==t?'selected':''}>${fdp(a)} s/d ${fdp(b)}</option>`).join('')}${match?'':`<option value="custom" selected>${fdp(f)} s/d ${fdp(t)}</option>`}</select></label><button class="btn s x" style="margin-top:8px" onclick="rOpen('T')">📅 Pilih rentang di kalender</button>`};
 
+/* ===== PEMILIH RENTANG TANGGAL (dipakai semua menu yang ada tanggal) ===== */
+const RBULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const rPresets=()=>{const t0=today(),d=U(t0),dow=(new Date(d).getUTCDay()+6)%7,y=+t0.slice(0,4),m=+t0.slice(5,7)-1;
+ const [pf,pt]=perFor(t0);
+ return [['Hari ini',t0,t0],['Minggu ini',iso(d-dow*864e5),iso(d+(6-dow)*864e5)],['Bulan ini',iso(Date.UTC(y,m,1)),iso(Date.UTC(y,m+1,0))],['Bulan lalu',iso(Date.UTC(y,m-1,1)),iso(Date.UTC(y,m,0))],['Periode gaji',pf,pt]]};
+const rOpen=tgt=>{const cur=tgt=='F'?[F.f||rng().f,F.t||rng().t]:[T.rf||perFor(today())[0],T.rt||perFor(today())[1]];
+ const b=cur[0].slice(0,7);T.rp={tg:tgt,f:cur[0],t:cur[1],y:+b.slice(0,4),m:+b.slice(5,7)-1,st:0};rPaint()};
+function rPreset(i){const p=rPresets()[i],P=T.rp;P.f=p[1];P.t=p[2];P.st=0;P.y=+p[1].slice(0,4);P.m=+p[1].slice(5,7)-1;rPaint()}
+function rMon(k){const P=T.rp,x=new Date(Date.UTC(P.y,P.m+k,1));P.y=x.getUTCFullYear();P.m=x.getUTCMonth();rPaint()}
+function rDay(c){const P=T.rp;if(P.st==0){P.f=c;P.t=c;P.st=1}else{if(c<P.f){P.t=P.f;P.f=c}else P.t=c;P.st=0}rPaint()}
+function rDone(){const P=T.rp;if(!P||!P.f||!P.t)return;if(P.tg=='F'){F.f=P.f;F.t=P.t}else{T.rf=P.f;T.rt=P.t}closeM();R()}
+function rPaint(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+ const first=new Date(Date.UTC(P.y,P.m,1)).getUTCDay(),dim=new Date(Date.UTC(P.y,P.m+1,0)).getUTCDate();
+ const cells=[];for(let i=0;i<first;i++)cells.push('');for(let k=1;k<=dim;k++)cells.push(iso(Date.UTC(P.y,P.m,k)));
+ const inR=x=>P.f&&P.t&&x>=P.f&&x<=P.t;
+ modal(`<h3>Pilih rentang tanggal</h3>
+ <div style="display:flex;gap:8px;overflow-x:auto;padding:6px 0">${rPresets().map((q,i)=>`<button class="btn s x" style="white-space:nowrap" onclick="rPreset(${i})">${q[0]}</button>`).join('')}</div>
+ <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0"><button class="btn s x" onclick="rMon(-1)">‹</button><b>${RBULAN[P.m]} ${P.y}</b><button class="btn s x" onclick="rMon(1)">›</button></div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px;color:#8a6f68">${lab.map(x=>`<div>${x}</div>`).join('')}</div>
+ <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px">${cells.map(c=>{if(!c)return '<div></div>';const edge=c==P.f||c==P.t,mid=inR(c);return `<button onclick="rDay('${c}')" style="padding:9px 0;border:0;border-radius:10px;cursor:pointer;font-size:14px;background:${edge?'#c0503a':mid?'#f3d9cf':'transparent'};color:${edge?'#fff':'inherit'};font-weight:${edge?700:400}">${+c.slice(8)}</button>`}).join('')}</div>
+ <p class="mu" style="margin:12px 0 0;text-align:center">${P.f?fdp(P.f):'–'} s/d ${P.t?fdp(P.t):'–'}</p>
+ <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px"><button class="btn s x" onclick="closeM()">Batal</button><button class="btn" onclick="rDone()">Konfirmasi</button></div>`)}
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
 async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role')]);
  const em={};ps.forEach(x=>em[x.user_id]=x.email);
