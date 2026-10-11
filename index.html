@@ -646,6 +646,8 @@ async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_att
 async function outInit(){
   if(!isDeveloper()){if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
     if(T.scopeOut)return T.scopeOut}
+  if(!isDeveloper()&&T.dbRole!='div_admin'&&!D.outId)return null;
+  if(D.outId==='ALL')return null;
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[];return D.outId||D.ljId||null}}
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
   return D.outId||D.ljId||null}
@@ -658,9 +660,9 @@ function outSwitch(id){
   toast('Outlet diganti');
   sbLoad(true).then(async()=>{try{await cogsLoad()}catch(e){};await payLoad();R()})}
 function outMenuHtml(){
-  if(!isDeveloper())return '';
-  const cur=D.outId||D.ljId||'';
-  const opts=(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
+  if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
+  const cur=D.outId||(isDeveloper()?D.ljId:'ALL')||'';
+  const opts=`<option value="ALL" ${cur==='ALL'?'selected':''}>Semua outlet</option>`+(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
 async function sbLoad(silent){
 if(SB.loading)return;SB.loading=true;
@@ -674,7 +676,7 @@ const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
-const oid=session&&(isDeveloper()||T.dbRole=='div_admin')?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const oid=session?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
 const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
@@ -700,7 +702,7 @@ function cogsNormalize(x){
   };
 }
 async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
-  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=await outInit();const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
+  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=(await outInit())||D.ljId;const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
   else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
   T.cogsDid=did;return did}
 async function cogsLoad(){
@@ -1043,7 +1045,7 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const OID=(isDeveloper()||T.dbRole=='div_admin')?await outInit():null;const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
+async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
@@ -1326,7 +1328,7 @@ V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
  const tabel=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><b>${rows.length} karyawan · total net ${rupiah(tot)}</b>${PAY.urls.all?`<a class="btn s" href="${PAY.urls.all}" download="Rekap_Gaji_${f}_${t}.pdf">Rekap semua (PDF)</a>`:''}</div>
  <div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Hari</th><th>Gaji</th><th>Makan</th><th>Tunjangan</th><th>Lembur</th><th>Kasbon</th><th>Net</th><th>Slip</th></tr>${rows.map(x=>`<tr><td style="white-space:normal;min-width:90px">${esc(x.nm)}${x.iss?`<br><span class="mu" style="font-size:11px">${esc(x.iss)}</span>`:''}</td><td>${x.paid}</td><td>${fmtN(x.gaji)}</td><td>${fmtN(x.meal)}</td><td>${fmtN(x.allow)}</td><td>${fmtN(x.ot)}</td><td>${fmtN(x.kas)}</td><td><b>${fmtN(x.net)}</b></td><td style="white-space:nowrap">${x.id&&PAY.urls[x.id]?`<a class="btn s x" href="${PAY.urls[x.id]}" download="Slip_${String(x.nm).replace(/[^A-Za-z0-9]+/g,'_')}_${f}_${t}.pdf">PDF</a>`:'<span class="mu">hitung dulu</span>'}</td></tr>`).join('')||'<tr><td colspan="9">Belum ada karyawan.</td></tr>'}</table></div>`;
  return payBlk('lap_periode','Periode & aksi',periode,true)+payBlk('lap_rincian','Rincian gaji karyawan',tabel,false)};
-async function payFind(){try{const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const oid=await outInit();const isLJ=oid==D.ljId;const runs=await payQ('payroll_runs','*',q=>{const x=q.eq('period_start',f).eq('period_end',t).neq('status','void');return isLJ?x.or(`outlet_id.eq.${oid},outlet_id.is.null`).order('outlet_id',{ascending:false,nullsFirst:false}):x.eq('outlet_id',oid)});PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
+async function payFind(){try{const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const oid=await outInit();const isLJ=oid==D.ljId;const runs=await payQ('payroll_runs','*',q=>{const x=q.eq('period_start',f).eq('period_end',t).neq('status','void');return oid===null?x.is('outlet_id',null):(isLJ?x.or(`outlet_id.eq.${oid},outlet_id.is.null`).order('outlet_id',{ascending:false,nullsFirst:false}):x.eq('outlet_id',oid))});PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
 async function payCalc(){const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:await outInit(),p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
 async function payFinal(){if(!PAY.run)return;const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random(),ack=!!(document.getElementById('pack')&&document.getElementById('pack').checked);
  const ok=await sbRun(async()=>{await payRpc('payroll_finalize',{p_run:PAY.run.id,p_key:key,p_ack_issues:ack})});if(ok){toast('Payroll difinalisasi & dikunci');payFind()}}
@@ -1351,7 +1353,7 @@ V.abs=()=>{const {f,t}=rng(),bad=f>t,ds=bad?[]:days(f,t),big=ds.length>93,l=bad|
 const msg=bad?'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':big?'<div class="card empty">Rentang lebih dari 93 hari terlalu panjang untuk tabel harian. Persempit rentang, atau lihat di Rekap / Export.</div>':'';
 const tb=l.length?`<div class="tw"><table><tr><th>Nama</th>${ds.map(d=>`<th>${+d.slice(8)}<br><small class="mu">${(LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'])[new Date(U(d)).getUTCDay()]}</small></th>`).join('')}<th>Hari Kerja (M)</th><th>L</th><th>I</th><th>S</th><th>PH</th><th>Belum</th></tr>${l.map(e=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0};return`<tr><td title="${esc(e.nama)}">${esc(e.nama)}</td>${ds.map(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++;return`<td class="c" ${adm()?`onclick="cell('${esc(e.id)}','${d}')"`:''} title="${a?ST[a.s]:'BELUM ADA DATA'}">${a?badge(a.s)+(a.ph?IC('cam',12):''):'<span class="mu">—</span>'}</td>`}).join('')}<td>${c.M}</td><td>${c.L}</td><td>${c.I}</td><td>${c.S}</td><td>${c.PH}</td><td><b>${c.B}</b></td></tr>`}).join('')}</table></div><p class="mu"><span>M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk).</span> ${adm()?'<span>Ketuk sel untuk isi/ubah.</span>':''}</p>`:(msg?'':'<div class="card empty">'+(D.emp.length?'Tidak ada hasil.':'Belum ada karyawan. Tambahkan karyawan terlebih dahulu.')+'</div>');
 const any=!bad&&D.att.some(a=>a.d>=f&&a.d<=t);
-return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openAtt(-1)">+ Input Absensi</button></div>':''}${lk.length?`<div class="card"><span class="tag r">LOCKED</span> ${lk.map(pl).join(', ')}</div>`:''}${fbar(1)}${msg}${tb}${!any&&l.length?'<div class="card empty">Belum ada data absensi pada rentang ini.<br>Tambahkan absensi untuk mulai menggunakan sistem.</div>':''}`};
+return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openAtt(-1)">+ Input Absensi</button></div>':''}${lk.length?`<div class="card"><span class="tag r">LOCKED</span> ${lk.map(pl).join(', ')}</div>`:''}${msg}${tb}${!any&&l.length?'<div class="card empty">Belum ada data absensi pada rentang ini.<br>Tambahkan absensi untuk mulai menggunakan sistem.</div>':''}`};
 function cell(e,d){const tw=document.querySelector('.tw');if(tw)T.tableLeft=tw.scrollLeft;const a=D.att.findIndex(x=>x.e==e&&x.d==d);T.pre={e,d};openAtt(a)}
 
 V.kar=()=>{let l=D.emp.filter(e=>(!F.q||(e.nama+e.id).toLowerCase().includes(F.q.toLowerCase()))&&(!T.fs||(T.fs=='a')==e.aktif));
