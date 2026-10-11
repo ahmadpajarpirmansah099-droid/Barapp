@@ -642,9 +642,9 @@ async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_att
 
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
-  if(!T.outlets){T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}
-  if(!D.ljId){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
-  return D.outId||D.ljId}
+  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[];return D.outId||D.ljId||null}}
+  if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
+  return D.outId||D.ljId||null}
 function outSwitch(id){
   D.outId=id;sv();
   T.divs=null;T.cogsDid=null;T.soDid=null;T.so=null;T.soInit=0;T.soRiw=null;T.soRiwInit=0;T.soDivs=null;T.dvDet=null;
@@ -668,7 +668,7 @@ const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
-const oid=await outInit();const inO=x=>x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const oid=session?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
 const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
