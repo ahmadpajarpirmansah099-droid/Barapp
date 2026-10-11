@@ -346,6 +346,39 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 .rpt .sub{display:block;margin-top:4px;font-size:11px;font-weight:500;color:var(--mu);line-height:1.4;white-space:normal}
 .rpt td.net{font-weight:800;color:var(--ac)}
 .rpt .btn{padding:6px 12px;font-size:12px;text-decoration:none}
+/* ===== POLISH TAMPILAN (lapisan visual, tanpa ubah logika) ===== */
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{letter-spacing:.005em}
+::selection{background:color-mix(in srgb,var(--ac) 22%,transparent)}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--mu) 35%,transparent);border-radius:8px}
+*::-webkit-scrollbar-track{background:transparent}
+.hd-t h1{letter-spacing:-.01em}
+.card{transition:box-shadow .3s ease,border-color .3s ease}
+.card:hover{box-shadow:0 10px 30px -18px color-mix(in srgb,var(--tx) 35%,transparent)}
+.card h3,.card>b:first-child{letter-spacing:-.005em}
+.btn{transition:transform .15s ease,box-shadow .25s ease,filter .2s ease,background .2s ease,border-color .2s ease}
+.btn:hover{filter:brightness(1.04);box-shadow:0 6px 16px -10px color-mix(in srgb,var(--ac) 60%,transparent)}
+.btn:active{transform:translateY(1px) scale(.985)}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn:focus-visible,.nvb:focus-visible,.fab:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+input,select,textarea{transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 16%,transparent)}
+label{font-size:13px;color:var(--mu)}
+table{border-collapse:separate;border-spacing:0}
+table th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--mu);padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+table td{padding:11px 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);font-variant-numeric:tabular-nums;vertical-align:middle}
+table tr:last-child td{border-bottom:0}
+table tr:hover td{background:color-mix(in srgb,var(--tint) 55%,transparent)}
+.card.empty,.empty{text-align:center;color:var(--mu);padding:28px 16px}
+.mu{color:var(--mu)}
+.tag{font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:999px}
+.dlg,.modal{box-shadow:0 24px 60px -24px color-mix(in srgb,var(--tx) 45%,transparent)}
+.taskbar{box-shadow:0 14px 36px -18px color-mix(in srgb,var(--tx) 40%,transparent)}
+.start,.task,.nvb{transition:background .2s ease,color .2s ease,transform .15s ease}
+.nvb span,.task span{font-weight:600}
+.nvl{opacity:.9}
+@media (prefers-reduced-motion:no-preference){.btn,.card,.nvb{will-change:auto}}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
