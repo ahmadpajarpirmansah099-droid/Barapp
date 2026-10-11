@@ -1239,13 +1239,14 @@ async function jadSet(eid,day,code,didArg){
 function jadNav(n){T.jadWs=jadAddDays(T.jadWs||jadMon(today()),n);T.jadKey=null;R()}
 function jadNow(){T.jadWs=jadMon(today());T.jadKey=null;R()}
 function jadPick(v){T.jadDid=v;T.jadKey=null;R()}
+function jadOutCode(d){const o=(T.outlets||[]).find(x=>x.id==d.outlet_id);return o?o.code:''}
 function jadCard(){
   const ws=T.jadWs||jadMon(today()),we=jadAddDays(ws,6),did=T.jadDid;
   if(T.jadKey!==ws+'|'+did&&!T.jadBusy){T.jadBusy=1;setTimeout(async()=>{try{await jadLoad()}finally{T.jadBusy=0}},0)}
   const locked=today()>=ws;
   const divs=T.jadDivs||[];
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
-  const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}</option>`).join('')}</select></label>`:'';
+  const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}${jadOutCode(d)?' · '+esc(jadOutCode(d)):''}</option>`).join('')}</select></label>`:'';
   const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button></div></div>`;
   if(!T.jad)return `<div class="card"><h3>Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
   if(!did)return `<div class="card"><h3>Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
@@ -1254,7 +1255,7 @@ function jadCard(){
   const blocks=groups.map(g=>{
     const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
     if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
-    const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}</span></div>`:'';
+    const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}${jadOutCode(g)?' · '+esc(jadOutCode(g)):''}</span></div>`:'';
     return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${c||'–'}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
   return `<div class="card"><h3>Jadwal</h3>${dsel?`<div style="margin-bottom:10px">${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
