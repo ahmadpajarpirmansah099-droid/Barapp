@@ -334,6 +334,8 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 .taskbar{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}.taskbar::-webkit-scrollbar{display:none}.taskbar>*{flex:0 0 auto}.taskbar .task{white-space:nowrap;padding:8px 12px}.taskbar .task+.task{margin-left:4px}
 .taskbar.tb-clear{background:color-mix(in srgb,var(--cd) 40%,transparent);border-color:transparent;box-shadow:none}
 #app.no-anim main,#app.no-anim main .card{animation:none!important}
+.hd-t small{white-space:normal;line-height:1.35}
+.hd-t small b{color:var(--ac);font-weight:700}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -998,7 +1000,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('grid',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${cg?L('Siap','Ready'):sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
@@ -1124,6 +1126,15 @@ function payDefRange(){const l=D.per.at(-1);return l?[l.s,l.e]:perFor(today())}
 function perPick(v){const a=v.split('|');F.f=a[0];F.t=a[1];R()}
 function perSel(){if(!D.per.length)return '';const cur=(F.f||'')+'|'+(F.t||'');const last=D.per.at(-1);
   return `<label style="margin-bottom:10px">Periode outlet<select onchange="perPick(this.value)">${D.per.map(p=>{const v=p.s+'|'+p.e;const sel=F.f?(cur===v):(p===last);return `<option value="${v}" ${sel?'selected':''}>${pl(p)}${p.lock?' · LOCKED':''}</option>`}).join('')}</select></label>`}
+
+function outLabel(){
+  if(!D.me)return '';
+  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  const id=multi?(D.outId||(isDeveloper()?D.ljId:'ALL')):(T.scopeOut||D.ljId);
+  if(id==='ALL')return 'Semua outlet';
+  const o=(T.outlets||[]).find(x=>x.id==id);
+  return o?o.name+' ('+o.code+')':'';
+}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
