@@ -639,7 +639,7 @@ const cntR=(f,t,l)=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0},ds=f<=t?days(f,t):[];l.f
 const cnt=(p,l)=>cntR(p.s,p.e,l);
 const std=d=>{let y=+d.slice(0,4),m=+d.slice(5,7);if(+d.slice(8)<24){m--;if(!m){m=12;y--}}const z=n=>String(n).padStart(2,'0');return{s:`${y}-${z(m)}-24`,e:`${m==12?y+1:y}-${z(m%12+1)}-23`}};
 const rng=()=>{const l=D.per.at(-1);const p=l?{s:l.s,e:l.e}:std(today());return{f:F.f||p.s,t:F.t||p.e}};
-const rEmps=(f,t)=>vis().filter(e=>(e.aktif||D.att.some(a=>a.e==e.id&&a.d>=f&&a.d<=t))&&(!F.e||e.id==F.e));
+const rEmps=(f,t)=>vis().concat(D.arc||[]).filter(e=>(e.aktif||D.att.some(a=>a.e==e.id&&a.d>=f&&a.d<=t))&&(!F.e||e.id==F.e));
 const hrs=o=>o.h!=null?+o.h:dur(o.a,o.b)/60,fh=h=>(Math.round(h*100)/100)+(LANG=='en'?' hrs':' jam'),otH=(e,f,t)=>Math.round(D.ot.filter(o=>o.e==e.id&&o.d>=f&&o.d<=t).reduce((s,o)=>s+hrs(o),0)*100)/100;
 const ensurePer=d=>{let p=perOf(d);if(p)return p;const q=std(d);if(D.per.some(x=>q.s<=x.e&&q.e>=x.s))return null;p={id:'p'+Date.now(),s:q.s,e:q.e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);if(!D.cur)D.cur=p.id;return p};
 const jump=d=>{const {f,t}=rng();if(d<f||d>t){const q=std(d);F.f=q.s;F.t=q.e;const p=perOf(d);if(p)D.cur=p.id}};
@@ -729,11 +729,11 @@ const [er,ar]=session
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
 const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
-const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
+const emp=er.filter(inO).filter(x=>!x.deleted_at).map(mapEmp),arc=er.filter(inO).filter(x=>x.deleted_at).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
-D.emp=emp;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
+D.emp=emp;D.arc=arc;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
 if(D.me&&D.me.r=='K'&&(!D.me.tok||!D.emp.some(e=>e.id==D.me.id))){D.me=null;sv()}
 derivePeriods();sbCacheSave()
 }catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
@@ -1449,9 +1449,11 @@ async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').tri
 const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:(document.getElementById('eo')?.value)||await outInit(),division_id:(document.getElementById('ed')?.value)||null}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}
 async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select().single();if(error)throw error;D.emp[i]=mapEmp(data);sbCacheSave()});R()}
-function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,async()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
-const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().eq('employee_id',e.id);if(q.error)throw q.error;q=await c.from('employees').delete().eq('id',e.id);if(q.error)throw q.error;D.att.filter(a=>a.e==e.id).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.e!=e.id);D.ot=D.ot.filter(o=>o.e!=e.id);D.emp=D.emp.filter(x=>x.id!=e.id);sbCacheSave();sv()});
-if(ok){toast('Karyawan dihapus');R()}})}
+function delEmp(i){if(!guard())return;const e=D.emp[i];
+cf(`Arsipkan <b>${esc(e.nama)}</b>? Absensi, lembur, dan riwayat gaji tetap tersimpan. Setelah periode baru dimulai, karyawan ini tidak muncul lagi di absensi.`,async()=>{
+ if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
+ const ok=await sbRun(async()=>{const {error}=await sb().from('employees').update({active:false,deleted_at:today()}).eq('id',e.id);if(error)throw error});
+ if(ok){D.emp=D.emp.filter(x=>x.id!=e.id);D.arc=[...(D.arc||[]),{...e,aktif:false}];toast('Karyawan diarsipkan');R()}},L('Ya, arsipkan','Yes, archive'))}
 function detEmp(i){detEmpShow(i,null)}
 function edBody(e,sel){const a=rec(e.id,sel);
 return `<b>${fd(sel)}</b><div class="edr">${a?`${badge(a.s)} <span>${ST[a.s]}</span>`:'<span class="mu">Belum ada data</span>'}</div>${a&&a.n?`<p class="edn">${esc(a.n)}</p>`:''}${a&&a.ph?`<img class="ph" src="${a.ph}">`:''}`}
