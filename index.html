@@ -388,6 +388,7 @@ td:first-child,th:first-child{z-index:4;background:var(--cd)!important;box-shado
 th:first-child{background:var(--tint)!important}
 table tr:hover td:first-child,table tr.on td:first-child{background:color-mix(in srgb,var(--tint) 55%,var(--cd))!important}
 table td:not(:first-child){position:relative;z-index:0}
+.jd{border-radius:10px;font-weight:700;text-align:center;border:1px solid var(--line)}.jd-shift{background:color-mix(in srgb,#7bb661 22%,var(--cd))}.jd-off{background:color-mix(in srgb,var(--mu) 16%,var(--cd))}.jd-sakit{background:color-mix(in srgb,#e0834f 24%,var(--cd))}.jd-ph{background:color-mix(in srgb,#5b8fd1 22%,var(--cd))}.jd-blank{background:var(--cd)}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -1247,7 +1248,7 @@ function jadCard(){
   const divs=T.jadDivs||[];
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
   const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}${jadOutCode(d)?' · '+esc(jadOutCode(d)):''}</option>`).join('')}</select></label>`:'';
-  const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button></div></div>`;
+  const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button><button class="btn x" onclick="jadPdf()">Unduh PDF</button></div></div>`;
   if(!T.jad)return `<div class="card"><h3>Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
   if(!did)return `<div class="card"><h3>Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
   const groups=did==='ALL'?divs:divs.filter(d=>d.id==did);
@@ -1256,8 +1257,32 @@ function jadCard(){
     const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
     if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
     const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}${jadOutCode(g)?' · '+esc(jadOutCode(g)):''}</span></div>`:'';
-    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${c||'–'}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
+    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select class="jd jd-${jadCls(v)||'blank'}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${c||'–'}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
   return `<div class="card"><h3>Jadwal</h3>${dsel?`<div style="margin-bottom:10px">${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
+
+/* ===== JADWAL: tampilan & unduh PDF ===== */
+const jadLabel=c=>c==='L'?'OFF':(c||'');
+const jadCls=c=>!c?'':c==='L'?'off':c==='S'?'sakit':c==='PH'?'ph':'shift';
+function jadPdf(){
+  const ws=T.jadWs||jadMon(today()),did=T.jadDid,divs=T.jadDivs||[];
+  const groups=did==='ALL'?divs:divs.filter(d=>d.id==did);
+  if(!groups.length)return toast('Tidak ada divisi untuk diunduh','err');
+  const days=[0,1,2,3,4,5,6].map(i=>jadAddDays(ws,i));
+  const dn=['SENIN','SELASA','RABU','KAMIS',"JUM'AT",'SABTU','MINGGU'];
+  const pages=groups.map(g=>{
+    const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
+    if(!emps.length)return '';
+    const ol=(T.outlets||[]).find(o=>o.id==g.outlet_id)||{};
+    const head=`<div class="hd"><div class="l">DEPARTMENT: ${esc(String(g.name).toUpperCase())}</div><div class="r">${esc(String(ol.name||'').toUpperCase())} WORK SCHEDULE</div></div>`;
+    const rowsHtml=emps.map((e,i)=>`<tr><td>${i+1}</td><td class="n">${esc(e.nama)}</td><td class="n">${esc(e.jab||'')}</td>${days.map(d=>{const c=T.jad[e.id+'|'+d]||'';return `<td class="c s-${jadCls(c)||'blank'}">${esc(jadLabel(c))}</td>`}).join('')}</tr>`).join('');
+    return `<section>${head}<table><thead><tr><th rowspan="2">NO</th><th rowspan="2">NAME</th><th rowspan="2">ROLE</th>${days.map(d=>`<th>${d.slice(8,10)}/${d.slice(5,7)}</th>`).join('')}</tr><tr>${dn.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></section>`;
+  }).join('');
+  const css="@page{size:landscape;margin:12mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0}section{page-break-after:always}section:last-child{page-break-after:auto}.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #7a2e22;padding-bottom:6px}.l{font-weight:700;font-size:16px}.r{font-weight:800;font-size:18px;color:#7a2e22}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #999;padding:5px 4px;text-align:center}th{background:#f1d9d1;font-weight:700}td.n{text-align:left}td.c{font-weight:700}.s-shift{background:#e3f1d6}.s-off{background:#e6e4e0}.s-sakit{background:#f8d6c4}.s-ph{background:#d4e3f6}.s-blank{background:#fff}";
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+  const w=window.open('','_blank');
+  if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
+  w.document.open();w.document.write(html);w.document.close();
+}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
