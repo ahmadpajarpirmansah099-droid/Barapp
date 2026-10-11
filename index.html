@@ -590,7 +590,7 @@ const pEmps=p=>vis().filter(e=>e.aktif||D.att.some(a=>a.e==e.id&&a.d>=p.s&&a.d<=
 const cntR=(f,t,l)=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0},ds=f<=t?days(f,t):[];l.forEach(e=>ds.forEach(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++}));return c};
 const cnt=(p,l)=>cntR(p.s,p.e,l);
 const std=d=>{let y=+d.slice(0,4),m=+d.slice(5,7);if(+d.slice(8)<24){m--;if(!m){m=12;y--}}const z=n=>String(n).padStart(2,'0');return{s:`${y}-${z(m)}-24`,e:`${m==12?y+1:y}-${z(m%12+1)}-23`}};
-const rng=()=>{const p=std(today());return{f:F.f||p.s,t:F.t||p.e}};
+const rng=()=>{const l=D.per.at(-1);const p=l?{s:l.s,e:l.e}:std(today());return{f:F.f||p.s,t:F.t||p.e}};
 const rEmps=(f,t)=>vis().filter(e=>(e.aktif||D.att.some(a=>a.e==e.id&&a.d>=f&&a.d<=t))&&(!F.e||e.id==F.e));
 const hrs=o=>o.h!=null?+o.h:dur(o.a,o.b)/60,fh=h=>(Math.round(h*100)/100)+(LANG=='en'?' hrs':' jam'),otH=(e,f,t)=>Math.round(D.ot.filter(o=>o.e==e.id&&o.d>=f&&o.d<=t).reduce((s,o)=>s+hrs(o),0)*100)/100;
 const ensurePer=d=>{let p=perOf(d);if(p)return p;const q=std(d);if(D.per.some(x=>q.s<=x.e&&q.e>=x.s))return null;p={id:'p'+Date.now(),s:q.s,e:q.e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);if(!D.cur)D.cur=p.id;return p};
@@ -655,7 +655,7 @@ async function outInit(){
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
   return D.outId||D.ljId||null}
 function outSwitch(id){
-  D.outId=id;sv();
+  D.outId=id;sv();F.f='';F.t='';
   T.divs=null;T.divInit=0;T.cogsDid=null;T.dvDet=null;
   D.emp=[];D.att=[];D.ot=[];D.cg=null;
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
@@ -1120,6 +1120,10 @@ async function perSaveNew(s0,e0){const oid=await outInit();if(!oid)return toast(
   const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_periods').insert({outlet_id:oid,start_date:s0,end_date:e0,locked:false});if(error)throw error});
   if(ok){await perLoad();toast('Periode dibuat');R()}}
 function payDefRange(){const l=D.per.at(-1);return l?[l.s,l.e]:perFor(today())}
+
+function perPick(v){const a=v.split('|');F.f=a[0];F.t=a[1];R()}
+function perSel(){if(!D.per.length)return '';const cur=(F.f||'')+'|'+(F.t||'');const last=D.per.at(-1);
+  return `<label style="margin-bottom:10px">Periode outlet<select onchange="perPick(this.value)">${D.per.map(p=>{const v=p.s+'|'+p.e;const sel=F.f?(cur===v):(p===last);return `<option value="${v}" ${sel?'selected':''}>${pl(p)}${p.lock?' · LOCKED':''}</option>`}).join('')}</select></label>`}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
@@ -1359,7 +1363,7 @@ rk=!l.length?'':`<div class="card"><h3>Rekap Karyawan</h3>${rows.length?`<div st
 ch=!rows.length?'':`<div class="card"><h3>Rekap per Karyawan</h3><div class="vch">${rows.map(x=>`<div class="vcol" title="${esc(x.e.nama)}"><div class="vstk">${['M','L','S','PH','I','B'].map(k=>x.c[k]?`<i style="height:${x.c[k]/nd*100}%;background:${k=='B'?'#ffffff':SC[k]}" title="${k}: ${x.c[k]}"></i>`:'').join('')}</div><div class="vn">${esc(x.e.nama)}</div></div>`).join('')}</div><div class="lg">${['M','L','S','PH','I','B'].map(k=>`<span><i style="background:${k=='B'?'#ffffff':SC[k]}"></i>${k=='B'?'Belum ada data':k}</span>`).join('')}</div></div>`,
 per=D.per.map(q=>[pl(q),cnt(q,pEmps(q)).M]),mx=Math.max(1,...per.map(x=>x[1]));
 if(D.per.length>1){if(!P(T.c1))T.c1=D.cur;if(!P(T.c2))T.c2=D.per[Math.max(0,D.per.findIndex(q=>q.id==D.cur)-1)].id}
-return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${rk}${V.abs()}`)};
+return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${perSel()}${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${rk}${V.abs()}`)};
 function cmp(){const a=P(T.c1),b=P(T.c2),sel=(id,s)=>`<select onchange="T.${id}=this.value;R()">${D.per.map(q=>`<option value="${q.id}" ${q.id==s?'selected':''}>${pl(q)}</option>`).join('')}</select>`;
 let t='';if(a&&b){const x=cnt(a,pEmps(a)),y=cnt(b,pEmps(b)),has=q=>q.M+q.L+q.I+q.S+q.PH>0;t=`<div class="tw"><table><tr><th>Status</th><th>Periode A</th><th>Periode B</th></tr>${SK.concat('B').map(k=>`<tr><td>${k=='B'?'Belum ada data':ST[k]}</td><td>${has(x)||k=='B'&&x.B?x[k]:'BELUM ADA DATA'}</td><td>${has(y)||k=='B'&&y.B?y[k]:'BELUM ADA DATA'}</td></tr>`).join('')}</table></div>`}
 return`<div class="card"><h3>Bandingkan periode</h3><div class="row"><label>A${sel('c1',T.c1)}</label><label>B${sel('c2',T.c2)}</label></div>${t}</div>`}
