@@ -642,6 +642,8 @@ async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_att
 
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
+  if(!isDeveloper()){if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
+    if(T.scopeOut)return T.scopeOut}
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[];return D.outId||D.ljId||null}}
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
   return D.outId||D.ljId||null}
