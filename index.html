@@ -625,7 +625,7 @@ if(c=='DUP')return 'Data karyawan ini di tanggal tsb sudah ada (duplikat ditolak
 if(/Failed to fetch|NetworkError|Load failed|fetch/i.test(m))return L('Tidak bisa terhubung ke Supabase. Cek internet dan Project URL.','Cannot reach Supabase. Check your internet and Project URL.');
 if(/Invalid API key|invalid.*key|JWT/i.test(m))return L('API key Supabase tidak valid.','Invalid Supabase API key.');
 if(c=='42501'||/row-level security|permission denied/i.test(m))return L('Ditolak oleh Supabase (RLS). Tambahkan policy untuk tabel employees & attendance.','Denied by Supabase (RLS). Add policies for the employees & attendance tables.');
-if(c=='42P01'||c=='PGRST205'||(/does not exist|schema cache/i.test(m)&&!/column/i.test(m)))return L('Tabel employees/attendance tidak ditemukan di Supabase.','employees/attendance tables not found in Supabase.');
+if(c=='42P01'||c=='PGRST205'||(/does not exist|schema cache/i.test(m)&&!/column/i.test(m))){const t=((m.match(/relation "?([\w.]+)"?/)||m.match(/table '([\w.]+)'/)||[])[1]||'');return L('Tabel belum ada di Supabase'+(t?': '+t+'. Jalankan SQL-nya dulu.':'.'),'Table not found in Supabase'+(t?': '+t:'.'))}
 return 'Supabase: '+m}
 const SYN={m:'M',masuk:'M',hadir:'M',present:'M',l:'L',libur:'L',off:'L',i:'I',izin:'I',leave:'I',s:'S',sakit:'S',sick:'S',ph:'PH','public holiday':'PH',holiday:'PH'};
 const normSt=s=>{const k=String(s||'').trim();return ST[k.toUpperCase()]?k.toUpperCase():(SYN[k.toLowerCase()]||'')};
@@ -639,6 +639,23 @@ async function fetchAll(tbl,ord){const out=[];for(let from=0;;from+=1000){const 
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
 async function staffMe(tok){const {data,error}=await sb().rpc('staff_me',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
 async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_attendance',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
+
+/* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
+async function outInit(){
+  if(!T.outlets){T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}
+  if(!D.ljId){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
+  return D.outId||D.ljId}
+function outSwitch(id){
+  D.outId=id;sv();
+  T.divs=null;T.cogsDid=null;T.soDid=null;T.so=null;T.soInit=0;T.soRiw=null;T.soRiwInit=0;T.soDivs=null;T.dvDet=null;
+  D.cg=null;
+  toast('Outlet diganti');
+  sbLoad(true).then(()=>R())}
+function outMenuHtml(){
+  if(!isDeveloper())return '';
+  const cur=D.outId||D.ljId||'';
+  const opts=(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
+  return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
 async function sbLoad(silent){
 if(SB.loading)return;SB.loading=true;
 try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err';SB.msg=m;SB.loading=false;if(!silent||ch)R();return}
@@ -651,7 +668,8 @@ const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
-const emp=er.map(mapEmp),att=ar.map(mapAtt).filter(a=>a.s);
+const oid=await outInit();const inO=x=>x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
@@ -676,7 +694,7 @@ function cogsNormalize(x){
   };
 }
 async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
-  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const r=await payQ('divisions','id,code',q=>q.eq('code','BAR'));did=r[0]&&r[0].id}
+  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=await outInit();const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
   else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
   T.cogsDid=did;return did}
 async function cogsLoad(){
@@ -771,7 +789,7 @@ function migrateLocal(){if(!developerGuard())return;cmn();const ne=LEG.emp.lengt
 cf(L(`Salin ${ne} karyawan & ${na} absensi dari penyimpanan lokal perangkat ini ke Supabase? Data lokal tidak dihapus. Duplikat dilewati.`,`Copy ${ne} employees & ${na} attendance records from this device to Supabase? Local data is not deleted. Duplicates are skipped.`),async()=>{
 let added=0,skipped=0;const ok=await sbRun(async()=>{const c=sb(),map={};
 for(const le of LEG.emp){const ex=D.emp.find(x=>norm(x.nama)==norm(le.nama));if(ex){map[le.id]=ex.id;continue}
-const {data,error}=await c.from('employees').insert({name:le.nama,role:le.jab||'',active:le.aktif!==false}).select().single();if(error)throw error;const m=mapEmp(data);D.emp.push(m);map[le.id]=m.id}
+const {data,error}=await c.from('employees').insert({name:le.nama,role:le.jab||'',active:le.aktif!==false,outlet_id:await outInit()}).select().single();if(error)throw error;const m=mapEmp(data);D.emp.push(m);map[le.id]=m.id}
 const rows=[],seen=new Set(D.att.map(a=>a.e+'|'+a.d)),phk={};
 LEG.att.forEach(a=>{const eid=map[a.e],st=normSt(a.s);if(!eid||!st||!a.d)return skipped++;const k=eid+'|'+a.d;if(seen.has(k))return skipped++;seen.add(k);rows.push({employee_id:eid,attendance_date:a.d,status:st,notes:a.n||null});if(a.ph)phk[k]=a.ph});
 for(let i=0;i<rows.length;i+=200){const {data,error}=await c.from('attendance').insert(rows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(rw=>{const m=mapAtt(rw),k=m.e+'|'+m.d;if(phk[k]&&!m.ph){PH[m.id]=phk[k];m.ph=phk[k]}D.att.push(m);added++})}
@@ -967,7 +985,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('grid',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${cg?L('Siap','Ready'):sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':sx?'SO':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':sx?'SO':esc(TH.name)} · ${esc(TH.sub)}</small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${(cg||px||sx)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
@@ -1019,7 +1037,7 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active')]);
+async function divLoad(){try{const OID=await outInit();const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.eq('outlet_id',OID).order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active')]);
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
@@ -1031,7 +1049,7 @@ V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yan
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.getElementById('dv_g').checked;
  if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
- const ok=await sbRun(async()=>{const outs=await payQ('outlets','id,code');const o=outs.find(x=>x.code=='LJ')||outs[0];if(!o)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:o.id,p_code:c,p_name:n,p_has_cogs:g})});
+ const ok=await sbRun(async()=>{const oid=await outInit();if(!oid)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:oid,p_code:c,p_name:n,p_has_cogs:g})});
  if(ok){toast('Divisi ditambahkan');divLoad()}}
 async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
  const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
@@ -1086,11 +1104,11 @@ async function pwSave(uid){const a=v('pwn'),b=v('pwr');if(a.length<8)return toas
 const SO_JENIS=['WASTE','QC','KALIBRASI','MOVE ITEM','RND','LAINNYA'];
 const soIsAll=()=>isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
 async function soDivId(){
-  if(soIsAll()){if(!T.soDid){const r=await payQ('divisions','id,code',q=>q.eq('code','BAR'));T.soDid=r[0]&&r[0].id}return T.soDid}
+  if(soIsAll()){if(!T.soDid){const oid=await outInit();const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));T.soDid=r[0]&&r[0].id}return T.soDid}
   return cogsDid()}
 async function soLoad(){
   try{
-    if(soIsAll()&&!T.soDivs){T.soDivs=await payQ('divisions','id,code,name',q=>q.order('name'))}
+    if(soIsAll()&&!T.soDivs){const oid=await outInit();T.soDivs=await payQ('divisions','id,code,name',q=>q.eq('outlet_id',oid).order('name'))}
     const did=await soDivId(); const tgl=T.soTgl||today();
     const [cg,sa,bh,wp,sp,ws]=await Promise.all([
       payQ('cogs_data','data',q=>q.eq('division_id',did)),
@@ -1394,7 +1412,7 @@ V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
  <div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Hari</th><th>Gaji</th><th>Makan</th><th>Tunjangan</th><th>Lembur</th><th>Kasbon</th><th>Net</th><th>Slip</th></tr>${rows.map(x=>`<tr><td style="white-space:normal;min-width:90px">${esc(x.nm)}${x.iss?`<br><span class="mu" style="font-size:11px">${esc(x.iss)}</span>`:''}</td><td>${x.paid}</td><td>${fmtN(x.gaji)}</td><td>${fmtN(x.meal)}</td><td>${fmtN(x.allow)}</td><td>${fmtN(x.ot)}</td><td>${fmtN(x.kas)}</td><td><b>${fmtN(x.net)}</b></td><td style="white-space:nowrap">${x.id&&PAY.urls[x.id]?`<a class="btn s x" href="${PAY.urls[x.id]}" download="Slip_${String(x.nm).replace(/[^A-Za-z0-9]+/g,'_')}_${f}_${t}.pdf">PDF</a>`:'<span class="mu">hitung dulu</span>'}</td></tr>`).join('')||'<tr><td colspan="9">Belum ada karyawan.</td></tr>'}</table></div>`;
  return payBlk('lap_periode','Periode & aksi',periode,true)+payBlk('lap_rincian','Rincian gaji karyawan',tabel,false)};
 async function payFind(){try{const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const runs=await payQ('payroll_runs','*',q=>q.eq('period_start',f).eq('period_end',t).neq('status','void'));PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
-async function payCalc(){const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:null,p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
+async function payCalc(){const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:await outInit(),p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
 async function payFinal(){if(!PAY.run)return;const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random(),ack=!!(document.getElementById('pack')&&document.getElementById('pack').checked);
  const ok=await sbRun(async()=>{await payRpc('payroll_finalize',{p_run:PAY.run.id,p_key:key,p_ack_issues:ack})});if(ok){toast('Payroll difinalisasi & dikunci');payFind()}}
 async function payVoid(){if(!PAY.run)return;const r=v('pvr').trim();if(!r)return toast('Alasan void wajib diisi','err');const ok=await sbRun(async()=>{await payRpc('payroll_void',{p_run:PAY.run.id,p_reason:r})});if(ok){toast('Payroll di-void');payFind()}}
@@ -1427,7 +1445,7 @@ return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="ope
 function openEmp(i){if(!guard())return;const e=i>=0?D.emp[i]:{};T.i=i;
 modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label><div class="row">${i>=0?`<button class="btn s" onclick="pinOpen(${i})">Atur PIN login</button>`:''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
 async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
-const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
+const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:await outInit()}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}
 async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select().single();if(error)throw error;D.emp[i]=mapEmp(data);sbCacheSave()});R()}
 function delEmp(i){if(!guard())return;const e=D.emp[i];cf(`Hapus <b>${esc(e.nama)}</b>? Semua absensi & lembur karyawan ini ikut terhapus. Tidak bisa dibatalkan.`,async()=>{if(D.att.some(a=>a.e==e.id&&lockedD(a.d)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
@@ -1716,7 +1734,7 @@ function planSummary(p){const total=p.emp.length+p.att.length+p.ot.length+p.baha
 async function handleExcelFile(file){if(!file||!guard())return;if(!xlsxReady())return;try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const p=planExcel(wb);T.excelPlan=p;modal(`<h3>Preview Import</h3>${planSummary(p)}<p class="mu">Data existing tidak dihapus. Duplikat dilewati.</p><div class="btns"><button class="btn" onclick="applyExcelPlan()">Import Data</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}catch(e){toast('File Excel tidak bisa dibaca: '+e.message,'err')}}
 async function applyExcelPlan(){if(!guard()||!T.excelPlan)return;const p=T.excelPlan;let added=0,skip=0;const ok=await sbRun(async()=>{
   const c=sb(),emap=new Map(D.emp.map(e=>[norm(e.nama),e.id]));
-  for(const x of p.emp){if(emap.has(norm(x.nama))){skip++;continue}const {data,error}=await c.from('employees').insert({name:x.nama,role:x.jab||'',active:x.aktif!==false}).select().single();if(error)throw error;const e=mapEmp(data);D.emp.push(e);emap.set(norm(e.nama),e.id);added++}
+  for(const x of p.emp){if(emap.has(norm(x.nama))){skip++;continue}const {data,error}=await c.from('employees').insert({name:x.nama,role:x.jab||'',active:x.aktif!==false,outlet_id:await outInit()}).select().single();if(error)throw error;const e=mapEmp(data);D.emp.push(e);emap.set(norm(e.nama),e.id);added++}
   const attRows=[];for(const x of p.att){const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||emap.get(norm(pe?.nama||''))||x._eid;if(!eid||D.att.some(a=>String(a.e)==String(eid)&&a.d==x.d)){skip++;continue}attRows.push({employee_id:eid,attendance_date:x.d,status:x.s,notes:x.n||null})}
   for(let i=0;i<attRows.length;i+=200){const {data,error}=await c.from('attendance').insert(attRows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(r=>{D.att.push(mapAtt(r));added++})}
   const otEmp=emap; p.ot.forEach(x=>{const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||otEmp.get(norm(pe?.nama||''))||x._eid;if(!eid||D.ot.some(o=>String(o.e)==String(eid)&&o.d==x.d&&+hrs(o)==+x.h))skip++;else{D.ot.push({e:eid,d:x.d,h:x.h,n:x.n});added++}});
