@@ -657,10 +657,11 @@ async function outInit(){
 function outSwitch(id){
   D.outId=id;sv();
   T.divs=null;T.divInit=0;T.cogsDid=null;T.dvDet=null;
-  D.cg=null;
-  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
+  D.emp=[];D.att=[];D.ot=[];D.cg=null;
+  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
   toast('Outlet diganti');
+  R();
   sbLoad(true).then(async()=>{try{await cogsLoad()}catch(e){};await payLoad();R()})}
 function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
@@ -679,7 +680,7 @@ const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
-const oid=session?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
 const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
@@ -989,7 +990,7 @@ a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':(isDeveloper()?'div':'dash'),pgs=Object.keys(PAGES).filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':(isDeveloper()?'div':'dash'),pgs=Object.keys(PAGES).filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(isDeveloper()||(k!='div'&&k!='audit'))),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgReset()">${IC('trash')}${L('Kosongkan data Bahan...','Clear Bahan data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}`}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
@@ -1099,7 +1100,7 @@ V.divdet=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer.
  if(!T.dvDet||T.dvDet.id!=id){setTimeout(()=>divDetLoad(id),0)}
  const det=T.dvDet&&T.dvDet.id==id?T.dvDet:{emps:[],cogsAt:null};
  const ids=det.emps.map(e=>String(e.id));
- const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;
+ const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;
  const att=D.att.filter(a=>ids.includes(String(a.e))&&a.d>=f&&a.d<=t),cnt={M:0,L:0,PH:0,S:0,I:0};att.forEach(a=>{if(cnt[a.s]!=null)cnt[a.s]++});
  const ot=D.ot.filter(o=>ids.includes(String(o.e))&&o.d>=f&&o.d<=t).reduce((n,o)=>n+hrs(o),0);
  return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button> <b style="margin-left:8px">${esc(d.name)}</b><p class="mu" style="margin:8px 0 0">Bahan: ${d.has_cogs?'aktif':'tidak ada'}${det.cogsAt?' · terakhir diubah '+String(det.cogsAt).slice(0,10):''} · Admin: ${d.admins.map(esc).join(', ')||'belum ada'}</p></div>`+
@@ -1112,6 +1113,13 @@ async function pwSave(uid){const a=v('pwn'),b=v('pwr');if(a.length<8)return toas
  const ok=await sbRun(async()=>{const {data,error}=await sb().functions.invoke('set-password',{body:{user_id:uid,password:a}});if(error)throw error;if(data&&data.error)throw new Error(data.error)});
  if(ok){closeM();toast('Password diganti')}}
 
+
+/* ===== PERIODE PER OUTLET (disimpan di database) ===== */
+async function perLoad(){const oid=await outInit();const rows=await payQ('payroll_periods','*',q=>oid?q.eq('outlet_id',oid).order('start_date'):q.order('start_date'));D.per=rows.map(r=>({id:r.id,s:r.start_date,e:r.end_date,lock:!!r.locked,o:r.outlet_id}))}
+async function perSaveNew(s0,e0){const oid=await outInit();if(!oid)return toast('Pilih satu outlet dulu (bukan Semua outlet)','err');
+  const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_periods').insert({outlet_id:oid,start_date:s0,end_date:e0,locked:false});if(error)throw error});
+  if(ok){await perLoad();toast('Periode dibuat');R()}}
+function payDefRange(){const l=D.per.at(-1);return l?[l.s,l.e]:perFor(today())}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
@@ -1325,7 +1333,7 @@ async function cashPay(id){const sisa=PAY.bal[id]??0,a=prompt('Jumlah pembayaran
 /* ===== Hitung & Finalisasi ===== */
 V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
  if(!PAY.lapInit){PAY.lapInit=true;setTimeout(payFind,0)}
- const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt,r=PAY.run,fin=!!r&&r.status=='finalized',calc=!!r&&r.status=='calculated';
+ const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt,r=PAY.run,fin=!!r&&r.status=='finalized',calc=!!r&&r.status=='calculated';
  const rows=r?PAY.items.map(x=>({id:x.id,nm:x.employee_name,paid:x.paid_days,gaji:(+x.monthly_salary)-(+x.izin_deduction),meal:x.meal_total,allow:x.allowance_total,ot:x.overtime_total||0,kas:x.kasbon_deduction,net:x.net_pay,iss:issTxt(x.issues)})):
   D.emp.filter(e=>e.aktif).map(e=>{const q=payEst(e,f,t);return {id:null,nm:e.nama,paid:q.paid,gaji:q.earned,meal:q.mt,allow:q.al,ot:q.ot,kas:q.ks,net:q.net,iss:q.has?'':'gaji belum diisi'}});
  const tot=rows.reduce((n,x)=>n+(+x.net||0),0);
@@ -1337,10 +1345,10 @@ V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
  const tabel=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><b>${rows.length} karyawan · total net ${rupiah(tot)}</b>${PAY.urls.all?`<a class="btn s" href="${PAY.urls.all}" download="Rekap_Gaji_${f}_${t}.pdf">Rekap semua (PDF)</a>`:''}</div>
  <div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Hari</th><th>Gaji</th><th>Makan</th><th>Tunjangan</th><th>Lembur</th><th>Kasbon</th><th>Net</th><th>Slip</th></tr>${rows.map(x=>`<tr><td style="white-space:normal;min-width:90px">${esc(x.nm)}${x.iss?`<br><span class="mu" style="font-size:11px">${esc(x.iss)}</span>`:''}</td><td>${x.paid}</td><td>${fmtN(x.gaji)}</td><td>${fmtN(x.meal)}</td><td>${fmtN(x.allow)}</td><td>${fmtN(x.ot)}</td><td>${fmtN(x.kas)}</td><td><b>${fmtN(x.net)}</b></td><td style="white-space:nowrap">${x.id&&PAY.urls[x.id]?`<a class="btn s x" href="${PAY.urls[x.id]}" download="Slip_${String(x.nm).replace(/[^A-Za-z0-9]+/g,'_')}_${f}_${t}.pdf">PDF</a>`:'<span class="mu">hitung dulu</span>'}</td></tr>`).join('')||'<tr><td colspan="9">Belum ada karyawan.</td></tr>'}</table></div></div>`;
  return payBlk('lap_periode','Periode & aksi',periode,true)+payBlk('lap_rincian','Rincian gaji karyawan',tabel,false)};
-async function payFind(){try{const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const oid=await outInit();const isLJ=oid==D.ljId;const runs=await payQ('payroll_runs','*',q=>{const x=q.eq('period_start',f).eq('period_end',t).neq('status','void');return oid===null?x.is('outlet_id',null):(isLJ?x.or(`outlet_id.eq.${oid},outlet_id.is.null`).order('outlet_id',{ascending:false,nullsFirst:false}):x.eq('outlet_id',oid))});PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
-async function payCalc(){const [pf,pt]=perFor(today()),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:await outInit(),p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
+async function payFind(){try{const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;const oid=await outInit();const isLJ=oid==D.ljId;const runs=await payQ('payroll_runs','*',q=>{const x=q.eq('period_start',f).eq('period_end',t).neq('status','void');return oid===null?x.is('outlet_id',null):(isLJ?x.or(`outlet_id.eq.${oid},outlet_id.is.null`).order('outlet_id',{ascending:false,nullsFirst:false}):x.eq('outlet_id',oid))});PAY.run=runs[0]||null;PAY.items=PAY.run?await payQ('payroll_items','*',q=>q.eq('run_id',PAY.run.id).order('employee_name')):[];const ids=PAY.items.map(x=>x.id);const al=ids.length?await payQ('payroll_item_allowances','*',q=>q.in('item_id',ids)):[];PAY.rep=PAY.run?{f,t,run:PAY.run,items:PAY.items,al}:null;payBuildUrls()}catch(e){toast(errText(e),'err')}R()}
+async function payCalc(){const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:await outInit(),p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
 async function payFinal(){if(!PAY.run)return;const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random(),ack=!!(document.getElementById('pack')&&document.getElementById('pack').checked);
- const ok=await sbRun(async()=>{await payRpc('payroll_finalize',{p_run:PAY.run.id,p_key:key,p_ack_issues:ack})});if(ok){toast('Payroll difinalisasi & dikunci');payFind()}}
+ const r0=PAY.run;const ok=await sbRun(async()=>{await payRpc('payroll_finalize',{p_run:PAY.run.id,p_key:key,p_ack_issues:ack})});if(ok){if(r0&&r0.period_start){await sbRun(async()=>{let q=sb().from('payroll_periods').update({locked:true}).eq('start_date',r0.period_start).eq('end_date',r0.period_end);if(r0.outlet_id)q=q.eq('outlet_id',r0.outlet_id);const {error}=await q;if(error)throw error});await perLoad()}toast('Payroll difinalisasi & dikunci');payFind()}}
 async function payVoid(){if(!PAY.run)return;const r=v('pvr').trim();if(!r)return toast('Alasan void wajib diisi','err');const ok=await sbRun(async()=>{await payRpc('payroll_void',{p_run:PAY.run.id,p_reason:r})});if(ok){toast('Payroll di-void');payFind()}}
 
 V.dash=()=>{const {f,t}=rng(),bad=f>t,l=bad?[]:rEmps(f,t),nd=bad?0:days(f,t).length,c=cntR(f,t,l),tot=c.M+c.L+c.I+c.S+c.PH+c.B,
@@ -1585,11 +1593,9 @@ return`<div class="card"><h3>Periode absensi</h3>${D.per.length?D.per.map(p=>`<d
 <div class="card"><h3>Import / Export Excel</h3><p class="mu">Import hanya menambah data baru. Data existing tidak dihapus dan duplikat dilewati.</p><div class="btns"><button class="btn" onclick="openExcelImport()">Import Excel</button><button class="btn s" onclick="downloadExcelTemplate()">Template Excel</button></div><div class="ts">Export Database</div><div class="btns"><button class="btn s" onclick="exportExcel('emp')">Karyawan</button><button class="btn s" onclick="exportExcel('att')">Absensi</button><button class="btn s" onclick="exportExcel('ot')">Lembur</button><button class="btn s" onclick="exportExcel('cogs')">Bahan</button><button class="btn" onclick="exportExcel('full')">Full Database</button></div><div class="ts">Backup / Restore</div><div class="btns"><button class="btn" onclick="exportExcel('full')">Download Full Backup</button><button class="btn s" onclick="openExcelRestore()">Restore / Merge Backup</button></div><input id="excelImportInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="handleExcelFile(this.files[0])"></div>
 <div class="card"><h3>Reset data</h3><p class="mu">Hapus semua karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal (akun admin & tema tetap). Berguna setelah uji coba selesai.</p><button class="btn d" onclick="resetAll()">Hapus semua data</button></div>
 <div class="card"><h3>Tema & Tampilan</h3><p class="mu">Ubah bahasa, judul, font, warna, dan animasi.</p><button class="btn" onclick="openTheme()">Edit tema</button></div>`};
-function addP(){if(!guard())return;const s=v('ps1'),e=v('ps2');if(!s||!e)return toast('Tanggal wajib diisi','err');if(e<s)return toast('Tanggal akhir tidak boleh sebelum mulai','err');if(D.per.some(p=>s<=p.e&&e>=p.s))return toast('Periode bertumpuk dengan periode lain','err');const p={id:'p'+Date.now(),s,e,lock:false};D.per.push(p);D.per.sort((a,b)=>a.s<b.s?-1:1);D.cur=p.id;sv();toast('Periode dibuat');R()}
-function lockP(id){if(!guard())return;const p=P(id);p.lock=!p.lock;sv();toast(p.lock?'Periode dikunci':'Periode dibuka');R()}
-function delP(id){if(!guard())return;const p=P(id);cf(`Hapus periode ${pl(p)}? Data absensi di rentang ini ikut terhapus.`,async()=>{if(p.lock)return toast('Unlock dulu','err');
-const ok=await sbRun(async()=>{const {error}=await sb().from('attendance').delete().gte('attendance_date',p.s).lte('attendance_date',p.e);if(error)throw error;D.att.filter(a=>a.d>=p.s&&a.d<=p.e).forEach(a=>delete PH[a.id]);savePH();D.att=D.att.filter(a=>a.d<p.s||a.d>p.e);D.per=D.per.filter(q=>q.id!=id);sv();sbCacheSave()});
-if(ok){toast('Periode dihapus');R()}})}
+function addP(){if(!guard())return;const s=v('ps1'),e=v('ps2');if(!s||!e)return toast('Tanggal wajib diisi','err');if(e<s)return toast('Tanggal akhir tidak boleh sebelum mulai','err');if(D.per.some(p=>s<=p.e&&e>=p.s))return toast('Periode bertumpuk dengan periode lain','err');perSaveNew(s,e)}
+async function lockP(id){if(!guard())return;const p=P(id);if(!p)return;const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_periods').update({locked:!p.lock}).eq('id',id);if(error)throw error});if(ok){await perLoad();toast(p.lock?'Periode dibuka':'Periode dikunci');R()}}
+function delP(id){if(!guard())return;const p=P(id);if(!p)return;if(p.lock)return toast('Unlock dulu','err');cf(`Hapus periode ${pl(p)}? Data absensi tetap tersimpan.`,async()=>{const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_periods').delete().eq('id',id);if(error)throw error});if(ok){await perLoad();toast('Periode dihapus');R()}},L('Ya, hapus','Yes, delete'))}
 function resetAll(){if(!guard())return;cf('Hapus SEMUA data karyawan & absensi di Supabase (semua perangkat), serta lembur dan periode lokal? Tidak bisa dibatalkan.',async()=>{
 const ok=await sbRun(async()=>{const c=sb();let q=await c.from('attendance').delete().not('id','is',null);if(q.error)throw q.error;q=await c.from('employees').delete().not('id','is',null);if(q.error)throw q.error;D.emp=[];D.att=[];D.ot=[];D.per=[];D.cur='';F.f=F.t=F.q=F.e='';PH={};savePH();sv();sbCacheSave()});
 if(ok){toast('Semua data dihapus');R()}})}
