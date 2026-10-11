@@ -649,8 +649,10 @@ function outSwitch(id){
   D.outId=id;sv();
   T.divs=null;T.cogsDid=null;T.soDid=null;T.so=null;T.soInit=0;T.soRiw=null;T.soRiwInit=0;T.soDivs=null;T.dvDet=null;
   D.cg=null;
+  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
+  PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
   toast('Outlet diganti');
-  sbLoad(true).then(()=>R())}
+  sbLoad(true).then(async()=>{try{await cogsLoad()}catch(e){};await payLoad();R()})}
 function outMenuHtml(){
   if(!isDeveloper())return '';
   const cur=D.outId||D.ljId||'';
@@ -1195,7 +1197,7 @@ const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer da
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
 
-async function otLoad(){const rows=await payQ('overtime_entries','*');D.ot=rows.map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
+async function otLoad(){const oid=await outInit();const rows=await payQ('overtime_entries','*');const emps=await payQ('employees','id,outlet_id');const ok=new Set(emps.filter(e=>!oid||e.outlet_id==oid||(!e.outlet_id&&oid==D.ljId)).map(e=>String(e.id)));D.ot=rows.filter(r=>ok.has(String(r.employee_id))).map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
 /* Periode payroll (sama dengan fungsi payroll_period_for di database) */
 const mkd=(y,m,d)=>{const q=new Date(Date.UTC(y,m,1)),yy=q.getUTCFullYear(),mm=q.getUTCMonth(),dim=new Date(Date.UTC(yy,mm+1,0)).getUTCDate();return iso(Date.UTC(yy,mm,Math.min(d,dim)))};
 const payNext=()=>{const [,pt]=perFor(today());return iso(U(pt)+864e5)};
