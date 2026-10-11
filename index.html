@@ -333,6 +333,7 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 
 .taskbar{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}.taskbar::-webkit-scrollbar{display:none}.taskbar>*{flex:0 0 auto}.taskbar .task{white-space:nowrap;padding:8px 12px}.taskbar .task+.task{margin-left:4px}
 .taskbar.tb-clear{background:color-mix(in srgb,var(--cd) 40%,transparent);border-color:transparent;box-shadow:none}
+#app.no-anim main,#app.no-anim main .card{animation:none!important}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -1001,9 +1002,9 @@ ${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')"
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
-<div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
+<div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk"></span></span></div>
 ${pgs.length>1||cg||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
-if(a.dataset.h!==nh){a.dataset.h=nh;a.innerHTML=nh;accFix()}
+if(a.dataset.h!==nh){const same=a.dataset.kpg===pg;a.dataset.kpg=pg;a.classList.toggle('no-anim',same);a.dataset.h=nh;a.innerHTML=nh;accFix();const ck=document.getElementById('clk');if(ck)ck.textContent=clk()}
 if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
 const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
 
