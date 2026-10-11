@@ -332,6 +332,7 @@ html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--ac) 45%,tran
 .lgpv input[type=file]{display:none}
 
 .taskbar{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}.taskbar::-webkit-scrollbar{display:none}.taskbar>*{flex:0 0 auto}.taskbar .task{white-space:nowrap;padding:8px 12px}.taskbar .task+.task{margin-left:4px}
+.taskbar.tb-clear{background:color-mix(in srgb,var(--cd) 40%,transparent);border-color:transparent;box-shadow:none}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -967,7 +968,7 @@ function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.cont
 function accToggle(b,open){if(!b)return;b.style.transition='grid-template-rows .5s cubic-bezier(.34,1.4,.64,1),opacity .35s ease';requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.gridTemplateRows=open?'1fr':'0fr';b.style.opacity=open?'1':'0'}))}
 function accFix(){const m=document.querySelector('main');if(!m)return;
  const cards=[...m.children].filter(c=>c.classList.contains('card')&&!c.classList.contains('empty')&&!c.querySelector('.dlg,.prog'));
- if(cards.length<2)return;T.acc3=T.acc3||{};
+ if(cards.length<2&&pg!='dash')return;T.acc3=T.acc3||{};
  cards.forEach((c,i)=>{if(i==0&&pg!='dash')return;
   const key=pg+':'+i,open=T.acc3[key]===undefined?(pg=='cg_menu'&&i==1):!!T.acc3[key];
   const head=c.querySelector(':scope > h3, :scope > h4, :scope > b');
@@ -1000,7 +1001,7 @@ ${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')"
 </div>
 <main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
-<div class="taskbar"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
+<div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk">${clk()}</span></span></div>
 ${pgs.length>1||cg||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
 if(a.dataset.h!==nh){a.dataset.h=nh;a.innerHTML=nh;accFix()}
 if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
@@ -1304,7 +1305,7 @@ V.pay_kas=()=>{if(!payOK())return payDenied();payEnsure();if(!T.outlets||!T.allD
  const allRows=PAY.cash.filter(c=>c.status!='void');
  const nm=id=>{const x=D.emp.find(z=>String(z.id)==String(id));return x?esc(x.nama):'-'};
  const tabelAll=`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Tgl</th><th>Pokok</th><th>Potong / periode</th><th>Sisa</th><th></th></tr>${allRows.map(c=>{const b=PAY.bal[c.id];return `<tr><td>${nm(c.employee_id)}</td><td>${c.issued_on}</td><td>${rupiah(c.principal)}</td><td>${rupiah(c.installment)}</td><td>${b==null?'-':b<=0?'<b>Lunas</b>':rupiah(b)}</td><td style="white-space:nowrap"><button class="btn s x" onclick="cashPay('${c.id}')">Bayar</button> <button class="btn s x" onclick="cashVoid('${c.id}')">Hapus</button></td></tr>`}).join('')||'<tr><td colspan="6">Belum ada kasbon.</td></tr>'}</table></div>`;
- return payBlk('kas_semua','Siapa yang punya kasbon',kasSemua(),true)+payBlk('kas_list','Kasbon aktif',tabelAll,true)+payBlk('kas_baru','Tambah kasbon baru',kasSel()+form,false)};
+ return payBlk('kas_semua','Siapa yang punya kasbon',kasSemua(),true)+payBlk('kas_baru','Tambah kasbon baru',kasSel()+form,false)};
 function kasSel(){const kOut=T.kOut||'',kDiv=T.kDiv||'';const outs=T.outlets||[];const dvs=(T.allDivs||[]).filter(d=>!kOut||d.outlet_id==kOut);const cands=D.emp.filter(x=>x.aktif&&(!kOut||x.o==kOut)&&(!kDiv||x.dv==kDiv));return `<label>Outlet<select onchange="T.kOut=this.value;T.kDiv='';R()"><option value="">Semua outlet</option>${outs.map(o=>`<option value="${o.id}" ${o.id==kOut?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label>`+`<label>Divisi<select onchange="T.kDiv=this.value;R()"><option value="">Semua divisi</option>${dvs.map(d=>`<option value="${d.id}" ${d.id==kDiv?'selected':''}>${esc(d.name)}</option>`).join('')}</select></label>`+`<label>Nama<select id="kn1">${cands.map(x=>`<option value="${x.id}">${esc(x.nama)}</option>`).join('')}</select></label>`}
 async function cashAdd(eid){const p=+v('kp'),n=+v('kn2'),d=v('kd'),note=v('kn').trim()||null;
  if(!(p>0))return toast('Pokok kasbon wajib lebih dari 0','err');
