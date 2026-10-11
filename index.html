@@ -1109,9 +1109,9 @@ async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
- const ds=T.divs||[];
+ const ds=T.divs||[];const __oc=outCardHtml();
  const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
- return `<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Bahan</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
+ return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Bahan</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
  `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya Bahan</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.getElementById('dv_g').checked;
@@ -1187,6 +1187,18 @@ function outLabel(){
   const o=(T.outlets||[]).find(x=>x.id==id);
   return o?o.name+' ('+o.code+')':'';
 }
+
+/* ===== EDIT OUTLET (developer) ===== */
+function outCardHtml(){
+  if(!isDeveloper())return '';
+  const outs=T.outlets||[];
+  return `<div class="card"><h3>Outlet</h3>${outs.map(o=>`<div class="row" style="margin-bottom:8px"><div><b>${esc(o.name)}</b> <span class="mu">(${esc(o.code)})</span></div><button class="btn s x" onclick="outEditOpen('${o.id}')">Edit</button></div>`).join('')||'<p class="mu">Belum ada outlet.</p>'}</div>`}
+function outEditOpen(id){const o=(T.outlets||[]).find(x=>x.id==id);if(!o)return;
+  modal(`<h3>Edit outlet</h3><label>Nama<input id="on1" value="${esc(o.name)}" autocomplete="off"></label><label>Kode<input id="oc1" value="${esc(o.code)}" maxlength="10" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="outEditSave('${o.id}')">Simpan</button></div>`)}
+async function outEditSave(id){const n=v('on1').trim(),c=v('oc1').trim();
+  if(!n||!c)return toast('Nama dan kode wajib diisi','err');
+  const ok=await sbRun(async()=>{const {error}=await sb().rpc('dev_update_outlet',{p_id:id,p_name:n,p_code:c});if(error)throw error});
+  if(ok){closeM();T.outlets=null;await outInit();toast('Outlet diperbarui');R()}}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
