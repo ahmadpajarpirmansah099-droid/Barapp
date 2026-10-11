@@ -672,7 +672,7 @@ const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
 if(session)await otLoad().catch(()=>{});
-const oid=session?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const oid=session&&(isDeveloper()||T.dbRole=='div_admin')?await outInit():null;const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
 const emp=er.filter(inO).map(mapEmp),att=ar.filter(inO).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
@@ -1041,13 +1041,13 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>q.eq('outlet_id',OID).order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
+async function divLoad(){try{const OID=(isDeveloper()||T.dbRole=='div_admin')?await outInit():null;const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
  const ds=T.divs||[];
- const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
+ const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
  return `<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Bahan</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
  `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya Bahan</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
@@ -1112,7 +1112,7 @@ async function soDivId(){
   return cogsDid()}
 async function soLoad(){
   try{
-    if(soIsAll()&&!T.soDivs){const oid=await outInit();T.soDivs=await payQ('divisions','id,code,name',q=>q.eq('outlet_id',oid).order('name'))}
+    if(soIsAll()&&!T.soDivs){const oid=(isDeveloper()||T.dbRole=='div_admin')?await outInit():null;T.soDivs=await payQ('divisions','id,code,name',q=>oid?q.eq('outlet_id',oid).order('name'):q.order('name'))}
     const did=await soDivId(); const tgl=T.soTgl||today();
     const [cg,sa,bh,wp,sp,ws]=await Promise.all([
       payQ('cogs_data','data',q=>q.eq('division_id',did)),
