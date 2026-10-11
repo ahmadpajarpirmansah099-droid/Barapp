@@ -710,7 +710,7 @@ async function outInit(){
   return D.outId||D.ljId||null}
 function outSwitch(id){
   D.outId=id;sv();F.f='';F.t='';
-  T.divs=null;T.divInit=0;T.cogsDid=null;T.dvDet=null;
+  T.divs=null;T.divInit=0;T.cogsDid=null;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;
   D.emp=[];D.att=[];D.ot=[];D.cg=null;
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
@@ -1199,6 +1199,64 @@ async function outEditSave(id){const n=v('on1').trim(),c=v('oc1').trim();
   if(!n||!c)return toast('Nama dan kode wajib diisi','err');
   const ok=await sbRun(async()=>{const {error}=await sb().rpc('dev_update_outlet',{p_id:id,p_name:n,p_code:c});if(error)throw error});
   if(ok){closeM();T.outlets=null;await outInit();toast('Outlet diperbarui');R()}}
+
+/* ===== JADWAL KERJA MINGGUAN (rencana, Senin-Minggu) ===== */
+const JAD_CODES=['','6','7','8','9','10','11','12','1','L','S','PH'];
+const JAD_NAMA=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const jadAddDays=(s,n)=>{const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const jadMon=s=>{const d=new Date(s+'T00:00:00Z');const wd=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-wd);return d.toISOString().slice(0,10)};
+async function jadDivList(){
+  if(T.jadDivs)return T.jadDivs;
+  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){
+    const oid=isDeveloper()?await outInit():null;
+    T.jadDivs=await payQ('divisions','id,name,code,outlet_id',q=>oid?q.eq('outlet_id',oid).order('name'):q.order('name'));
+  }else{
+    const sc=await payQ('user_scopes','division_id');const ids=sc.map(x=>x.division_id);
+    T.jadDivs=ids.length?await payQ('divisions','id,name,code,outlet_id',q=>q.in('id',ids).order('name')):[];
+  }
+  return T.jadDivs}
+async function jadLoad(){
+  try{
+    const divs=await jadDivList();
+    const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+    if(!T.jadDid||(T.jadDid!=='ALL'&&!divs.some(d=>d.id==T.jadDid)))T.jadDid=(multi&&divs.length>1)?'ALL':((divs[0]||{}).id||null);
+    const ws=T.jadWs||jadMon(today()),we=jadAddDays(ws,6),did=T.jadDid;
+    let rows=[];
+    if(did==='ALL'){const ids=divs.map(d=>d.id);if(ids.length)rows=await payQ('work_schedules','employee_id,day,code',q=>q.in('division_id',ids).gte('day',ws).lte('day',we))}
+    else if(did){rows=await payQ('work_schedules','employee_id,day,code',q=>q.eq('division_id',did).gte('day',ws).lte('day',we))}
+    const m={};rows.forEach(r=>m[r.employee_id+'|'+String(r.day).slice(0,10)]=r.code);
+    T.jad=m;T.jadKey=ws+'|'+did;
+  }catch(e){toast(errText(e),'err');T.jad={};T.jadKey='err'}
+  R()}
+async function jadSet(eid,day,code,didArg){
+  const k=eid+'|'+day,did=didArg||T.jadDid,ws=T.jadWs||jadMon(today());
+  if(!did||did==='ALL')return toast('Pilih divisi dulu','err');
+  const ok=await sbRun(async()=>{const c=sb();
+    if(!code){const {error}=await c.from('work_schedules').delete().eq('employee_id',eid).eq('day',day);if(error)throw error}
+    else{const {error}=await c.from('work_schedules').upsert({employee_id:eid,division_id:did,week_start:ws,day,code},{onConflict:'employee_id,day'});if(error)throw error}});
+  if(ok){if(code)T.jad[k]=code;else delete T.jad[k]}
+  R()}
+function jadNav(n){T.jadWs=jadAddDays(T.jadWs||jadMon(today()),n);T.jadKey=null;R()}
+function jadNow(){T.jadWs=jadMon(today());T.jadKey=null;R()}
+function jadPick(v){T.jadDid=v;T.jadKey=null;R()}
+function jadCard(){
+  const ws=T.jadWs||jadMon(today()),we=jadAddDays(ws,6),did=T.jadDid;
+  if(T.jadKey!==ws+'|'+did&&!T.jadBusy){T.jadBusy=1;setTimeout(async()=>{try{await jadLoad()}finally{T.jadBusy=0}},0)}
+  const locked=today()>=ws;
+  const divs=T.jadDivs||[];
+  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}</option>`).join('')}</select></label>`:'';
+  const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button></div></div>`;
+  if(!T.jad)return `<div class="card"><h3>Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
+  if(!did)return `<div class="card"><h3>Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
+  const groups=did==='ALL'?divs:divs.filter(d=>d.id==did);
+  const days=[0,1,2,3,4,5,6].map(i=>jadAddDays(ws,i));
+  const blocks=groups.map(g=>{
+    const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
+    if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
+    const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}</span></div>`:'';
+    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${c||'–'}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
+  return `<div class="card"><h3>Jadwal</h3>${dsel?`<div style="margin-bottom:10px">${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
@@ -1438,7 +1496,7 @@ rk=!l.length?'':`<div class="card"><h3>Rekap Karyawan</h3>${rows.length?`<div st
 ch=!rows.length?'':`<div class="card"><h3>Rekap per Karyawan</h3><div class="vch">${rows.map(x=>`<div class="vcol" title="${esc(x.e.nama)}"><div class="vstk">${['M','L','S','PH','I','B'].map(k=>x.c[k]?`<i style="height:${x.c[k]/nd*100}%;background:${k=='B'?'#ffffff':SC[k]}" title="${k}: ${x.c[k]}"></i>`:'').join('')}</div><div class="vn">${esc(x.e.nama)}</div></div>`).join('')}</div><div class="lg">${['M','L','S','PH','I','B'].map(k=>`<span><i style="background:${k=='B'?'#ffffff':SC[k]}"></i>${k=='B'?'Belum ada data':k}</span>`).join('')}</div></div>`,
 per=D.per.map(q=>[pl(q),cnt(q,pEmps(q)).M]),mx=Math.max(1,...per.map(x=>x[1]));
 if(D.per.length>1){if(!P(T.c1))T.c1=D.cur;if(!P(T.c2))T.c2=D.per[Math.max(0,D.per.findIndex(q=>q.id==D.cur)-1)].id}
-return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${perSel()}${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${rk}${V.abs()}`)};
+return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${perSel()}${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${jadCard()}${rk}<div class="card"><h3>Input Absensi</h3>${V.abs()}</div>`)};
 function cmp(){const a=P(T.c1),b=P(T.c2),sel=(id,s)=>`<select onchange="T.${id}=this.value;R()">${D.per.map(q=>`<option value="${q.id}" ${q.id==s?'selected':''}>${pl(q)}</option>`).join('')}</select>`;
 let t='';if(a&&b){const x=cnt(a,pEmps(a)),y=cnt(b,pEmps(b)),has=q=>q.M+q.L+q.I+q.S+q.PH>0;t=`<div class="tw"><table><tr><th>Status</th><th>Periode A</th><th>Periode B</th></tr>${SK.concat('B').map(k=>`<tr><td>${k=='B'?'Belum ada data':ST[k]}</td><td>${has(x)||k=='B'&&x.B?x[k]:'BELUM ADA DATA'}</td><td>${has(y)||k=='B'&&y.B?y[k]:'BELUM ADA DATA'}</td></tr>`).join('')}</table></div>`}
 return`<div class="card"><h3>Bandingkan periode</h3><div class="row"><label>A${sel('c1',T.c1)}</label><label>B${sel('c2',T.c2)}</label></div>${t}</div>`}
