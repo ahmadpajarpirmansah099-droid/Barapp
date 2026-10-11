@@ -1041,7 +1041,7 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const OID=await outInit();const [ds,ou,ps]=await Promise.all([payQ('divisions','*',q=>q.eq('outlet_id',OID).order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active')]);
+async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>q.eq('outlet_id',OID).order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
@@ -1069,7 +1069,7 @@ V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer y
 
 /* ===== MANAJEMEN AKUN (dev) ===== */
 function accsCard(){const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admin:'Admin divisi',legacy_admin:'Admin lama'})[k]||k;
- const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>((T.divs||[]).find(d=>d.id==x.division_id)||{}).name).filter(Boolean).join(', ')||'-';
+ const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>{const d=(T.allDivs||T.divs||[]).find(d=>d.id==x.division_id);if(!d)return '';const oc=(T.outlets||[]).find(o=>o.id==d.outlet_id);return d.name+(oc?' ('+oc.code+')':'')}).filter(Boolean).join(', ')||'-';
   const opts=a.role=='dev'?`<option>${rl('dev')}</option>`:['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>`<option value="${k}" ${a.role==k?'selected':''}>${rl(k)}</option>`).join('');
   const dis=a.role=='dev'?'disabled':'';
   return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td><td><button class="btn s x" onclick="pwOpen('${a.user_id}','${esc(a.email)}')">Password</button></td></tr>`}).join('');
