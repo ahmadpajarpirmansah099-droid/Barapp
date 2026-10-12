@@ -405,6 +405,9 @@ table td:not(:first-child){position:relative;z-index:0}
 .cs-it.on{color:var(--ac);font-weight:700;background:color-mix(in srgb,var(--ac) 11%,transparent)}
 .cs-it:disabled{opacity:.45;cursor:not-allowed}
 .cs-native{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)}
+.cs{display:block;max-width:100%}
+.cs[style]{display:inline-block}
+label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -644,9 +647,9 @@ const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 
 /* localStorage Bahan: data Bahan disimpan di key terpisah (CGK) agar tidak pernah menimpa/merusak data absensi (key K) */
-const CGK='absensi_bar_cogs_v1';
-try{const c=localStorage.getItem(CGK);if(c)D.cg=JSON.parse(c)}catch(e){}
-const sv=()=>{try{const {cg,emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}));if(cg)localStorage.setItem(CGK,JSON.stringify(cg))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const CGK='absensi_bar_cogs_v1';let CG_DIV='none';const cgKey=()=>CGK+':'+CG_DIV;
+try{const c=localStorage.getItem(cgKey());if(c)D.cg=JSON.parse(c)}catch(e){}
+const sv=()=>{try{const {cg,emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}));if(cg)localStorage.setItem(cgKey(),JSON.stringify(cg))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
@@ -782,7 +785,7 @@ function cogsNormalize(x){
 async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
   if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=(await outInit())||D.ljId;const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
   else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
-  T.cogsDid=did;return did}
+  T.cogsDid=did;CG_DIV=did||'none';return did}
 async function cogsLoad(){
   if(!D.me||CGLOADING||T.hasCogs===false)return false;
   CGLOADING=true;
@@ -795,7 +798,7 @@ async function cogsLoad(){
       const cloud=cogsNormalize(data.data);
       if(cloud){
         D.cg=cloud;
-        try{localStorage.setItem(CGK,JSON.stringify(D.cg))}catch(e){}
+        try{localStorage.setItem(cgKey(),JSON.stringify(D.cg))}catch(e){}
         sv();
         return true;
       }
@@ -807,7 +810,7 @@ async function cogsLoad(){
     D.cg=seed;
     const {error:upErr}=await c.from('cogs_data').upsert({division_id:did,data:seed,updated_at:new Date().toISOString()},{onConflict:'division_id'});
     if(upErr)throw upErr;
-    try{localStorage.setItem(CGK,JSON.stringify(seed))}catch(e){}
+    try{localStorage.setItem(cgKey(),JSON.stringify(seed))}catch(e){}
     sv();
     return true;
   }catch(e){
@@ -824,7 +827,7 @@ function cogsSave(){
     try{
       const did=await cogsDid();if(!did)throw new Error('Divisi Bahan tidak ditemukan');const {error}=await sb().from('cogs_data').upsert({division_id:did,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'division_id'});
       if(error)throw error;
-      try{localStorage.setItem(CGK,JSON.stringify(snapshot))}catch(e){}
+      try{localStorage.setItem(cgKey(),JSON.stringify(snapshot))}catch(e){}
       return true;
     }catch(e){
       console.warn('Bahan cloud save:',e);
@@ -1010,7 +1013,7 @@ const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('ba
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
 setInterval(idleCheck,15000);
 async function out(){
-  D.cg=null;T.cogsDid=null;try{localStorage.removeItem(CGK);localStorage.removeItem('bar_last')}catch(e){}
+  D.cg=null;T.cogsDid=null;try{localStorage.removeItem(cgKey());localStorage.removeItem('bar_last')}catch(e){}
   if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
 
@@ -1318,7 +1321,7 @@ function cgSelBar(){
   const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
   const opts=T.cgDivs.filter(d=>d.has_cogs!==false&&(!oid||d.outlet_id==oid)).map(d=>{const o=outs.find(x=>x.id==d.outlet_id);return `<option value="${d.id}" ${d.id==cur?'selected':''}>${esc(d.name)} (${esc(d.code)}) · ${esc(o?o.code:'')}</option>`}).join('');
   return `<div class="card" style="margin-bottom:10px"><label>Divisi bahan (divisi · outlet)<select onchange="cgPick(this.value)">${opts}</select></label></div>`}
-async function cgPick(id){T.cogsDid=id;T.hasCogs=null;D.cg=null;CGLOADING=false;await cogsLoad();R()}
+async function cgPick(id){T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;D.cg=null;CGLOADING=false;await cogsLoad();R()}
 
 /* ===== DROPDOWN TEMA BARAPP (semua pilihan) ===== */
 function csClose(){document.querySelectorAll('.cs.open').forEach(w=>{w.classList.remove('open');const l=w.querySelector('.cs-list');if(l)l.style.cssText=''})}
