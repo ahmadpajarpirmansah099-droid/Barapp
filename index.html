@@ -408,6 +408,11 @@ table td:not(:first-child){position:relative;z-index:0}
 .cs{display:block;max-width:100%}
 .cs[style]{display:inline-block}
 label:has(> .cs){display:flex;flex-direction:column;gap:6px}
+.cs-sheet{display:grid;gap:6px;max-height:60vh;overflow:auto;padding:2px}
+.cs-sheet .cs-it{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--cd);color:var(--tx);font:inherit;cursor:pointer}
+.cs-sheet .cs-it:hover{background:var(--tint)}
+.cs-sheet .cs-it.on{color:var(--ac);font-weight:700;border-color:color-mix(in srgb,var(--ac) 45%,var(--line));background:color-mix(in srgb,var(--ac) 10%,var(--cd))}
+.cs-sheet .cs-it:disabled{opacity:.45}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -1078,7 +1083,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
-<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():((cg?cgSelBar():'')+V[pg]())}</main>
+<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():((cg?cgSelBar():'')+(cg&&T.cgBusy?'<div class="card empty">Memuat bahan…</div>':V[pg]()))}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
 <div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk"></span></span></div>
 ${pgs.length>1||cg||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
@@ -1321,34 +1326,36 @@ function cgSelBar(){
   const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
   const opts=T.cgDivs.filter(d=>d.has_cogs!==false&&(!oid||d.outlet_id==oid)).map(d=>{const o=outs.find(x=>x.id==d.outlet_id);return `<option value="${d.id}" ${d.id==cur?'selected':''}>${esc(d.name)} (${esc(d.code)}) · ${esc(o?o.code:'')}</option>`}).join('');
   return `<div class="card" style="margin-bottom:10px"><label>Divisi bahan (divisi · outlet)<select onchange="cgPick(this.value)">${opts}</select></label></div>`}
-async function cgPick(id){T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;D.cg=null;CGLOADING=false;await cogsLoad();R()}
+T.cgMem=T.cgMem||{};
+async function cgPick(id){
+  T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
+  if(T.cgMem[id]){D.cg=T.cgMem[id];T.cgBusy=false;R()}else{D.cg=null;T.cgBusy=true;R()}
+  await cogsLoad();
+  if(T.cogsDid!==id)return;
+  if(D.cg)T.cgMem[id]=D.cg;
+  T.cgBusy=false;R()}
 
-/* ===== DROPDOWN TEMA BARAPP (semua pilihan) ===== */
-function csClose(){document.querySelectorAll('.cs.open').forEach(w=>{w.classList.remove('open');const l=w.querySelector('.cs-list');if(l)l.style.cssText=''})}
+/* ===== DROPDOWN TEMA BARAPP (pilihan dibuka di jendela Barapp) ===== */
+let csSeq=0;
+function csPick(id,i){const sel=document.querySelector('select[data-csid="'+id+'"]');if(!sel)return;closeM();sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}))}
 function csEnhance(root){
   (root||document).querySelectorAll('select:not([data-cs])').forEach(sel=>{
-    sel.dataset.cs='1';
+    sel.dataset.cs='1';sel.dataset.csid='cs'+(++csSeq);
     const wrap=document.createElement('div');wrap.className='cs';
     if(sel.style.width){wrap.style.width=sel.style.width;sel.style.width='100%'}
     sel.parentNode.insertBefore(wrap,sel);wrap.appendChild(sel);sel.classList.add('cs-native');
     const btn=document.createElement('button');btn.type='button';btn.className='cs-btn';btn.disabled=sel.disabled;
-    const list=document.createElement('div');list.className='cs-list';
-    wrap.appendChild(btn);wrap.appendChild(list);
+    wrap.appendChild(btn);
     wrap.addEventListener('click',e=>e.preventDefault());
     const sync=()=>{const o=sel.options[sel.selectedIndex];const t=o?o.textContent.trim():'';btn.textContent=t||'Pilih';btn.classList.toggle('ph',!t)};
-    const build=()=>{list.innerHTML='';[...sel.options].forEach((o,i)=>{const it=document.createElement('button');it.type='button';it.className='cs-it'+(o.selected?' on':'');it.textContent=o.textContent;it.disabled=o.disabled;
-      it.addEventListener('click',e=>{e.stopPropagation();sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}));csClose()});list.appendChild(it)})};
-    const place=()=>{const r=btn.getBoundingClientRect();list.style.position='fixed';list.style.left=r.left+'px';list.style.width=r.width+'px';
-      const h=Math.min(list.scrollHeight,300),below=innerHeight-r.bottom-12;
-      list.style.top=(below>=h?r.bottom+6:Math.max(8,r.top-h-6))+'px'};
-    btn.addEventListener('click',e=>{e.stopPropagation();if(wrap.classList.contains('open')){csClose();return}csClose();build();wrap.classList.add('open');place()});
+    btn.addEventListener('click',e=>{e.stopPropagation();if(sel.disabled)return;
+      const title=(sel.closest('label')||{}).textContent||'Pilih';
+      const items=[...sel.options].map((o,i)=>`<button type="button" class="cs-it${o.selected?' on':''}" ${o.disabled?'disabled':''} onclick="csPick('${sel.dataset.csid}',${i})">${esc(o.textContent.trim())}</button>`).join('');
+      modal(`<h3>${esc(title.trim().split('\n')[0].slice(0,40))}</h3><div class="cs-sheet">${items}</div><div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>`)});
     sel.addEventListener('change',sync);
     sync();
   })}
 function csInit(){
-  document.addEventListener('click',()=>csClose());
-  window.addEventListener('scroll',csClose,true);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')csClose()});
   new MutationObserver(()=>csEnhance(document.body)).observe(document.body,{childList:true,subtree:true});
   csEnhance(document.body)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',csInit);else csInit();
