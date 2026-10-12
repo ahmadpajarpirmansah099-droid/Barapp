@@ -1328,7 +1328,8 @@ function cgSelBar(){
   const cur=T.cogsDid,outs=T.outlets||[];
   const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
   const opts=T.cgDivs.filter(d=>d.has_cogs!==false&&(!oid||d.outlet_id==oid)).map(d=>{const o=outs.find(x=>x.id==d.outlet_id);return `<option value="${d.id}" ${d.id==cur?'selected':''}>${esc(d.name)} (${esc(d.code)}) · ${esc(o?o.code:'')}</option>`}).join('');
-  return `<div class="card" style="margin-bottom:10px"><label>Divisi bahan (divisi · outlet)<select onchange="cgPick(this.value)">${opts}</select></label></div>`}
+  const dg=D.cg||{};const info=`<div class="mu" style="font-size:11px;margin-top:6px">id: ${esc(String(cur||'-').slice(0,8))} · menu: ${(dg.menu||[]).length} · bahan: ${(dg.bahan||[]).length}${T.cgErr?' · error: '+esc(T.cgErr):''}</div>`;
+  return `<div class="card" style="margin-bottom:10px"><label>Divisi bahan (divisi · outlet)<select onchange="cgPick(this.value)">${opts}</select></label>${info}</div>`}
 T.cgMem=T.cgMem||{};
 async function cgPick(id){
   T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
@@ -1348,7 +1349,7 @@ async function cgPick(id){
   D.cg=cloud||empty;T.cgMem[id]=D.cg;T.cgBusy=false;R()}
 
 let csSeq=0;
-function csPick(id,i){const sel=document.querySelector('select[data-csid="'+id+'"]');if(!sel)return;closeM();sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}))}
+function csPick(id,i){const sel=document.querySelector('select[data-csid="'+id+'"]');if(!sel)return;sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}));closeM()}
 function csEnhance(root){
   (root||document).querySelectorAll('select:not([data-cs])').forEach(sel=>{
     sel.dataset.cs='1';sel.dataset.csid='cs'+(++csSeq);
@@ -1360,9 +1361,9 @@ function csEnhance(root){
     wrap.addEventListener('click',e=>e.preventDefault());
     const sync=()=>{const o=sel.options[sel.selectedIndex];const t=o?o.textContent.trim():'';btn.textContent=t||'Pilih';btn.classList.toggle('ph',!t)};
     btn.addEventListener('click',e=>{e.stopPropagation();if(sel.disabled)return;
-      const title=(sel.closest('label')||{}).textContent||'Pilih';
+      const lb=sel.closest('label');const title=lb?Array.from(lb.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'Pilih';
       const items=[...sel.options].map((o,i)=>`<button type="button" class="cs-it${o.selected?' on':''}" ${o.disabled?'disabled':''} onclick="csPick('${sel.dataset.csid}',${i})">${esc(o.textContent.trim())}</button>`).join('');
-      modal(`<h3>${esc(title.trim().split('\n')[0].slice(0,40))}</h3><div class="cs-sheet">${items}</div><div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>`)});
+      modal(`<h3>${esc((title||'Pilih').slice(0,40))}</h3><div class="cs-sheet">${items}</div><div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>`)});
     sel.addEventListener('change',sync);
     sync();
   })}
