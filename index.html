@@ -1302,10 +1302,7 @@ function payEst(e,f,t){const nd=days(f,t).length,c={M:0,L:0,I:0,S:0,PH:0};let re
  const oth=D.ot.filter(o=>o.e==e.id&&o.d>=f&&o.d<=t).reduce((n,o)=>n+hrs(o),0),ot=Math.round(oth*(sal/31)/8*1.5*100)/100;
  return {e,c,blank:nd-rec,unk,has,sal,paid,full,earned,izin,md,mt,al,ks,oth,ot,net:earned+mt+al+ot-ks}}
 
-function payClear(i){const e=D.emp[i];if(!e)return;modal(`<h3>Hapus gaji ${esc(e.nama)}</h3><p class="mu">Gaji bulanan dan uang makan jadi 0. Tunjangan dinonaktifkan. Riwayat tetap tersimpan.</p><label>Alasan penghapusan<input id="pcr" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn d" onclick="payClearSave(${i})">Ya, hapus gaji</button></div>`)}
-async function payClearSave(i){const e=D.emp[i],r=v('pcr').trim();if(!e)return;if(!r)return toast('Alasan penghapusan wajib diisi','err');
- const ok=await sbRun(async()=>{await payRpc('payroll_clear_employee_pay',{p_employee:e.id,p_reason:r})});
- if(ok){closeM();toast('Gaji dihapus (jadi 0)');PAY.need=true;await payLoad();R()}}
+function payClear(i){const e=D.emp[i];if(!e)return;cf(`Hapus gaji ${esc(e.nama)}? Gaji bulanan dan uang makan jadi 0, tunjangan dinonaktifkan.`,async()=>{const ok=await sbRun(async()=>{await payRpc('payroll_clear_employee_pay',{p_employee:e.id,p_reason:'Hapus gaji'})});if(ok){toast('Gaji dihapus (jadi 0)');PAY.need=true;await payLoad();R()}},'Ya, hapus gaji')}
 
 async function payLoad(){PAY.need=false;PAY.busy=true;
  try{const [st,pp,al,ca]=await Promise.all([payQ('payroll_settings','*'),payQ('employee_pay_profiles','*'),payQ('employee_allowances','*'),payQ('cashadvances','*')]);
@@ -1351,8 +1348,9 @@ async function paySaveAll(){payCollect();const X=T.px,e=D.emp[X.i];
  }
  const pp=PAY.pp[String(e.id)]||{},salChanged=!PAY.pp[String(e.id)]||+pp.monthly_salary!==+X.sal||+pp.meal_rate!==+X.meal;
  if(!changed&&!salChanged){closeM();return toast('Tidak ada perubahan')}
- if(!X.reason.trim())return toast('Isi alasan perubahan gaji/tunjangan','err');
- const ok=await sbRun(async()=>{await payRpc('payroll_save_employee_pay',{p_employee:e.id,p_monthly_salary:+X.sal,p_meal_rate:+X.meal,p_rows:rows,p_reason:X.reason.trim()})});
+ const butuhAlasan=salChanged||rows.some(r=>r.action!='delete');
+ if(butuhAlasan&&!X.reason.trim())return toast('Isi alasan perubahan gaji/tunjangan','err');
+ const ok=await sbRun(async()=>{await payRpc('payroll_save_employee_pay',{p_employee:e.id,p_monthly_salary:+X.sal,p_meal_rate:+X.meal,p_rows:rows,p_reason:X.reason.trim()||'Hapus tunjangan'})});
  if(ok){closeM();toast('Data gaji tersimpan: '+e.nama);payLoad()}}
 
 /* ===== PDF (pembuat PDF sederhana, tanpa library luar) ===== */
