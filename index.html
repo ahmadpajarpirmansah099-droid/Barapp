@@ -1028,7 +1028,7 @@ const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('ba
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
 setInterval(idleCheck,15000);
-async function out(){
+async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
   D.cg=null;T.cogsDid=null;try{localStorage.removeItem(cgKey());localStorage.removeItem('bar_last')}catch(e){}
   if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
@@ -1078,7 +1078,7 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
   hd.onclick=e=>{e.stopPropagation();toggle()};if(!open)c.onclick=toggle;
  })}
 
-function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
+function R(){if(D.me&&!T.pgInit){T.pgInit=1;try{const sp=sessionStorage.getItem('bar_pg');if(sp)pg=sp}catch(e){}}if(D.me){try{sessionStorage.setItem('bar_pg',pg)}catch(e){}}const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
@@ -1339,7 +1339,7 @@ function cgSelBar(){
   if(!list.some(d=>d.id==T.cogsDid)&&!T.cgBusy&&!T.cgAuto){T.cgAuto=1;setTimeout(()=>{Promise.resolve(cgPick(list[0].id)).then(()=>{T.cgAuto=0},()=>{T.cgAuto=0})},0)}
   const outs=T.outlets||[];
   const tabs=list.map(d=>{const o=outs.find(x=>x.id==d.outlet_id);const on=d.id==T.cogsDid;
-    return `<button type="button" class="cg-tab${on?' on':''}" onclick="cgPick('${d.id}')">${esc(d.name)}${d.code?' <span class="cg-code">'+esc(d.code)+'</span>':''}${oid?'':(o?' · '+esc(o.code):'')}</button>`}).join('');
+    return `<button type="button" class="cg-tab${on?' on':''}" data-cgtab="${esc(d.id)}">${esc(d.name)}${d.code?' <span class="cg-code">'+esc(d.code)+'</span>':''}${oid?'':(o?' · '+esc(o.code):'')}</button>`}).join('');
   return `<div class="cg-tabs">${tabs}</div>`}
 
 T.cgMem=T.cgMem||{};
@@ -1380,7 +1380,17 @@ function csEnhance(root){
     sel.addEventListener('change',sync);
     sync();
   })}
+function cgTabInit(){
+  document.addEventListener('click',async e=>{
+    const b=e.target&&e.target.closest?e.target.closest('[data-cgtab]'):null;
+    if(!b)return;
+    e.preventDefault();
+    const id=b.getAttribute('data-cgtab');
+    try{await cgPick(id)}catch(err){toast('Gagal pilih divisi: '+((err&&err.message)||err),'err')}
+  });
+}
 function csInit(){
+  cgTabInit();
   new MutationObserver(()=>csEnhance(document.body)).observe(document.body,{childList:true,subtree:true});
   csEnhance(document.body)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',csInit);else csInit();
