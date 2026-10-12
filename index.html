@@ -416,12 +416,6 @@ label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 .cg-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:28px 16px;font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--ac) 22%,transparent);border-top-color:var(--ac);animation:spinR .8s linear infinite;flex:0 0 auto}
 @keyframes spinR{to{transform:rotate(360deg)}}
-.cg-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;margin-bottom:4px;scrollbar-width:none}
-.cg-tabs::-webkit-scrollbar{display:none}
-.cg-tab{flex:0 0 auto;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--cd);color:var(--tx);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s ease,color .2s ease,border-color .2s ease}
-.cg-tab:hover{border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
-.cg-tab.on{background:var(--ac);color:#fff;border-color:var(--ac);box-shadow:0 8px 18px -12px color-mix(in srgb,var(--ac) 70%,transparent)}
-.cg-code{font-weight:500;opacity:.75;font-size:.9em}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -1327,22 +1321,6 @@ function jadPdf(){
 }
 
 /* ===== PILIH DIVISI BAHAN (HR & developer) ===== */
-function cgSelBar(){
-  if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
-  if(!Array.isArray(T.cgDivs)){
-    if(T.cgDivs!=='loading'){T.cgDivs='loading';setTimeout(async()=>{try{T.cgDivs=await payQ('divisions','id,name,code,outlet_id,has_cogs',q=>q.order('name'))}catch(e){T.cgDivs=[]}R()},0)}
-    return '<div class="card empty cg-load"><span class="spin"></span>Memuat divisi…</div>';
-  }
-  const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
-  const list=T.cgDivs.filter(d=>d.id&&d.has_cogs!==false&&(!oid||d.outlet_id==oid));
-  if(!list.length)return '<div class="card empty">Belum ada divisi yang punya bahan di outlet ini.</div>';
-  if(!list.some(d=>d.id==T.cogsDid)&&!T.cgBusy&&!T.cgAuto){T.cgAuto=1;setTimeout(()=>{Promise.resolve(cgPick(list[0].id)).then(()=>{T.cgAuto=0},()=>{T.cgAuto=0})},0)}
-  const outs=T.outlets||[];
-  const tabs=list.map(d=>{const o=outs.find(x=>x.id==d.outlet_id);const on=d.id==T.cogsDid;
-    return `<button type="button" class="cg-tab${on?' on':''}" data-cgtab="${esc(d.id)}">${esc(d.name)}${d.code?' <span class="cg-code">'+esc(d.code)+'</span>':''}${oid?'':(o?' · '+esc(o.code):'')}</button>`}).join('');
-  return `<div class="cg-tabs">${tabs}</div>`}
-
-T.cgMem=T.cgMem||{};
 async function cgPick(id){
   if(!id)return;
   T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
@@ -1380,34 +1358,12 @@ function csEnhance(root){
     sel.addEventListener('change',sync);
     sync();
   })}
-function cgTabInit(){
-  document.addEventListener('click',async e=>{
-    const b=e.target&&e.target.closest?e.target.closest('[data-cgtab]'):null;
-    if(!b)return;
-    e.preventDefault();
-    const id=b.getAttribute('data-cgtab');
-    try{await cgPick(id)}catch(err){toast('Gagal pilih divisi: '+((err&&err.message)||err),'err')}
-  });
-}
 function csInit(){
-  cgTabInit();
   new MutationObserver(()=>csEnhance(document.body)).observe(document.body,{childList:true,subtree:true});
   csEnhance(document.body)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',csInit);else csInit();
 
 /* pastikan data bahan divisi yang dipilih selalu dimuat saat halaman Bahan dibuka */
-function cgEnsure(){
-  if(T.cgBusy||T.cgResolving)return;
-  T.cgResolving=1;
-  setTimeout(async()=>{
-    try{
-      const d=T.cogsDid||await cogsDid();
-      if(!d)return;
-      if(!T.cgMem[d]||T.cogsDid!==d)await cgPick(d);
-    }catch(e){}
-    finally{T.cgResolving=0}
-  },0)}
-
 /* ===== BAHAN: semua divisi per outlet (HR & developer) ===== */
 function cgOvLoad(){
   if(T.cgOvBusy)return;T.cgOvBusy=true;
@@ -1423,52 +1379,6 @@ function cgOvLoad(){
     }catch(e){toast(errText(e),'err')}
     finally{T.cgOvBusy=false}
     R()},0)}
-function cgCostFn(d){
-  const bah={};(d.bahan||[]).forEach(b=>{const be=+b.beli,is=+b.isi;bah[b.nama]=be>0&&is>0?be/is:0});
-  const wip={};(d.wip||[]).forEach(w=>wip[w.nama]=w);
-  const memo={};
-  const uc=(n,dep)=>{dep=dep||0;if(dep>6)return 0;if(n in memo)return memo[n];let v=0;
-    if(bah[n]!=null)v=bah[n];
-    else if(wip[n]){const w=wip[n],y=+w.yield||0;const tot=(w.items||[]).reduce((t,x)=>t+(+x.q||0)*uc(x.n,dep+1),0);v=y>0?tot/y:0}
-    memo[n]=v;return v};
-  return uc}
-function cgMetrics(){
-  const outs=T.outlets||[];const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
-  const rows=[];
-  T.cgOv.list.forEach(d=>{
-    const c=T.cgOv.data[d.id]||{menu:[],wip:[],bahan:[]};
-    const uc=cgCostFn(c);const o=outs.find(x=>x.id==d.outlet_id);
-    const menus=(c.menu||[]).map(m=>{const harga=+m.harga||0;const cost=(m.items||[]).reduce((t,x)=>t+(+x.q||0)*uc(x.n),0);
-      const profit=harga-cost;return {div:d,out:o,nama:m.nama,harga,cost,hpp:harga>0?cost/harga:0,profit,margin:harga>0?profit/harga:0}});
-    rows.push({d,c,o,menus});
-  });
-  return {rows,oid}}
-function cgOverview(){
-  if(!T.cgOv||T.cgOv.key!==((D.outId&&D.outId!=='ALL')?D.outId:'ALL')){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
-  if(!T.cgOv.list.length)return '<div class="card empty">Belum ada divisi yang punya bahan di outlet ini.</div>';
-  const {rows,oid}=cgMetrics();
-  const outs=T.outlets||[];
-  const all=rows.flatMap(r=>r.menus);
-  const avg=(arr,k)=>arr.length?arr.reduce((t,x)=>t+x[k],0)/arr.length:0;
-  const pct=v=>(v*100).toFixed(1)+'%';
-  const card=(l,v,sub)=>`<div class="card"><div class="mu" style="font-size:12px">${l}</div><b style="font-size:1.15em">${v}</b>${sub?`<div class="mu" style="font-size:12px">${sub}</div>`:''}</div>`;
-  const summary=`<div class="grid">${card('Total menu',all.length,rows.length+' divisi')}${card('Rata-rata HPP',pct(avg(all,'hpp')),'dari harga jual')}${card('Rata-rata margin',pct(avg(all,'margin')),'keuntungan kotor')}${card('Total WIP',rows.reduce((t,r)=>t+(r.c.wip||[]).length,0),'')}</div>`;
-  const divTable=`<div class="card"><b>Per divisi</b><div style="overflow-x:auto;margin-top:8px"><table class="rpt"><tr><th>Divisi</th><th>Menu</th><th>WIP</th><th>Bahan</th><th>HPP rata-rata</th><th>Margin rata-rata</th><th></th></tr>${rows.map(r=>{const ms=r.menus;return `<tr><td class="nmc">${esc(r.d.name)}${r.d.code?' <span class="mu">'+esc(r.d.code)+'</span>':''}${!oid&&r.o?' <span class="mu">· '+esc(r.o.code)+'</span>':''}</td><td>${ms.length}</td><td>${(r.c.wip||[]).length}</td><td>${(r.c.bahan||[]).length}</td><td>${ms.length?pct(avg(ms,'hpp')):'-'}</td><td>${ms.length?pct(avg(ms,'margin')):'-'}</td><td><button class="btn s x" onclick="cgManage('${r.d.id}')">Kelola</button></td></tr>`}).join('')}</table></div></div>`;
-  // pilihan menu yang ditampilkan
-  const key=m=>m.div.id+'|'+m.nama;
-  const sel=T.cgSel;
-  const isOn=m=>!sel||sel.has(key(m));
-  const picker=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Pilih menu yang ditampilkan</b><div style="display:flex;gap:6px"><button class="btn s x" onclick="cgSelAll(true)">Pilih semua</button><button class="btn s x" onclick="cgSelAll(false)">Kosongkan</button></div></div>${rows.map(r=>r.menus.length?`<div style="margin-top:12px"><div class="mu" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${esc(r.d.name)}</div>${r.menus.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer"><input type="checkbox" ${isOn(m)?'checked':''} onchange="cgTogMenu('${esc(key(m))}')"><span>${esc(m.nama)}</span></label>`).join('')}</div>`:'').join('')||'<p class="mu" style="margin-top:8px">Belum ada menu.</p>'}</div>`;
-  const shown=all.filter(m=>isOn(m));
-  const detail=`<div class="card"><b>Menu terpilih (${shown.length})</b><div style="overflow-x:auto;margin-top:8px"><table class="rpt"><tr><th>Divisi</th><th>Menu</th><th>Harga jual</th><th>Total cost</th><th>HPP %</th><th>Profit</th><th>Margin %</th></tr>${shown.map(m=>`<tr><td>${esc(m.div.name)}</td><td class="nmc">${esc(m.nama)}</td><td>${rp(m.harga)}</td><td>${rp(m.cost)}</td><td>${pct(m.hpp)}</td><td>${rp(m.profit)}</td><td class="net">${pct(m.margin)}</td></tr>`).join('')||'<tr><td colspan="7" class="mu">Belum ada menu dipilih.</td></tr>'}</table></div></div>`;
-  return summary+divTable+picker+detail}
-function cgTogMenu(k){if(!T.cgSel){T.cgSel=new Set(cgMetrics().rows.flatMap(r=>r.menus).map(m=>m.div.id+'|'+m.nama))}if(T.cgSel.has(k))T.cgSel.delete(k);else T.cgSel.add(k);R()}
-function cgSelAll(on){T.cgSel=on?new Set(cgMetrics().rows.flatMap(r=>r.menus).map(m=>m.div.id+'|'+m.nama)):new Set();R()}
-function cgManage(id){T.cgEdit=true;cgPick(id)}
-function cgBack(){T.cgEdit=false;T.cgOv=null;R()}
-function cgEditBar(){
-  const d=(T.cgDivs||[]).find(x=>x.id==T.cogsDid);
-  return `<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>${esc(d?d.name:'Divisi')}${d&&d.code?' <span class="mu">'+esc(d.code)+'</span>':''}</b><button class="btn s x" onclick="cgBack()">← Semua divisi</button></div>`}
 function cgMenuSelect(html){
   const outs=T.outlets||[];const list=T.cgOv.list||[];
   const opts=[];
@@ -1484,7 +1394,6 @@ function cgMenuPick(v){
 function cgBody(){
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
   if(!multi)return V[pg]();
-  if(T.cgEdit)return cgEditBar()+(T.cgBusy?'<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>':V[pg]());
   const oid=(D.outId&&D.outId!=='ALL')?D.outId:'ALL';
   if(!T.cgOv||T.cgOv.key!==oid){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
   let html=V[pg]();
