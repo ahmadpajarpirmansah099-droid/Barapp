@@ -802,6 +802,7 @@ async function cogsLoad(){
     const did=await cogsDid();if(!did)return false;
     const {data,error}=await c.from('cogs_data').select('id,data,updated_at').eq('division_id',did).maybeSingle();
     if(error)throw error;
+    if(did!==T.cogsDid)return false; // permintaan divisi lama: abaikan
     if(data&&data.data){
       const cloud=cogsNormalize(data.data);
       if(cloud){
@@ -813,6 +814,7 @@ async function cogsLoad(){
     }
     // First-time cloud initialization: use existing device data if present;
     // otherwise use the existing starter dataset. Never overwrite an existing cloud row.
+    if(did!==T.cogsDid)return false;
     const local=cogsNormalize(D.cg);
     const seed={bahan:[],wip:[],menu:[]};
     D.cg=seed;
