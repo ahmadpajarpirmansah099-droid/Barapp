@@ -1352,9 +1352,18 @@ function csEnhance(root){
     wrap.addEventListener('click',e=>e.preventDefault());
     const sync=()=>{const o=sel.options[sel.selectedIndex];const t=o?o.textContent.trim():'';btn.textContent=t||'Pilih';btn.classList.toggle('ph',!t)};
     btn.addEventListener('click',e=>{e.stopPropagation();if(sel.disabled)return;
-      const lb=sel.closest('label');const title=lb?Array.from(lb.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'Pilih';
-      const items=[...sel.options].map((o,i)=>`<button type="button" class="cs-it${o.selected?' on':''}" ${o.disabled?'disabled':''} onclick="csPick('${sel.dataset.csid}','${esc(o.value)}')">${esc(o.textContent.trim())}</button>`).join('');
-      modal(`<h3>${esc((title||'Pilih').slice(0,40))}</h3><div class="cs-sheet">${items}</div><div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>`)});
+      const lb=sel.closest('label');
+      const title=lb?Array.from(lb.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'Pilih';
+      const items=[...sel.options].map(o=>`<button type="button" class="cs-it${o.selected?' on':''}" data-csval="${esc(o.value)}" ${o.disabled?'disabled':''}>${esc(o.textContent.trim())}</button>`).join('');
+      const ov=document.createElement('div');ov.className='ov cs-ov';ov.style.zIndex='1000';
+      ov.innerHTML=`<div class="md"><h3>${esc((title||'Pilih').slice(0,40))}</h3><div class="cs-sheet">${items}</div><div class="btns"><button type="button" class="btn s" data-cs-cancel="1">Batal</button></div></div>`;
+      document.body.appendChild(ov);
+      ov.addEventListener('click',ev=>{
+        if(ev.target===ov||(ev.target.dataset&&ev.target.dataset.csCancel)){ov.remove();return}
+        const it=ev.target.closest?ev.target.closest('[data-csval]'):null;
+        if(it&&!it.disabled){sel.value=it.getAttribute('data-csval');sel.dispatchEvent(new Event('change',{bubbles:true}));ov.remove()}
+      });
+    });
     sel.addEventListener('change',sync);
     sync();
   })}
