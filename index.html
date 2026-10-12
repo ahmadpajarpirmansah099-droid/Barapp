@@ -413,6 +413,9 @@ label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 .cs-sheet .cs-it:hover{background:var(--tint)}
 .cs-sheet .cs-it.on{color:var(--ac);font-weight:700;border-color:color-mix(in srgb,var(--ac) 45%,var(--line));background:color-mix(in srgb,var(--ac) 10%,var(--cd))}
 .cs-sheet .cs-it:disabled{opacity:.45}
+.cg-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:28px 16px;font-weight:600}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--ac) 22%,transparent);border-top-color:var(--ac);animation:spinR .8s linear infinite;flex:0 0 auto}
+@keyframes spinR{to{transform:rotate(360deg)}}
 </style>
 </head><body>
 <canvas id="ff"></canvas>
@@ -1083,7 +1086,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
-<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():((cg?cgSelBar():'')+(cg&&T.cgBusy?'<div class="card empty">Memuat bahan…</div>':V[pg]()))}</main>
+<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():((cg?cgSelBar():'')+(cg&&T.cgBusy?'<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>':(cg&&T.cgErr?'<div class="card empty">'+esc(T.cgErr)+'</div>':V[pg]())))}</main>
 <div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
 <div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk"></span></span></div>
 ${pgs.length>1||cg||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
@@ -1330,11 +1333,17 @@ T.cgMem=T.cgMem||{};
 async function cgPick(id){
   T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
   const empty={bahan:[],wip:[],menu:[]};
-  D.cg=T.cgMem[id]||empty;T.cgm=0;T.cgBusy=!T.cgMem[id];R();
-  try{await cogsLoad()}catch(e){}
+  D.cg=empty;T.cgm=0;T.cgBusy=true;T.cgErr='';R();
+  const timeout=(ms)=>new Promise(r=>setTimeout(()=>r('timeout'),ms));
+  try{await Promise.race([cogsLoad(),timeout(10000)])}catch(e){}
   if(T.cogsDid!==id)return;
   let cloud=null;
-  try{const {data,error}=await sb().from('cogs_data').select('id,data').eq('division_id',id).maybeSingle();if(error)throw error;if(data&&data.data)cloud=cogsNormalize(data.data)}catch(e){toast(errText(e),'err')}
+  try{
+    const res=await Promise.race([sb().from('cogs_data').select('id,data').eq('division_id',id).maybeSingle(),timeout(10000)]);
+    if(res==='timeout')throw new Error('Koneksi lambat, data bahan belum termuat. Coba pilih lagi.');
+    if(res.error)throw res.error;
+    if(res.data&&res.data.data)cloud=cogsNormalize(res.data.data);
+  }catch(e){T.cgErr=errText(e)||'Gagal memuat bahan';toast(T.cgErr,'err')}
   if(T.cogsDid!==id)return;
   D.cg=cloud||empty;T.cgMem[id]=D.cg;T.cgBusy=false;R()}
 
