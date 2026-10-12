@@ -1469,11 +1469,28 @@ function cgBack(){T.cgEdit=false;T.cgOv=null;R()}
 function cgEditBar(){
   const d=(T.cgDivs||[]).find(x=>x.id==T.cogsDid);
   return `<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>${esc(d?d.name:'Divisi')}${d&&d.code?' <span class="mu">'+esc(d.code)+'</span>':''}</b><button class="btn s x" onclick="cgBack()">← Semua divisi</button></div>`}
+function cgMenuSelect(html){
+  const outs=T.outlets||[];const list=T.cgOv.list||[];
+  const opts=[];
+  list.forEach(d=>{const c=T.cgOv.data[d.id]||{menu:[]};const o=outs.find(x=>x.id==d.outlet_id);
+    (c.menu||[]).forEach((m,i)=>{const on=d.id==T.cogsDid&&i==T.cgm;opts.push(`<option value="${d.id}::${i}" ${on?'selected':''}>${esc(m.nama)} · ${esc(d.name)}${o?' ('+esc(o.code)+')':''}</option>`)})});
+  const sel=`<select onchange="cgMenuPick(this.value)" style="width:100%;font-size:16px;padding:9px">${opts.join('')||'<option value="">Belum ada menu</option>'}</select>`;
+  return html.replace(/<select onchange="T\.cgm=\+this\.value;R\(\)"[\s\S]*?<\/select>/,sel)}
+function cgMenuPick(v){
+  const [did,i]=String(v).split('::');if(!did)return;
+  if(did===T.cogsDid){T.cgm=+i;R();return}
+  cgPick(did).then(()=>{T.cgm=+i;R()});
+}
 function cgBody(){
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
   if(!multi)return V[pg]();
   if(T.cgEdit)return cgEditBar()+(T.cgBusy?'<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>':V[pg]());
-  return cgOverview()}
+  const oid=(D.outId&&D.outId!=='ALL')?D.outId:'ALL';
+  if(!T.cgOv||T.cgOv.key!==oid){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
+  let html=V[pg]();
+  if(pg==='cg_menu')html=cgMenuSelect(html);
+  return html}
+
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
