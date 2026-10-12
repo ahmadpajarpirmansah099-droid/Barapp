@@ -1423,16 +1423,47 @@ function cgOvLoad(){
     }catch(e){toast(errText(e),'err')}
     finally{T.cgOvBusy=false}
     R()},0)}
-function cgOverview(){
-  const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
-  if(!T.cgOv||T.cgOv.key!==(oid||'ALL')){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
-  const outs=T.outlets||[];
-  if(!T.cgOv.list.length)return '<div class="card empty">Belum ada divisi yang punya bahan di outlet ini.</div>';
-  return T.cgOv.list.map(d=>{
+function cgCostFn(d){
+  const bah={};(d.bahan||[]).forEach(b=>{const be=+b.beli,is=+b.isi;bah[b.nama]=be>0&&is>0?be/is:0});
+  const wip={};(d.wip||[]).forEach(w=>wip[w.nama]=w);
+  const memo={};
+  const uc=(n,dep)=>{dep=dep||0;if(dep>6)return 0;if(n in memo)return memo[n];let v=0;
+    if(bah[n]!=null)v=bah[n];
+    else if(wip[n]){const w=wip[n],y=+w.yield||0;const tot=(w.items||[]).reduce((t,x)=>t+(+x.q||0)*uc(x.n,dep+1),0);v=y>0?tot/y:0}
+    memo[n]=v;return v};
+  return uc}
+function cgMetrics(){
+  const outs=T.outlets||[];const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
+  const rows=[];
+  T.cgOv.list.forEach(d=>{
     const c=T.cgOv.data[d.id]||{menu:[],wip:[],bahan:[]};
-    const o=outs.find(x=>x.id==d.outlet_id);
-    const rowsM=(c.menu||[]).map(m=>`<tr><td>${esc(m.nama)}</td><td>${rp(+m.harga||0)}</td></tr>`).join('')||'<tr><td colspan="2" class="mu">Belum ada menu.</td></tr>';
-    return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><b>${esc(d.name)}</b> <span class="mu">${esc(d.code||'')}${oid?'':(o?' · '+esc(o.code):'')}</span><div class="mu" style="font-size:12px;margin-top:3px">${(c.menu||[]).length} menu · ${(c.wip||[]).length} WIP · ${(c.bahan||[]).length} bahan</div></div><button class="btn s x" onclick="cgManage('${d.id}')">Kelola</button></div><div style="overflow-x:auto;margin-top:10px"><table class="rpt"><tr><th>Menu</th><th>Harga</th></tr>${rowsM}</table></div></div>`}).join('')}
+    const uc=cgCostFn(c);const o=outs.find(x=>x.id==d.outlet_id);
+    const menus=(c.menu||[]).map(m=>{const harga=+m.harga||0;const cost=(m.items||[]).reduce((t,x)=>t+(+x.q||0)*uc(x.n),0);
+      const profit=harga-cost;return {div:d,out:o,nama:m.nama,harga,cost,hpp:harga>0?cost/harga:0,profit,margin:harga>0?profit/harga:0}});
+    rows.push({d,c,o,menus});
+  });
+  return {rows,oid}}
+function cgOverview(){
+  if(!T.cgOv||T.cgOv.key!==((D.outId&&D.outId!=='ALL')?D.outId:'ALL')){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
+  if(!T.cgOv.list.length)return '<div class="card empty">Belum ada divisi yang punya bahan di outlet ini.</div>';
+  const {rows,oid}=cgMetrics();
+  const outs=T.outlets||[];
+  const all=rows.flatMap(r=>r.menus);
+  const avg=(arr,k)=>arr.length?arr.reduce((t,x)=>t+x[k],0)/arr.length:0;
+  const pct=v=>(v*100).toFixed(1)+'%';
+  const card=(l,v,sub)=>`<div class="card"><div class="mu" style="font-size:12px">${l}</div><b style="font-size:1.15em">${v}</b>${sub?`<div class="mu" style="font-size:12px">${sub}</div>`:''}</div>`;
+  const summary=`<div class="grid">${card('Total menu',all.length,rows.length+' divisi')}${card('Rata-rata HPP',pct(avg(all,'hpp')),'dari harga jual')}${card('Rata-rata margin',pct(avg(all,'margin')),'keuntungan kotor')}${card('Total WIP',rows.reduce((t,r)=>t+(r.c.wip||[]).length,0),'')}</div>`;
+  const divTable=`<div class="card"><b>Per divisi</b><div style="overflow-x:auto;margin-top:8px"><table class="rpt"><tr><th>Divisi</th><th>Menu</th><th>WIP</th><th>Bahan</th><th>HPP rata-rata</th><th>Margin rata-rata</th><th></th></tr>${rows.map(r=>{const ms=r.menus;return `<tr><td class="nmc">${esc(r.d.name)}${r.d.code?' <span class="mu">'+esc(r.d.code)+'</span>':''}${!oid&&r.o?' <span class="mu">· '+esc(r.o.code)+'</span>':''}</td><td>${ms.length}</td><td>${(r.c.wip||[]).length}</td><td>${(r.c.bahan||[]).length}</td><td>${ms.length?pct(avg(ms,'hpp')):'-'}</td><td>${ms.length?pct(avg(ms,'margin')):'-'}</td><td><button class="btn s x" onclick="cgManage('${r.d.id}')">Kelola</button></td></tr>`}).join('')}</table></div></div>`;
+  // pilihan menu yang ditampilkan
+  const key=m=>m.div.id+'|'+m.nama;
+  const sel=T.cgSel;
+  const isOn=m=>!sel||sel.has(key(m));
+  const picker=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Pilih menu yang ditampilkan</b><div style="display:flex;gap:6px"><button class="btn s x" onclick="cgSelAll(true)">Pilih semua</button><button class="btn s x" onclick="cgSelAll(false)">Kosongkan</button></div></div>${rows.map(r=>r.menus.length?`<div style="margin-top:12px"><div class="mu" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${esc(r.d.name)}</div>${r.menus.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer"><input type="checkbox" ${isOn(m)?'checked':''} onchange="cgTogMenu('${esc(key(m))}')"><span>${esc(m.nama)}</span></label>`).join('')}</div>`:'').join('')||'<p class="mu" style="margin-top:8px">Belum ada menu.</p>'}</div>`;
+  const shown=all.filter(m=>isOn(m));
+  const detail=`<div class="card"><b>Menu terpilih (${shown.length})</b><div style="overflow-x:auto;margin-top:8px"><table class="rpt"><tr><th>Divisi</th><th>Menu</th><th>Harga jual</th><th>Total cost</th><th>HPP %</th><th>Profit</th><th>Margin %</th></tr>${shown.map(m=>`<tr><td>${esc(m.div.name)}</td><td class="nmc">${esc(m.nama)}</td><td>${rp(m.harga)}</td><td>${rp(m.cost)}</td><td>${pct(m.hpp)}</td><td>${rp(m.profit)}</td><td class="net">${pct(m.margin)}</td></tr>`).join('')||'<tr><td colspan="7" class="mu">Belum ada menu dipilih.</td></tr>'}</table></div></div>`;
+  return summary+divTable+picker+detail}
+function cgTogMenu(k){if(!T.cgSel){T.cgSel=new Set(cgMetrics().rows.flatMap(r=>r.menus).map(m=>m.div.id+'|'+m.nama))}if(T.cgSel.has(k))T.cgSel.delete(k);else T.cgSel.add(k);R()}
+function cgSelAll(on){T.cgSel=on?new Set(cgMetrics().rows.flatMap(r=>r.menus).map(m=>m.div.id+'|'+m.nama)):new Set();R()}
 function cgManage(id){T.cgEdit=true;cgPick(id)}
 function cgBack(){T.cgEdit=false;T.cgOv=null;R()}
 function cgEditBar(){
