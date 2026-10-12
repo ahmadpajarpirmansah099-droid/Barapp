@@ -797,7 +797,7 @@ function cogsNormalize(x){
   };
 }
 async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
-  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=(await outInit())||D.ljId;const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
+  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=(await outInit())||D.ljId||((T.outlets||[])[0]||{}).id;if(!oid)return null;const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
   else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
   T.cogsDid=did;CG_DIV=did||'none';return did}
 async function cogsLoad(){
@@ -1334,9 +1334,9 @@ function cgSelBar(){
     return '<div class="card empty cg-load"><span class="spin"></span>Memuat divisi…</div>';
   }
   const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
-  const list=T.cgDivs.filter(d=>d.has_cogs!==false&&(!oid||d.outlet_id==oid));
+  const list=T.cgDivs.filter(d=>d.id&&d.has_cogs!==false&&(!oid||d.outlet_id==oid));
   if(!list.length)return '<div class="card empty">Belum ada divisi yang punya bahan di outlet ini.</div>';
-  if(!list.some(d=>d.id==T.cogsDid)&&!T.cgBusy&&!T.cgAuto){T.cgAuto=1;setTimeout(()=>{cgPick(list[0].id).finally(()=>{T.cgAuto=0})},0)}
+  if(!list.some(d=>d.id==T.cogsDid)&&!T.cgBusy&&!T.cgAuto){T.cgAuto=1;setTimeout(()=>{Promise.resolve(cgPick(list[0].id)).then(()=>{T.cgAuto=0},()=>{T.cgAuto=0})},0)}
   const outs=T.outlets||[];
   const tabs=list.map(d=>{const o=outs.find(x=>x.id==d.outlet_id);const on=d.id==T.cogsDid;
     return `<button type="button" class="cg-tab${on?' on':''}" onclick="cgPick('${d.id}')">${esc(d.name)}${d.code?' <span class="cg-code">'+esc(d.code)+'</span>':''}${oid?'':(o?' · '+esc(o.code):'')}</button>`}).join('');
@@ -1344,6 +1344,7 @@ function cgSelBar(){
 
 T.cgMem=T.cgMem||{};
 async function cgPick(id){
+  if(!id)return;
   T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
   const empty={bahan:[],wip:[],menu:[]};
   D.cg=empty;T.cgm=0;T.cgBusy=true;T.cgErr='';R();
