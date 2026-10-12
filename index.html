@@ -970,7 +970,7 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
 const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper()))};
-const HIDE_NAV=['abs'],SHEET_ABS=['kar','ot'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set','lap'],MOVED=SHEET_ABS.concat(SHEET_PAY);
+const HIDE_NAV=['abs'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
@@ -1508,7 +1508,7 @@ async function payFind(){try{const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;c
 async function payCalc(){const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;const lk=(D.per||[]).find(p=>p.s==f&&p.e==t);if(lk&&lk.lock)return toast('Periode terkunci. Buka kunci dulu untuk hitung ulang','err');const ok=await sbRun(async()=>{const id=await payRpc('payroll_calculate',{p_outlet:await outInit(),p_start:f,p_end:t});await payRpc('payroll_apply_overtime',{p_run:id})});if(ok){toast('Payroll dihitung (termasuk lembur)');payFind()}}
 async function payFinal(){if(!PAY.run)return;const key=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random(),ack=!!(document.getElementById('pack')&&document.getElementById('pack').checked);
  const r0=PAY.run;const ok=await sbRun(async()=>{await payRpc('payroll_finalize',{p_run:PAY.run.id,p_key:key,p_ack_issues:ack})});if(ok){await perLoad();toast('Payroll difinalisasi & dikunci');payFind()}}
-async function payVoid(){if(!PAY.run)return;const r=v('pvr').trim();if(!r)return toast('Alasan void wajib diisi','err');const ok=await sbRun(async()=>{await payRpc('payroll_void',{p_run:PAY.run.id,p_reason:r})});if(ok){toast('Payroll di-void');payFind()}}
+async function payVoid(){if(!PAY.run)return;const r=v('pvr').trim();if(!r)return toast('Alasan void wajib diisi','err');const ok=await sbRun(async()=>{await payRpc('payroll_void',{p_run:PAY.run.id,p_reason:r})});if(ok){await perLoad();toast('Payroll di-void, periode dibuka');payFind()}}
 
 V.dash=()=>{const {f,t}=rng(),bad=f>t,l=bad?[]:rEmps(f,t),nd=bad?0:days(f,t).length,c=cntR(f,t,l),tot=c.M+c.L+c.I+c.S+c.PH+c.B,
 cards=[['Karyawan',l.length],['Hadir (M)',c.M],['Libur',c.L],['Sakit',c.S],['Izin',c.I],['Public Holiday',c.PH],['Belum diisi',c.B]],
