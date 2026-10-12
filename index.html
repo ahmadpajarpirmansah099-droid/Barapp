@@ -1329,13 +1329,15 @@ function cgSelBar(){
 T.cgMem=T.cgMem||{};
 async function cgPick(id){
   T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
-  if(T.cgMem[id]){D.cg=T.cgMem[id];T.cgBusy=false;R()}else{D.cg=null;T.cgBusy=true;R()}
-  await cogsLoad();
+  const empty={bahan:[],wip:[],menu:[]};
+  D.cg=T.cgMem[id]||empty;T.cgm=0;T.cgBusy=!T.cgMem[id];R();
+  try{await cogsLoad()}catch(e){}
   if(T.cogsDid!==id)return;
-  if(D.cg)T.cgMem[id]=D.cg;
-  T.cgBusy=false;R()}
+  let cloud=null;
+  try{const {data,error}=await sb().from('cogs_data').select('id,data').eq('division_id',id).maybeSingle();if(error)throw error;if(data&&data.data)cloud=cogsNormalize(data.data)}catch(e){toast(errText(e),'err')}
+  if(T.cogsDid!==id)return;
+  D.cg=cloud||empty;T.cgMem[id]=D.cg;T.cgBusy=false;R()}
 
-/* ===== DROPDOWN TEMA BARAPP (pilihan dibuka di jendela Barapp) ===== */
 let csSeq=0;
 function csPick(id,i){const sel=document.querySelector('select[data-csid="'+id+'"]');if(!sel)return;closeM();sel.selectedIndex=i;sel.dispatchEvent(new Event('change',{bubbles:true}))}
 function csEnhance(root){
