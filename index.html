@@ -646,18 +646,12 @@ palette:'<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5
 globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
 trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
 grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
-cogs:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
-cg_menu:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
-cg_wip:'<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
-cg_bahan:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'};
+};
 ICP.folder=ICP.trees;
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 
-/* localStorage Bahan: data Bahan disimpan di key terpisah (CGK) agar tidak pernah menimpa/merusak data absensi (key K) */
-const CGK='absensi_bar_cogs_v1';let CG_DIV='none';const cgKey=()=>CGK+':'+CG_DIV;
-try{const c=localStorage.getItem(cgKey());if(c)D.cg=JSON.parse(c)}catch(e){}
-const sv=()=>{try{const {cg,emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}));if(cg)localStorage.setItem(cgKey(),JSON.stringify(cg))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const sv=()=>{try{const {emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
@@ -731,24 +725,24 @@ async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
   if(!isDeveloper()){if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
     if(T.scopeOut)return T.scopeOut}
-  if(!isDeveloper()&&T.dbRole!='div_admin'&&!D.outId)return null;
-  if(D.outId==='ALL')return null;
+  if(!isDeveloper()&&T.dbRole!='div_admin'&&!D.outId)return D.ljId||null;
+  if(D.outId==='ALL')return D.ljId||null;
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[];return D.outId||D.ljId||null}}
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
   return D.outId||D.ljId||null}
 function outSwitch(id){
   D.outId=id;sv();F.f='';F.t='';
-  T.divs=null;T.divInit=0;T.cogsDid=null;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
-  D.emp=[];D.att=[];D.ot=[];D.cg=null;
+  T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
+  D.emp=[];D.att=[];D.ot=[];
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
   toast('Outlet diganti');
   R();
-  sbLoad(true).then(async()=>{try{await cogsLoad()}catch(e){};await payLoad();R()})}
+  sbLoad(true).then(async()=>{await payLoad();R()})}
 function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
-  const cur=D.outId||(isDeveloper()?D.ljId:'ALL')||'';
-  const opts=`<option value="ALL" ${cur==='ALL'?'selected':''}>Semua outlet</option>`+(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
+  const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||((T.outlets||[])[0]||{}).id||'');
+  const opts=(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
 async function sbLoad(silent){
 if(SB.loading)return;SB.loading=true;
@@ -757,7 +751,6 @@ if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
-T.hasCogs=true;if(session&&T.dbRole=='div_admin'){const sc=await sb().from('user_scopes').select('division_id').limit(1);const did=sc.data&&sc.data[0]&&sc.data[0].division_id;if(did){const dv=await sb().from('divisions').select('has_cogs').eq('id',did).maybeSingle();T.hasCogs=!(dv.data&&dv.data.has_cogs===false)}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
@@ -768,84 +761,16 @@ const inD=x=>!dIds||dIds.includes(String(x.division_id));
 const eSet=new Set(er.filter(inO).filter(inD).map(x=>String(x.id)));
 const emp=er.filter(inO).filter(inD).filter(x=>!x.deleted_at).map(mapEmp),arc=er.filter(inO).filter(inD).filter(x=>x.deleted_at).map(mapEmp),att=ar.filter(inO).filter(x=>!dIds||eSet.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
-if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
+if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
 D.emp=emp;D.arc=arc;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
 if(D.me&&D.me.r=='K'&&(!D.me.tok||!D.emp.some(e=>e.id==D.me.id))){D.me=null;sv()}
 derivePeriods();sbCacheSave()
-}catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l&&!pg.startsWith('cg_'))l.textContent=sbLabel();SB.loading=false;return}
+}catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
 SB.loading=false;R()}
 async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
 SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
-
-/* ---------- Bahan CLOUD STORAGE ----------
-   Supabase is the shared source of truth for Bahan. localStorage CGK remains only a cache. */
-let CGSAVE=Promise.resolve(), CGLOADING=false;
-function cogsNormalize(x){
-  if(!x||typeof x!='object')return null;
-  return {
-    bahan:Array.isArray(x.bahan)?x.bahan:[],
-    wip:Array.isArray(x.wip)?x.wip:[],
-    menu:Array.isArray(x.menu)?x.menu:[]
-  };
-}
-async function cogsDid(){if(T.cogsDid)return T.cogsDid;let did=null;
-  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){const oid=(await outInit())||D.ljId||((T.outlets||[])[0]||{}).id;if(!oid)return null;const r=await payQ('divisions','id,code',q=>q.eq('code','BAR').eq('outlet_id',oid));did=r[0]&&r[0].id}
-  else{const sc=await payQ('user_scopes','division_id');did=sc[0]&&sc[0].division_id}
-  T.cogsDid=did;CG_DIV=did||'none';return did}
-async function cogsLoad(){
-  if(!D.me||CGLOADING||T.hasCogs===false)return false;
-  CGLOADING=true;
-  try{
-    const c=sb();
-    const did=await cogsDid();if(!did)return false;
-    const {data,error}=await c.from('cogs_data').select('id,data,updated_at').eq('division_id',did).maybeSingle();
-    if(error)throw error;
-    if(did!==T.cogsDid)return false; // permintaan divisi lama: abaikan
-    if(data&&data.data){
-      const cloud=cogsNormalize(data.data);
-      if(cloud){
-        D.cg=cloud;
-        try{localStorage.setItem(cgKey(),JSON.stringify(D.cg))}catch(e){}
-        sv();
-        return true;
-      }
-    }
-    // First-time cloud initialization: use existing device data if present;
-    // otherwise use the existing starter dataset. Never overwrite an existing cloud row.
-    if(did!==T.cogsDid)return false;
-    const local=cogsNormalize(D.cg);
-    const seed={bahan:[],wip:[],menu:[]};
-    D.cg=seed;
-    const {error:upErr}=await c.from('cogs_data').upsert({division_id:did,data:seed,updated_at:new Date().toISOString()},{onConflict:'division_id'});
-    if(upErr)throw upErr;
-    try{localStorage.setItem(cgKey(),JSON.stringify(seed))}catch(e){}
-    sv();
-    return true;
-  }catch(e){
-    console.warn('Bahan cloud load:',e);
-    // Offline fallback: retain the device cache; cloud remains authoritative when reachable.
-    return false;
-  }finally{CGLOADING=false}
-}
-function cogsSave(){
-  if(!adm()||!D.cg||T.hasCogs===false)return Promise.resolve(false);
-  CGSAVE=CGSAVE.then(async()=>{
-    const snapshot=cogsNormalize(D.cg);
-    if(!snapshot)return false;
-    try{
-      const did=await cogsDid();if(!did)throw new Error('Divisi Bahan tidak ditemukan');const {error}=await sb().from('cogs_data').upsert({division_id:did,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'division_id'});
-      if(error)throw error;
-      try{localStorage.setItem(cgKey(),JSON.stringify(snapshot))}catch(e){}
-      return true;
-    }catch(e){
-      console.warn('Bahan cloud save:',e);
-      return false;
-    }
-  }).catch(()=>false);
-  return CGSAVE;
-}
 
 /* ---------- SHARED APP SETTINGS ----------
    The app_settings row stores only public presentation settings (theme, title, logo).
@@ -913,7 +838,7 @@ async function initAuth(){
         return;
       }
       D.me={r:role,uid:session.user.id,email};sv();
-      await Promise.all([sbLoad(true),cogsLoad(),loadSharedSettings(true)]);
+      await Promise.all([sbLoad(true),loadSharedSettings(true)]);
       R();
     };
     await applySession(data.session);
@@ -988,7 +913,7 @@ async function lgA(){
     }
     D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
     sv();
-    await Promise.all([sbLoad(true),cogsLoad(),loadSharedSettings(true)]);
+    await Promise.all([sbLoad(true),loadSharedSettings(true)]);
     R();
 
   }catch(e){
@@ -1023,7 +948,7 @@ const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('ba
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
 setInterval(idleCheck,15000);
 async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
-  D.cg=null;T.cogsDid=null;try{localStorage.removeItem(cgKey());localStorage.removeItem('bar_last')}catch(e){}
+  try{localStorage.removeItem('bar_last')}catch(e){}
   if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
 
@@ -1042,9 +967,9 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Bahan',ic:'cogs',page:'cg_menu'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',cg_menu:'Menu',cg_wip:'WIP',cg_bahan:'Bahan',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot','cg_menu'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!k.startsWith('cg_')||T.hasCogs!==false)&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper()))};
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper()))};
 const HIDE_NAV=['abs'],SHEET_ABS=['kar','ot'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set','lap'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
@@ -1059,7 +984,7 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
  const cards=[...m.children].filter(c=>c.classList.contains('card')&&!c.classList.contains('empty')&&!c.querySelector('.dlg,.prog'));
  if(cards.length<2&&pg!='dash')return;T.acc3=T.acc3||{};
  cards.forEach((c,i)=>{if(i==0&&pg!='dash')return;
-  const key=pg+':'+i,open=T.acc3[key]===undefined?(pg=='cg_menu'&&i==1):!!T.acc3[key];
+  const key=pg+':'+i,open=!!T.acc3[key];
   const head=c.querySelector(':scope > h3, :scope > h4, :scope > b');
   const hd=document.createElement('div');hd.style.cssText='display:flex;align-items:center;gap:12px;cursor:pointer;'+(open?'margin:0 0 12px':'margin:0');
   const title=document.createElement('div');title.style.cssText='flex:1;font-weight:700';title.textContent=head?head.textContent.trim():(pg=='dash'?'Input Harian':'Detail');
@@ -1077,21 +1002,21 @@ a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),cg=pg.startsWith('cg_'),px=pg.startsWith('pay_'),home=cg?'cg_menu':px?'pay_data':(isDeveloper()?'div':'dash'),pgs=Object.keys(PAGES).filter(k=>(k.startsWith('cg_')==cg)&&(k.startsWith('pay_')==px)&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(isDeveloper()||(k!='div'&&k!='audit'))),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),home=px?'pay_data':(isDeveloper()?'div':'dash'),pgs=Object.keys(PAGES).filter(k=>(k.startsWith('pay_')==px)&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(isDeveloper()||(k!='div'&&k!='audit'))),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
-const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+(cg?'':`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`)+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
-[L('Alat','Tools'),(adm()?`${cg?`<button onclick="cgReset()">${IC('trash')}${L('Kosongkan data Bahan...','Clear Bahan data...')}</button>`:`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}`}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
-const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${logoHtml(22)}</span><span class="bt"><b>${cg?'Bahan':px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
+const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
+[L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
+const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${logoHtml(22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('grid',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
-<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${cg?L('Siap','Ready'):sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${cg?'Bahan':px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${cg?'':`<button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>`}${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
-${(cg||px)?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
+<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="go('${home}')" aria-label="Home">${logoHtml(22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+${px?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
-<main class="${an?'in':''}">${cg?'':sbBanner()}${(!cg&&SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(cg?cgBody():V[pg]())}</main>
-<div class="statusbar"><span class="sf" id="sbl">${cg?L('Siap','Ready'):sbLabel()}</span><span class="sf">${role}</span>${cg?`<span class="sf">${cgc().menu} menu</span><span class="sf">${cgc().wip} WIP</span><span class="sf">${cgc().bahan} ${L('bahan','ingredients')}</span>`:px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
-<div class="taskbar${cg?'':' tb-clear'}"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${(cg||px)?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${k=='cg_menu'?lab(k):({cg_wip:'WIP',cg_bahan:L('Bahan','Ingredients')}[k]||lab(k))}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk"></span></span></div>
-${pgs.length>1||cg||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${cg?cgQuick():(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
+<main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():V[pg]()}</main>
+<div class="statusbar"><span class="sf" id="sbl">${sbLabel()}</span><span class="sf">${role}</span>${px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
+<div class="taskbar tb-clear"><button class="start" onclick="openMods()">${IC('grid',18)}<b>${L('Fitur','Features')}</b></button><span class="sep"></span>${px?pgs.map(k=>`<button class="task ct ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),16)}<span>${lab(k)}</span></button>`).join(''):`<button class="task ${pg==home?'on':''}" onclick="go('${home}')">${IC(pic(home),16)}<span>${lab(home)}</span></button>${pg!=home?`<button class="task on">${IC(pic(pg),16)}<span>${lab(pg)}</span></button>`:''}`}<span class="tray">${IC('clock',14)}<span id="clk"></span></span></div>
+${pgs.length>1||MOVED.length?`<div class="sdw" id="sdw"><div class="sdb" onclick="tsd()"></div><div class="sdi">${(px?SHEET_PAY:SHEET_ABS).filter(k=>k!=pg).map(k=>{const lk=!allowed().includes(k);return `<button onclick="${lk?'lockTip()':`go('${k}')`}" style="${lk?'opacity:.6':''}">${IC(lk?'lock':pic(k),18)}<span>${lab(k)}</span></button>`}).join('')}</div><button type="button" class="fab" onclick="tsd()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('plus',26)}</button></div>`:''}`;
 if(a.dataset.h!==nh){const same=a.dataset.kpg===pg;a.dataset.kpg=pg;a.classList.toggle('no-anim',same);a.dataset.h=nh;a.innerHTML=nh;accFix();csEnhance(a);const ck=document.getElementById('clk');if(ck)ck.textContent=clk()}
 if(T.tableLeft!=null)requestAnimationFrame(()=>{const tw=document.querySelector('.tw');if(tw)tw.scrollLeft=T.tableLeft})}
 const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<button class="btn" style="margin-top:10px" onclick="pg=\'lap\';R()">Buat periode pertama</button>':'Hubungi admin.'}</div>`;
@@ -1143,13 +1068,13 @@ async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await
 V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
  const ds=T.divs||[];const __oc=outCardHtml();
- const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td>${d.has_cogs?'Ya':'Tidak'}</td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
- return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Bahan</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
- `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><label style="display:flex;align-items:center;gap:8px"><input id="dv_g" type="checkbox" checked style="width:auto"> Punya Bahan</label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
+ const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
+ return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
+ `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
-async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim(),g=document.getElementById('dv_g').checked;
+async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
  if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
- const ok=await sbRun(async()=>{const oid=await outInit();if(!oid)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:oid,p_code:c,p_name:n,p_has_cogs:g})});
+ const ok=await sbRun(async()=>{const oid=await outInit();if(!oid)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:oid,p_code:c,p_name:n})});
  if(ok){toast('Divisi ditambahkan');divLoad()}}
 async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
  const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
@@ -1176,21 +1101,21 @@ async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=docume
 
 /* ===== DASHBOARD DEV: DETAIL & EDIT DIVISI ===== */
 function divOpen(id){T.dvSel=id;go('divdet')}
-function divEdit(id){const d=(T.divs||[]).find(x=>x.id==id);if(!d)return;modal(`<h3>Edit divisi</h3><label>Nama divisi<input id="dvn" value="${esc(d.name)}" autocomplete="off"></label><label style="display:flex;align-items:center;gap:8px;margin-top:8px"><input id="dvg" type="checkbox" ${d.has_cogs?'checked':''} style="width:auto"> Punya Bahan</label><p class="mu" style="margin:8px 0">Kalau Bahan dimatikan, divisi ini tidak bisa lagi membuka Bahan.</p><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="divSave('${d.id}')">Simpan</button></div>`)}
-async function divSave(id){const n=v('dvn').trim(),g=document.getElementById('dvg').checked;if(!n)return toast('Nama divisi wajib diisi','err');
- const ok=await sbRun(async()=>{await payRpc('dev_update_division',{p_id:id,p_name:n,p_has_cogs:g})});if(ok){closeM();toast('Divisi diperbarui');divLoad()}}
-async function divDetLoad(id){try{const [em,cg]=await Promise.all([payQ('employees','id,name,active,division_id'),payQ('cogs_data','division_id,updated_at')]);
- const cgRow=cg.find(x=>x.division_id==id);T.dvDet={id,emps:em.filter(e=>e.division_id==id),cogsAt:cgRow?cgRow.updated_at:null,loaded:true}}catch(e){toast(errText(e),'err')}R()}
+function divEdit(id){const d=(T.divs||[]).find(x=>x.id==id);if(!d)return;modal(`<h3>Edit divisi</h3><label>Nama divisi<input id="dvn" value="${esc(d.name)}" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="divSave('${d.id}')">Simpan</button></div>`)}
+async function divSave(id){const n=v('dvn').trim();if(!n)return toast('Nama divisi wajib diisi','err');
+ const ok=await sbRun(async()=>{await payRpc('dev_update_division',{p_id:id,p_name:n})});if(ok){closeM();toast('Divisi diperbarui');divLoad()}}
+async function divDetLoad(id){try{const [em]=await Promise.all([payQ('employees','id,name,active,division_id')]);
+ T.dvDet={id,emps:em.filter(e=>e.division_id==id),loaded:true}}catch(e){toast(errText(e),'err')}R()}
 V.divdet=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer.</div>';
  const id=T.dvSel,d=(T.divs||[]).find(x=>x.id==id);
  if(!d)return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button></div><div class="card empty">Pilih divisi dari daftar Divisi &amp; Admin.</div>`;
  if(!T.dvDet||T.dvDet.id!=id){setTimeout(()=>divDetLoad(id),0)}
- const det=T.dvDet&&T.dvDet.id==id?T.dvDet:{emps:[],cogsAt:null};
+ const det=T.dvDet&&T.dvDet.id==id?T.dvDet:{emps:[]};
  const ids=det.emps.map(e=>String(e.id));
  const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;
  const att=D.att.filter(a=>ids.includes(String(a.e))&&a.d>=f&&a.d<=t),cnt={M:0,L:0,PH:0,S:0,I:0};att.forEach(a=>{if(cnt[a.s]!=null)cnt[a.s]++});
  const ot=D.ot.filter(o=>ids.includes(String(o.e))&&o.d>=f&&o.d<=t).reduce((n,o)=>n+hrs(o),0);
- return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button> <b style="margin-left:8px">${esc(d.name)}</b><p class="mu" style="margin:8px 0 0">Bahan: ${d.has_cogs?'aktif':'tidak ada'}${det.cogsAt?' · terakhir diubah '+String(det.cogsAt).slice(0,10):''} · Admin: ${d.admins.map(esc).join(', ')||'belum ada'}</p></div>`+
+ return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button> <b style="margin-left:8px">${esc(d.name)}</b><p class="mu" style="margin:8px 0 0">Admin: ${d.admins.map(esc).join(', ')||'belum ada'}</p></div>`+
  `<div class="card"><b>Karyawan (${det.emps.length})</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Nama</th><th>Aktif</th></tr>${det.emps.map(e=>`<tr><td>${esc(e.name)}</td><td>${e.active?'Ya':'Tidak'}</td></tr>`).join('')||'<tr><td colspan="2">Belum ada karyawan.</td></tr>'}</table></div></div>`+
  `<div class="card"><b>Absensi ${fdp(f)} s/d ${fdp(t)}</b><p class="mu" style="margin:8px 0 0">M ${cnt.M} · L ${cnt.L} · PH ${cnt.PH} · S ${cnt.S} · I ${cnt.I} · Lembur ${ot} jam</p></div>`};
 
@@ -1320,25 +1245,6 @@ function jadPdf(){
   w.document.open();w.document.write(html);w.document.close();
 }
 
-/* ===== PILIH DIVISI BAHAN (HR & developer) ===== */
-async function cgPick(id){
-  if(!id)return;
-  T.cogsDid=id;CG_DIV=id||'none';T.hasCogs=null;CGLOADING=false;
-  const empty={bahan:[],wip:[],menu:[]};
-  D.cg=empty;T.cgm=0;T.cgBusy=true;T.cgErr='';R();
-  const timeout=(ms)=>new Promise(r=>setTimeout(()=>r('timeout'),ms));
-  try{await Promise.race([cogsLoad(),timeout(10000)])}catch(e){}
-  if(T.cogsDid!==id)return;
-  let cloud=null;
-  try{
-    const res=await Promise.race([sb().from('cogs_data').select('id,data').eq('division_id',id).maybeSingle(),timeout(10000)]);
-    if(res==='timeout')throw new Error('Koneksi lambat, data bahan belum termuat. Coba pilih lagi.');
-    if(res.error)throw res.error;
-    if(res.data&&res.data.data)cloud=cogsNormalize(res.data.data);
-  }catch(e){T.cgErr=errText(e)||'Gagal memuat bahan';toast(T.cgErr,'err')}
-  if(T.cogsDid!==id)return;
-  D.cg=cloud||empty;T.cgMem[id]=D.cg;T.cgBusy=false;R()}
-
 let csSeq=0;
 function csPick(id,val){const sel=document.querySelector('select[data-csid="'+id+'"]');if(!sel)return;sel.value=val;sel.dispatchEvent(new Event('change',{bubbles:true}));closeM()}
 function csEnhance(root){
@@ -1371,43 +1277,6 @@ function csInit(){
   new MutationObserver(()=>csEnhance(document.body)).observe(document.body,{childList:true,subtree:true});
   csEnhance(document.body)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',csInit);else csInit();
-
-/* pastikan data bahan divisi yang dipilih selalu dimuat saat halaman Bahan dibuka */
-/* ===== BAHAN: semua divisi per outlet (HR & developer) ===== */
-function cgOvLoad(){
-  if(T.cgOvBusy)return;T.cgOvBusy=true;
-  setTimeout(async()=>{
-    try{
-      if(!Array.isArray(T.cgDivs))T.cgDivs=await payQ('divisions','id,name,code,outlet_id,has_cogs',q=>q.order('name'));
-      const oid=(D.outId&&D.outId!=='ALL')?D.outId:null;
-      const list=T.cgDivs.filter(d=>d.has_cogs!==false&&(!oid||d.outlet_id==oid));
-      const ids=list.map(d=>d.id);
-      const rows=ids.length?await payQ('cogs_data','division_id,data',q=>q.in('division_id',ids)):[];
-      const m={};rows.forEach(r=>{const c=cogsNormalize(r.data);if(c)m[r.division_id]=c});
-      T.cgOv={key:oid||'ALL',list,data:m};
-    }catch(e){toast(errText(e),'err')}
-    finally{T.cgOvBusy=false}
-    R()},0)}
-function cgMenuSelect(html){
-  const outs=T.outlets||[];const list=T.cgOv.list||[];
-  const opts=[];
-  list.forEach(d=>{const c=T.cgOv.data[d.id]||{menu:[]};const o=outs.find(x=>x.id==d.outlet_id);
-    (c.menu||[]).forEach((m,i)=>{const on=d.id==T.cogsDid&&i==T.cgm;opts.push(`<option value="${d.id}::${i}" ${on?'selected':''}>${esc(m.nama)} · ${esc(d.name)}${o?' ('+esc(o.code)+')':''}</option>`)})});
-  const sel=`<select onchange="cgMenuPick(this.value)" style="width:100%;font-size:16px;padding:9px">${opts.join('')||'<option value="">Belum ada menu</option>'}</select>`;
-  return html.replace(/<select onchange="T\.cgm=\+this\.value;R\(\)"[\s\S]*?<\/select>/,sel)}
-function cgMenuPick(v){
-  const [did,i]=String(v).split('::');if(!did)return;
-  if(did===T.cogsDid){T.cgm=+i;R();return}
-  cgPick(did).then(()=>{T.cgm=+i;R()});
-}
-function cgBody(){
-  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
-  if(!multi)return V[pg]();
-  const oid=(D.outId&&D.outId!=='ALL')?D.outId:'ALL';
-  if(!T.cgOv||T.cgOv.key!==oid){cgOvLoad();return '<div class="card empty cg-load"><span class="spin"></span>Memuat bahan…</div>'}
-  let html=V[pg]();
-  if(pg==='cg_menu')html=cgMenuSelect(html);
-  return html}
 
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
@@ -1674,9 +1543,9 @@ function empDivRefresh(){const oid=v('eo');const sel=document.getElementById('ed
 async function openEmp(i){if(!guard())return;if(i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')){try{if(!T.outlets)await outInit();if(!T.allDivs)T.allDivs=await payQ('divisions','id,name,code,outlet_id')}catch(e){toast(errText(e),'err')}}const e=i>=0?D.emp[i]:{};T.i=i;
 modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label>${i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')?empOutDivHtml(D.outId||D.ljId):''}<div class="row">${i>=0?`<button class="btn s" onclick="pinOpen(${i})">Atur PIN login</button>`:''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
 async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
-const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:(document.getElementById('eo')?.value)||await outInit(),division_id:(document.getElementById('ed')?.value)||null}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select().single();if(error)throw error;D.emp[i]=mapEmp(data)}sbCacheSave()});
+const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:(document.getElementById('eo')?.value)||await outInit(),division_id:(document.getElementById('ed')?.value)||null}).select().single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select();if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini (cek izin divisi/outlet)');D.emp[i]=mapEmp(data[0])}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}
-async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select().single();if(error)throw error;D.emp[i]=mapEmp(data);sbCacheSave()});R()}
+async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select();if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini');D.emp[i]=mapEmp(data[0]);sbCacheSave()});R()}
 function delEmp(i){if(!guard())return;const e=D.emp[i];
 cf(`Arsipkan <b>${esc(e.nama)}</b>? Absensi, lembur, dan riwayat gaji tetap tersimpan. Setelah periode baru dimulai, karyawan ini tidak muncul lagi di absensi.`,async()=>{
  if(D.att.some(a=>a.e==e.id&&lockedD(a.d,a.e)))return toast('Ada data di periode LOCKED. Unlock dulu.','err');
@@ -1726,7 +1595,7 @@ const self=T.k>=0?D.att[T.k]:null,dup=D.att.findIndex((a,i)=>a.e==e&&a.d==d&&i!=
 if(self&&lockedD(self.d,self.e))return toast('Data asli ada di periode LOCKED. Unlock di Atur & Laporan.','err');const p=ensurePer(d);if(!p)return toast('Tanggal bertumpuk dengan periode lain. Cek di Atur & Laporan.','err');if(p.lock)return toast('Periode LOCKED. Unlock di Atur & Laporan.','err');
 const photo=T.st=='S'?T.ph:'',row={employee_id:e,attendance_date:d,status:T.st,notes:v('an').trim()||(self&&self.n)||null};
 const ok=await sbRun(async()=>{const c=sb();let q=c.from('attendance').select('id').eq('employee_id',e).eq('attendance_date',d);if(self)q=q.neq('id',self.id);const x=await q.limit(1);if(x.error)throw x.error;if(x.data&&x.data.length)throw sbEr('DUP');
-const write=body=>self?c.from('attendance').update(body).eq('id',self.id).select().single():c.from('attendance').insert(body).select().single();
+const write=body=>self?c.from('attendance').update(body).eq('id',self.id).select().then(r=>r.error?r:(r.data&&r.data.length?{data:r.data[0],error:null}:{data:null,error:{message:'Absensi ini tidak bisa diubah dengan akun ini (cek izin divisi)'}})):c.from('attendance').insert(body).select().single();
 const usePh=SB.photoCol===true||(!!photo&&SB.photoCol!==false);let res=await write(usePh?{...row,photo:photo||null}:row);
 if(res.error&&usePh&&(res.error.code=='PGRST204'||/photo/i.test(res.error.message||''))){SB.photoCol=false;res=await write(row);if(!res.error)toast(L('Kolom "photo" belum ada di tabel attendance: foto hanya tersimpan di perangkat ini.','No "photo" column in the attendance table: the photo is stored on this device only.'),'warn')}
 else if(!res.error&&usePh)SB.photoCol=true;
@@ -1747,136 +1616,8 @@ const ok=await sbRun(async()=>{const c=sb();if(T.i>=0){const r=D.ot[T.i];if(!r.d
 if(!ok)return;jump(d);closeM();toast('Lembur tersimpan ('+ids.length+' karyawan)');await otLoad();R()}
 function delOt(i){if(!guard())return;cf('Hapus data lembur ini?',()=>{if(lockedD(D.ot[i].d,D.ot[i].e))return toast('Periode LOCKED','err');if(!D.ot[i].db)return toast('Data lama, input ulang dulu','err');return sbRun(async()=>{const {error}=await sb().from('overtime_entries').delete().eq('id',D.ot[i].db);if(error)throw error}).then(async ok=>{if(ok){toast('Lembur dihapus');await otLoad();R()}})})}
 
-/* ---------- Bahan (modul terpisah dari absensi, admin saja) ---------- */
-const CG_SEED={"bahan":[{"nama":"bubuk kopi hoping","beli":"","isi":"","sat":"gram"},{"nama":"bubuk krimer","beli":"","isi":"","sat":"gram"},{"nama":"milac gold","beli":"","isi":"","sat":"gram"},{"nama":"sirup vanilla","beli":"","isi":"","sat":"gram"},{"nama":"skm","beli":"","isi":"","sat":"gram"},{"nama":"freshmilk","beli":"","isi":"","sat":"ml"},{"nama":"selai kacang","beli":"","isi":"","sat":"gram"},{"nama":"rosela","beli":"","isi":"","sat":"gram"},{"nama":"bunga telang","beli":"","isi":"","sat":"gram"},{"nama":"buah lemon","beli":"","isi":"","sat":"gram"},{"nama":"nanas","beli":"","isi":"","sat":"gram"},{"nama":"buah strawberry","beli":"","isi":"","sat":"gram"},{"nama":"gula pasir (bar)","beli":"","isi":"","sat":"gram"},{"nama":"biji kopi espresso","beli":"","isi":"","sat":"gram"},{"nama":"bubuk coklat","beli":"","isi":"","sat":"gram"},{"nama":"sereh","beli":"","isi":"","sat":"gram"},{"nama":"buah limo","beli":"","isi":"","sat":"gram"},{"nama":"lemon juice","beli":"","isi":"","sat":"ml"},{"nama":"himalayan salt","beli":"","isi":"","sat":"gram"},{"nama":"sirup raisin","beli":"","isi":"","sat":"gram"},{"nama":"cengkeh","beli":"","isi":"","sat":"gram"},{"nama":"kayu manis","beli":"","isi":"","sat":"gram"},{"nama":"star anise","beli":"","isi":"","sat":"gram"},{"nama":"kapulaga","beli":"","isi":"","sat":"gram"},{"nama":"jahe","beli":"","isi":"","sat":"gram"},{"nama":"gula merah","beli":"","isi":"","sat":"gram"},{"nama":"sirup rose","beli":"","isi":"","sat":"gram"},{"nama":"apple juice","beli":"","isi":"","sat":"ml"},{"nama":"es krim kelapa","beli":"","isi":"","sat":"gram"},{"nama":"oatmilk","beli":"","isi":"","sat":"ml"},{"nama":"pineaple juice","beli":"","isi":"","sat":"ml"},{"nama":"sanquick","beli":"","isi":"","sat":"gram"},{"nama":"jeruk sunkist","beli":"","isi":"","sat":"gram"},{"nama":"madu","beli":"","isi":"","sat":"gram"},{"nama":"bubuk teh","beli":"","isi":"","sat":"gram"},{"nama":"ron88","beli":"","isi":"","sat":"botol"},{"nama":"gingerale","beli":"","isi":"","sat":"ml"},{"nama":"telor omega","beli":"","isi":"","sat":"gram"},{"nama":"songkit kiamboy","beli":"","isi":"","sat":"gram"},{"nama":"coconut water","beli":"","isi":"","sat":"botol"},{"nama":"manisan kiamboy","beli":"","isi":"","sat":"gram"},{"nama":"bubuk milo","beli":"","isi":"","sat":"gram"},{"nama":"sirup strawberry","beli":"","isi":"","sat":"gram"}],"wip":[{"nama":"biang kopi","yield":700.0,"items":[{"n":"bubuk kopi hoping","q":150.0,"u":"gram"}]},{"nama":"krimer cair","yield":144.0,"items":[{"n":"bubuk krimer","q":100.0,"u":"gram"}]},{"nama":"base cream","yield":300.0,"items":[{"n":"milac gold","q":200.0,"u":"gram"},{"n":"sirup vanilla","q":20.0,"u":"gram"},{"n":"skm","q":0.02,"u":"gram"},{"n":"freshmilk","q":100.0,"u":"ml"}]},{"nama":"base peanut","yield":350.0,"items":[{"n":"milac gold","q":200.0,"u":"gram"},{"n":"sirup vanilla","q":30.0,"u":"gram"},{"n":"skm","q":0.08,"u":"gram"},{"n":"freshmilk","q":100.0,"u":"ml"},{"n":"selai kacang","q":75.0,"u":"gram"},{"n":"saline","q":10.0,"u":"ml"}]},{"nama":"base rosela","yield":440.0,"items":[{"n":"rosela","q":10.0,"u":"gram"}]},{"nama":"base telang","yield":880.0,"items":[{"n":"bunga telang","q":5.0,"u":"gram"}]},{"nama":"lemon dehidrate","yield":150.0,"items":[{"n":"buah lemon","q":1000.0,"u":"gram"}]},{"nama":"pineaple dehidrate","yield":135.0,"items":[{"n":"nanas","q":1000.0,"u":"gram"}]},{"nama":"strawberry dehidrate","yield":100.0,"items":[{"n":"buah strawberry","q":1000.0,"u":"gram"}]},{"nama":"simple sirup","yield":1200.0,"items":[{"n":"gula pasir (bar)","q":1000.0,"u":"gram"}]},{"nama":"coldbrew","yield":800.0,"items":[{"n":"biji kopi espresso","q":100.0,"u":"gram"}]},{"nama":"coklat mix","yield":1000.0,"items":[{"n":"bubuk coklat","q":500.0,"u":"gram"},{"n":"bubuk krimer","q":250.0,"u":"gram"},{"n":"gula pasir (bar)","q":250.0,"u":"gram"}]},{"nama":"cardial","yield":500.0,"items":[{"n":"sereh","q":20.0,"u":"gram"},{"n":"gula pasir (bar)","q":200.0,"u":"gram"},{"n":"buah limo","q":40.0,"u":"gram"},{"n":"lemon juice","q":250.0,"u":"ml"}]},{"nama":"saline","yield":80.0,"items":[{"n":"himalayan salt","q":10.0,"u":"gram"}]},{"nama":"sirup rum","yield":800.0,"items":[{"n":"sirup raisin","q":1000.0,"u":"gram"},{"n":"cengkeh","q":20.0,"u":"gram"},{"n":"kayu manis","q":20.0,"u":"gram"},{"n":"star anise","q":20.0,"u":"gram"},{"n":"kapulaga","q":20.0,"u":"gram"}]},{"nama":"base wedang","yield":700.0,"items":[{"n":"jahe","q":1000.0,"u":"gram"},{"n":"gula merah","q":1000.0,"u":"gram"},{"n":"kapulaga","q":4.0,"u":"gram"},{"n":"cengkeh","q":4.0,"u":"gram"},{"n":"star anise","q":2.0,"u":"gram"},{"n":"kayu manis","q":18.0,"u":"gram"}]},{"nama":"base lazy jennie","yield":1080.0,"items":[{"n":"sirup rose","q":45.0,"u":"gram"},{"n":"sirup vanilla","q":45.0,"u":"gram"},{"n":"cardial","q":270.0,"u":"ml"},{"n":"apple juice","q":450.0,"u":"ml"},{"n":"base rosela","q":270.0,"u":"ml"}]},{"nama":"base husband","yield":1080.0,"items":[{"n":"biji kopi espresso","q":80.0,"u":"gram"},{"n":"bubuk krimer","q":120.0,"u":"gram"},{"n":"es krim kelapa","q":400.0,"u":"gram"},{"n":"freshmilk","q":200.0,"u":"ml"}]},{"nama":"base rosemilk","yield":1100.0,"items":[{"n":"sirup rose","q":150.0,"u":"gram"},{"n":"base rosela","q":240.0,"u":"ml"},{"n":"biang teh","q":240.0,"u":"ml"},{"n":"bubuk krimer","q":120.0,"u":"gram"},{"n":"saline","q":6.0,"u":"ml"},{"n":"oatmilk","q":360.0,"u":"ml"}]},{"nama":"base flypinano","yield":1050.0,"items":[{"n":"sirup rose","q":110.0,"u":"gram"},{"n":"sirup vanilla","q":55.0,"u":"gram"},{"n":"cardial","q":330.0,"u":"ml"},{"n":"pineaple juice","q":550.0,"u":"ml"},{"n":"saline","q":5.0,"u":"ml"}]},{"nama":"base coklat","yield":1150.0,"items":[{"n":"coklat mix","q":180.0,"u":"gram"},{"n":"sirup vanilla","q":30.0,"u":"gram"},{"n":"skm","q":0.4,"u":"gram"},{"n":"freshmilk","q":600.0,"u":"ml"}]},{"nama":"base lemon tea","yield":1015.0,"items":[{"n":"cardial","q":300.0,"u":"ml"},{"n":"simple sirup","q":600.0,"u":"gram"},{"n":"lemon juice","q":100.0,"u":"ml"},{"n":"saline","q":15.0,"u":"ml"}]},{"nama":"base sugus","yield":350.0,"items":[{"n":"milac gold","q":200.0,"u":"gram"},{"n":"freshmilk","q":80.0,"u":"ml"},{"n":"sanquick","q":32.0,"u":"gram"},{"n":"base sunkist juice","q":8.0,"u":"ml"},{"n":"sirup vanilla","q":28.0,"u":"gram"},{"n":"saline","q":4.0,"u":"gram"}]},{"nama":"base peanut latte","yield":1050.0,"items":[{"n":"freshmilk","q":700.0,"u":"ml"},{"n":"sirup vanilla","q":35.0,"u":"gram"},{"n":"milac gold","q":140.0,"u":"gram"},{"n":"oatmilk","q":140.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"}]},{"nama":"base sunkist juice","yield":90.0,"items":[{"n":"jeruk sunkist","q":200.0,"u":"gram"},{"n":"gula pasir (bar)","q":45.0,"u":"gram"}]},{"nama":"teh o","yield":1200.0,"items":[{"n":"biang teh","q":100.0,"u":"ml"}]},{"nama":"base sunny","yield":1100.0,"items":[{"n":"sanquick","q":150,"u":"gram"},{"n":"madu","q":50.0,"u":"gram"},{"n":"base sunkist juice","q":100.0,"u":"ml"},{"n":"pineaple juice","q":400,"u":"ml"},{"n":"lemon juice","q":50.0,"u":"ml"}]},{"nama":"biang teh","yield":700.0,"items":[{"n":"bubuk teh","q":100.0,"u":"gram"}]}],"menu":[{"nama":"AIR MINERAL RON88","harga":"","items":[{"n":"ron88","q":1.0,"u":"botol"}]},{"nama":"TEH C ICED","harga":"","items":[{"n":"biang teh","q":120.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"TEH O ICED","harga":"","items":[{"n":"teh o","q":200.0,"u":"ml"}]},{"nama":"LEMON TEA ICED","harga":"","items":[{"n":"teh o","q":150.0,"u":"ml"},{"n":"base lemon tea","q":65.0,"u":"ml"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"FLYPINANO","harga":"","items":[{"n":"base flypinano","q":100.0,"u":"ml"},{"n":"base telang","q":50.0,"u":"ml"},{"n":"gingerale","q":0.2,"u":"ml"},{"n":"pineaple dehidrate","q":5.0,"u":"gram"}]},{"nama":"HALF BOILED EGG","harga":"","items":[{"n":"telor omega","q":120.0,"u":"gram"}]},{"nama":"KOPI C ICED","harga":"","items":[{"n":"biang kopi","q":120.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"ROSE MILKTEA","harga":"","items":[{"n":"base rosemilk","q":170.0,"u":"ml"},{"n":"strawberry dehidrate","q":1.0,"u":"gram"}]},{"nama":"TEH O HOT","harga":"","items":[{"n":"biang teh","q":35.0,"u":"ml"}]},{"nama":"LAZY JENNIE","harga":"","items":[{"n":"base lazy jennie","q":120.0,"u":"ml"},{"n":"gingerale","q":0.2,"u":"ml"},{"n":"base cream","q":40.0,"u":"gram"},{"n":"strawberry dehidrate","q":1.0,"u":"gram"}]},{"nama":"AMERICANO ICED","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"SONGKIT PRESSO","harga":"","items":[{"n":"songkit kiamboy","q":0.08,"u":"gram"},{"n":"gingerale","q":0.6,"u":"ml"},{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"COCONUT WATER","harga":"","items":[{"n":"coconut water","q":1.0,"u":"botol"}]},{"nama":"KIAMBOY SODA","harga":"","items":[{"n":"manisan kiamboy","q":15.0,"u":"gram"},{"n":"gingerale","q":0.6,"u":"ml"},{"n":"cardial","q":40.0,"u":"ml"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"HONEY LEMON TEA COLD","harga":"","items":[{"n":"madu","q":35.0,"u":"gram"},{"n":"lemon juice","q":15.0,"u":"ml"},{"n":"sereh","q":5.0,"u":"gram"},{"n":"teh o","q":150.0,"u":"ml"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"NUTTY C","harga":"","items":[{"n":"biang teh","q":120.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"},{"n":"sirup vanilla","q":10.0,"u":"gram"},{"n":"base peanut","q":40.0,"u":"gram"}]},{"nama":"LATTE ICED","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":120.0,"u":"ml"}]},{"nama":"MILO ICED","harga":"","items":[{"n":"bubuk milo","q":45.0,"u":"gram"},{"n":"skm","q":0.04,"u":"gram"}]},{"nama":"PEANUT BUTTER LATTE","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"base peanut latte","q":150.0,"u":"ml"},{"n":"base peanut","q":40.0,"u":"gram"}]},{"nama":"TEH C HOT","harga":"","items":[{"n":"biang teh","q":120.0,"u":"ml"},{"n":"skm","q":0.04,"u":"gram"},{"n":"krimer cair","q":25.0,"u":"gram"}]},{"nama":"YUENYANG ICED","harga":"","items":[{"n":"biang teh","q":80.0,"u":"ml"},{"n":"biang kopi","q":50.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"HUSBAND CAPPUCINO","harga":"","items":[{"n":"base husband","q":250.0,"u":"gram"}]},{"nama":"CLOUD BREW","harga":"","items":[{"n":"coldbrew","q":110.0,"u":"ml"},{"n":"sirup rose","q":15.0,"u":"gram"},{"n":"simple sirup","q":10.0,"u":"gram"},{"n":"base sugus","q":50.0,"u":"gram"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"SUNNY PRESSO","harga":"","items":[{"n":"base sunny","q":110.0,"u":"ml"},{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"CHOCOLATE ICED","harga":"","items":[{"n":"base coklat","q":200.0,"u":"gram"}]},{"nama":"KOPI O ICED","harga":"","items":[{"n":"biang kopi","q":120.0,"u":"ml"}]},{"nama":"GINGER MILK TEA ICED","harga":"","items":[{"n":"base wedang","q":40.0,"u":"gram"},{"n":"biang teh","q":100.0,"u":"ml"},{"n":"skm","q":0.01,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"KOPI BUTTER","harga":"","items":[{"n":"biang kopi","q":110.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"}]},{"nama":"GINGER MILK TEA HOT","harga":"","items":[{"n":"base wedang","q":40.0,"u":"gram"},{"n":"biang teh","q":100.0,"u":"ml"},{"n":"skm","q":0.01,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"PBJ COFFEE (PEANUT BUTTER JELLY)","harga":"","items":[{"n":"coldbrew","q":75.0,"u":"ml"},{"n":"sirup strawberry","q":20.0,"u":"gram"},{"n":"gingerale","q":0.3,"u":"ml"},{"n":"base peanut","q":40.0,"u":"gram"}]},{"nama":"AMERICANO HOT","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"HONEY LEMON TEA HOT","harga":"","items":[{"n":"madu","q":35.0,"u":"gram"},{"n":"lemon juice","q":15.0,"u":"ml"},{"n":"sereh","q":5.0,"u":"gram"},{"n":"biang teh","q":35.0,"u":"ml"},{"n":"lemon dehidrate","q":2.5,"u":"gram"}]},{"nama":"CAPPUCINO","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":180.0,"u":"ml"}]},{"nama":"KOPI C HOT","harga":"","items":[{"n":"biang kopi","q":120.0,"u":"gram"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"GINGER LATTE","harga":"","items":[{"n":"base wedang","q":80.0,"u":"gram"},{"n":"freshmilk","q":100.0,"u":"ml"}]},{"nama":"LEMON TEA HOT","harga":"","items":[{"n":"base lemon tea","q":65.0,"u":"ml"},{"n":"biang teh","q":35.0,"u":"ml"}]},{"nama":"JENNIE'S BOMB","harga":"","items":[{"n":"base peanut latte","q":120.0,"u":"ml"},{"n":"base sugus","q":40.0,"u":"gram"},{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"APPLE CRUMBLE","harga":"","items":[{"n":"biang teh","q":30.0,"u":"ml"},{"n":"sirup rum","q":20.0,"u":"gram"},{"n":"apple juice","q":100.0,"u":"gram"},{"n":"base cream","q":40.0,"u":"gram"}]},{"nama":"KOPI O HOT","harga":"","items":[{"n":"biang kopi","q":120.0,"u":"ml"}]},{"nama":"LATTE HOT","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":200.0,"u":"ml"}]},{"nama":"CHOCO PEANUT","harga":"","items":[{"n":"base coklat","q":190.0,"u":"gram"},{"n":"base peanut","q":40.0,"u":"gram"}]},{"nama":"CHOCOLATE HOT","harga":"","items":[{"n":"coklat mix","q":25.0,"u":"gram"},{"n":"skm","q":0.02,"u":"gram"},{"n":"sirup vanilla","q":5.0,"u":"gram"},{"n":"freshmilk","q":200.0,"u":"ml"}]},{"nama":"YUENYANG HOT","harga":"","items":[{"n":"biang teh","q":80.0,"u":"ml"},{"n":"biang kopi","q":50.0,"u":"ml"},{"n":"skm","q":0.08,"u":"gram"},{"n":"krimer cair","q":30.0,"u":"gram"}]},{"nama":"MILO HOT","harga":"","items":[{"n":"bubuk milo","q":40.0,"u":"gram"},{"n":"skm","q":0.03,"u":"gram"}]},{"nama":"PICCOLO","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":180.0,"u":"gram"}]},{"nama":"MOCHA ICED","harga":"","items":[{"n":"coklat mix","q":10.0,"u":"gram"},{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":120.0,"u":"ml"}]},{"nama":"OAT MILK","harga":"","items":[{"n":"oatmilk","q":200.0,"u":"ml"}]},{"nama":"XTRA SHOT ESSPRESSO","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"ESPRESSO","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"}]},{"nama":"HERITAGE LEMON FIZZ","harga":"","items":[{"n":"base wedang","q":60.0,"u":"gram"},{"n":"sirup rum","q":15.0,"u":"gram"},{"n":"lemon juice","q":10.0,"u":"ml"},{"n":"lemon dehidrate","q":1.5,"u":"gram"},{"n":"gingerale","q":0.5,"u":"ml"}]},{"nama":"MOCHA HOT","harga":"","items":[{"n":"biji kopi espresso","q":20.0,"u":"gram"},{"n":"freshmilk","q":200.0,"u":"ml"},{"n":"coklat mix","q":10.0,"u":"gram"}]}]};
 const rp=n=>'Rp '+Math.round(n||0).toLocaleString(LANG=='en'?'en-US':'id-ID'),rp2=n=>'Rp '+(Math.round((n||0)*100)/100).toLocaleString(LANG=='en'?'en-US':'id-ID',{maximumFractionDigits:2}),norm=s=>String(s||'').trim().toLowerCase(),pct=x=>(Math.round(x*10)/10)+'%';
-const cgc=()=>{const g=D.cg||{bahan:[],wip:[],menu:[]};return{menu:g.menu.length,wip:g.wip.length,bahan:g.bahan.length}};
-function cgInit(){if(!D.cg){D.cg={bahan:[],wip:[],menu:[]};sv()}return D.cg}
-function cgEng(){const g=cgInit(),bm={},wm={},memo={},stk={};g.bahan.forEach(b=>bm[norm(b.nama)]=b);g.wip.forEach(w=>wm[norm(w.nama)]=w);
-const unit=n=>{n=norm(n);if(n in memo)return memo[n];
-if(wm[n]){if(stk[n])return{c:0,miss:true};stk[n]=1;const r=lines(wm[n].items),y=+wm[n].yield;delete stk[n];return memo[n]={c:y>0?r.total/y:0,miss:r.miss||!(y>0)}}
-if(bm[n]){const b=bm[n],c=(+b.beli>0&&+b.isi>0)?b.beli/b.isi:0;return memo[n]={c,miss:!(c>0)}}
-return memo[n]={c:0,miss:true}};
-const lines=items=>{let total=0,miss=false;const rows=items.map(it=>{const u=unit(it.n),sub=u.c*(+it.q||0);total+=sub;if(u.miss)miss=true;return{...it,price:u.c,sub,miss:u.miss}});return{rows,total,miss}};
-return{unit,lines,bm,wm}}
-const cgSearch=()=>`<div class="card"><label>${L('Cari','Search')}<input value="${esc(T.cq||'')}" oninput="T.cq=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div>`;
-const cgQuick=()=>!adm()?'':[['menu',L('Tambah menu','Add menu'),'cg_menu'],['wip',L('Tambah resep WIP','Add WIP recipe'),'cg_wip'],['bahan',L('Tambah bahan','Add ingredient'),'cg_bahan']].map(x=>`<button onclick="cgOpen('${x[0]}',-1)">${IC(x[2])}<span>${x[1]}</span></button>`).join('');
-/* cost bahan = harga beli / isi (per satuan). cost WIP = total cost / yield. nested WIP didukung: WIP boleh memakai WIP lain (rekursif, ada penjaga siklus).
-   Bahan tanpa harga TIDAK dianggap Rp0: hasilnya ditandai "-" (belum lengkap). Semua rumus mengambil harga langsung dari halaman BAHAN. */
-const cgM=(m,r)=>{const h=+m.harga;if(!(h>0)||r.miss||!(r.total>0))return null;const gp=h-r.total;return{cp:r.total/h*100,gp,gm:gp/h*100}};
-const cgCells=(m,r)=>{const x=cgM(m,r);return x?{cp:pct(x.cp),gp:rp(x.gp),gm:pct(x.gm)}:{cp:'-',gp:'-',gm:'-'}};
-function cgMenuRecipeRows(items,E,depth=0,scale=1,stack={}){
-  const out=[];
-  (items||[]).forEach(it=>{
-    const n=norm(it.n), q=(+it.q||0)*scale, w=E.wm[n];
-    const u=E.unit(it.n), sub=u.miss?0:u.c*q;
-    out.push({n:it.n,q,u:it.u||'',price:u.c,sub,miss:u.miss,wip:!!w,depth});
-    if(w&&!stack[n]){
-      const next={...stack,[n]:true},ys=+w.yield||0;
-      if(ys>0)out.push(...cgMenuRecipeRows(w.items,E,depth+1,q/ys,next));
-    }
-  });
-  return out;
-}
-V.cg_menu=()=>{
-  const g=cgInit(),E=cgEng(),menus=g.menu||[];
-  if(!menus.length)return `<div class="card empty">${L('Belum ada menu Bahan.','No Bahan menus yet.')}${adm()?`<br><button class="btn" style="margin-top:10px" onclick="cgOpen('menu',-1)">+ ${L('Tambah menu','Add menu')}</button>`:''}</div>`;
-  let idx=Number.isInteger(T.cgm)?T.cgm:0;
-  if(idx<0||idx>=menus.length)idx=0;
-  T.cgm=idx;
-  const m=menus[idx],r=E.lines(m.items),c=cgCells(m,r),rows=cgMenuRecipeRows(m.items,E),complete=!r.miss&&+m.harga>0;
-  const menuOptions=menus.map((x,i)=>`<option value="${i}" ${i==idx?'selected':''}>${esc(x.nama)}</option>`).join('');
-  const money=x=>x==null||x===''?'-':rp(x);
-  const metric=(label,value,sub='')=>`<div class="card" style="margin:0;min-width:0;padding:12px"><div class="mu" style="margin-bottom:4px">${label}</div><div style="font-size:20px;font-weight:700;overflow-wrap:anywhere">${value}</div>${sub?`<div class="mu" style="margin-top:3px">${sub}</div>`:''}</div>`;
-  return `<div class="card" style="margin-bottom:10px">
-    <div class="mu" style="margin-bottom:5px">${L('Pilih menu','Select menu')}</div>
-    <select onchange="T.cgm=+this.value;R()" style="width:100%;font-size:16px;padding:9px">${menuOptions}</select>
-  </div>
-  <div class="card" style="margin-bottom:10px">
-    <h3 style="margin:0 0 10px">${esc(m.nama)}</h3>
-    <div class="grid" style="margin:0">
-      ${metric(L('Nama Menu','Menu Name'),esc(m.nama))}
-      ${metric(L('Harga Menu','Menu Price'),+m.harga>0?money(m.harga):'-')}
-      ${metric(L('Total Cost','Total Cost'),r.miss?'-':money(r.total),r.miss?L('Belum lengkap','Incomplete'):'')}
-      ${metric(L('HPP %','HPP %'),c.cp)}
-      ${metric(L('Profit','Profit'),c.gp)}
-    </div>
-    <div class="grid" style="margin-top:10px">
-      ${metric(L('Margin %','Margin %'),c.gm)}
-      ${metric(L('Status','Status'),complete?L('Lengkap','Complete'):L('Belum lengkap','Incomplete'))}
-    </div>
-  </div>
-  <div class="card">
-    <h3 style="margin-bottom:8px">${L('Recipe / Gramasi','Recipe / Portions')}</h3>
-    ${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>No</th><th>${L('Bahan / WIP','Ingredient / WIP')}</th><th>${L('Gramasi / Qty','Qty')}</th><th>${L('Satuan','Unit')}</th><th>${L('Cost / Unit','Cost / Unit')}</th><th>${L('Subtotal','Subtotal')}</th></tr>${rows.map((x,k)=>`<tr><td>${k+1}</td><td style="text-align:left;white-space:normal;padding-left:${12+x.depth*22}px">${x.depth?`↳ `:''}${esc(x.n)}${x.wip?' <span class="tag">WIP</span>':''}${x.miss?' <span class="tag r">!</span>':''}</td><td>${Number.isInteger(x.q)?x.q:+x.q.toFixed(4)}</td><td>${esc(x.u||'')}</td><td>${x.miss?'-':rp2(x.price)}</td><td>${x.miss?'-':rp(x.sub)}</td></tr>`).join('')}</table></div>`:`<div class="empty">${L('Recipe belum diisi.','Recipe is empty.')}</div>`}
-    ${r.miss?`<p class="mu">! = ${L('Ada bahan/WIP yang belum memiliki harga lengkap, sehingga Total Cost, HPP %, dan Profit ditampilkan sebagai -','Some ingredients/WIP have incomplete pricing, so Total Cost, HPP %, and Profit are shown as -')}</p>`:''}
-    <p class="mu">${L('WIP ditampilkan sampai komponen di dalamnya, termasuk gramasi pemakaian yang sudah disesuaikan dengan yield.','WIP is expanded to its components, including usage quantities adjusted to the WIP yield.')}</p>
-    ${adm()?`<div class="btns"><button class="btn" onclick="cgOpen('menu',${idx})">${L('Edit menu / recipe','Edit menu / recipe')}</button> <button class="btn d" onclick="cgDelMenu(${idx})">${L('Hapus menu','Delete menu')}</button></div>`:''}
-  </div>`;
-};
-function cgDelMenu(i){if(!guard())return;const m=D.cg.menu[i];if(!m)return;cf(`Hapus menu <b>${esc(m.nama)}</b>? Resep menu ini ikut terhapus. Tidak bisa dibatalkan.`,()=>{D.cg.menu.splice(i,1);T.cgm=0;sv();cogsSave();toast(L('Menu dihapus','Menu deleted'));R()},L('Ya, hapus','Yes, delete'))}
-function cgSetM(i,val){if(!guard())return;const m=D.cg.menu[i];m.harga=val===''?'':Math.max(0,+val||0);sv();cogsSave();const c=cgCells(m,cgEng().lines(m.items));[['mp',c.cp],['mg',c.gp],['mm',c.gm]].forEach(([p,t])=>{const e=$('#'+p+i);if(e)e.textContent=t})}
-V.cg_wip=()=>{if(!adm())return'';const g=cgInit(),E=cgEng(),q=norm(T.cq),rows=g.wip.map((w,i)=>({w,i,r:E.lines(w.items),u:E.unit(w.nama)})).filter(x=>norm(x.w.nama).includes(q));
-return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('wip',-1)">+ ${L('Tambah resep WIP','Add WIP recipe')}</button></div>${cgSearch()}
-${rows.length?`<div class="tw"><table class="rk"><tr><th>No</th><th>WIP</th><th>Recipe</th><th>Yield</th><th>${L('Total cost','Total cost')}</th><th>${L('Cost per unit','Cost per unit')}</th></tr>${rows.map((x,k)=>{const n=x.w.items.map(i=>i.n);return`<tr><td>${k+1}</td><td><a class="nm" onclick="cgDet('wip',${x.i})">${esc(x.w.nama)}</a>${x.r.miss?' <span class="tag r">!</span>':''}</td><td style="white-space:normal;text-align:left;min-width:150px">${n.length} ${L('komponen','components')}: ${esc(n.slice(0,3).join(', '))}${n.length>3?'…':''}</td><td>${x.w.yield}</td><td>${x.r.miss?'-':rp(x.r.total)}</td><td>${x.r.miss?'-':rp2(x.u.c)}</td></tr>`}).join('')}</table></div><p class="mu">! = ${L('ada bahan/WIP tanpa harga','an ingredient/WIP has no price')}</p>`:`<div class="card empty">${g.wip.length?L('Tidak ada hasil.','No results.'):L('Belum ada resep WIP.','No WIP recipes yet.')}</div>`}`};
-V.cg_bahan=()=>{if(!adm())return'';const g=cgInit(),q=norm(T.cq),rows=g.bahan.map((b,i)=>({b,i})).filter(x=>norm(x.b.nama).includes(q)&&(!T.cno||!(+x.b.beli>0&&+x.b.isi>0)));
-return`<div style="margin-bottom:12px"><button class="btn" onclick="cgOpen('bahan',-1)">+ ${L('Tambah bahan','Add ingredient')}</button></div>${cgSearch()}<label class="ck"><input type="checkbox" ${T.cno?'checked':''} onchange="T.cno=this.checked;R()"> ${L('Hanya yang belum ada harga','Only without price')}</label>
-${rows.length?`<div class="tw"><table class="rk cgt"><tr><th>${L('Bahan','Ingredient')}</th><th>${L('Harga beli (Rp)','Purchase price (Rp)')}</th><th>${L('Isi','Qty')}</th><th>${L('Satuan','Unit')}</th><th>${L('Harga per unit','Price per unit')}</th><th>${L('Aktif','Active')}</th><th></th></tr>${rows.map(x=>`<tr style="${x.b.aktif===false?'color:#808080':''}"><td>${esc(x.b.nama)}</td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.b.beli}" onchange="cgSetB(${x.i},'beli',this.value)"></td><td><input type="number" min="0" step="any" inputmode="decimal" value="${x.b.isi}" onchange="cgSetB(${x.i},'isi',this.value)"></td><td><input list="cgu" value="${esc(x.b.sat)}" style="width:70px" onchange="cgSetB(${x.i},'sat',this.value)"></td><td id="cb${x.i}">${+x.b.beli>0&&+x.b.isi>0?rp2(x.b.beli/x.b.isi):'-'}</td><td><input type="checkbox" ${x.b.aktif===false?'':'checked'} onchange="cgSetB(${x.i},'aktif',this.checked)"></td><td style="white-space:nowrap"><button class="btn s x" onclick="cgOpen('bahan',${x.i})">Edit</button> <button class="btn d x" onclick="cgDelRec('bahan',${x.i})">Hapus</button></td></tr>`).join('')}</table></div><datalist id="cgu"><option value="gram"><option value="g"><option value="kg"><option value="ml"><option value="L"><option value="pcs"><option value="botol"><option value="can"><option value="galon"><option value="karton"><option value="pack"><option value="ball"><option value="sachet"><option value="bungkus"><option value="batang"><option value="lembar"></datalist><p class="mu">${L('Contoh: beli 1 kg gula Rp 18.000 → Harga beli 18000, Isi 1000, Satuan gram. Bahan nonaktif tidak muncul saat menambah resep baru, tetapi resep lama tetap dihitung.','Example: 1 kg sugar for Rp 18,000 → Price 18000, Qty 1000, Unit gram. Inactive ingredients are hidden when adding new recipes, but existing recipes are still calculated.')}</p>`:`<div class="card empty">${g.bahan.length?L('Tidak ada hasil.','No results.'):L('Belum ada bahan.','No ingredients yet.')}</div>`}`};
-function cgSetB(i,k,val){if(!guard())return;const b=D.cg.bahan[i];b[k]=k=='sat'?String(val).trim():k=='aktif'?!!val:(val===''?'':Math.max(0,+val||0));sv();cogsSave();if(k=='aktif'){R();return}const c=$('#cb'+i);if(c)c.textContent=+b.beli>0&&+b.isi>0?rp2(b.beli/b.isi):'-'}
-function cgDet(kind,i){if(!guard())return;const g=cgInit(),E=cgEng(),o=g[kind][i],r=E.lines(o.items),u=kind=='wip'?E.unit(o.nama):null;
-let info;if(kind=='wip')info=`Yield: ${o.yield} · Total cost: ${r.miss?'-':rp(r.total)} · Cost per unit: ${r.miss?'-':rp2(u.c)}`;else{const c=cgCells(o,r);info=`${L('Harga jual','Price')}: ${+o.harga>0?rp(o.harga):'-'} · Bahan: ${r.miss?'-':rp(r.total)} · HPP % ${c.cp} · Gross profit ${c.gp} · Gross margin % ${c.gm}`}
-modal(`<h3>${esc(o.nama)}</h3><p class="mu">${info}</p>
-<div class="tw"><table class="rk"><tr><th>${L('Bahan/WIP','Ingredient/WIP')}</th><th>Qty</th><th>${L('Satuan','Unit')}</th><th>${L('Harga per unit','Price per unit')}</th><th>Subtotal</th></tr>${r.rows.map(x=>`<tr><td>${esc(x.n)}${E.wm[norm(x.n)]?' <span class="tag">WIP</span>':''}</td><td>${x.q}</td><td>${esc(x.u||'')}</td><td>${x.miss?'<span class="tag r">'+L('harga belum diisi','price not set')+'</span>':rp2(x.price)}</td><td>${x.miss?'-':rp(x.sub)}</td></tr>`).join('')}</table></div>
-<p><b>Total ${kind=='wip'?'cost':'Bahan'}: ${r.miss?'-':rp(r.total)}</b>${r.miss?' · '+L('belum lengkap, ada harga belum diisi','incomplete: some prices are not set'):''}</p>
-<div class="btns"><button class="btn" onclick="cgOpen('${kind}',${i})">Edit</button><button class="btn d" onclick="cgDelRec('${kind}',${i})">Hapus</button><button class="btn s" onclick="closeM()">Tutup</button></div>`)}
-const cgNames=()=>{const g=cgInit();return[...new Set([...g.bahan.filter(b=>b.aktif!==false),...g.wip].map(x=>x.nama))]},
-cgRows=()=>T.cgf.items.map((x,k)=>`<div class="cgw"><div class="cgr"><input id="rn${k}" autocomplete="off" placeholder="${L('Cari bahan / WIP','Search ingredient / WIP')}" value="${esc(x.n)}" oninput="cgSg(${k})" onfocus="cgSg(${k})" onblur="setTimeout(()=>cgHide(${k}),250)"><input id="rq${k}" type="number" min="0" step="any" inputmode="decimal" placeholder="${L('Jumlah','Qty')}" value="${x.q}" oninput="cgDirty()"><input id="ru${k}" list="cgu" value="${esc(x.u||'')}" placeholder="${L('satuan','unit')}" oninput="cgDirty()"><button class="btn x" onclick="cgDel(${k})">×</button></div><div class="sg" id="sg${k}"></div></div>`).join('');
-const cgUses=(w,t,seen={})=>{const x=D.cg.wip.find(z=>norm(z.nama)==norm(w));if(!x||seen[norm(w)])return false;seen[norm(w)]=1;return x.items.some(i=>norm(i.n)==t||cgUses(i.n,t,seen))};
-function cgOpts(q){const g=cgInit(),f=T.cgf,me=[norm(v('cn'))];if(f.kind=='wip'&&f.i>=0)me.push(norm(g.wip[f.i].nama));
-const used={};[...g.wip,...g.menu].forEach(r=>r.items.forEach(it=>{if(it.u&&!used[norm(it.n)])used[norm(it.n)]=it.u}));
-let all=g.bahan.filter(b=>b.aktif!==false).map(b=>({n:b.nama,w:0,u:b.sat||'gram'}));
-g.wip.forEach(w=>{if(f.kind=='wip'&&me.some(m=>m&&(norm(w.nama)==m||cgUses(w.nama,m))))return;all.push({n:w.nama,w:1,u:used[norm(w.nama)]||'ml'})});
-const tk=norm(q).split(/\s+/).filter(Boolean),sc=n=>{n=norm(n);return n.startsWith(tk[0]||'')?0:n.split(/[\s(]+/).some(x=>x.startsWith(tk[0]||''))?1:2};
-return all.filter(x=>tk.every(t=>norm(x.n).includes(t))).sort((a,b)=>sc(a.n)-sc(b.n)||a.n.localeCompare(b.n)).slice(0,60)}
-function cgSg(k){cgDirty();const q=v('rn'+k),o=cgOpts(q),el=$('#sg'+k);if(!el)return;T.cgo=o;
-el.innerHTML=o.length?o.map((x,j)=>`<div class="sgi" onclick="cgPick(${k},${j})"><span>${esc(x.n)}${x.w?' <span class="tag">WIP</span>':''}</span><small>${esc(x.u)}</small></div>`).join(''):(q.trim()?`<div class="sgn">${L('Tidak ada yang cocok. Saat Simpan, kamu akan ditanya dulu untuk menambahkan sebagai bahan baru.','No match. On Save you will be asked to add it as a new ingredient.')}</div>`:'')}
-function cgHide(k){const el=$('#sg'+k);if(el)el.innerHTML=''}
-function cgPick(k,j){const x=(T.cgo||[])[j];if(!x)return;$('#rn'+k).value=x.n;$('#ru'+k).value=x.u;cgHide(k);cgDirty();const q=$('#rq'+k);q&&q.focus()}
-function cgDirty(){if(T.cgf)T.cgf.ok=false;const w=$('#cgwarn');if(w)w.innerHTML=''}
-function cgOpen(kind,i){if(!guard())return;const g=cgInit();T.cgk=kind;T.cgi=i;
-if(kind=='bahan'){const b=i>=0?g.bahan[i]:{};modal(`<h3>${i>=0?'Edit':'Tambah'} ${L('Bahan','Ingredient')}</h3><label>${L('Nama','Name')}<input id="cgn1" value="${esc(b.nama)}" autocomplete="off"></label><label>${L('Harga beli (Rp)','Purchase price (Rp)')}<input id="cgb1" type="number" min="0" step="any" inputmode="decimal" value="${b.beli??''}"></label><label>${L('Isi (jumlah per pembelian)','Qty per purchase')}<input id="cgi1" type="number" min="0" step="any" inputmode="decimal" value="${b.isi??''}"></label><label>${L('Satuan pakai (untuk resep & stok)','Usage unit (for recipes & stock)')}<input id="cgs1" list="cgu" value="${esc(b.sat||'gram')}" onchange="cgAutoIsi()"></label><label>${L('Satuan beli (contoh: karton, kg, galon)','Purchase unit (e.g. carton, kg, gallon)')}<input id="cgsb" list="cgu" value="${esc(b.sbeli||'')}" onchange="cgAutoIsi()"></label><label>${L('Kategori','Category')}<select id="cgk"><option value="">-</option>${['LIQUID','FRUIT','BEANS','PIECES','REMPAH','SUPLIES','SYRUP','DRIED','LAINNYA'].map(k=>`<option value="${k}" ${b.kat==k?'selected':''}>${k}</option>`).join('')}</select></label><label>Status<select id="cga"><option value="1" ${b.aktif===false?'':'selected'}>${L('Aktif','Active')}</option><option value="0" ${b.aktif===false?'selected':''}>${L('Nonaktif','Inactive')}</option></select></label><datalist id="cgu"><option value="gram"><option value="g"><option value="kg"><option value="ml"><option value="L"><option value="pcs"><option value="botol"><option value="can"><option value="galon"><option value="karton"><option value="pack"><option value="ball"><option value="sachet"><option value="bungkus"><option value="batang"><option value="lembar"></datalist><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="cgSaveB()">Simpan</button></div>`);return}
-const o=i>=0?g[kind][i]:{nama:'',items:[{n:'',q:'',u:'gram'}],yield:'',harga:''};T.cgf={kind,i,items:o.items.map(x=>({...x}))};if(!T.cgf.items.length)T.cgf.items.push({n:'',q:'',u:'gram'});
-modal(`<h3>${i>=0?'Edit':'Tambah'} ${kind=='menu'?'Menu':L('Resep WIP','WIP recipe')}</h3><label>${L('Nama','Name')}<input id="cn" value="${esc(o.nama)}" autocomplete="off"></label>${kind=='wip'?`<label>${L('Hasil (yield): total ml/gram yang dihasilkan','Yield: total ml/grams produced')}<input id="cy" type="number" min="0" step="any" inputmode="decimal" value="${o.yield||''}"></label>`:`<label>${L('Harga jual (Rp, opsional)','Selling price (Rp, optional)')}<input id="cy" type="number" min="0" step="any" inputmode="decimal" value="${o.harga||''}"></label>`}<div class="ts">${L('Bahan / resep','Ingredients')}</div><div id="cr">${cgRows()}</div><button class="btn s x" onclick="cgAdd()">+ ${L('Tambah baris','Add row')}</button><div id="cgwarn"></div><datalist id="cgu"><option value="gram"><option value="g"><option value="kg"><option value="ml"><option value="L"><option value="pcs"><option value="botol"><option value="can"><option value="galon"><option value="karton"><option value="pack"><option value="ball"><option value="sachet"><option value="bungkus"><option value="batang"><option value="lembar"></datalist><div class="row" style="margin-top:12px"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="cgSave()">Simpan</button></div>`)}
-function cgSync(){T.cgf.items.forEach((x,k)=>{x.n=v('rn'+k);x.q=v('rq'+k);x.u=v('ru'+k)})}
-function cgAdd(){cgSync();T.cgf.items.push({n:'',q:'',u:'gram'});$('#cr').innerHTML=cgRows()}
-function cgDel(k){cgSync();T.cgf.items.splice(k,1);if(!T.cgf.items.length)T.cgf.items.push({n:'',q:'',u:'gram'});$('#cr').innerHTML=cgRows()}
-function cgRename(a,b){const g=D.cg;[...g.wip,...g.menu].forEach(x=>x.items.forEach(it=>{if(norm(it.n)==norm(a))it.n=norm(b)}))}
-function cgSave(){if(!guard())return;cgSync();const g=cgInit(),f=T.cgf,kind=f.kind,nama=v('cn').trim(),y=+v('cy');
-if(!nama)return toast('Nama wajib diisi','err');
-const items=f.items.filter(x=>x.n.trim()&&+x.q>0).map(x=>({n:norm(x.n),q:+x.q,u:(x.u||'').trim()||'gram'}));
-if(!items.length)return toast(L('Isi minimal satu bahan dengan jumlah > 0','Add at least one ingredient with quantity > 0'),'err');
-const old0=f.i>=0?new Set(g[kind][f.i].items.map(x=>x.n)):new Set(),bad=items.find(x=>!old0.has(x.n)&&g.bahan.some(b=>norm(b.nama)==x.n&&b.aktif===false));
-if(bad)return toast(L('Bahan nonaktif: '+bad.n,'Inactive ingredient: '+bad.n),'err');
-if(kind=='wip'&&!(y>0))return toast(L('Hasil (yield) harus lebih dari 0','Yield must be greater than 0'),'err');
-if(g[kind].some((x,k)=>k!=f.i&&norm(x.nama)==norm(nama)))return toast('Nama sudah ada','err');
-if(kind=='wip'&&items.some(x=>x.n==norm(nama)))return toast(L('WIP tidak boleh memakai dirinya sendiri','A WIP cannot use itself'),'err');
-const knownN=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama))),newN=[...new Set(items.map(x=>x.n).filter(n=>!knownN.has(n)))];
-if(newN.length&&!f.ok){$('#cgwarn').innerHTML=`<div class="cgwarn"><b>${L('Bahan belum terdaftar:','Not in your list:')}</b> ${newN.map(esc).join(', ')}<br>${L('Tambahkan sebagai bahan baru (harga belum diisi) lalu simpan?','Add as new ingredient(s) (price not set) and save?')}<div class="row"><button class="btn s" onclick="cgDirty()">${L('Perbaiki','Fix')}</button><button class="btn" onclick="T.cgf.ok=true;cgSave()">${L('Ya, tambahkan & simpan','Yes, add & save')}</button></div></div>`;const w=$('#cgwarn');w&&w.scrollIntoView({block:'nearest'});return}
-const o=kind=='wip'?{nama,yield:y,items}:{nama,harga:v('cy')===''?'':y,items};
-if(f.i>=0){const old=g[kind][f.i].nama;g[kind][f.i]=o;if(kind=='wip'&&norm(old)!=norm(nama))cgRename(old,nama)}else g[kind].push(o);
-const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));items.forEach(x=>{if(!known.has(x.n)){g.bahan.push({nama:x.n,beli:'',isi:'',sat:x.u,aktif:true});known.add(x.n)}});
-sv();cogsSave();closeM();toast(L('Tersimpan','Saved'));R()}
-const CG_CONV={kg:{g:1000,gram:1000},L:{ml:1000},l:{ml:1000},liter:{ml:1000},g:{kg:0.001},gram:{kg:0.001},ml:{L:0.001}};
-function cgAutoIsi(){const sb=(document.getElementById('cgsb')?.value||'').trim(),su=(document.getElementById('cgs1')?.value||'').trim();const f=CG_CONV[sb]&&CG_CONV[sb][su];const isi=document.getElementById('cgi1');if(f&&isi&&isi.value==='')isi.value=f}
-function cgSaveB(){if(!guard())return;const g=cgInit(),i=T.cgi,nama=v('cgn1').trim().toLowerCase();if(!nama)return toast('Nama wajib diisi','err');
-if([...g.bahan.filter((x,k)=>k!=i),...g.wip].some(x=>norm(x.nama)==nama))return toast('Nama sudah ada','err');
-const o={nama,beli:v('cgb1')===''?'':Math.max(0,+v('cgb1')||0),isi:v('cgi1')===''?'':Math.max(0,+v('cgi1')||0),sat:v('cgs1').trim()||'gram',sbeli:(document.getElementById('cgsb')?.value||'').trim(),kat:(document.getElementById('cgk')?.value||''),aktif:v('cga')!='0'};
-if(i>=0){const old=g.bahan[i].nama;g.bahan[i]=o;if(norm(old)!=nama)cgRename(old,nama)}else g.bahan.push(o);sv();cogsSave();closeM();toast(L('Tersimpan','Saved'));R()}
-function cgDelRec(kind,i){if(!guard())return;const g=cgInit(),o=g[kind][i],n=norm(o.nama),use=kind=='menu'?0:[...g.wip,...g.menu].filter(x=>x.items.some(it=>norm(it.n)==n)).length;
-if(use)return toast(L('Tidak bisa dihapus: dipakai di '+use+' resep','Cannot delete: used in '+use+' recipes'),'err');
-cf(`Hapus <b>${esc(o.nama)}</b>?`,()=>{g[kind].splice(i,1);sv();cogsSave();closeM();toast(L('Dihapus','Deleted'));R()})}
-function cgSeed(){if(!guard())return;cmn();cf(L('Muat resep awal dari spreadsheet? Data Bahan sekarang akan DITIMPA.','Load starter recipes from the spreadsheet? Current Bahan data will be OVERWRITTEN.'),()=>{D.cg=JSON.parse(JSON.stringify(CG_SEED));sv();cogsSave();toast(L('Resep awal dimuat','Starter recipes loaded'));R()},L('Ya, muat','Yes, load'))}
-function cgReset(){if(!guard())return;cmn();cf(L('Kosongkan SEMUA data Bahan (menu, WIP, bahan)? Data absensi tidak terpengaruh.','Clear ALL Bahan data (menus, WIP, ingredients)? Attendance data is not affected.'),()=>{D.cg={bahan:[],wip:[],menu:[]};sv();cogsSave();toast(L('Data Bahan dikosongkan','Bahan data cleared'));R()},L('Ya, kosongkan','Yes, clear'))}
+
 
 /* ---------- Laporan: periode, export, import ---------- */
 V.lap=()=>{const l=D.per.at(-1),s=l?iso(U(l.e)+864e5):today().slice(0,8)+'24',y=+s.slice(0,4),m=+s.slice(5,7),e=iso(Date.UTC(m==12?y+1:y,m%12,23));
@@ -1921,15 +1662,7 @@ function exportExcel(kind){
   if(kind==='att'||kind==='full')add('Absensi',D.att.map(a=>({ID:a.id,'Employee ID':a.e,Nama:name(a.e),Tanggal:a.d,Status:a.s,Catatan:a.n||''})));
   if(kind==='ot'||kind==='full')add('Lembur',D.ot.map(o=>({'Employee ID':o.e,Nama:name(o.e),Tanggal:o.d,'Jam lembur':hrs(o),Catatan:o.n||''})));
   if(kind==='full')add('Periode',D.per.map(p=>({ID:p.id,Mulai:p.s,Akhir:p.e,Locked:p.lock?'Ya':'Tidak'})));
-  if(kind==='cogs'||kind==='full'){
-    const g=cgInit();
-    add('Bahan',g.bahan.map(b=>({Nama:b.nama,'Harga Beli':b.beli,Isi:b.isi,Satuan:b.sat||'',Aktif:b.aktif===false?'Tidak':'Ya'})));
-    add('WIP',g.wip.map(w=>({Nama:w.nama,Yield:w.yield})));
-    add('WIP_Recipe',g.wip.flatMap(w=>w.items.map(i=>({WIP:w.nama,'Bahan/WIP':i.n,Qty:i.q,Satuan:i.u||''}))));
-    add('Menu',g.menu.map(m=>({Nama:m.nama,'Harga Menu':m.harga})));
-    add('Menu_Recipe',g.menu.flatMap(m=>m.items.map(i=>({Menu:m.nama,'Bahan/WIP':i.n,Qty:i.q,Satuan:i.u||''}))));
-  }
-  const label={emp:'Karyawan',att:'Absensi',ot:'Lembur',cogs:'Bahan',full:'FULL_DATABASE'}[kind]||'BARAPP';
+  const label={emp:'Karyawan',att:'Absensi',ot:'Lembur',full:'FULL_DATABASE'}[kind]||'BARAPP';
   downloadWb(wb,`BARAPP_${label}_${stamp}.xlsx`);toast(`Export ${label} berhasil`)
 }
 function downloadExcelTemplate(){
@@ -1938,31 +1671,20 @@ function downloadExcelTemplate(){
   add('Karyawan',[{ID:'',Nama:'',Jabatan:'',Aktif:'Ya'}]);
   add('Absensi',[{ID:'','Employee ID':'','Nama':'',Tanggal:'YYYY-MM-DD',Status:'M/L/I/S/PH',Catatan:''}]);
   add('Lembur',[{'Employee ID':'',Nama:'',Tanggal:'YYYY-MM-DD','Jam lembur':'',Catatan:''}]);
-  add('Bahan',[{Nama:'','Harga Beli':'','Isi':'',Satuan:'gram/ml/pcs/botol',Aktif:'Ya'}]);
-  add('WIP',[{Nama:'',Yield:''}]); add('WIP_Recipe',[{WIP:'','Bahan/WIP':'',Qty:'',Satuan:'gram/ml/pcs'}]);
-  add('Menu',[{Nama:'','Harga Menu':''}]); add('Menu_Recipe',[{Menu:'','Bahan/WIP':'',Qty:'',Satuan:'gram/ml/pcs'}]);
   downloadWb(wb,`BARAPP_Template_Import.xlsx`);toast('Template Excel berhasil dibuat')
 }
 function openExcelImport(){if(!guard())return;modal(`<h3>Import Excel</h3><p class="mu">Upload workbook .xlsx/.xls. Sistem akan membaca sheet yang dikenali dan hanya menambahkan data yang belum ada.</p><div class="dlg">${IC('doc',32)}<p>Pilih file Excel dari HP.</p></div><div class="btns"><button class="btn" onclick="$('#excelImportInput').click();closeM()">Pilih File Excel</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}
 function openExcelRestore(){if(!guard())return;openExcelImport()}
 function planExcel(wb){
-  const g=cgInit(),plan={emp:[],att:[],ot:[],bahan:[],wip:[],wipR:[],menu:[],menuR:[],errors:[]};
+  const plan={emp:[],att:[],ot:[],errors:[]};
   const er=sheetRows(wb,['Karyawan','Employees']);
   er.forEach((r,i)=>{const nama=String(xVal(r,['Nama','name'])).trim();if(!nama)return;if(plan.emp.some(e=>norm(e.nama)==norm(nama))||D.emp.some(e=>norm(e.nama)==norm(nama)))return;plan.emp.push({id:xVal(r,['ID','id']),nama,jab:String(xVal(r,['Jabatan','role'])).trim(),aktif:xBool(xVal(r,['Aktif','active']))})});
   const resolveEmp=r=>{const id=xVal(r,['Employee ID','employee_id','ID Karyawan']);const nama=String(xVal(r,['Nama','name'])).trim();return D.emp.find(e=>String(e.id)==String(id))||D.emp.find(e=>norm(e.nama)==norm(nama))||plan.emp.find(e=>String(e.id)==String(id))||plan.emp.find(e=>norm(e.nama)==norm(nama))};
   sheetRows(wb,['Absensi','Attendance']).forEach(r=>{const e=resolveEmp(r),d=xDate(xVal(r,['Tanggal','attendance_date','Date'])),st=normSt(xVal(r,['Status','status']));if(!e||!d||!st){plan.errors.push('Absensi: baris tidak valid');return}if(D.att.some(a=>String(a.e)==String(e.id)&&a.d==d)||plan.att.some(a=>String(a._eid)==String(e.id)&&a.d==d))return;plan.att.push({_eid:e.id,d,s:st,n:String(xVal(r,['Catatan','notes'])).trim()})});
   sheetRows(wb,['Lembur','Overtime']).forEach(r=>{const e=resolveEmp(r),d=xDate(xVal(r,['Tanggal','date'])),h=xNum(xVal(r,['Jam lembur','Jam','hours']));if(!e||!d||h===''){plan.errors.push('Lembur: baris tidak valid');return}if(D.ot.some(o=>String(o.e)==String(e.id)&&o.d==d&&+hrs(o)==+h)||plan.ot.some(o=>String(o._eid)==String(e.id)&&o.d==d&&+o.h==+h))return;plan.ot.push({_eid:e.id,d,h,n:String(xVal(r,['Catatan','notes'])).trim()})});
-  sheetRows(wb,['Bahan','Ingredients']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim();if(!nama)return;if(g.bahan.some(b=>norm(b.nama)==norm(nama))||plan.bahan.some(b=>norm(b.nama)==norm(nama)))return;plan.bahan.push({nama,beli:xNum(xVal(r,['Harga Beli','beli','purchase_price'])),isi:xNum(xVal(r,['Isi','isi','qty'])),sat:String(xVal(r,['Satuan','sat','unit'])).trim()||'gram',aktif:xBool(xVal(r,['Aktif','active']))})});
-  const parseRecipes=(rows,target)=>rows.forEach(r=>{const parent=String(xVal(r,[target==='wip'?'WIP':'Menu',target])).trim(),n=String(xVal(r,['Bahan/WIP','Bahan','Ingredient','item','Nama'])).trim(),q=xNum(xVal(r,['Qty','Jumlah','quantity'])),u=String(xVal(r,['Satuan','Unit','unit'])).trim()||'gram';if(!parent||!n||q==='')plan.errors.push(`${target==='wip'?'WIP_Recipe':'Menu_Recipe'}: baris tidak valid`);else plan[target+'R'].push({parent,n,q,u})});
-  sheetRows(wb,['WIP','WIP Recipes']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim(),y=xNum(xVal(r,['Yield','yield']));if(!nama)return;if(g.wip.some(w=>norm(w.nama)==norm(nama))||plan.wip.some(w=>norm(w.nama)==norm(nama)))return;plan.wip.push({nama,yield:y,items:[]})});
-  parseRecipes(sheetRows(wb,['WIP_Recipe','WIP Recipe','WIP_Recipes']),'wip');
-  sheetRows(wb,['Menu','Menus']).forEach(r=>{const nama=String(xVal(r,['Nama','name'])).trim(),harga=xNum(xVal(r,['Harga Menu','Harga','harga']));if(!nama)return;if(g.menu.some(m=>norm(m.nama)==norm(nama))||plan.menu.some(m=>norm(m.nama)==norm(nama)))return;plan.menu.push({nama,harga,items:[]})});
-  parseRecipes(sheetRows(wb,['Menu_Recipe','Menu Recipe','Menu_Recipes']),'menu');
-  plan.wip.forEach(w=>w.items=plan.wipR.filter(x=>norm(x.parent)==norm(w.nama)).map(x=>({n:norm(x.n),q:x.q,u:x.u})));
-  plan.menu.forEach(m=>m.items=plan.menuR.filter(x=>norm(x.parent)==norm(m.nama)).map(x=>({n:norm(x.n),q:x.q,u:x.u})));
   return plan;
 }
-function planSummary(p){const total=p.emp.length+p.att.length+p.ot.length+p.bahan.length+p.wip.length+p.menu.length;return `<div class="dlg"><b>Data baru: ${total}</b><br>Karyawan ${p.emp.length} · Absensi ${p.att.length} · Lembur ${p.ot.length}<br>Bahan ${p.bahan.length} · WIP ${p.wip.length} · Menu ${p.menu.length}<br><br>Baris bermasalah: ${p.errors.length}</div>`}
+function planSummary(p){const total=p.emp.length+p.att.length+p.ot.length;return `<div class="dlg"><b>Data baru: ${total}</b><br>Karyawan ${p.emp.length} · Absensi ${p.att.length} · Lembur ${p.ot.length}<br><br>Baris bermasalah: ${p.errors.length}</div>`}
 async function handleExcelFile(file){if(!file||!guard())return;if(!xlsxReady())return;try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const p=planExcel(wb);T.excelPlan=p;modal(`<h3>Preview Import</h3>${planSummary(p)}<p class="mu">Data existing tidak dihapus. Duplikat dilewati.</p><div class="btns"><button class="btn" onclick="applyExcelPlan()">Import Data</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}catch(e){toast('File Excel tidak bisa dibaca: '+e.message,'err')}}
 async function applyExcelPlan(){if(!guard()||!T.excelPlan)return;const p=T.excelPlan;let added=0,skip=0;const ok=await sbRun(async()=>{
   const c=sb(),emap=new Map(D.emp.map(e=>[norm(e.nama),e.id]));
@@ -1970,12 +1692,7 @@ async function applyExcelPlan(){if(!guard()||!T.excelPlan)return;const p=T.excel
   const attRows=[];for(const x of p.att){const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||emap.get(norm(pe?.nama||''))||x._eid;if(!eid||D.att.some(a=>String(a.e)==String(eid)&&a.d==x.d)){skip++;continue}attRows.push({employee_id:eid,attendance_date:x.d,status:x.s,notes:x.n||null})}
   for(let i=0;i<attRows.length;i+=200){const {data,error}=await c.from('attendance').insert(attRows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(r=>{D.att.push(mapAtt(r));added++})}
   const otEmp=emap; p.ot.forEach(x=>{const direct=D.emp.find(e=>String(e.id)==String(x._eid));const pe=p.emp.find(e=>String(e.id)==String(x._eid));const eid=direct?.id||otEmp.get(norm(pe?.nama||''))||x._eid;if(!eid||D.ot.some(o=>String(o.e)==String(eid)&&o.d==x.d&&+hrs(o)==+x.h))skip++;else{D.ot.push({e:eid,d:x.d,h:x.h,n:x.n});added++}});
-  const g=cgInit(),addB=new Set(g.bahan.map(b=>norm(b.nama)));p.bahan.forEach(b=>{if(addB.has(norm(b.nama))){skip++;return}g.bahan.push(b);addB.add(norm(b.nama));added++});
-  const addItems=(arr,kind)=>{const names=new Set(g[kind].map(x=>norm(x.nama)));arr.forEach(o=>{if(names.has(norm(o.nama))){skip++;return}const items=o.items.filter(i=>i.n&&+i.q>0);g[kind].push({...o,items});names.add(norm(o.nama));added++})};
-  addItems(p.wip,'wip');addItems(p.menu,'menu');
-  // Automatically create missing ingredient placeholders referenced by imported recipes.
-  const known=new Set([...g.bahan,...g.wip].map(x=>norm(x.nama)));[...p.wip,...p.menu].flatMap(x=>x.items||[]).forEach(i=>{if(i.n&&!known.has(norm(i.n))){g.bahan.push({nama:norm(i.n),beli:'',isi:'',sat:i.u||'gram',aktif:true});known.add(norm(i.n));added++}});
-  sv();sbCacheSave();derivePeriods();await cogsSave();
+  sv();sbCacheSave();derivePeriods();
 });
 if(ok){delete T.excelPlan;closeM();toast(`Import selesai: ${added} ditambahkan, ${skip} dilewati`);R()}}
 function ex(k){if(!guard())return;const {f,t}=rng();if(f>t)return toast('Tanggal mulai harus sebelum tanggal akhir','err');const l=flt(f,t),ds=days(f,t),R_=[];let n='absensi';
