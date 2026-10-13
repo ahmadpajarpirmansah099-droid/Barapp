@@ -1055,7 +1055,7 @@ const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<b
 
 /* ---------- Views ---------- */
 const V={};
-/* ---------- GAJI / PAYROLL (fitur terpisah, seperti Bahan) ---------- */
+/* ---------- GAJI / PAYROLL ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
 const payOK=()=>isDeveloper()||T.dbRole=='hr';
 const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
@@ -1830,7 +1830,7 @@ loadSharedSettings(true);
  st.textContent=ks.map(k=>'h3[data-ic="'+k+'"]::before{background-image:'+uri(k,'#7A9A60')+'}').join('\n')
   +'\n.card>h3:first-child::after{background-image:'+uri('chev','#A39A88')+'}\n.md>h3:first-child::after{background-image:'+uri('x','#A39A88')+'}\n.md>h3:first-child::after:hover{background-color:rgba(122,154,96,.14)}';
  document.head.append(st);
- const MAP=[[/konfirmasi|hapus|peringatan|confirm|delete/,'warn'],[/lembur|overtime|extend/,'ot'],[/sambungan|supabase|memuat|loading|mengambil/,'database'],[/tema|theme|font|warna/,'palette'],[/periode|period|bandingkan|compare/,'cal'],[/distribusi|rekap|jumlah hadir|summary|distribution|present/,'bar'],[/karyawan|employee|riwayat|history/,'kar'],[/absensi|attendance|input/,'abs'],[/fitur|feature|tentang|about/,'trees'],[/menu|cogs|resep|wip|bahan|ingredient|recipe/,'cg_menu'],[/laporan|report|atur|setting|export|import|excel/,'lap']];
+ const MAP=[[/konfirmasi|hapus|peringatan|confirm|delete/,'warn'],[/lembur|overtime|extend/,'ot'],[/sambungan|supabase|memuat|loading|mengambil/,'database'],[/tema|theme|font|warna/,'palette'],[/periode|period|bandingkan|compare/,'cal'],[/distribusi|rekap|jumlah hadir|summary|distribution|present/,'bar'],[/karyawan|employee|riwayat|history/,'kar'],[/absensi|attendance|input/,'abs'],[/fitur|feature|tentang|about/,'trees'],[/laporan|report|atur|setting|export|import|excel/,'lap']];
  const tag=()=>document.querySelectorAll('.card>h3:first-child:not([data-ic]),.md>h3:first-child:not([data-ic])').forEach(h=>{const t=(h.textContent||'').toLowerCase();let k='sprout';for(const [re,ic] of MAP)if(re.test(t)){k=ic;break}h.dataset.ic=k});
  tag();new MutationObserver(()=>requestAnimationFrame(tag)).observe(document.body,{childList:true,subtree:true});
 })();
