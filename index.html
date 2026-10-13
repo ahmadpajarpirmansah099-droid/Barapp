@@ -843,7 +843,7 @@ async function saveSharedSettings(theme){
 async function saveUnitData(){
   if(!adm())throw new Error('Hanya admin yang boleh mengubah konversi unit.');
   let current={};const q=await sb().from('app_settings').select('data').eq('id','global').maybeSingle();if(q.error)throw q.error;current=(q.data&&q.data.data)||{};
-  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{...current,unitConversions:UNIT_DATA},updated_at:new Date().toISOString(),updated_by:D.me.uid||null},{onConflict:'id'}).select('updated_at').single();
+  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{...current,unitConversions:UNIT_DATA},updated_at:new Date().toISOString()},{onConflict:'id'}).select('updated_at').single();
   if(error)throw error;SHARED_SETTINGS_SIG=String(data&&data.updated_at||Date.now());
 }
 
