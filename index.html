@@ -418,6 +418,23 @@ label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 @keyframes spinR{to{transform:rotate(360deg)}}
 body::before{display:none!important}
 .scene{display:none!important}
+.jd{font-size:12px;height:34px;letter-spacing:.02em;color:var(--tx)}
+.jd-c6{background:color-mix(in srgb,#f0a53a 30%,var(--cd));border-color:color-mix(in srgb,#f0a53a 60%,var(--line))}
+.s-c6{background:color-mix(in srgb,#f0a53a 30%,var(--cd));font-weight:700}
+.jd-c7{background:color-mix(in srgb,#7bb661 30%,var(--cd));border-color:color-mix(in srgb,#7bb661 60%,var(--line))}
+.s-c7{background:color-mix(in srgb,#7bb661 30%,var(--cd));font-weight:700}
+.jd-c8{background:color-mix(in srgb,#3fb0a0 30%,var(--cd));border-color:color-mix(in srgb,#3fb0a0 60%,var(--line))}
+.s-c8{background:color-mix(in srgb,#3fb0a0 30%,var(--cd));font-weight:700}
+.jd-c9{background:color-mix(in srgb,#4f8fd6 30%,var(--cd));border-color:color-mix(in srgb,#4f8fd6 60%,var(--line))}
+.s-c9{background:color-mix(in srgb,#4f8fd6 30%,var(--cd));font-weight:700}
+.jd-c10{background:color-mix(in srgb,#7d6fd0 30%,var(--cd));border-color:color-mix(in srgb,#7d6fd0 60%,var(--line))}
+.s-c10{background:color-mix(in srgb,#7d6fd0 30%,var(--cd));font-weight:700}
+.jd-c11{background:color-mix(in srgb,#d1619c 30%,var(--cd));border-color:color-mix(in srgb,#d1619c 60%,var(--line))}
+.s-c11{background:color-mix(in srgb,#d1619c 30%,var(--cd));font-weight:700}
+.jd-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));border-color:color-mix(in srgb,#c99a2e 60%,var(--line))}
+.s-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));font-weight:700}
+.jd-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));border-color:color-mix(in srgb,#6d7fa0 60%,var(--line))}
+.s-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));font-weight:700}
 </style>
 </head><body>
 
@@ -1178,6 +1195,10 @@ async function outEditSave(id){const n=v('on1').trim(),c=v('oc1').trim();
 
 /* ===== JADWAL KERJA MINGGUAN (rencana, Senin-Minggu) ===== */
 const JAD_CODES=['','6','7','8','9','10','11','12','1','L','S','PH'];
+const JAD_TIME={'6':'06:00','7':'07:00','8':'08:00','9':'09:00','10':'10:00','11':'11:00','12':'12:00','1':'13:00'};
+const JAD_KEY={'':'blank',L:'off',S:'sakit',PH:'ph','6':'c6','7':'c7','8':'c8','9':'c9','10':'c10','11':'c11','12':'c12','1':'c1'};
+const jadKey=c=>JAD_KEY[c]||'blank';
+const jadOpt=c=>!c?'–':c==='L'?'Libur':c==='S'?'Sakit':c==='PH'?'PH':(JAD_TIME[c]||c);
 const JAD_NAMA=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 const jadAddDays=(s,n)=>{const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
 const jadMon=s=>{const d=new Date(s+'T00:00:00Z');const wd=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-wd);return d.toISOString().slice(0,10)};
@@ -1236,11 +1257,11 @@ function jadCard(){
     const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
     if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
     const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}${jadOutCode(g)?' · '+esc(jadOutCode(g)):''}</span></div>`:'';
-    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select class="jd jd-${jadCls(v)||'blank'}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${c||'–'}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
+    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select class="jd jd-${jadKey(v)}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:76px;padding:6px 4px">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${jadOpt(c)}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
   return `<div class="card"><h3>Jadwal</h3>${(osel||dsel)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">${osel}${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
 
 /* ===== JADWAL: tampilan & unduh PDF ===== */
-const jadLabel=c=>c==='L'?'OFF':(c||'');
+const jadLabel=c=>c==='L'?'OFF':(JAD_TIME[c]||c||'');
 const jadCls=c=>!c?'':c==='L'?'off':c==='S'?'sakit':c==='PH'?'ph':'shift';
 function jadPdf(){
   const ws=T.jadWs||jadMon(today()),did=T.jadDid,divs=T.jadDivs||[];
@@ -1253,7 +1274,7 @@ function jadPdf(){
     if(!emps.length)return '';
     const ol=(T.outlets||[]).find(o=>o.id==g.outlet_id)||{};
     const head=`<div class="hd"><div class="l">DEPARTMENT: ${esc(String(g.name).toUpperCase())}</div><div class="r">${esc(String(ol.name||'').toUpperCase())} WORK SCHEDULE</div></div>`;
-    const rowsHtml=emps.map((e,i)=>`<tr><td>${i+1}</td><td class="n">${esc(e.nama)}</td><td class="n">${esc(e.jab||'')}</td>${days.map(d=>{const c=T.jad[e.id+'|'+d]||'';return `<td class="c s-${jadCls(c)||'blank'}">${esc(jadLabel(c))}</td>`}).join('')}</tr>`).join('');
+    const rowsHtml=emps.map((e,i)=>`<tr><td>${i+1}</td><td class="n">${esc(e.nama)}</td><td class="n">${esc(e.jab||'')}</td>${days.map(d=>{const c=T.jad[e.id+'|'+d]||'';return `<td class="c s-${jadKey(c)}">${esc(jadLabel(c))}</td>`}).join('')}</tr>`).join('');
     return `<section>${head}<table><thead><tr><th rowspan="2">NO</th><th rowspan="2">NAME</th><th rowspan="2">ROLE</th>${days.map(d=>`<th>${d.slice(8,10)}/${d.slice(5,7)}</th>`).join('')}</tr><tr>${dn.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></section>`;
   }).join('');
   const css="@page{size:landscape;margin:12mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0}section{page-break-after:always}section:last-child{page-break-after:auto}.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #7a2e22;padding-bottom:6px}.l{font-weight:700;font-size:16px}.r{font-weight:800;font-size:18px;color:#7a2e22}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #999;padding:5px 4px;text-align:center}th{background:#f1d9d1;font-weight:700}td.n{text-align:left}td.c{font-weight:700}.s-shift{background:#e3f1d6}.s-off{background:#e6e4e0}.s-sakit{background:#f8d6c4}.s-ph{background:#d4e3f6}.s-blank{background:#fff}";
