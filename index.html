@@ -738,13 +738,18 @@ function outSwitch(id){
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
   toast('Outlet diganti');
   R();
-  sbLoad(true).then(async()=>{await payLoad();R()})}
+  sbLoad().then(async()=>{await payLoad();R()})}
 function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||((T.outlets||[])[0]||{}).id||'');
   const opts=(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
 async function sbLoad(silent){
+if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
+await sbLoad0(silent);
+if(SB.pend){const m=SB.pend;SB.pend=null;setTimeout(()=>sbLoad(m=='silent'),0)}
+}
+async function sbLoad0(silent){
 if(SB.loading)return;SB.loading=true;
 try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err';SB.msg=m;SB.loading=false;if(!silent||ch)R();return}
 if(!silent){SB.state='loading';R()}
@@ -839,7 +844,7 @@ async function initAuth(){
         return;
       }
       D.me={r:role,uid:session.user.id,email};sv();
-      await Promise.all([sbLoad(true),loadSharedSettings(true)]);
+      await Promise.all([sbLoad(),loadSharedSettings(true)]);
       R();
     };
     await applySession(data.session);
@@ -914,7 +919,7 @@ async function lgA(){
     }
     D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
     sv();
-    await Promise.all([sbLoad(true),loadSharedSettings(true)]);
+    await Promise.all([sbLoad(),loadSharedSettings(true)]);
     R();
 
   }catch(e){
