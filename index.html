@@ -731,15 +731,20 @@ async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_att
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
-  if(!isDeveloper()){if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
-    if(T.scopeOut)return T.scopeOut}
-  if(!isDeveloper()&&T.dbRole!='div_admin'&&!D.outId)return D.ljId||null;
-  if(D.outId==='ALL')return D.ljId||null;
-  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[];return D.outId||D.ljId||null}}
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
+  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  if(!multi){
+    if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
+    if(T.scopeOut)return T.scopeOut;
+    if(T.dbRole!='div_admin')return D.ljId||null;
+    return (D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||null)}
+  const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
+  if(!T.outlets.length)return (D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||null);
+  if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
+    D.outId=ok(r)?r:(D.ljId||null);sv()}
   return D.outId||D.ljId||null}
 function outSwitch(id){
-  D.outId=id;sv();F.f='';F.t='';
+  D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
   T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
   D.emp=[];D.att=[];D.ot=[];
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
@@ -1151,7 +1156,7 @@ function perSel(){if(!D.per.length)return '';const cur=(F.f||'')+'|'+(F.t||'');c
 function outLabel(){
   if(!D.me)return '';
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
-  const id=multi?(D.outId||(isDeveloper()?D.ljId:'ALL')):(T.scopeOut||D.ljId);
+  const id=multi?(D.outId||D.ljId):(T.scopeOut||D.ljId);
   if(id==='ALL')return 'Semua outlet';
   const o=(T.outlets||[]).find(x=>x.id==id);
   return o?o.name+' ('+o.code+')':'';
