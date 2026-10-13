@@ -54,7 +54,7 @@ create index if not exists barapp_stock_in_item_date_idx on public.barapp_stock_
 create index if not exists barapp_returns_receipt_idx on public.barapp_stock_returns(stock_in_id,status);
 
 create or replace function public.barapp_can_access_division(p_division_id uuid)
-returns boolean language sql stable security definer set search_path=public,auth as $
+returns boolean language sql stable security definer set search_path=public,auth as $$
  select auth.uid() is not null and (
   coalesce(public.app_role(),'') in ('dev','hr','legacy_admin')
   or (
@@ -67,13 +67,13 @@ returns boolean language sql stable security definer set search_path=public,auth
    )
   )
  );
-$;
+$$;
 create or replace function public.barapp_can_manage_division(p_division_id uuid)
-returns boolean language sql stable security definer set search_path=public,auth as $
+returns boolean language sql stable security definer set search_path=public,auth as $$
  select auth.uid() is not null
    and coalesce(public.app_role(),'') in ('dev','hr','legacy_admin','div_admin')
    and public.barapp_can_access_division(p_division_id);
-$;
+$$;
 
 create or replace function public.barapp_inventory_guard()
 returns trigger language plpgsql security definer set search_path=public,auth as $$
