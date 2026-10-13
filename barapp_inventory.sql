@@ -121,7 +121,7 @@ end $$;
 create or replace function public.barapp_refresh_last_price()
 returns trigger language plpgsql security definer set search_path=public,auth as $$
 begin
- perform public.barapp_recalc_last_price(coalesce(new.item_id,old.item_id)); return coalesce(new,old);
+ perform public.barapp_recalc_last_price(coalesce(new.item_id,old.item_id)); return new;
 end $$;
 drop trigger if exists barapp_stock_in_price on public.barapp_stock_in;
 create trigger barapp_stock_in_price after insert or update of status,invoice_total,qty_base,received_at on public.barapp_stock_in for each row execute function public.barapp_refresh_last_price();
