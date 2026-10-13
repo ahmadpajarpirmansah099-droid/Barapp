@@ -1076,7 +1076,7 @@ function rInner(){const P=T.rp,lab=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTML=rInner();return}modal(`<div id="rbox">${rInner()}</div>`)}
 
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
+async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),(isDeveloper()?payQ('user_scopes','user_id,division_id'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,division_id:x.division_id})))),(isDeveloper()?payQ('user_profiles','user_id,email,role,active'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,email:x.email,role:'div_admin',active:true})))),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
