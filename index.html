@@ -816,11 +816,14 @@ async function loadSharedSettings(silent=false){
   try{
     const {data,error}=await sb().from('app_settings').select('data,updated_at').eq('id','global').maybeSingle();
     if(error)throw error;
-    if(!data||!data.data||!data.data.theme)return false;
-    const sig=String(data.updated_at||JSON.stringify(data.data.theme));
+    if(!data||!data.data)return false;
+    const remoteData=data.data;
+    if(Array.isArray(remoteData.unitConversions))UNIT_DATA=normalizeUnitData(remoteData.unitConversions);
+    const remote=remoteData.theme;
+    if(!remote)return true;
+    const sig=String(data.updated_at||JSON.stringify(remote));
     if(sig===SHARED_SETTINGS_SIG)return true;
-    if(T.bk)return true; // don't overwrite an unsaved theme edit currently open
-    const remote=data.data.theme;
+    if(T.bk)return true;
     if(remote.v!==THEME.v)return false;
     TH=mergeTheme(remote);D.th=JSON.parse(JSON.stringify(TH));SHARED_SETTINGS_SIG=sig;
     applyTheme();sv();R();
@@ -833,9 +836,15 @@ async function loadSharedSettings(silent=false){
 async function saveSharedSettings(theme){
   if(!isDeveloper())throw new Error('Hanya developer yang boleh mengubah identitas dan tampilan aplikasi.');
   const snapshot=JSON.parse(JSON.stringify(theme));
-  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{theme:snapshot},updated_at:new Date().toISOString(),updated_by:D.me.uid||null},{onConflict:'id'}).select('updated_at').single();
-  if(error)throw error;
-  SHARED_SETTINGS_SIG=String(data&&data.updated_at||JSON.stringify(snapshot));
+  let current={};const q=await sb().from('app_settings').select('data').eq('id','global').maybeSingle();if(q.error)throw q.error;current=(q.data&&q.data.data)||{};
+  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{...current,theme:snapshot,unitConversions:UNIT_DATA},updated_at:new Date().toISOString(),updated_by:D.me.uid||null},{onConflict:'id'}).select('updated_at').single();
+  if(error)throw error;SHARED_SETTINGS_SIG=String(data&&data.updated_at||JSON.stringify(snapshot));
+}
+async function saveUnitData(){
+  if(!adm())throw new Error('Hanya admin yang boleh mengubah konversi unit.');
+  let current={};const q=await sb().from('app_settings').select('data').eq('id','global').maybeSingle();if(q.error)throw q.error;current=(q.data&&q.data.data)||{};
+  const {data,error}=await sb().from('app_settings').upsert({id:'global',data:{...current,unitConversions:UNIT_DATA},updated_at:new Date().toISOString(),updated_by:D.me.uid||null},{onConflict:'id'}).select('updated_at').single();
+  if(error)throw error;SHARED_SETTINGS_SIG=String(data&&data.updated_at||Date.now());
 }
 
 const sbLoadCard=()=>`<div class="card"><h3>${L('Memuat data','Loading data')}</h3><div class="dlg">${IC('database',32)}<p>${L('Mengambil data karyawan & absensi dari Supabase…','Fetching employees & attendance from Supabase…')}</p></div><div class="prog"><i></i></div></div>`;
@@ -995,11 +1004,11 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Konversi Unit',ic:'refresh',page:'unit',adm:true},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
 const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr()))};
-const GRP=k=>k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':'abs';
-const HIDE_NAV=['abs'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],MOVED=SHEET_ABS.concat(SHEET_PAY);
+const GRP=k=>k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':'abs';
+const HIDE_NAV=['abs','unit'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.dev||isDeveloper()||T.dbRole=='hr').map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
@@ -1052,6 +1061,17 @@ const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<b
 
 /* ---------- Views ---------- */
 const V={};
+/* ---------- KONVERSI SATUAN ---------- */
+let UNIT_DATA=[{id:'apple-juice',name:'Apple Juice',baseUnit:'ML',units:[{name:'KARTON',factor:6000},{name:'LITER',factor:1000},{name:'ML',factor:1}]}];
+const normalizeUnitData=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.name&&x.baseUnit&&Array.isArray(x.units)).map((x,i)=>({id:String(x.id||('unit-'+i)),name:String(x.name).trim(),baseUnit:String(x.baseUnit).trim().toUpperCase(),units:x.units.filter(u=>u&&String(u.name||'').trim()&&Number(u.factor)>0).map(u=>({name:String(u.name).trim().toUpperCase(),factor:Number(u.factor)}))}));
+function unitNum(n){return Number(n||0).toLocaleString('id-ID',{maximumFractionDigits:4})}
+function unitAdd(){if(!adm()){toast('Fitur ini hanya untuk admin','warn');return}modal(`<h3>Tambah barang konversi</h3><label>Nama barang<input id="u_name" placeholder="Contoh: Apple Juice"></label><label>Satuan dasar<input id="u_base" placeholder="Contoh: ML" value="ML"></label><p class="mu">Masukkan satuan dan faktor terhadap satuan dasar. Contoh: KARTON = 6000 ML, LITER = 1000 ML, ML = 1 ML.</p><label>Daftar satuan (satu per baris: NAMA = FAKTOR)<textarea id="u_units" rows="5" placeholder="KARTON = 6000\nLITER = 1000\nML = 1"></textarea></label><div class="btns"><button class="btn" onclick="unitSaveNew()">Simpan barang</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}
+async function unitSaveNew(){const name=$('#u_name').value.trim(),base=$('#u_base').value.trim().toUpperCase(),raw=$('#u_units').value.trim();if(!name||!base||!raw){toast('Lengkapi nama barang, satuan dasar, dan daftar satuan','warn');return}const units=[];for(const line of raw.split(/\n/)){const m=line.match(/^\s*(.*?)\s*=\s*([0-9]+(?:[.,][0-9]+)?)\s*$/);if(!m||Number(m[2].replace(',','.'))<=0){toast('Format satuan salah. Gunakan NAMA = FAKTOR','warn');return}units.push({name:m[1].trim().toUpperCase(),factor:Number(m[2].replace(',','.'))})}if(!units.some(u=>u.name===base&&u.factor===1)){toast('Satuan dasar harus tercantum dengan faktor 1','warn');return}if(UNIT_DATA.some(x=>x.name.toLowerCase()===name.toLowerCase())){toast('Nama barang sudah ada','warn');return}UNIT_DATA.push({id:'u-'+Date.now(),name,baseUnit:base,units});try{await saveUnitData();closeM();R();toast('Konversi unit tersimpan dan tersinkron')}catch(e){UNIT_DATA.pop();toast('Gagal menyimpan ke Supabase: '+(e.message||e),'err')}}
+function unitEdit(id){const x=UNIT_DATA.find(v=>v.id===id);if(!x)return;modal(`<h3>Edit konversi — ${esc(x.name)}</h3><label>Nama barang<input id="u_name" value="${esc(x.name)}"></label><label>Satuan dasar<input id="u_base" value="${esc(x.baseUnit)}"></label><label>Daftar satuan (satu per baris: NAMA = FAKTOR)<textarea id="u_units" rows="5">${esc(x.units.map(u=>u.name+' = '+u.factor).join('\n'))}</textarea></label><div class="btns"><button class="btn" onclick="unitUpdate('${x.id}')">Simpan perubahan</button><button class="btn s" onclick="closeM()">Batal</button></div>`)}
+async function unitUpdate(id){const x=UNIT_DATA.find(v=>v.id===id);if(!x)return;const name=$('#u_name').value.trim(),base=$('#u_base').value.trim().toUpperCase(),raw=$('#u_units').value.trim();if(!name||!base||!raw){toast('Lengkapi semua data','warn');return}const units=[];for(const line of raw.split(/\n/)){const m=line.match(/^\s*(.*?)\s*=\s*([0-9]+(?:[.,][0-9]+)?)\s*$/);if(!m||Number(m[2].replace(',','.'))<=0){toast('Format satuan salah. Gunakan NAMA = FAKTOR','warn');return}units.push({name:m[1].trim().toUpperCase(),factor:Number(m[2].replace(',','.'))})}if(!units.some(u=>u.name===base&&u.factor===1)){toast('Satuan dasar harus tercantum dengan faktor 1','warn');return}if(UNIT_DATA.some(v=>v.id!==id&&v.name.toLowerCase()===name.toLowerCase())){toast('Nama barang sudah dipakai','warn');return}const prev=JSON.parse(JSON.stringify(x));Object.assign(x,{name,baseUnit:base,units});try{await saveUnitData();closeM();R();toast('Konversi diperbarui')}catch(e){Object.assign(x,prev);toast('Gagal menyimpan ke Supabase: '+(e.message||e),'err')}}
+async function unitDelete(id){if(!adm())return;const i=UNIT_DATA.findIndex(x=>x.id===id);if(i<0)return;const old=UNIT_DATA[i];UNIT_DATA.splice(i,1);try{await saveUnitData();R();toast('Barang konversi dihapus')}catch(e){UNIT_DATA.splice(i,0,old);toast('Gagal menghapus: '+(e.message||e),'err')}}
+function unitConvert(id){const x=UNIT_DATA.find(v=>v.id===id);if(!x)return;const qty=Number($('#uq_'+id).value),u=$('#uu_'+id).value,from=x.units.find(v=>v.name===u);if(!Number.isFinite(qty)||qty<0||!from){$('#ur_'+id).textContent='Masukkan jumlah yang valid';return}const base=qty*from.factor;$('#ur_'+id).innerHTML=`<b>${esc(unitNum(base))} ${esc(x.baseUnit)}</b><br>${x.units.filter(v=>v.name!==x.baseUnit).map(v=>`${esc(unitNum(base/v.factor))} ${esc(v.name)}`).join(' · ')}`}
+V.unit=()=>{const rows=UNIT_DATA.map(x=>`<div class="card"><div class="row" style="align-items:center;justify-content:space-between"><div><h3>${esc(x.name)}</h3><span class="mu">Satuan dasar: ${esc(x.baseUnit)}</span></div><div class="btns"><button class="btn s x" onclick="unitEdit('${x.id}')">Edit</button><button class="btn d x" onclick="cf('Hapus konfigurasi '+esc('${x.name}')+'?',()=>unitDelete('${x.id}'))">Hapus</button></div></div><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Satuan</th><th>Setara ${esc(x.baseUnit)}</th></tr>${x.units.map(u=>`<tr><td>${esc(u.name)}</td><td>${unitNum(u.factor)} ${esc(x.baseUnit)}</td></tr>`).join('')}</table></div><div class="ts">Simulasi konversi</div><div class="row"><label style="flex:1">Jumlah<input id="uq_${x.id}" type="number" min="0" step="any" value="1"></label><label style="flex:1">Satuan<select id="uu_${x.id}">${x.units.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label><button class="btn" onclick="unitConvert('${x.id}')">Konversi</button></div><div class="dlg" id="ur_${x.id}">Hasil konversi akan muncul di sini.</div></div>`).join('');return `<div class="card"><h3>Master Konversi Unit</h3><p class="mu">Atur satuan per barang. Semua faktor menyatakan berapa satuan dasar di dalam satu unit. Data disimpan bersama di Supabase agar bisa dipakai lintas perangkat.</p><div class="btns"><button class="btn" onclick="unitAdd()">+ Tambah barang</button><button class="btn s" onclick="loadSharedSettings().then(()=>R())">Muat ulang data</button></div></div>${rows||'<div class="card empty">Belum ada konfigurasi konversi.</div>'}<div class="card"><h3>Aturan penting</h3><p>Konversi massa dan volume tidak boleh dicampur otomatis. Setiap barang harus memakai satu satuan dasar yang konsisten.</p></div>`};
 /* ---------- GAJI / PAYROLL ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
 const payOK=()=>isDeveloper()||T.dbRole=='hr';
