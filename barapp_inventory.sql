@@ -79,6 +79,11 @@ create or replace function public.barapp_inventory_guard()
 returns trigger language plpgsql security definer set search_path=public,auth as $$
 declare it public.barapp_items%rowtype; rec public.barapp_stock_in%rowtype; total_ret numeric;
 begin
+ if tg_table_name='barapp_items' and tg_op='DELETE' then
+  if not public.barapp_can_manage_division(old.division_id) then raise exception 'INVENTORY_ACCESS_DENIED'; end if;
+  if exists(select 1 from public.barapp_stock_in where item_id=old.id) then raise exception 'ITEM_HAS_HISTORY'; end if;
+  return old;
+ end if;
  if tg_table_name='barapp_items' then
   if tg_op='UPDATE' and (new.name is distinct from old.name or new.division_id is distinct from old.division_id or new.base_unit is distinct from old.base_unit or new.conversions is distinct from old.conversions or new.reference_price_per_base is distinct from old.reference_price_per_base or new.reference_price_amount is distinct from old.reference_price_amount or new.reference_price_unit is distinct from old.reference_price_unit or new.created_by is distinct from old.created_by) then raise exception 'MASTER_FIELDS_LOCKED'; end if;
   if tg_op='UPDATE' and new.last_purchase_price_per_base is distinct from old.last_purchase_price_per_base and current_setting('barapp.price_update',true) is distinct from '1' then raise exception 'LAST_PRICE_AUTOMATIC'; end if;
@@ -107,7 +112,7 @@ begin
  return new;
 end $$;
 drop trigger if exists barapp_items_guard on public.barapp_items;
-create trigger barapp_items_guard before insert or update on public.barapp_items for each row execute function public.barapp_inventory_guard();
+create trigger barapp_items_guard before insert or update or delete on public.barapp_items for each row execute function public.barapp_inventory_guard();
 drop trigger if exists barapp_stock_in_guard on public.barapp_stock_in;
 create trigger barapp_stock_in_guard before insert or update on public.barapp_stock_in for each row execute function public.barapp_inventory_guard();
 drop trigger if exists barapp_returns_guard on public.barapp_stock_returns;
@@ -144,6 +149,8 @@ drop policy if exists barapp_items_insert on public.barapp_items;
 create policy barapp_items_insert on public.barapp_items for insert to authenticated with check(public.barapp_can_manage_division(division_id));
 drop policy if exists barapp_items_update on public.barapp_items;
 create policy barapp_items_update on public.barapp_items for update to authenticated using(public.barapp_can_manage_division(division_id)) with check(public.barapp_can_manage_division(division_id));
+drop policy if exists barapp_items_delete on public.barapp_items;
+create policy barapp_items_delete on public.barapp_items for delete to authenticated using(public.barapp_can_manage_division(division_id));
 drop policy if exists barapp_stock_read on public.barapp_stock_in;
 create policy barapp_stock_read on public.barapp_stock_in for select to authenticated using(public.barapp_can_access_division(division_id));
 drop policy if exists barapp_stock_insert on public.barapp_stock_in;
@@ -154,7 +161,8 @@ drop policy if exists barapp_returns_read on public.barapp_stock_returns;
 create policy barapp_returns_read on public.barapp_stock_returns for select to authenticated using(public.barapp_can_access_division(division_id));
 drop policy if exists barapp_returns_insert on public.barapp_stock_returns;
 create policy barapp_returns_insert on public.barapp_stock_returns for insert to authenticated with check(public.barapp_can_manage_division(division_id));
-grant select,insert,update on public.barapp_items,public.barapp_stock_in to authenticated;
+grant select,insert,update,delete on public.barapp_items to authenticated;
+grant select,insert,update on public.barapp_stock_in to authenticated;
 grant select,insert on public.barapp_stock_returns to authenticated;
 revoke update,delete on public.barapp_stock_returns from authenticated;
 create or replace view public.barapp_stock_balance with(security_invoker=true) as
