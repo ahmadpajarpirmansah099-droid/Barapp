@@ -416,9 +416,11 @@ label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 .cg-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:28px 16px;font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--ac) 22%,transparent);border-top-color:var(--ac);animation:spinR .8s linear infinite;flex:0 0 auto}
 @keyframes spinR{to{transform:rotate(360deg)}}
+body::before{display:none!important}
+.scene{display:none!important}
 </style>
 </head><body>
-<canvas id="ff"></canvas>
+
 <div id="t"></div><div id="m"></div><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
