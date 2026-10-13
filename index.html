@@ -751,6 +751,7 @@ if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
+T.perms=[];if(session&&T.dbRole=='hr'){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
@@ -969,11 +970,11 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||isDeveloper())&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper()))};
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr()))};
 const GRP=k=>k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':'abs';
 const HIDE_NAV=['abs'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
-function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.dev||isDeveloper()).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.dev||isDeveloper()||T.dbRole=='hr').map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
@@ -1003,7 +1004,7 @@ a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='pay'?'pay_data':gr=='dev'?'div':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:[],pgs=Object.keys(PAGES).filter(k=>GRP(k)==gr&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(isDeveloper()||(k!='div'&&k!='audit'))),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='pay'?'pay_data':gr=='dev'?'div':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:[],pgs=Object.keys(PAGES).filter(k=>GRP(k)==gr&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
@@ -1027,6 +1028,7 @@ const V={};
 /* ---------- GAJI / PAYROLL (fitur terpisah, seperti Bahan) ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
 const payOK=()=>isDeveloper()||T.dbRole=='hr';
+const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
 const fmtN=n=>{const r=Math.round(+n||0);return (r<0?'-':'')+String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')};
 const rupiah=n=>'Rp '+fmtN(n);
 const fdp=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'-';
@@ -1065,13 +1067,14 @@ function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTM
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
 async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),payQ('user_scopes','user_id,division_id'),payQ('user_profiles','user_id,email,role,active'),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
+ if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
-V.div=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa mengatur divisi.</div>';
+V.div=()=>{if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin belum diberikan oleh developer.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
  const ds=T.divs||[];const __oc=outCardHtml();
  const rows=ds.map(d=>`<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit</button></td></tr>`).join('');
  return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
- `${accsCard()}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
+ `${isDeveloper()?accsCard():''}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
  if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
@@ -1094,20 +1097,21 @@ function accsCard(){const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admi
  const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>{const d=(T.allDivs||T.divs||[]).find(d=>d.id==x.division_id);if(!d)return '';const oc=(T.outlets||[]).find(o=>o.id==d.outlet_id);return d.name+(oc?' ('+oc.code+')':'')}).filter(Boolean).join(', ')||'-';
   const opts=a.role=='dev'?`<option>${rl('dev')}</option>`:['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>`<option value="${k}" ${a.role==k?'selected':''}>${rl(k)}</option>`).join('');
   const dis=a.role=='dev'?'disabled':'';
-  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td><td><button class="btn s x" onclick="pwOpen('${a.user_id}','${esc(a.email)}')">Password</button></td></tr>`}).join('');
- return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
+  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td><td>${a.role=='hr'?`<input type="checkbox" ${(T.hrDiv||[]).includes(a.user_id)?'checked':''} onchange="accDivPerm('${a.user_id}',this.checked)" style="width:auto">`:'<span class="mu">-</span>'}</td><td><button class="btn s x" onclick="pwOpen('${a.user_id}','${esc(a.email)}')">Password</button></td></tr>`}).join('');
+ return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th>Divisi &amp; Admin</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
 async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=document.getElementById('ac_a_'+uid);
  const ok=await sbRun(async()=>{await payRpc('dev_set_account',{p_user:uid,p_role:r?r.value:'hr',p_active:a?a.checked:true})});
  if(ok)toast('Akun diperbarui');divLoad()}
 
 /* ===== DASHBOARD DEV: DETAIL & EDIT DIVISI ===== */
+async function accDivPerm(uid,on){const ok=await sbRun(async()=>{await payRpc('dev_set_hr_division_perm',{p_user:uid,p_on:on})});if(ok){toast(on?'Akses Divisi & Admin diberikan':'Akses Divisi & Admin dicabut');divLoad()}}
 function divOpen(id){T.dvSel=id;go('divdet')}
 function divEdit(id){const d=(T.divs||[]).find(x=>x.id==id);if(!d)return;modal(`<h3>Edit divisi</h3><label>Nama divisi<input id="dvn" value="${esc(d.name)}" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="divSave('${d.id}')">Simpan</button></div>`)}
 async function divSave(id){const n=v('dvn').trim();if(!n)return toast('Nama divisi wajib diisi','err');
  const ok=await sbRun(async()=>{await payRpc('dev_update_division',{p_id:id,p_name:n})});if(ok){closeM();toast('Divisi diperbarui');divLoad()}}
 async function divDetLoad(id){try{const [em]=await Promise.all([payQ('employees','id,name,active,division_id')]);
  T.dvDet={id,emps:em.filter(e=>e.division_id==id),loaded:true}}catch(e){toast(errText(e),'err')}R()}
-V.divdet=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer.</div>';
+V.divdet=()=>{if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin belum diberikan oleh developer.</div>';
  const id=T.dvSel,d=(T.divs||[]).find(x=>x.id==id);
  if(!d)return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button></div><div class="card empty">Pilih divisi dari daftar Divisi &amp; Admin.</div>`;
  if(!T.dvDet||T.dvDet.id!=id){setTimeout(()=>divDetLoad(id),0)}
