@@ -614,10 +614,7 @@ Username atau password salah => Wrong username or password
 Nama karyawan tidak ditemukan => Employee name not found
 Karyawan nonaktif => Employee is inactive
 Tidak ada data untuk diekspor => No data to export
-Bahan MENU => MENU
-RESEP WIP => WIP RECIPES
-BAHAN => INGREDIENTS
-Bahan => Ingredients`.split('\n').map(l=>l.split(' => ')));
+`.split('\n').map(l=>l.split(' => ')));
 const PAT=[[/^Rekap (.+) · (\d+) hari$/,'Summary $1 · $2 days'],[/^Total jam lembur: (.+)$/,'Total overtime: $1'],[/^Lembur tersimpan \((\d+) karyawan\)$/,'Overtime saved ($1 employees)'],[/^Hapus periode (.+)\? Data absensi di rentang ini ikut terhapus\.$/,'Delete period $1? Attendance data in this range will also be deleted.']];
 function trTxt(t){if(LANG!='en')return t;const k=t.trim();if(!k)return t;let o=EN[k];if(o==null)for(const [re,rep] of PAT)if(re.test(k)){o=k.replace(re,rep);break}return o==null?t:t.replace(k,o)}
 function trDom(root){if(LANG!='en')return;if(root.nodeType==3){const v=trTxt(root.nodeValue);if(v!==root.nodeValue)root.nodeValue=v;return}if(root.nodeType!=1)return;const w=document.createTreeWalker(root,4);let n;while(n=w.nextNode()){const v=trTxt(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}[root,...root.querySelectorAll('[placeholder],[title],[aria-label]')].forEach(e=>['placeholder','title','aria-label'].forEach(a=>{const x=e.getAttribute(a);if(x){const y=trTxt(x);if(y!==x)e.setAttribute(a,y)}}))}
@@ -1055,7 +1052,7 @@ const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<b
 
 /* ---------- Views ---------- */
 const V={};
-/* ---------- GAJI / PAYROLL (fitur terpisah, seperti Bahan) ---------- */
+/* ---------- GAJI / PAYROLL ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
 const payOK=()=>isDeveloper()||T.dbRole=='hr';
 const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
@@ -1830,7 +1827,7 @@ loadSharedSettings(true);
  st.textContent=ks.map(k=>'h3[data-ic="'+k+'"]::before{background-image:'+uri(k,'#7A9A60')+'}').join('\n')
   +'\n.card>h3:first-child::after{background-image:'+uri('chev','#A39A88')+'}\n.md>h3:first-child::after{background-image:'+uri('x','#A39A88')+'}\n.md>h3:first-child::after:hover{background-color:rgba(122,154,96,.14)}';
  document.head.append(st);
- const MAP=[[/konfirmasi|hapus|peringatan|confirm|delete/,'warn'],[/lembur|overtime|extend/,'ot'],[/sambungan|supabase|memuat|loading|mengambil/,'database'],[/tema|theme|font|warna/,'palette'],[/periode|period|bandingkan|compare/,'cal'],[/distribusi|rekap|jumlah hadir|summary|distribution|present/,'bar'],[/karyawan|employee|riwayat|history/,'kar'],[/absensi|attendance|input/,'abs'],[/fitur|feature|tentang|about/,'trees'],[/menu|cogs|resep|wip|bahan|ingredient|recipe/,'cg_menu'],[/laporan|report|atur|setting|export|import|excel/,'lap']];
+ const MAP=[[/konfirmasi|hapus|peringatan|confirm|delete/,'warn'],[/lembur|overtime|extend/,'ot'],[/sambungan|supabase|memuat|loading|mengambil/,'database'],[/tema|theme|font|warna/,'palette'],[/periode|period|bandingkan|compare/,'cal'],[/distribusi|rekap|jumlah hadir|summary|distribution|present/,'bar'],[/karyawan|employee|riwayat|history/,'kar'],[/absensi|attendance|input/,'abs'],[/fitur|feature|tentang|about/,'trees'],[/laporan|report|atur|setting|export|import|excel/,'lap']];
  const tag=()=>document.querySelectorAll('.card>h3:first-child:not([data-ic]),.md>h3:first-child:not([data-ic])').forEach(h=>{const t=(h.textContent||'').toLowerCase();let k='sprout';for(const [re,ic] of MAP)if(re.test(t)){k=ic;break}h.dataset.ic=k});
  tag();new MutationObserver(()=>requestAnimationFrame(tag)).observe(document.body,{childList:true,subtree:true});
 })();
