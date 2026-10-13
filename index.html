@@ -712,8 +712,16 @@ const normSt=s=>{const k=String(s||'').trim();return ST[k.toUpperCase()]?k.toUpp
 const mapEmp=r=>({id:r.id,nama:r.name||'',jab:r.role||'',aktif:r.active!==false,o:r.outlet_id,dv:r.division_id});
 const mapAtt=r=>({id:r.id,e:r.employee_id,d:String(r.attendance_date).slice(0,10),s:normSt(r.status),n:r.notes||'',ph:r.photo||PH[r.id]||''});
 const sbLabel=()=>SB.state=='loading'?L('Memuat…','Loading…'):SB.state=='ok'?(SB.stale?L('Offline (data terakhir)','Offline (last data)'):L('Terhubung ke Supabase','Connected to Supabase')):SB.state=='err'?L('Gagal terhubung','Connection failed'):L('Siap','Ready');
-function sbCacheSave(){try{localStorage.setItem(SBK,JSON.stringify({emp:D.emp,att:D.att.map(a=>({...a,ph:''})),ts:Date.now()}))}catch(e){}}
-function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null');if(c&&Array.isArray(c.emp)&&Array.isArray(c.att)){D.emp=c.emp;D.att=c.att.map(a=>({...a,ph:PH[a.id]||''}));SB.cached=true;return true}}catch(e){}return false}
+function resetAcc(){
+  D.emp=[];D.att=[];D.ot=[];D.arc=[];D.outId=undefined;
+  T.perms=[];T.scopeOut=undefined;T.dbRole=null;T.hrDiv=null;T.accs=null;T.scopes=null;T.allDivs=null;
+  T.divs=null;T.divInit=0;T.dvDet=null;T.devInit=0;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
+  SB.sig=null;SB.loaded=false;SB.cached=false;SB.stale=false;
+  try{localStorage.removeItem(SBK)}catch(e){}
+  sv();
+}
+function sbCacheSave(){try{localStorage.setItem(SBK,JSON.stringify({uid:(D.me&&D.me.uid)||null,oid:D.outId||null,emp:D.emp,att:D.att.map(a=>({...a,ph:''})),ts:Date.now()}))}catch(e){}}
+function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null');if(c&&Array.isArray(c.emp)&&Array.isArray(c.att)&&(c.uid||null)===((D.me&&D.me.uid)||null)&&(c.oid||null)===(D.outId||null)){D.emp=c.emp;D.att=c.att.map(a=>({...a,ph:PH[a.id]||''}));SB.cached=true;return true}}catch(e){}return false}
 function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=false;ds.forEach(d=>{if(!perOf(d)&&ensurePer(d))ch=true});if(ch)sv()}
 async function fetchAll(tbl,ord){const out=[];for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select('*').order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
@@ -843,6 +851,7 @@ async function initAuth(){
         setTimeout(()=>c.auth.signOut().catch(()=>{}),0);
         return;
       }
+      if(!D.me||D.me.uid!==session.user.id)resetAcc();
       D.me={r:role,uid:session.user.id,email};sv();
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
       R();
@@ -956,16 +965,8 @@ setInterval(idleCheck,15000);
 async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
   try{localStorage.removeItem('bar_last')}catch(e){}
   if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
-  const wasAdmin=!!(D.me&&(D.me.r=='A'||D.me.r=='D'));
-
-  if(wasAdmin){
-    try{
-      await sb().auth.signOut();
-    }catch(e){
-      console.warn('Auth signOut:',e);
-    }
-  }
-
+  try{await sb().auth.signOut()}catch(e){console.warn('Auth signOut:',e)}
+  resetAcc();
   D.me=null;
   sv();
   R();
