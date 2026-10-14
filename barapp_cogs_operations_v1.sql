@@ -31,7 +31,7 @@ create table if not exists public.cogs_production_batches (
  id uuid primary key default gen_random_uuid(),
  division_id uuid not null references public.divisions(id) on delete restrict,
  wip_id uuid not null references public.cogs_wip(id) on delete restrict,
- produced_qty numeric not null check(produced_qty>0), yield_unit text not null,
+ wip_name_snapshot text not null, produced_qty numeric not null check(produced_qty>0), yield_unit text not null,
  unit_cost_snapshot numeric not null check(unit_cost_snapshot>=0),
  total_cost_snapshot numeric not null check(total_cost_snapshot>=0),
  cost_source text not null check(cost_source in ('purchase','reference')),
@@ -42,6 +42,10 @@ create table if not exists public.cogs_production_batches (
 );
 create index if not exists cogs_production_div_date_idx on public.cogs_production_batches(division_id,produced_at);
 create index if not exists cogs_production_wip_idx on public.cogs_production_batches(wip_id,produced_at);
+alter table public.cogs_production_batches add column if not exists wip_name_snapshot text;
+update public.cogs_production_batches b set wip_name_snapshot=w.name from public.cogs_wip w where w.id=b.wip_id and (b.wip_name_snapshot is null or b.wip_name_snapshot='');
+update public.cogs_production_batches set wip_name_snapshot='WIP' where wip_name_snapshot is null or wip_name_snapshot='';
+alter table public.cogs_production_batches alter column wip_name_snapshot set not null;
 
 create table if not exists public.cogs_production_inputs (
  id uuid primary key default gen_random_uuid(), batch_id uuid not null references public.cogs_production_batches(id) on delete cascade,
@@ -298,17 +302,17 @@ grant execute on function public.cogs_get_stock_position(uuid,date) to authentic
 create or replace function public.cogs_record_production(p_division_id uuid,p_wip_id uuid,p_produced_qty numeric,p_produced_at date,p_notes text default null)
 returns uuid language plpgsql security definer set search_path=public
 as $$
-declare v_yield numeric; v_unit text; v_unit_cost numeric; v_total numeric; v_source text; v_batch uuid; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_child_cost numeric;
+declare v_yield numeric; v_unit text; v_wip_name text; v_unit_cost numeric; v_total numeric; v_source text; v_batch uuid; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_child_cost numeric;
 begin
  perform public.cogs_assert_ops_division(p_division_id);
  if p_produced_at is null or p_produced_at>(now() at time zone 'Asia/Jakarta')::date then raise exception 'COGS_INVALID_PRODUCTION_DATE'; end if;
  if p_produced_qty is null or p_produced_qty<=0 then raise exception 'COGS_INVALID_PRODUCTION_QTY'; end if;
- select yield_qty,yield_unit into v_yield,v_unit from public.cogs_wip where id=p_wip_id and active=true and division_id=p_division_id;
+ select yield_qty,yield_unit,name into v_yield,v_unit,v_wip_name from public.cogs_wip where id=p_wip_id and active=true and division_id=p_division_id;
  if not found then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
  select c.unit_cost,c.cost_source into v_unit_cost,v_source from public.cogs_wip_unit_cost(p_wip_id,array[]::uuid[]) c;
  v_total:=v_unit_cost*p_produced_qty;
- insert into public.cogs_production_batches(division_id,wip_id,produced_qty,yield_unit,unit_cost_snapshot,total_cost_snapshot,cost_source,produced_at,notes,created_by)
- values(p_division_id,p_wip_id,p_produced_qty,v_unit,v_unit_cost,v_total,v_source,p_produced_at,nullif(trim(coalesce(p_notes,'')),''),auth.uid()) returning id into v_batch;
+ insert into public.cogs_production_batches(division_id,wip_id,wip_name_snapshot,produced_qty,yield_unit,unit_cost_snapshot,total_cost_snapshot,cost_source,produced_at,notes,created_by)
+ values(p_division_id,p_wip_id,v_wip_name,p_produced_qty,v_unit,v_unit_cost,v_total,v_source,p_produced_at,nullif(trim(coalesce(p_notes,'')),''),auth.uid()) returning id into v_batch;
  for v_line in select * from public.cogs_wip_recipe_lines where wip_id=p_wip_id loop
   if v_line.component_type='material' then
    select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true and division_id=p_division_id;
