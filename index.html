@@ -736,7 +736,7 @@ const mapAtt=r=>({id:r.id,e:r.employee_id,d:String(r.attendance_date).slice(0,10
 const sbLabel=()=>SB.state=='loading'?L('Memuat…','Loading…'):SB.state=='ok'?(SB.stale?L('Offline (data terakhir)','Offline (last data)'):L('Terhubung ke Supabase','Connected to Supabase')):SB.state=='err'?L('Gagal terhubung','Connection failed'):L('Siap','Ready');
 function resetAcc(){
   D.emp=[];D.att=[];D.ot=[];D.arc=[];D.outId=undefined;
-  T.perms=[];T.scopeOut=undefined;T.dbRole=null;T.hrDiv=null;T.accs=null;T.scopes=null;T.allDivs=null;
+  T.perms=[];T.scopeOut=undefined;T.dbRole=null;T.hrDiv=null;T.featurePerms=[];T.accs=null;T.scopes=null;T.allDivs=null;
   T.divs=null;T.divInit=0;T.dvDet=null;T.devInit=0;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
   SB.sig=null;SB.loaded=false;SB.cached=false;SB.stale=false;
   try{localStorage.removeItem(SBK)}catch(e){}
@@ -791,7 +791,7 @@ if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
-T.perms=[];if(session&&T.dbRole=='hr'){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
+T.perms=[];if(session&&['hr','div_admin'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
  :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
@@ -1010,9 +1010,10 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr()))};
+const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk'].includes(k)||hasFeature('inventory.view'))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr()))};
 const GRP=k=>k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk')?'inventory':'abs';
 const HIDE_NAV=['abs','unit'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang','masuk'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
@@ -1080,7 +1081,7 @@ function unitConvert(id){const x=UNIT_DATA.find(v=>v.id===id);if(!x)return;const
 V.unit=()=>{const rows=UNIT_DATA.map(x=>`<div class="card"><div class="row" style="align-items:center;justify-content:space-between"><div><h3>${esc(x.name)}</h3><span class="mu">Satuan dasar: ${esc(x.baseUnit)}</span></div><div class="btns"><button class="btn s x" onclick="unitEdit('${x.id}')">Edit</button><button class="btn d x" onclick="cf('Hapus konfigurasi '+esc('${x.name}')+'?',()=>unitDelete('${x.id}'))">Hapus</button></div></div><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Satuan</th><th>Setara ${esc(x.baseUnit)}</th></tr>${x.units.map(u=>`<tr><td>${esc(u.name)}</td><td>${unitNum(u.factor)} ${esc(x.baseUnit)}</td></tr>`).join('')}</table></div><div class="ts">Simulasi konversi</div><div class="row"><label style="flex:1">Jumlah<input id="uq_${x.id}" type="number" min="0" step="any" value="1"></label><label style="flex:1">Satuan<select id="uu_${x.id}">${x.units.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label><button class="btn" onclick="unitConvert('${x.id}')">Konversi</button></div><div class="dlg" id="ur_${x.id}">Hasil konversi akan muncul di sini.</div></div>`).join('');return `<div class="card"><h3>Master Konversi Unit</h3><p class="mu">Atur satuan per barang. Semua faktor menyatakan berapa satuan dasar di dalam satu unit. Data disimpan bersama di Supabase agar bisa dipakai lintas perangkat.</p><div class="btns"><button class="btn" onclick="unitAdd()">+ Tambah barang</button><button class="btn s" onclick="loadSharedSettings().then(()=>R())">Muat ulang data</button></div></div>${rows||'<div class="card empty">Belum ada konfigurasi konversi.</div>'}<div class="card"><h3>Aturan penting</h3><p>Konversi massa dan volume tidak boleh dicampur otomatis. Setiap barang harus memakai satu satuan dasar yang konsisten.</p></div>`};
 /* ---------- GAJI / PAYROLL ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
-const payOK=()=>isDeveloper()||T.dbRole=='hr';
+const payOK=()=>isDeveloper()||(T.dbRole=='hr'&&hasFeature('payroll.view'));
 const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
 const fmtN=n=>{const r=Math.round(+n||0);return (r<0?'-':'')+String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')};
 const rupiah=n=>'Rp '+fmtN(n);
@@ -1123,8 +1124,8 @@ const INV={items:[],ins:[],rets:[],divs:[],ready:false,loading:false,init:false,
 const invMoney=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(n)||0);
 const invNum=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}).format(Number(n)||0);
 const invRole=()=>String(T.dbRole||'');
-const invCanAll=()=>['dev','hr','legacy_admin'].includes(invRole());
-const invCanWrite=()=>adm()&&['dev','hr','legacy_admin','div_admin'].includes(invRole());
+const invCanAll=()=>isDeveloper()||(T.dbRole==='hr'&&hasFeature('inventory.view'));
+const invCanWrite=()=>isDeveloper()||(adm()&&hasFeature('inventory.manage'));
 const invMsg=e=>{let m=String(e?.message||e||'');if(/barapp_|schema cache|does not exist|42P01|PGRST205/i.test(m))return 'Database inventori belum disiapkan. Gua sudah menaruh barapp_inventory.sql di GitHub, tetapi migrasi database harus dijalankan sekali di Supabase SQL Editor.';if(/row-level security|permission denied|42501/i.test(m))return 'Akses ditolak oleh aturan keamanan Supabase untuk divisi ini.';return errText(e)};
 async function invFetch(table,order){const {data,error}=await sb().from(table).select('*').order(order,{ascending:false}).limit(5000);if(error)throw error;return data||[]}
 async function invLoad(show=false){if(INV.loading)return;INV.loading=true;INV.err='';try{const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code').order('name');if(de)throw de;let divs=allDivs||[];if(!invCanAll()&&invRole()==='div_admin'){const {data:sc,error}=await sb().from('user_scopes').select('outlet_id,division_id');if(error)throw error;const scopes=sc||[];divs=divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))))}INV.divs=divs;const [items,ins,rets]=await Promise.all([invFetch('barapp_items','created_at'),invFetch('barapp_stock_in','received_at'),invFetch('barapp_stock_returns','returned_at')]);const visible=new Set(INV.divs.filter(d=>!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id).map(d=>String(d.id)));INV.items=items.filter(x=>visible.has(String(x.division_id)));INV.ins=ins.filter(x=>visible.has(String(x.division_id)));INV.rets=rets.filter(x=>visible.has(String(x.division_id)));INV.ready=true;INV.init=true}catch(e){INV.err=invMsg(e);INV.ready=false;if(show)toast(INV.err,'err')}finally{INV.loading=false;if(pg==='barang'||pg==='masuk')R()}}
@@ -1157,7 +1158,7 @@ V.masuk=()=>{if(!adm())return '<div class="card empty">Akses ditolak.</div>';inv
 /* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
 async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),(isDeveloper()?payQ('user_scopes','user_id,division_id'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,division_id:x.division_id})))),(isDeveloper()?payQ('user_profiles','user_id,email,role,active'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,email:x.email,role:'div_admin',active:true})))),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
- if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
+ if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.featurePerms=up;T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
 V.div=()=>{if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin belum diberikan oleh developer.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
@@ -1183,12 +1184,19 @@ V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer y
  `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
 
 /* ===== MANAJEMEN AKUN (dev) ===== */
-function accsCard(){const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admin:'Admin divisi',legacy_admin:'Admin lama'})[k]||k;
- const rows=as.map(a=>{const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>{const d=(T.allDivs||T.divs||[]).find(d=>d.id==x.division_id);if(!d)return '';const oc=(T.outlets||[]).find(o=>o.id==d.outlet_id);return d.name+(oc?' ('+oc.code+')':'')}).filter(Boolean).join(', ')||'-';
-  const opts=a.role=='dev'?`<option>${rl('dev')}</option>`:['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>`<option value="${k}" ${a.role==k?'selected':''}>${rl(k)}</option>`).join('');
+function accsCard(){
+ const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admin:'Admin divisi',legacy_admin:'Admin lama'})[k]||k;
+ const rows=as.map(a=>{
+  const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>{const d=(T.allDivs||T.divs||[]).find(d=>d.id==x.division_id);if(!d)return '';const oc=(T.outlets||[]).find(o=>o.id==d.outlet_id);return d.name+(oc?' ('+oc.code+')':'')}).filter(Boolean).join(', ')||'-';
+  const opts=a.role=='dev'?"<option>Developer</option>":['hr','div_admin'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>'<option value="'+k+'" '+(a.role==k?'selected':'')+'>'+rl(k)+'</option>').join('');
   const dis=a.role=='dev'?'disabled':'';
-  return `<tr><td style="word-break:break-all">${esc(a.email)}</td><td><select id="ac_r_${a.user_id}" ${dis} onchange="accSet('${a.user_id}')" style="font-size:12px">${opts}</select></td><td>${esc(dv)}</td><td><input type="checkbox" id="ac_a_${a.user_id}" ${a.active?'checked':''} ${dis} onchange="accSet('${a.user_id}')" style="width:auto"></td><td>${a.role=='hr'?`<input type="checkbox" ${(T.hrDiv||[]).includes(a.user_id)?'checked':''} onchange="accDivPerm('${a.user_id}',this.checked)" style="width:auto">`:'<span class="mu">-</span>'}</td><td><button class="btn s x" onclick="pwOpen('${a.user_id}','${esc(a.email)}')">Password</button></td></tr>`}).join('');
- return `<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Ubah role atau status aktif. Akun yang dinonaktifkan langsung tidak bisa masuk. Reset password dilakukan di Supabase → Authentication.</p><div class="account-table-wrap"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th>Divisi &amp; Admin</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada akun.</td></tr>'}</table></div></div>`}
+  const has=perm=>a.role=='dev'||(T.featurePerms||[]).some(x=>x.user_id==a.user_id&&x.permission==perm);
+  const ck=perm=>'<input aria-label="'+perm+'" type="checkbox" '+(has(perm)?'checked':'')+' '+dis+' onchange="accFeaturePerm(\''+a.user_id+'\',\''+perm+'\',this.checked)" style="width:auto">';
+  return '<tr><td style="word-break:break-all">'+esc(a.email)+'</td><td><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></td><td>'+esc(dv)+'</td><td><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"></td><td>'+ck('inventory.view')+'</td><td>'+ck('inventory.manage')+'</td><td>'+ck('payroll.view')+'</td><td>'+(a.role=='hr'?'<input type="checkbox" '+((T.hrDiv||[]).includes(a.user_id)?'checked':'')+' onchange="accDivPerm(\''+a.user_id+'\',this.checked)" style="width:auto">':'<span class="mu">-</span>')+'</td><td><button class="btn s x" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></td></tr>';
+ }).join('');
+ return '<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Atur role, status, dan izin fitur tiap akun. Izin inventaris diterapkan oleh Supabase. Gaji memakai izin payroll. Reset password dilakukan di Supabase → Authentication.</p><div class="account-table-wrap"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th>Master Barang / lihat</th><th>Inventaris / kelola</th><th>Gaji / lihat</th><th>Divisi &amp; Admin</th><th></th></tr>'+(rows||'<tr><td colspan="9">Belum ada akun.</td></tr>')+'</table></div></div>';
+}
+async function accFeaturePerm(uid,perm,on){const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perm',{p_user:uid,p_permission:perm,p_on:on})});if(ok){toast('Izin '+perm+(on?' diberikan':' dicabut'));divLoad()}else divLoad()}
 async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=document.getElementById('ac_a_'+uid);
  const ok=await sbRun(async()=>{await payRpc('dev_set_account',{p_user:uid,p_role:r?r.value:'hr',p_active:a?a.checked:true})});
  if(ok)toast('Akun diperbarui');divLoad()}
