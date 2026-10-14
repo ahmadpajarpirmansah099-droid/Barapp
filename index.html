@@ -435,40 +435,6 @@ body::before{display:none!important}
 .s-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));font-weight:700}
 .jd-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));border-color:color-mix(in srgb,#6d7fa0 60%,var(--line))}
 .s-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));font-weight:700}
-
-/* BARAPP_MOBILE_TABLE_SCROLL_FIX: dedicated inner scroll viewport */
-.inv-table{
-  display:block;
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  padding:clamp(12px,2.5vw,20px);
-  overflow:hidden !important;
-}
-.inv-table-scroll{
-  display:block;
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  overflow-x:auto !important;
-  overflow-y:hidden !important;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-x:contain;
-  touch-action:pan-x;
-  scrollbar-width:thin;
-}
-.inv-table-scroll table{
-  display:table !important;
-  table-layout:auto;
-  width:760px !important;
-  min-width:760px !important;
-  max-width:none !important;
-  overflow:visible !important;
-}
-.inv-table-scroll th,.inv-table-scroll td{white-space:nowrap}
-.inv-table-scroll th:first-child,.inv-table-scroll td:first-child{position:static}
-@media(max-width:520px){.inv-table{padding:10px}.inv-table-scroll{width:100%}}
-
 </style>
 </head><body>
 
@@ -1178,7 +1144,7 @@ async function invSaveItem(){if(!invNeed())return;let name=v('iv_name').trim(),d
 function invDetails(id){let x=invItem(id);if(!x)return;const hasHistory=INV.ins.some(r=>String(r.item_id)===String(id));modal('<div class="inv-detail"><h3>'+esc(x.name)+'</h3><p class="mu">'+esc(invDiv(x.division_id))+' · '+(x.active?'Aktif':'Nonaktif')+'</p><p>Harga acuan: '+invMoney(x.reference_price_amount)+' / '+esc(x.reference_price_unit)+'</p><p>Harga terakhir: '+(x.last_purchase_price_per_base==null?'Belum ada invoice aktual':invMoney(x.last_purchase_price_per_base)+' / '+esc(x.base_unit))+'</p><p>Stok: '+invNum(invQty(id))+' '+esc(x.base_unit)+'</p><div class="inv-detail-table"><table><tr><th>Satuan</th><th>Setara '+esc(x.base_unit)+'</th></tr>'+invConv(x).map(c=>'<tr><td>'+esc(c.unit)+'</td><td>'+invNum(c.factor)+'</td></tr>').join('')+'</table></div><div class="btns inv-detail-actions">'+(invCanWrite()?'<button class="btn s" onclick="invToggleItem(\''+id+'\')">'+(x.active?'Nonaktifkan':'Aktifkan')+'</button>':'')+(!hasHistory&&invCanWrite()?'<button class="btn d" onclick="invDeleteItem(\''+id+'\')">Hapus permanen</button>':'')+'<button class="btn" onclick="closeM()">Tutup</button></div>'+(hasHistory?'<p class="mu">Barang memiliki riwayat transaksi, jadi tidak bisa dihapus permanen. Nonaktifkan jika tidak digunakan.</p>':'<p class="mu">Hapus permanen hanya tersedia jika belum pernah memiliki transaksi barang masuk.</p>')+'</div>')}
 async function invDeleteItem(id){const x=invItem(id);if(!x||!invNeed())return;cf('Hapus permanen '+x.name+'? Barang yang sudah memiliki riwayat transaksi tidak dapat dihapus.',async()=>{const {error}=await sb().from('barapp_items').delete().eq('id',id);if(error)return toast(invMsg(error),'err');closeM();await invLoad();R();toast('Barang dihapus.','ok')},'Hapus permanen')}
 async function invToggleItem(id){let x=invItem(id);if(!x||!invNeed())return;cf((x.active?'Nonaktifkan ':'Aktifkan ')+x.name+'?',async()=>{const {error}=await sb().from('barapp_items').update({active:!x.active}).eq('id',id);if(error)return toast(invMsg(error),'err');closeM();await invLoad();R()},'Konfirmasi')}
-V.barang=()=>{if(!adm())return '<div class="card empty">Akses ditolak.</div>';invInit();if(!INV.ready)return INV.err?invHint():'<div class="card"><h3>Memuat Master Barang…</h3></div>';let q=INV.filter.toLowerCase(),rows=INV.items.filter(x=>(INV.tab==='all'||x.active)&&(!q||x.name.toLowerCase().includes(q)||invDiv(x.division_id).toLowerCase().includes(q))).map(x=>'<tr><td><b>'+esc(x.name)+'</b><br><small class="mu">'+esc(invDiv(x.division_id))+'</small></td><td>'+esc(x.base_unit)+'</td><td>'+invMoney(x.last_purchase_price_per_base??x.reference_price_amount)+' / '+esc(x.last_purchase_price_per_base==null?x.reference_price_unit:x.base_unit)+'</td><td>'+invNum(invQty(x.id))+' '+esc(x.base_unit)+'</td><td><button class="btn s x" onclick="invDetails(\''+x.id+'\')">Detail</button></td></tr>').join('');return '<div class="card inv-toolbar"><div class="inv-actions"><input class="inv-search" placeholder="Cari barang/divisi" value="'+esc(INV.filter)+'" oninput="INV.filter=this.value;R()"><button class="btn s" onclick="invLoad(true)">Muat ulang</button></div><div class="btns inv-actions"><button class="btn '+(INV.tab==='active'?'':'s')+'" onclick="INV.tab=\'active\';R()">Aktif</button><button class="btn '+(INV.tab==='all'?'':'s')+'" onclick="INV.tab=\'all\';R()">Semua</button><button class="btn" onclick="invOpenItem()">+ Daftarkan barang</button></div><p class="mu">Tambah barang, satuan dasar, konversi, dan harga acuan dalam satu formulir.</p></div><div class="card inv-table"><div class="inv-table-scroll"><table><tr><th>Nama / divisi</th><th>Satuan dasar</th><th>Harga</th><th>Stok</th><th></th></tr>'+rows+'</table></div></div>};
+V.barang=()=>{if(!adm())return '<div class="card empty">Akses ditolak.</div>';invInit();if(!INV.ready)return INV.err?invHint():'<div class="card"><h3>Memuat Master Barang…</h3></div>';let q=INV.filter.toLowerCase(),rows=INV.items.filter(x=>(INV.tab==='all'||x.active)&&(!q||x.name.toLowerCase().includes(q)||invDiv(x.division_id).toLowerCase().includes(q))).map(x=>'<tr><td><b>'+esc(x.name)+'</b><br><small class="mu">'+esc(invDiv(x.division_id))+'</small></td><td>'+esc(x.base_unit)+'</td><td>'+invMoney(x.last_purchase_price_per_base??x.reference_price_amount)+' / '+esc(x.last_purchase_price_per_base==null?x.reference_price_unit:x.base_unit)+'</td><td>'+invNum(invQty(x.id))+' '+esc(x.base_unit)+'</td><td><button class="btn s x" onclick="invDetails(\''+x.id+'\')">Detail</button></td></tr>').join('');return '<div class="card inv-toolbar"><div class="inv-actions"><input class="inv-search" placeholder="Cari barang/divisi" value="'+esc(INV.filter)+'" oninput="INV.filter=this.value;R()"><button class="btn s" onclick="invLoad(true)">Muat ulang</button></div><div class="btns inv-actions"><button class="btn '+(INV.tab==='active'?'':'s')+'" onclick="INV.tab=\'active\';R()">Aktif</button><button class="btn '+(INV.tab==='all'?'':'s')+'" onclick="INV.tab=\'all\';R()">Semua</button><button class="btn" onclick="invOpenItem()">+ Daftarkan barang</button></div><p class="mu">Tambah barang, satuan dasar, konversi, dan harga acuan dalam satu formulir.</p></div><div class="card inv-table" style="overflow:auto"><table><tr><th>Nama / divisi</th><th>Satuan dasar</th><th>Harga</th><th>Stok</th><th></th></tr>'+rows+'</table></div>'};
 function invReceiptForm(){let xs=INV.items.filter(x=>x.active);return '<h3>Catat Barang Masuk</h3><label>Bahan baku<select id="in_item" onchange="invReceiptUnits()"><option value="">Pilih barang</option>'+xs.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(invDiv(x.division_id))+'</option>').join('')+'</select></label><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><label>Jumlah<input id="in_qty" type="number" min="0.000001" step="any" oninput="invPreview()"></label><label>Satuan<select id="in_unit" onchange="invPreview()"><option value="">Pilih satuan</option></select></label></div><div id="in_preview" class="card mu">Pilih barang dan jumlah.</div><label>Harga invoice total (opsional)<input id="in_invoice" type="number" min="0" step="any" oninput="invPreview()" placeholder="Kosongkan jika tidak ada harga"></label><label>Tanggal diterima<input id="in_date" type="date" value="'+today()+'"></label><label>Catatan / nomor invoice<input id="in_note" maxlength="500"></label><p class="mu">Harga kosong memakai estimasi Master Barang dan tidak mengubah Harga Terakhir.</p><button class="btn" onclick="invSaveReceipt()">Simpan Barang Masuk</button>'}
 function invOpenReceipt(){if(!invNeed())return;modal(invReceiptForm()+'<div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>')}
 function invReceiptUnits(){let x=invItem(v('in_item')),s=document.getElementById('in_unit');s.innerHTML='<option value="">Pilih satuan</option>'+invConv(x||{}).map(c=>'<option value="'+esc(c.unit)+'">'+esc(c.unit)+'</option>').join('');invPreview()}
