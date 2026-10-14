@@ -1,7 +1,10 @@
--- Barapp COGS Operations V1
--- Run after barapp_cogs_v1.sql, in Supabase SQL Editor.
--- Adds transaction snapshots for WIP production, menu sales, and Daily SO.
--- Writes are restricted to authenticated admin RPCs; direct table writes are revoked.
+-- Barapp COGS Operations V1 (consolidated reference migration)
+-- Apply order on a fresh database: barapp_cogs_v1.sql, barapp_cogs_access_fix.sql,
+-- barapp_cogs_privileges_fix.sql, then this file LAST in Supabase SQL Editor.
+-- This final script replaces unscoped V1 RPCs with division-scoped RPCs, then adds
+-- WIP production, menu-sale HPP snapshots, and Daily SO with stock roll-forward.
+-- Production project has already received these schema changes; do not rerun needlessly.
+-- Direct table writes are revoked; authorized writes go through authenticated admin RPCs.
 
 -- Scope recipes to division. The first migration created empty recipe tables; null legacy rows
 -- (if any) get mapped to the first COGS-enabled division and should be reviewed before production use.
