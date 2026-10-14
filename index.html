@@ -442,16 +442,25 @@ body::before{display:none!important}
   width:100%;
   max-width:100%;
   min-width:0;
-  overflow-x:auto !important;
-  overflow-y:hidden;
+  overflow-x:scroll !important;
+  overflow-y:hidden !important;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-x:contain;
-  touch-action:pan-x pan-y;
+  touch-action:pan-x;
 }
 .inv-table table{
-  width:max-content;
-  min-width:560px;
-  max-width:none;
+  display:table !important;
+  table-layout:auto;
+  width:760px !important;
+  min-width:760px !important;
+  max-width:none !important;
+  overflow:visible !important;
+}
+.inv-table th,.inv-table td{
+  white-space:nowrap;
+}
+.inv-table th:first-child,.inv-table td:first-child{
+  position:static;
 }
 
 </style>
