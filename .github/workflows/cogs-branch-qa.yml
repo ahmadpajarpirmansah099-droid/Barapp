@@ -1,0 +1,74 @@
+name: COGS branch QA
+
+on:
+  push:
+    branches:
+      - feat/cogs-backend-v1
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check inline JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(match => match[1])
+            .filter(script => script.trim().length > 0);
+          if (!scripts.length) throw new Error('No inline scripts found');
+          scripts.forEach((script, index) => {
+            try {
+              new Function(script);
+              console.log(`Inline script ${index + 1}: syntax OK (${script.length} chars)`);
+            } catch (error) {
+              console.error(`Inline script ${index + 1}: syntax ERROR`);
+              throw error;
+            }
+          });
+          NODE
+
+      - name: Check expected COGS UI and RPC wiring
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const sql = fs.readFileSync('barapp_cogs_daily_so_active_only_v1.sql', 'utf8');
+          const required = [
+            'COGS · Master Bahan',
+            'COGS · Resep WIP',
+            'COGS · COGS Menu',
+            'Produksi WIP',
+            'Daily SO',
+            'Penjualan Menu',
+            'cogs_record_production',
+            'cogs_record_menu_sale',
+            'cogs_save_daily_so',
+            'cogs_get_stock_position',
+            'Preserve the complete submitted SO snapshot'
+          ];
+          const missing = required.filter(value => !html.includes(value));
+          if (!sql.includes('i.active=true') || !sql.includes('w.active=true') || !sql.includes('COGS_SO_ITEM_INVALID_OR_INACTIVE') || !sql.includes('COGS_SO_WIP_INVALID_OR_INACTIVE')) {
+            missing.push('active-only Daily SO backend validation');
+          }
+          if (missing.length) {
+            console.error('Missing expected markers:', missing.join(', '));
+            process.exit(1);
+          }
+          console.log(`All ${required.length} COGS UI/RPC markers found.`);
+          NODE

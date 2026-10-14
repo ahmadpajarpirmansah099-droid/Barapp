@@ -473,6 +473,63 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
 @media(max-width:520px){main{padding:16px 12px 24px}.card{padding:15px;box-shadow:2px 2px 0 var(--dk)}.card:hover{transform:none;box-shadow:2px 2px 0 var(--dk)}}
 @media(prefers-reduced-motion:reduce){.card,.btn,.ibtn,.nvb,.task,.start{transition:none!important}.card:hover{transform:none}}
 
+/* ---------- Mobile usability pass: COGS + app navigation ---------- */
+@media(max-width:600px){
+  html{scroll-padding-top:78px}
+  body{font-size:14px}
+  .app-top{padding:calc(8px + var(--st)) 12px 9px}
+  .hd{gap:8px}
+  .hd-t h1{font-size:17px;line-height:1.25}
+  .hd-t small{font-size:10px}
+  main{padding:14px 12px calc(154px + var(--sf))}
+  #app.in{padding-bottom:0}
+  .card{border-radius:16px;margin-bottom:12px}
+  .taskbar{
+    left:8px;right:8px;bottom:calc(8px + var(--sf));
+    gap:4px;padding:6px;border-radius:18px;
+    overflow-x:auto;overflow-y:hidden;justify-content:flex-start;
+    scrollbar-width:none;scroll-snap-type:x proximity;
+  }
+  .taskbar::-webkit-scrollbar{display:none}
+  .start,.task{min-height:46px;padding:7px 9px;border-radius:13px;scroll-snap-align:start}
+  .start{flex:0 0 auto;gap:5px}
+  .task{flex:0 0 auto;max-width:118px;min-width:62px;gap:6px;font-size:11px}
+  .task span{max-width:82px}
+  .task .ic{width:18px;height:18px}
+  .statusbar{left:10px;right:10px;bottom:calc(66px + var(--sf));padding:5px 9px;border-radius:13px;gap:4px}
+  .sf{font-size:10px;padding:2px 4px}
+  .fab{right:14px;bottom:calc(124px + var(--sf))}
+  .sdi{right:14px;bottom:calc(184px + var(--sf))}
+  .toolbar{align-items:stretch;flex-wrap:wrap}
+  .toolbar>span{flex:1 1 100%;min-width:0}
+  .toolbar .btn,.toolbar button{min-height:42px}
+  .inv-toolbar{padding:14px;gap:10px}
+  .inv-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .inv-actions .btn{width:100%;min-width:0;min-height:42px;padding:10px 8px;font-size:12px}
+  .inv-actions .inv-search{grid-column:1/-1;width:100%;max-width:none}
+  .inv-table{padding:8px;border-radius:14px}
+  .inv-table-scroll{border-radius:10px}
+  .inv-table-scroll table{font-size:12px}
+  .inv-table-scroll th,.inv-table-scroll td{padding:9px 7px}
+  input,select,textarea{font-size:16px!important;max-width:100%}
+  .btn,button{touch-action:manipulation}
+  .btn{min-height:42px}
+  .md{width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100dvh - 24px);overflow:auto;padding:14px}
+  .modal,.dialog{max-width:calc(100vw - 20px)}
+  .inv-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .inv-detail-actions .btn{width:100%;min-width:0;min-height:42px}
+}
+@media(max-width:380px){
+  main{padding-left:9px;padding-right:9px}
+  .hd-t h1{font-size:16px}
+  .taskbar{left:5px;right:5px;gap:3px;padding:5px}
+  .start,.task{padding:7px 7px}
+  .task{max-width:100px;min-width:56px;font-size:10px}
+  .task span{max-width:65px}
+  .inv-actions{grid-template-columns:minmax(0,1fr)}
+  .inv-actions .inv-search{grid-column:auto}
+  .inv-detail-actions{grid-template-columns:minmax(0,1fr)}
+}
 
 /* Mobile usability pass: responsive spacing, navigation and touch targets */
 @media(max-width:600px){
@@ -524,6 +581,44 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .inv-actions{grid-template-columns:minmax(0,1fr)}
   .inv-actions .inv-search{grid-column:auto}
   .inv-detail-actions{grid-template-columns:minmax(0,1fr)}
+}
+
+</style>
+
+<style id="cogs-ui">
+.cogs-wrap{display:grid;gap:14px}.cogs-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.cogs-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.cogs-stat{padding:15px;border:1px solid var(--br);border-radius:16px;background:var(--cd)}.cogs-stat b{display:block;font:600 23px var(--fh);margin-top:4px}.cogs-search{min-width:180px;max-width:100%;padding:10px 12px;border:1px solid var(--br);border-radius:12px;background:var(--bg)}.cogs-table{width:100%;border-collapse:collapse;min-width:680px}.cogs-table th,.cogs-table td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--br);vertical-align:top}.cogs-table th{color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.05em}.cogs-scroll{overflow:auto}.cogs-pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:var(--tint);color:var(--ac)}.cogs-pill.bad{background:#fbe5df;color:#9a3525}.cogs-pill.ref{background:#fff0c2;color:#805800}.cogs-formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cogs-formgrid label{display:grid;gap:5px;font-weight:600}.cogs-formgrid input,.cogs-formgrid select,.cg-line input,.cg-line select{width:100%;min-width:0;padding:10px;border:1px solid var(--br);border-radius:10px;background:var(--bg)}.cg-line{display:grid;grid-template-columns:110px minmax(140px,1fr) 90px 100px 38px;gap:7px;align-items:center;margin:8px 0}.cogs-help{font-size:12px;color:var(--mu)}.cogs-cost{font-weight:800;font-size:17px}.cogs-section{padding:14px;border:1px solid var(--br);border-radius:15px}.cogs-line-list{display:grid;gap:8px}.cogs-line-item{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--br);padding:8px 0}.cogs-actions{display:flex;gap:7px;flex-wrap:wrap}.cogs-empty{padding:20px;text-align:center;color:var(--mu)}@media(max-width:600px){.cogs-formgrid{grid-template-columns:1fr}.cg-line{grid-template-columns:1fr 1fr 72px 88px 34px}.cogs-table{min-width:620px}}
+
+/* Mobile-first COGS controls */
+.cogs-wrap,.cogs-section,.cogs-top,.cogs-actions,.cogs-stats,.cogs-formgrid,.cogs-line-list{min-width:0;max-width:100%}
+.cogs-scroll{width:100%;max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border-radius:12px}
+.cogs-search{width:min(100%,320px);min-width:0}
+.cogs-actions .btn,.cogs-actions button{min-height:42px}
+.cg-line>*{min-width:0}
+@media(max-width:600px){
+  .cogs-wrap{gap:10px}
+  .cogs-top{align-items:stretch;gap:9px}
+  .cogs-top>.btn,.cogs-top>button{width:100%;min-height:44px}
+  .cogs-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cogs-stat{padding:11px;border-radius:13px}
+  .cogs-stat b{font-size:19px;overflow-wrap:anywhere}
+  .cogs-section{padding:11px;border-radius:13px}
+  .cogs-formgrid{gap:9px}
+  .cogs-formgrid input,.cogs-formgrid select,.cg-line input,.cg-line select{min-height:43px;font-size:16px}
+  .cogs-search{width:100%;min-width:0}
+  .cogs-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cogs-actions .btn,.cogs-actions button{width:100%;min-width:0;white-space:normal;line-height:1.25;padding:10px 8px}
+  .cogs-scroll{margin-inline:-2px;width:calc(100% + 4px)}
+  .cogs-table{min-width:580px}
+  .cogs-table th,.cogs-table td{padding:10px 8px;font-size:12px}
+  .cogs-line-item{align-items:flex-start;flex-wrap:wrap;gap:6px}
+  .cogs-line-item>*{min-width:0;overflow-wrap:anywhere}
+  .cogs-help{line-height:1.55}
+}
+@media(max-width:380px){
+  .cogs-stats{grid-template-columns:minmax(0,1fr)}
+  .cogs-actions{grid-template-columns:minmax(0,1fr)}
+  .cg-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:7px}
+  .cg-line>*{width:100%;min-width:0}
 }
 </style>
 </head><body>
@@ -1111,14 +1206,14 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi'};
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'COGS · Master Bahan',ic:'package',page:'cogs_materials',adm:true,cogs:true},{name:'COGS · Resep WIP',ic:'layers',page:'cogs_wip',adm:true,cogs:true},{name:'COGS · COGS Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Produksi WIP',ic:'layers',page:'cogs_production',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-check',page:'cogs_daily_so',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt',page:'cogs_sales',adm:true,cogs:true},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'COGS · Master Bahan',cogs_wip:'COGS · Resep WIP',cogs_menu:'COGS · COGS Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu'};
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk'].includes(k)||hasFeature('inventory.view'))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr()))};
-const GRP=k=>k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk')?'inventory':'abs';
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk'].includes(k)||hasFeature('inventory.view'))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr())&&(!k.startsWith('cogs_')||adm()))};
+const GRP=k=>k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk')?'inventory':'abs';
 const HIDE_NAV=['abs','unit'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang','masuk'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
-function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>!m.dev||isDeveloper()||T.dbRole=='hr').map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function openMods(){modal(`<h3>Fitur</h3><div class="grid">${MODS.filter(m=>(!m.dev||isDeveloper()||T.dbRole=='hr')&&(!m.cogs||adm())).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
@@ -1148,7 +1243,7 @@ a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>GRP(k)==gr&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid',barang:'box',masuk:'truck'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>GRP(k)==gr&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'pc',audit:'doc',divdet:'pc',barang:'box',masuk:'truck',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
@@ -1221,7 +1316,7 @@ function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTM
 
 
 /* ===== INVENTORY: Master Barang + Barang Masuk, persisted in Supabase ===== */
-const INV={items:[],ins:[],rets:[],divs:[],ready:false,loading:false,init:false,err:'',filter:'',tab:'active',dateFrom:'',dateTo:''};
+const INV={items:[],ins:[],rets:[],divs:[],productionBatches:[],productionInputs:[],menuSales:[],menuSalesLines:[],dailySO:[],dailySOLines:[],ready:false,loading:false,init:false,err:'',filter:'',tab:'active',dateFrom:'',dateTo:''};
 const invMoney=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(n)||0);
 const invNum=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}).format(Number(n)||0);
 const invRole=()=>String(T.dbRole||'');
@@ -1229,13 +1324,14 @@ const invCanAll=()=>isDeveloper()||(T.dbRole==='hr'&&hasFeature('inventory.view'
 const invCanWrite=()=>isDeveloper()||(adm()&&hasFeature('inventory.view')&&hasFeature('inventory.manage'));
 const invMsg=e=>{let m=String(e?.message||e||'');if(/barapp_|schema cache|does not exist|42P01|PGRST205/i.test(m))return 'Database inventori belum disiapkan. Gua sudah menaruh barapp_inventory.sql di GitHub, tetapi migrasi database harus dijalankan sekali di Supabase SQL Editor.';if(/row-level security|permission denied|42501/i.test(m))return 'Akses ditolak oleh aturan keamanan Supabase untuk divisi ini.';return errText(e)};
 async function invFetch(table,order){const {data,error}=await sb().from(table).select('*').order(order,{ascending:false}).limit(5000);if(error)throw error;return data||[]}
-async function invLoad(show=false){if(INV.loading)return;INV.loading=true;INV.err='';try{const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code').order('name');if(de)throw de;let divs=allDivs||[];if(!invCanAll()&&invRole()==='div_admin'){const {data:sc,error}=await sb().from('user_scopes').select('outlet_id,division_id');if(error)throw error;const scopes=sc||[];divs=divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))))}INV.divs=divs;const [items,ins,rets]=await Promise.all([invFetch('barapp_items','created_at'),invFetch('barapp_stock_in','received_at'),invFetch('barapp_stock_returns','returned_at')]);const visible=new Set(INV.divs.filter(d=>!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id).map(d=>String(d.id)));INV.items=items.filter(x=>visible.has(String(x.division_id)));INV.ins=ins.filter(x=>visible.has(String(x.division_id)));INV.rets=rets.filter(x=>visible.has(String(x.division_id)));INV.ready=true;INV.init=true}catch(e){INV.err=invMsg(e);INV.ready=false;if(show)toast(INV.err,'err')}finally{INV.loading=false;if(pg==='barang'||pg==='masuk')R()}}
+async function invFetchAny(table,order){let q=sb().from(table).select('*');if(order)q=q.order(order,{ascending:false});const {data,error}=await q.limit(10000);if(error)throw error;return data||[]}
+async function invLoad(show=false){if(INV.loading)return;INV.loading=true;INV.err='';try{const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code').order('name');if(de)throw de;let divs=allDivs||[];if(!invCanAll()&&invRole()==='div_admin'){const {data:sc,error}=await sb().from('user_scopes').select('outlet_id,division_id');if(error)throw error;const scopes=sc||[];divs=divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))))}INV.divs=divs;const [items,ins,rets,productionBatches,productionInputs,menuSales,menuSalesLines,dailySO,dailySOLines]=await Promise.all([invFetch('barapp_items','created_at'),invFetch('barapp_stock_in','received_at'),invFetch('barapp_stock_returns','returned_at'),invFetchAny('cogs_production_batches','produced_at'),invFetchAny('cogs_production_inputs'),invFetchAny('cogs_menu_sales','sold_at'),invFetchAny('cogs_menu_sales_lines'),invFetchAny('cogs_daily_so','so_date'),invFetchAny('cogs_daily_so_lines')]);const visible=new Set(INV.divs.filter(d=>!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id).map(d=>String(d.id)));INV.items=items.filter(x=>visible.has(String(x.division_id)));INV.ins=ins.filter(x=>visible.has(String(x.division_id)));INV.rets=rets.filter(x=>visible.has(String(x.division_id)));INV.productionBatches=productionBatches.filter(x=>visible.has(String(x.division_id)));INV.productionInputs=productionInputs.filter(x=>INV.productionBatches.some(b=>String(b.id)===String(x.batch_id)));INV.menuSales=menuSales.filter(x=>visible.has(String(x.division_id)));INV.menuSalesLines=menuSalesLines.filter(x=>INV.menuSales.some(s=>String(s.id)===String(x.sale_id)));INV.dailySO=dailySO.filter(x=>visible.has(String(x.division_id)));INV.dailySOLines=dailySOLines.filter(x=>INV.dailySO.some(s=>String(s.id)===String(x.so_id)));INV.ready=true;INV.init=true}catch(e){INV.err=invMsg(e);INV.ready=false;if(show)toast(INV.err,'err')}finally{INV.loading=false;if(pg==='barang'||pg==='masuk')R()}}
 function invInit(){if(!INV.init&&!INV.loading){INV.init=true;invLoad()}}
 const invDiv=id=>INV.divs.find(d=>String(d.id)===String(id))?.name||'Divisi';
 const invItem=id=>INV.items.find(x=>String(x.id)===String(id));
 const invConv=x=>Array.isArray(x?.conversions)?x.conversions:[];
 const invFactor=(item,u)=>Number(invConv(item).find(c=>String(c.unit).toLowerCase()===String(u).toLowerCase())?.factor);
-const invQty=id=>INV.ins.filter(x=>String(x.item_id)===String(id)&&x.status==='posted').reduce((s,x)=>s+Number(x.qty_base||0),0)-INV.rets.filter(x=>String(x.item_id)===String(id)&&x.status==='posted').reduce((s,x)=>s+Number(x.qty_base||0),0);
+const invQty=id=>{const item=invItem(id),activeSOs=INV.dailySO.filter(s=>s.status==='submitted'&&String(s.division_id)===String(item?.division_id)&&s.so_date<=today()).sort((a,b)=>String(b.so_date).localeCompare(String(a.so_date))),lastSO=activeSOs.find(s=>INV.dailySOLines.some(l=>String(l.so_id)===String(s.id)&&l.component_type==='material'&&String(l.item_id)===String(id))),after=date=>!lastSO||String(date||'')>String(lastSO.so_date),lineSO=lastSO&&INV.dailySOLines.find(l=>String(l.so_id)===String(lastSO.id)&&l.component_type==='material'&&String(l.item_id)===String(id)),incoming=INV.ins.filter(x=>String(x.item_id)===String(id)&&x.status==='posted'&&after(x.received_at)).reduce((s,x)=>s+Number(x.qty_base||0),0),returns=INV.rets.filter(x=>String(x.item_id)===String(id)&&x.status==='posted'&&after(x.returned_at)).reduce((s,x)=>s+Number(x.qty_base||0),0),prod=INV.productionInputs.filter(l=>l.component_type==='material'&&String(l.item_id)===String(id)&&INV.productionBatches.some(b=>String(b.id)===String(l.batch_id)&&b.status==='posted'&&after(b.produced_at))).reduce((s,l)=>s+Number(l.qty_base||0),0),sales=INV.menuSalesLines.filter(l=>l.component_type==='material'&&String(l.item_id)===String(id)&&INV.menuSales.some(t=>String(t.id)===String(l.sale_id)&&t.status==='posted'&&after(t.sold_at))).reduce((s,l)=>s+Number(l.qty_base||0),0);return (lineSO?Number(lineSO.counted_qty_base):0)+incoming-returns-prod-sales};
 function invNeed(){if(!invCanWrite()){toast('Akses inventori hanya untuk admin berwenang.','err');return false}if(!INV.ready){toast(INV.err||'Data belum siap. Muat ulang dulu.','warn');return false}return true}
 function invHint(){return '<div class="card"><h3>Database inventori belum siap</h3><p>'+esc(INV.err)+'</p><button class="btn s" onclick="invLoad(true)">Coba lagi</button></div>'}
 function invFormItem(){let ds=INV.divs.filter(d=>!D.outId||D.outId==='ALL'||!d.outlet_id||String(d.outlet_id)===String(D.outId));return '<h3>Daftarkan bahan baku</h3><p class="mu">Barang otomatis masuk Master Barang; stok tidak bertambah.</p><label>Nama bahan baku<input id="iv_name" maxlength="120" placeholder="Apple Juice"></label><label>Divisi pemilik<select id="iv_div">'+ds.map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('')+'</select></label><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><label>Satuan dasar<input id="iv_base" placeholder="ML / GR / PCS"></label><label>Harga acuan<input id="iv_price" type="number" min="0" step="any" placeholder="Harga sesuai satuan"></label></div><label>Satuan harga acuan<input id="iv_punit" placeholder="Liter"></label><p class="mu">Konversi: faktor adalah jumlah satuan dasar.</p><div id="iv_units"><div class="grid" style="grid-template-columns:1fr 1fr;gap:8px"><input class="ivu" placeholder="Satuan (ML)"><input class="ivf" type="number" min="0.000001" step="any" placeholder="Faktor"></div></div><div class="btns"><button class="btn s" onclick="invAddUnit()">+ Tambah satuan</button><button class="btn" onclick="invSaveItem()">Simpan ke Master Barang</button></div>'}
@@ -1956,6 +2052,108 @@ modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3><div class="sb" style="m
 <div class="ts">${L('5. Bentuk & animasi','5. Shape & animation')}</div><label>${L('Kebulatan sudut','Corner roundness')}<input type="range" min="0" max="40" value="${TH.radius}" oninput="TH.radius=+this.value;applyTheme()"></label><div class="ts">${L('Animasi','Motion')}</div><div class="sb">${[['tenang','Tenang','Calm'],['cepat','Cepat','Fast'],['mati','Mati','Off']].map(m=>`<button class="mb ${(TH.motion||'tenang')==m[0]?'on':''}" data-mo="${m[0]}" onclick="setMotion('${m[0]}',this)">${L(m[1],m[2])}</button>`).join('')}</div>
 </div><div class="row" style="margin-top:12px"><button class="btn s" onclick="TH=JSON.parse(JSON.stringify(THEME));applyTheme();R();openTheme()">${L('Kembalikan bawaan','Restore defaults')}</button><button class="btn s" onclick="closeM()">${L('Batal','Cancel')}</button><button class="btn" onclick="saveTheme()">${L('Simpan','Save')}</button></div>`)}
 async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse(JSON.stringify(TH));try{await saveSharedSettings(snapshot);D.th=snapshot;T.bk=null;sv();closeM();toast(L('Tema tersimpan dan disinkronkan ke semua akun','Theme saved and synced to all accounts'));R()}catch(e){toast('Gagal menyimpan pengaturan bersama: '+(e.message||e)+' — jalankan SQL setup yang disertakan.','err')}}
+
+/* ===== COGS V1: data disimpan di Supabase; Master Bahan memakai barapp_items ===== */
+const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],divs:[],productions:[],productionInputs:[],sales:[],saleLines:[],dailySO:[],dailySOLines:[],division:'',ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
+const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',counts:{},prodQty:'',saleQty:'',salePrice:'',notes:''};
+const cgRoleOK=()=>adm();
+const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
+const cgItem=id=>CG.items.find(x=>String(x.id)===String(id));
+const cgWip=id=>CG.wips.find(x=>String(x.id)===String(id));
+const cgMoney=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(Number(n)||0);
+const cgNum=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:4}).format(Number(n)||0);
+const cgUnitFactor=(x,u)=>{if(!x)return 0;if(String(x.base_unit||'').toLowerCase()===String(u||'').toLowerCase())return 1;const a=Array.isArray(x.conversions)?x.conversions:[];const v=a.find(z=>String(z.unit||'').toLowerCase()===String(u||'').toLowerCase());return Number(v&&v.factor)||0};
+async function cgLoad(show){
+ if(CG.loading)return;CG.loading=true;CG.err='';
+ try{
+  const c=sb();
+  const rs=await Promise.all([
+   c.rpc('cogs_list_materials'),
+   c.from('cogs_wip').select('*').order('name'),
+   c.from('cogs_wip_recipe_lines').select('*').order('created_at'),
+   c.from('cogs_menus').select('*').order('name'),
+   c.from('cogs_menu_recipe_lines').select('*').order('created_at'),
+   c.from('divisions').select('id,name,outlet_id,code,active,has_cogs').order('name'),
+   c.from('cogs_production_batches').select('*').order('produced_at',{ascending:false}).limit(5000),
+   c.from('cogs_production_inputs').select('*').limit(10000),
+   c.from('cogs_menu_sales').select('*').order('sold_at',{ascending:false}).limit(5000),
+   c.from('cogs_menu_sales_lines').select('*').limit(10000),
+   c.from('cogs_daily_so').select('*').order('so_date',{ascending:false}).limit(5000),
+   c.from('cogs_daily_so_lines').select('*').limit(10000)
+  ]);
+  const bad=rs.find(x=>x.error);if(bad)throw bad.error;
+  [CG.items,CG.wips,CG.wipLines,CG.menus,CG.menuLines,CG.divs,CG.productions,CG.productionInputs,CG.sales,CG.saleLines,CG.dailySO,CG.dailySOLines]=rs.map(x=>x.data||[]);
+  CG.divs=CG.divs.filter(d=>d.active!==false&&d.has_cogs===true&&(!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id));
+  if(T.dbRole==='div_admin'){
+   const {data:sc,error:se}=await c.from('user_scopes').select('outlet_id,division_id');if(se)throw se;
+   const scopes=sc||[];CG.divs=CG.divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))));
+  }
+  if(!OPS.division||!CG.divs.some(d=>String(d.id)===String(OPS.division)))OPS.division=CG.divs[0]?.id||'';
+  CG.ready=true;
+ }catch(e){CG.err=/cogs_|schema cache|does not exist|42P01|PGRST205/i.test(String(e&&e.message||e))?'Backend COGS belum lengkap di Supabase. Periksa migrasi COGS V1 dan COGS Operations.':errText(e);CG.ready=false;if(show)toast(CG.err,'err')}
+ finally{CG.loading=false;if(['cogs_materials','cogs_wip','cogs_menu','cogs_production','cogs_daily_so','cogs_sales'].includes(pg))R()}
+}
+function cgInit(){if(!CG.ready&&!CG.loading)cgLoad(false)}
+function cgMaterialPrice(x){const p=cgPrice(x);return p?{value:p.value,source:p.source}:null}
+function cgWipCost(id,stack){
+ stack=stack||[];if(stack.includes(String(id)))return{ok:false,reason:'Siklus WIP terdeteksi'};
+ const w=cgWip(id);if(!w)return{ok:false,reason:'WIP tidak ditemukan'};if(!w.active)return{ok:false,reason:'WIP nonaktif'};
+ const lines=CG.wipLines.filter(l=>String(l.wip_id)===String(id));if(!lines.length)return{ok:false,reason:'Resep belum diisi'};
+ let total=0,source='purchase';
+ for(const l of lines){
+  const q=Number(l.qty_base);if(!(q>0))return{ok:false,reason:'Kuantitas resep tidak valid'};
+  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!x.active||!p)return{ok:false,reason:'Harga bahan belum tersedia atau bahan nonaktif: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
+  else {const child=cgWipCost(l.component_wip_id,stack.concat(String(id)));if(!child.ok)return child;total+=q*child.unitCost;if(child.source==='reference')source='reference'}
+ }
+ const y=Number(w.yield_qty);if(!(y>0))return{ok:false,reason:'Hasil produksi belum valid'};
+ return{ok:true,total,unitCost:total/y,source}
+}
+function cgMenuCost(id){const lines=CG.menuLines.filter(l=>String(l.menu_id)===String(id));if(!lines.length)return{ok:false,reason:'Resep belum diisi'};let total=0,source='purchase';
+ for(const l of lines){const q=Number(l.qty_base);if(!(q>0))return{ok:false,reason:'Kuantitas resep tidak valid'};
+  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!x.active||!p)return{ok:false,reason:'Harga bahan belum tersedia atau bahan nonaktif: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
+  else {const child=cgWipCost(l.component_wip_id,[]);if(!child.ok)return child;total+=q*child.unitCost;if(child.source==='reference')source='reference'}
+ }
+ return{ok:true,total,source}
+}
+function cgPriceTag(x){const p=cgMaterialPrice(x);return p?'<span class="cogs-pill '+(p.source==='reference'?'ref':'')+'">'+cgMoney(p.value)+' / '+esc(x.base_unit)+(p.source==='reference'?' · acuan':' · terakhir')+'</span>':'<span class="cogs-pill bad">Harga belum tersedia</span>'}
+function cgErrCard(){return '<div class="card"><h3>COGS belum tersambung</h3><p class="mu">'+esc(CG.err||'Backend COGS belum siap.')+'</p><div class="btns"><button class="btn s" onclick="cgLoad(true)">Coba lagi</button></div></div>'}
+V.cogs_materials=()=>{if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card"><h3>Memuat Master Bahan…</h3></div>';
+ const div=OPS.division||CG.divs[0]?.id||'';OPS.division=div;const materialItems=CG.items.filter(x=>String(x.division_id)===String(div));const q=CG.filter.toLowerCase(),a=materialItems.filter(x=>(CG.tab==='all'||x.active)&&(!q||String(x.name).toLowerCase().includes(q)||String(x.base_unit).toLowerCase().includes(q)));
+ return '<div class="cogs-wrap"><div class="card">'+opsDivisionSelector()+'<div class="cogs-top"><div><h3>Master Bahan</h3><p class="mu">Menggunakan barapp_items · tanpa master duplikat</p></div><div class="cogs-actions"><input class="cogs-search" placeholder="Cari bahan..." value="'+esc(CG.filter)+'" oninput="CG.filter=this.value;R()"><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div></div><div class="cogs-stats"><div class="cogs-stat"><span class="mu">Bahan aktif</span><b>'+materialItems.filter(x=>x.active).length+'</b></div><div class="cogs-stat"><span class="mu">Harga belum tersedia</span><b>'+materialItems.filter(x=>x.active&&!cgMaterialPrice(x)).length+'</b></div><div class="cogs-stat"><span class="mu">Resep WIP</span><b>'+CG.wips.filter(x=>x.active&&String(x.division_id)===String(div)).length+'</b></div></div><div class="cogs-actions"><button class="btn '+(CG.tab==='active'?'s':'o')+'" onclick="CG.tab=\'active\';R()">Bahan aktif</button><button class="btn '+(CG.tab==='all'?'s':'o')+'" onclick="CG.tab=\'all\';R()">Semua bahan</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan</th><th>Satuan dasar</th><th>Harga HPP</th><th>Status</th></tr></thead><tbody>'+a.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.base_unit)+'</td><td>'+cgPriceTag(x)+'</td><td><span class="cogs-pill '+(x.active?'':'bad')+'">'+(x.active?'Aktif':'Nonaktif')+'</span></td></tr>').join('')+'</tbody></table></div><p class="cogs-help">Harga invoice terakhir diprioritaskan. Jika belum ada, harga acuan ditandai sebagai estimasi; harga kosong tidak dihitung sebagai Rp0.</p></div></div>'}
+function cgLineHtml(type,i,line){
+ line=line||{};const kind=line.component_type||line.type||'material',id=line.item_id||line.component_wip_id||line.id||'';
+ const opts=kind==='material'?CG.items.filter(x=>x.active&&String(x.division_id)===String(OPS.division)).map(x=>'<option value="'+x.id+'" '+(String(x.id)===String(id)?'selected':'')+'>'+esc(x.name)+' · '+esc(x.base_unit)+'</option>').join(''):CG.wips.filter(x=>x.active&&String(x.division_id)===String(OPS.division)&&String(x.id)!==String(CG.editId)).map(x=>'<option value="'+x.id+'" '+(String(x.id)===String(id)?'selected':'')+'>'+esc(x.name)+' · '+esc(x.yield_unit)+'</option>').join('');
+ const item=kind==='material'?cgItem(id):cgWip(id),unit=line.unit_input||(kind==='material'?(item&&item.base_unit||''):(item&&item.yield_unit||'')),qty=line.qty_input??1;
+ return '<div class="cg-line" data-kind="'+type+'" data-index="'+i+'"><select id="cg_'+type+'_kind_'+i+'" onchange="cgLineKind(\''+type+'\','+i+')"><option value="material" '+(kind==='material'?'selected':'')+'>Bahan</option><option value="wip" '+(kind==='wip'?'selected':'')+'>WIP</option></select><select id="cg_'+type+'_id_'+i+'" onchange="cgLineSelect(\''+type+'\','+i+')"><option value="">Pilih komponen</option>'+opts+'</select><input id="cg_'+type+'_qty_'+i+'" type="number" min="0.0001" step="any" value="'+esc(String(qty))+'" placeholder="Qty"><input id="cg_'+type+'_unit_'+i+'" value="'+esc(String(unit))+'" placeholder="Satuan"><button class="btn d x" type="button" onclick="cgRemoveLine(\''+type+'\','+i+')">×</button></div>'
+}
+function cgAddLine(type){const c=document.getElementById('cg_'+type+'_lines');if(!c)return;const i=Number(c.dataset.next||0);c.dataset.next=String(i+1);c.insertAdjacentHTML('beforeend',cgLineHtml(type,i,{type:'material',qty_input:1}));}
+function cgRemoveLine(type,i){const e=document.querySelector('.cg-line[data-kind="'+type+'"][data-index="'+i+'"]');if(e)e.remove()}
+function cgLineKind(type,i){const k=document.getElementById('cg_'+type+'_kind_'+i).value,q=document.getElementById('cg_'+type+'_qty_'+i).value;const row=document.querySelector('.cg-line[data-kind="'+type+'"][data-index="'+i+'"]');if(!row)return;row.outerHTML=cgLineHtml(type,i,{type:k,qty_input:q})}
+function cgLineSelect(type,i){const k=document.getElementById('cg_'+type+'_kind_'+i).value,id=document.getElementById('cg_'+type+'_id_'+i).value,item=k==='material'?cgItem(id):cgWip(id),u=document.getElementById('cg_'+type+'_unit_'+i);if(item)u.value=k==='material'?item.base_unit:item.yield_unit}
+function cgCollectLines(type){const rows=[...document.querySelectorAll('.cg-line[data-kind="'+type+'"]')];return rows.map(r=>{const i=r.dataset.index,k=document.getElementById('cg_'+type+'_kind_'+i).value,id=document.getElementById('cg_'+type+'_id_'+i).value,qty=Number(document.getElementById('cg_'+type+'_qty_'+i).value),unit=document.getElementById('cg_'+type+'_unit_'+i).value.trim();return{type:k,id,qty,unit}})}
+function cgWipEdit(id){if(!cgRoleOK())return;const w=id?cgWip(id):null;if(w)OPS.division=w.division_id;CG.editType='wip';CG.editId=id||null;
+ const lines=id?CG.wipLines.filter(l=>String(l.wip_id)===String(id)).map(l=>({component_type:l.component_type,item_id:l.item_id,component_wip_id:l.component_wip_id,qty_input:l.qty_input,unit_input:l.unit_input})):[];CG.editLines=lines;
+ const title=w?'Edit Resep WIP':'Tambah WIP';modal('<h3>'+title+'</h3><input id="cg_w_div" type="hidden" value="'+esc(OPS.division)+'"><p class="mu">Divisi: '+esc(opsDivName(OPS.division))+'</p><div class="cogs-formgrid"><label>Nama WIP<input id="cg_w_name" maxlength="120" value="'+esc(w&&w.name||'')+'" placeholder="Contoh: Saus Dasar"></label><label>Hasil produksi (qty)<input id="cg_w_yield" type="number" min="0.0001" step="any" value="'+esc(String(w&&w.yield_qty||1))+'"></label><label>Satuan hasil<input id="cg_w_unit" maxlength="32" value="'+esc(w&&w.yield_unit||'batch')+'"></label><label>Status<select id="cg_w_active"><option value="true" '+(!w||w.active?'selected':'')+'>Aktif</option><option value="false" '+(w&&!w.active?'selected':'')+'>Nonaktif</option></select></label></div><div class="cogs-section" style="margin-top:14px"><div class="cogs-top"><b>Komponen resep</b><button class="btn s" onclick="cgAddLine(\'wip\')">+ Tambah komponen</button></div><div id="cg_wip_lines" class="cogs-line-list" data-next="0">'+lines.map((l,i)=>cgLineHtml('wip',i,l)).join('')+'</div><p class="cogs-help">Kuantitas bahan dikonversi ke satuan dasar. WIP turunan dihitung per satuan hasil. Resep kosong atau harga tak valid tidak menghasilkan HPP palsu.</p></div><div class="btns" style="margin-top:14px"><button class="btn o" onclick="closeM()">Batal</button><button class="btn" onclick="cgSaveWip()">Simpan resep</button></div>');
+ const c=document.getElementById('cg_wip_lines');if(c)c.dataset.next=String(lines.length)
+}
+async function cgSaveWip(){if(!cgRoleOK())return;const name=document.getElementById('cg_w_name').value.trim(),yield_qty=Number(document.getElementById('cg_w_yield').value),yield_unit=document.getElementById('cg_w_unit').value.trim(),active=document.getElementById('cg_w_active').value==='true',lines=cgCollectLines('wip');if(!name||!(yield_qty>0)||!yield_unit)return toast('Nama, hasil produksi, dan satuan wajib valid.','warn');
+ if(lines.some(l=>!l.id||!(l.qty>0)||!l.unit))return toast('Lengkapi komponen, kuantitas, dan satuan.','warn');
+ try{const {error}=await sb().rpc('cogs_save_wip',{p_id:CG.editId,p_division_id:document.getElementById('cg_w_div').value,p_name:name,p_yield_qty:yield_qty,p_yield_unit:yield_unit,p_active:active,p_lines:lines});if(error)throw error;closeM();CG.ready=false;await cgLoad(true);toast('Resep WIP tersimpan.','ok')}catch(e){toast('Gagal menyimpan WIP: '+errText(e),'err')}}
+function cgMenuEdit(id){if(!cgRoleOK())return;const m=id?CG.menus.find(x=>String(x.id)===String(id)):null;if(m)OPS.division=m.division_id;CG.editType='menu';CG.editId=id||null;
+ const lines=id?CG.menuLines.filter(l=>String(l.menu_id)===String(id)).map(l=>({component_type:l.component_type,item_id:l.item_id,component_wip_id:l.component_wip_id,qty_input:l.qty_input,unit_input:l.unit_input})):[];CG.editLines=lines;
+ modal('<h3>'+(m?'Edit COGS Menu':'Tambah Menu')+'</h3><input id="cg_m_div" type="hidden" value="'+esc(OPS.division)+'"><p class="mu">Divisi: '+esc(opsDivName(OPS.division))+'</p><div class="cogs-formgrid"><label>Nama menu<input id="cg_m_name" maxlength="120" value="'+esc(m&&m.name||'')+'" placeholder="Nama menu"></label><label>Harga jual (Rp)<input id="cg_m_price" type="number" min="0" step="any" value="'+esc(String(m&&m.selling_price||0))+'"></label><label>Status<select id="cg_m_active"><option value="true" '+(!m||m.active?'selected':'')+'>Aktif</option><option value="false" '+(m&&!m.active?'selected':'')+'>Nonaktif</option></select></label></div><div class="cogs-section" style="margin-top:14px"><div class="cogs-top"><b>Komponen resep</b><button class="btn s" onclick="cgAddLine(\'menu\')">+ Tambah komponen</button></div><div id="cg_menu_lines" class="cogs-line-list" data-next="0">'+lines.map((l,i)=>cgLineHtml('menu',i,l)).join('')+'</div></div><div class="btns" style="margin-top:14px"><button class="btn o" onclick="closeM()">Batal</button><button class="btn" onclick="cgSaveMenu()">Simpan menu</button></div>');
+ const c=document.getElementById('cg_menu_lines');if(c)c.dataset.next=String(lines.length)
+}
+async function cgSaveMenu(){if(!cgRoleOK())return;const name=document.getElementById('cg_m_name').value.trim(),selling_price=Number(document.getElementById('cg_m_price').value),active=document.getElementById('cg_m_active').value==='true',lines=cgCollectLines('menu');if(!name||!(selling_price>=0))return toast('Nama menu dan harga jual harus valid.','warn');if(lines.some(l=>!l.id||!(l.qty>0)||!l.unit))return toast('Lengkapi komponen, kuantitas, dan satuan.','warn');
+ try{const {error}=await sb().rpc('cogs_save_menu',{p_id:CG.editId,p_division_id:document.getElementById('cg_m_div').value,p_name:name,p_selling_price:selling_price,p_active:active,p_lines:lines});if(error)throw error;closeM();CG.ready=false;await cgLoad(true);toast('Menu dan resep tersimpan.','ok')}catch(e){toast('Gagal menyimpan menu: '+errText(e),'err')}}
+function cgToggle(type,id){if(!cgRoleOK())return;const obj=type==='wip'?cgWip(id):CG.menus.find(x=>String(x.id)===String(id));if(!obj)return;cf((obj.active?'Nonaktifkan ':'Aktifkan ')+obj.name+'?',async()=>{try{const rpc=type==='wip'?'cogs_set_wip_active':'cogs_set_menu_active',arg=type==='wip'?{p_id:id,p_active:!obj.active}:{p_id:id,p_active:!obj.active};const {error}=await sb().rpc(rpc,arg);if(error)throw error;CG.ready=false;await cgLoad(true)}catch(e){toast('Gagal mengubah status: '+errText(e),'err')}},'Konfirmasi')}
+V.cogs_wip=()=>{if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card"><h3>Memuat Resep WIP…</h3></div>';
+ const div=OPS.division||CG.divs[0]?.id||'';OPS.division=div;const q=CG.filter.toLowerCase(),a=CG.wips.filter(x=>String(x.division_id)===String(div)&&(CG.tab==='all'||x.active)&&(!q||x.name.toLowerCase().includes(q))),rows=a.map(w=>{const c=cgWipCost(w.id,[]);return '<tr><td><b>'+esc(w.name)+'</b><br><small class="mu">'+esc(c.ok?'Hasil '+cgNum(w.yield_qty)+' '+w.yield_unit:c.reason)+'</small></td><td>'+(c.ok?'<b>'+cgMoney(c.unitCost)+' / '+esc(w.yield_unit)+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">Ada harga acuan</span>':''):'<span class="cogs-pill bad">HPP belum valid</span>')+'</td><td><span class="cogs-pill '+(w.active?'':'bad')+'">'+(w.active?'Aktif':'Nonaktif')+'</span></td><td><div class="cogs-actions"><button class="btn s x" onclick="cgWipEdit(\''+w.id+'\')">Edit</button><button class="btn o x" onclick="cgToggle(\'wip\',\''+w.id+'\')">'+(w.active?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>'}).join('');
+ return '<div class="cogs-wrap"><div class="card">'+opsDivisionSelector()+'<div class="cogs-top"><div><h3>Resep WIP</h3><p class="mu">Mendukung nested WIP dengan validasi siklus di backend.</p></div><div class="cogs-actions"><input class="cogs-search" placeholder="Cari WIP..." value="'+esc(CG.filter)+'" oninput="CG.filter=this.value;R()"><button class="btn s" onclick="cgWipEdit(null)">+ Tambah WIP</button><button class="btn o" onclick="cgLoad(true)">Muat ulang</button></div></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>WIP</th><th>HPP per satuan hasil</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table></div></div></div>'}
+V.cogs_menu=()=>{if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card"><h3>Memuat COGS Menu…</h3></div>';
+ const div=OPS.division||CG.divs[0]?.id||'';OPS.division=div;const q=CG.filter.toLowerCase(),a=CG.menus.filter(x=>String(x.division_id)===String(div)&&(CG.tab==='all'||x.active)&&(!q||x.name.toLowerCase().includes(q))),rows=a.map(m=>{const c=cgMenuCost(m.id),margin=c.ok&&Number(m.selling_price)>0?(Number(m.selling_price)-c.total)/Number(m.selling_price)*100:null;return '<tr><td><b>'+esc(m.name)+'</b></td><td>'+(c.ok?'<b>'+cgMoney(c.total)+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':''):'<span class="cogs-pill bad">Belum valid</span><br><small class="mu">'+esc(c.reason)+'</small>')+'</td><td>'+cgMoney(m.selling_price)+'</td><td>'+(margin==null?'<span class="cogs-pill bad">Margin belum valid</span>':cgNum(margin)+'%')+'</td><td><div class="cogs-actions"><button class="btn s x" onclick="cgMenuEdit(\''+m.id+'\')">Edit</button><button class="btn o x" onclick="cgToggle(\'menu\',\''+m.id+'\')">'+(m.active?'Nonaktifkan':'Aktifkan')+'</button></div></td></tr>'}).join('');
+ return '<div class="cogs-wrap"><div class="card">'+opsDivisionSelector()+'<div class="cogs-top"><div><h3>COGS Menu</h3><p class="mu">HPP aktif mengikuti harga bahan valid terkini. Transaksi penjualan melalui menu ini menyimpan snapshot HPP dan harga jual.</p></div><div class="cogs-actions"><input class="cogs-search" placeholder="Cari menu..." value="'+esc(CG.filter)+'" oninput="CG.filter=this.value;R()"><button class="btn s" onclick="cgMenuEdit(null)">+ Tambah menu</button><button class="btn o" onclick="cgLoad(true)">Muat ulang</button></div></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Menu</th><th>Total HPP</th><th>Harga jual</th><th>Margin</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="cogs-help">Margin = (harga jual − HPP) ÷ harga jual. Harga jual nol atau HPP tidak lengkap tidak menampilkan margin.</p></div></div>'}
+
 if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(trDom))).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-40){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
@@ -1992,5 +2190,174 @@ loadSharedSettings(true);
 
 
 
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+
+/* ===== COGS OPERATIONS: production WIP, Daily SO, and menu sales ===== */
+const opsDivName=id=>(CG.divs.find(d=>String(d.id)===String(id))||{}).name||'Divisi';
+function opsDivisionSelector(){const id=OPS.division||CG.divs[0]?.id||'';return '<div class="cogs-formgrid"><label>Divisi COGS<select onchange="opsSetDivision(this.value)">'+CG.divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(id)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label></div>';}
+const opsWip=id=>CG.wips.find(x=>String(x.id)===String(id));
+const opsMenu=id=>CG.menus.find(x=>String(x.id)===String(id));
+const opsKey=(type,id)=>type+':'+id;
+const opsDate=()=>today();
+const opsErr=e=>{
+ const m=String(e&&e.message||e||'');
+ if(/COGS_SO_ALREADY_SUBMITTED/i.test(m))return 'Daily SO tanggal ini sudah disimpan. Batalkan rekaman lama dulu kalau perlu koreksi.';
+ if(/COGS_SO_MUST_COUNT_ALL_ITEMS/i.test(m))return 'Semua bahan dan WIP dalam daftar wajib dihitung.';
+ if(/COGS_PRICE_MISSING|COGS_CHILD_COST_MISSING/i.test(m))return 'HPP tidak valid: ada bahan tanpa harga pembelian terakhir maupun harga acuan.';
+ if(/COGS_RECIPE_EMPTY/i.test(m))return 'Resep belum lengkap.';
+ if(/COGS_DIVISION_FORBIDDEN|42501|row-level security/i.test(m))return 'Akses ke divisi ini ditolak oleh aturan keamanan.';
+ if(/COGS_WIP_NOT_ACTIVE/i.test(m))return 'WIP tidak aktif atau tidak ditemukan.';
+ if(/COGS_MENU_NOT_ACTIVE/i.test(m))return 'Menu tidak aktif atau tidak ditemukan.';
+ if(/schema cache|PGRST205|42P01|does not exist/i.test(m))return 'Backend operasi COGS belum tersedia. Periksa migrasi COGS Operations V1.';
+ return errText(e);
+};
+async function opsLoadPosition(show){
+ if(!CG.ready)return;
+ const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
+ if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.position=[];if(show)R();return}
+ if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
+ OPS.positionLoading=true;OPS.positionError='';if(show)R();
+ try{
+  const {data,error}=await sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
+  if(error)throw error;
+  let rows=data||[];
+  const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
+  if(existing){
+   const old=CG.dailySOLines.filter(l=>String(l.so_id)===String(existing.id));
+   rows=rows.map(p=>{
+    const l=old.find(x=>x.component_type===p.component_type&&String(p.component_id)==String(p.component_type==='material'?x.item_id:x.component_wip_id));
+    return l?Object.assign({},p,{component_name:l.component_name_snapshot,unit:l.unit_snapshot,expected_qty_base:l.expected_qty_base,unit_cost:l.unit_cost_snapshot,stored_counted_qty:l.counted_qty_base,stored_variance_qty:l.variance_qty_base,stored_variance_value:l.variance_value_snapshot}):p;
+   });
+   // Preserve the complete submitted SO snapshot in history, including items later deactivated.
+   const present=new Set(rows.map(p=>opsKey(p.component_type,p.component_id)));
+   old.forEach(l=>{
+    const type=l.component_type,id=type==='material'?l.item_id:l.component_wip_id,k=opsKey(type,id);
+    if(!present.has(k)){
+     rows.push({component_type:type,component_id:id,component_name:l.component_name_snapshot,unit:l.unit_snapshot,
+      expected_qty_base:l.expected_qty_base,unit_cost:l.unit_cost_snapshot,cost_source:'snapshot',
+      stored_counted_qty:l.counted_qty_base,stored_variance_qty:l.variance_qty_base,stored_variance_value:l.variance_value_snapshot});
+     present.add(k);
+    }
+   });
+   OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]=p.stored_counted_qty==null?'':String(p.stored_counted_qty));
+  }else{
+   OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]='');
+  }
+  OPS.position=rows;OPS.positionLoadedFor=key;
+ }catch(e){OPS.positionError=opsErr(e);OPS.position=[];if(show)toast(OPS.positionError,'err')}
+ finally{OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
+}
+function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
+function opsSetDate(date){OPS.date=date||opsDate();OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};opsLoadPosition(true)}
+function opsPreviewProduction(){
+ const q=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
+ if(!(q>0)||!id){el.textContent='Pilih WIP dan jumlah produksi.';return}
+ const c=cgWipCost(id,[]),w=opsWip(id);if(!c.ok){el.textContent='HPP belum valid: '+c.reason;return}
+ el.innerHTML='<b>HPP per '+esc(w.yield_unit)+': '+cgMoney(c.unitCost)+'</b><br>Perkiraan batch: <b>'+cgMoney(c.unitCost*q)+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">Mengandung harga acuan</span>':'');
+}
+async function opsRecordProduction(){
+ if(!cgRoleOK())return;
+ const division=v('ops_prod_div'),wip_id=v('ops_prod_wip'),produced_qty=Number(v('ops_prod_qty')),produced_at=v('ops_prod_date')||opsDate(),notes=v('ops_prod_note').trim();
+ if(!division||!wip_id||!(produced_qty>0))return toast('Lengkapi divisi, WIP, dan jumlah produksi.','warn');
+ const c=cgWipCost(wip_id,[]);if(!c.ok)return toast('Resep belum menghasilkan HPP valid: '+c.reason,'err');
+ try{
+  const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:wip_id,p_produced_qty:produced_qty,p_produced_at:produced_at,p_notes:notes||null});
+  if(error)throw error;
+  OPS.prodQty='';await opsReload();toast('Produksi WIP tersimpan. HPP batch disimpan sebagai snapshot.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+function opsPreviewSale(){
+ const qty=Number(v('ops_sale_qty')),id=v('ops_sale_menu'),priceRaw=v('ops_sale_price'),el=document.getElementById('ops_sale_preview');if(!el)return;
+ if(!(qty>0)||!id){el.textContent='Pilih menu dan jumlah terjual.';return}
+ const c=cgMenuCost(id),m=opsMenu(id);if(!c.ok){el.textContent='HPP belum valid: '+c.reason;return}
+ const price=priceRaw===''?Number(m.selling_price):Number(priceRaw);if(!Number.isFinite(price)||price<0){el.textContent='Harga jual tidak valid.';return}
+ const hpp=c.total*qty,sales=price*qty;
+ el.innerHTML='<b>Penjualan: '+cgMoney(sales)+'</b><br>HPP tersimpan: <b>'+cgMoney(hpp)+'</b><br>Margin kotor: <b>'+(sales-hpp>=0?cgMoney(sales-hpp):'-'+cgMoney(hpp-sales))+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">HPP estimasi</span>':'');
+}
+async function opsRecordSale(){
+ if(!cgRoleOK())return;
+ const division=v('ops_sale_div'),menu_id=v('ops_sale_menu'),qty=Number(v('ops_sale_qty')),sold_at=v('ops_sale_date')||opsDate(),raw=v('ops_sale_price').trim(),selling_price=raw===''?null:Number(raw),notes=v('ops_sale_note').trim();
+ if(!division||!menu_id||!(qty>0)||raw!==''&&(!Number.isFinite(selling_price)||selling_price<0))return toast('Lengkapi divisi, menu, jumlah, dan harga jual yang valid.','warn');
+ const c=cgMenuCost(menu_id);if(!c.ok)return toast('HPP menu belum valid: '+c.reason,'err');
+ try{
+  const {error}=await sb().rpc('cogs_record_menu_sale',{p_division_id:division,p_menu_id:menu_id,p_qty:qty,p_sold_at:sold_at,p_selling_price:selling_price,p_notes:notes||null});
+  if(error)throw error;
+  OPS.saleQty='';await opsReload();toast('Penjualan tersimpan dengan HPP historis.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+async function opsReload(){
+ OPS.positionLoadedFor='';OPS.position=[];
+ try{await cgLoad(true)}catch(e){}
+ if(pg==='cogs_daily_so')await opsLoadPosition(false);
+ R();
+}
+async function opsSaveDailySO(){
+ if(!cgRoleOK())return;
+ const division=v('ops_so_div')||OPS.division,so_date=v('ops_so_date')||OPS.date||opsDate(),notes=v('ops_so_note').trim();
+ const existing=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(so_date)&&s.status==='submitted');
+ if(existing)return toast('Daily SO untuk divisi dan tanggal ini sudah disimpan. Batalkan dulu jika ingin koreksi.','warn');
+ if(!OPS.position.length)return toast('Saldo belum dimuat. Tekan Muat saldo dulu.','warn');
+ const lines=OPS.position.map(p=>({type:p.component_type,id:p.component_id,counted_qty_base:OPS.counts[opsKey(p.component_type,p.component_id)]}));
+ if(lines.some(l=>l.counted_qty_base===''||l.counted_qty_base==null||!Number.isFinite(Number(l.counted_qty_base))||Number(l.counted_qty_base)<0))return toast('Isi jumlah fisik semua bahan dan WIP, termasuk angka 0 jika stok habis.','warn');
+ try{
+  const {error}=await sb().rpc('cogs_save_daily_so',{p_division_id:division,p_so_date:so_date,p_lines:lines.map(l=>({type:l.type,id:l.id,counted_qty_base:Number(l.counted_qty_base)})),p_notes:notes||null});
+  if(error)throw error;
+  await opsReload();toast('Daily SO tersimpan. Selisih stok dan nilai varians sudah disnapshot.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+function opsConfirmCancel(kind,id){
+ const label=kind==='production'?'produksi WIP':kind==='sale'?'penjualan menu':'Daily SO';
+ modal('<h3>Batalkan '+label+'?</h3><p class="mu">Rekaman historis tetap disimpan, tetapi tidak lagi masuk perhitungan saldo stok. Isi alasan pembatalan.</p><label>Alasan<input id="ops_cancel_reason" maxlength="500"></label><div class="btns"><button class="btn s" onclick="closeM()">Kembali</button><button class="btn" onclick="opsDoCancel(&quot;'+kind+'&quot;,&quot;'+id+'&quot;)">Konfirmasi batal</button></div>');
+}
+async function opsDoCancel(kind,id){
+ const reason=v('ops_cancel_reason').trim();
+ try{const {error}=await sb().rpc('cogs_cancel_operation',{p_kind:kind,p_id:id,p_reason:reason||null});if(error)throw error;closeM();await opsReload();toast('Rekaman dibatalkan. Data historis tetap tersimpan.','ok')}catch(e){toast(opsErr(e),'err')}
+}
+function opsCancelButton(kind,id){return '<button class="btn o x" onclick="opsConfirmCancel(&quot;'+kind+'&quot;,&quot;'+id+'&quot;)">Batalkan</button>'}
+V.cogs_production=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data produksi…</div>';
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OPS.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const selectedDiv=OPS.division||CG.divs[0]?.id||'';const wips=CG.wips.filter(w=>w.active&&String(w.division_id)===String(selectedDiv));
+ const wipOptions=wips.map(w=>'<option value="'+w.id+'">'+esc(w.name)+' · hasil '+cgNum(w.yield_qty)+' '+esc(w.yield_unit)+'</option>').join('');
+ const rows=CG.productions.filter(b=>String(b.division_id)===String(selectedDiv)).map(b=>{
+  const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
+  return '<tr><td><b>'+esc(b.wip_name_snapshot||w&&w.name||'WIP')+'</b><br><small class="mu">'+esc(b.produced_at)+' · '+esc(opsDivName(b.division_id))+'</small></td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.total_cost_snapshot)+(b.cost_source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':'')+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Catat jumlah hasil produksi. Konsumsi bahan dan HPP batch disimpan saat transaksi.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><label>Resep WIP<select id="ops_prod_wip" onchange="opsPreviewProduction()"><option value="">Pilih WIP</option>'+wipOptions+'</select></label><label>Jumlah hasil produksi<input id="ops_prod_qty" type="number" min="0.0001" step="any" oninput="opsPreviewProduction()" placeholder="Contoh: 2500"></label><div id="ops_prod_preview" class="card mu">Pilih WIP dan jumlah produksi untuk melihat perkiraan HPP.</div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Batch, shift, atau catatan produksi"></label><button class="btn" onclick="opsRecordProduction()">Simpan produksi</button></div><div class="card"><h3>Riwayat produksi</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>WIP / tanggal</th><th>Hasil</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
+};
+V.cogs_sales=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OPS.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const selectedDiv=OPS.division||CG.divs[0]?.id||'';const menuOptions=CG.menus.filter(m=>m.active&&String(m.division_id)===String(selectedDiv)).map(m=>'<option value="'+m.id+'">'+esc(m.name)+' · '+cgMoney(m.selling_price)+'</option>').join('');
+ const rows=CG.sales.filter(s=>String(s.division_id)===String(selectedDiv)).map(s=>{
+  const margin=Number(s.gross_sales_snapshot)-Number(s.total_hpp_snapshot);
+  return '<tr><td><b>'+esc(s.menu_name_snapshot)+'</b><br><small class="mu">'+esc(s.sold_at)+' · '+esc(opsDivName(s.division_id))+'</small></td><td>'+cgNum(s.qty)+'</td><td>'+cgMoney(s.selling_price_snapshot)+'</td><td>'+cgMoney(s.total_hpp_snapshot)+(s.cost_source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':'')+'</td><td>'+cgMoney(margin)+'</td><td>'+(s.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='posted'?opsCancelButton('sale',s.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Penjualan Menu</h3><p class="mu">Simpan HPP dan harga jual sebagai snapshot transaksi; perubahan resep setelahnya tidak mengubah histori.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><label>Menu<select id="ops_sale_menu" onchange="opsPreviewSale()"><option value="">Pilih menu</option>'+menuOptions+'</select></label><div class="cogs-formgrid"><label>Jumlah terjual<input id="ops_sale_qty" type="number" min="0.0001" step="any" oninput="opsPreviewSale()" placeholder="Contoh: 12"></label><label>Harga jual per menu (opsional)<input id="ops_sale_price" type="number" min="0" step="any" oninput="opsPreviewSale()" placeholder="Gunakan harga master jika kosong"></label></div><div id="ops_sale_preview" class="card mu">Pilih menu dan jumlah terjual untuk melihat HPP dan margin.</div><label>Catatan / nomor transaksi<input id="ops_sale_note" maxlength="500"></label><button class="btn" onclick="opsRecordSale()">Simpan penjualan</button></div><div class="card"><h3>Riwayat penjualan</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Menu / tanggal</th><th>Qty</th><th>Harga jual</th><th>Total HPP snapshot</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan.</td></tr>')+'</tbody></table></div></div></div>';
+};
+V.cogs_daily_so=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';
+ const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
+ const key=division+'|'+date;
+ if(!OPS.positionLoading&&OPS.positionLoadedFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
+ const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const rows=OPS.position.map(p=>{
+  const k=opsKey(p.component_type,p.component_id),stored=active&&p.stored_counted_qty!=null;
+  const val=OPS.counts[k]??'';
+  const variance=stored?Number(p.stored_variance_qty):Number(val)===''?null:Number(val)-Number(p.expected_qty_base);
+  const varValue=stored?p.stored_variance_value:(variance==null||p.unit_cost==null?null:variance*Number(p.unit_cost));
+  const type=p.component_type==='material'?'Bahan':'WIP';
+  return '<tr><td><small class="mu">'+type+'</small><br><b>'+esc(p.component_name)+'</b></td><td>'+esc(p.unit)+'</td><td>'+cgNum(p.expected_qty_base)+'</td><td><input type="number" min="0" step="any" style="width:115px" value="'+esc(val)+'" '+(active?'disabled':'')+' oninput="OPS.counts[&quot;'+k+'&quot;]=this.value"></td><td>'+(variance==null?'–':cgNum(variance))+'</td><td>'+(varValue==null?'–':cgMoney(varValue))+'</td></tr>';
+ }).join('');
+ const hrows=CG.dailySO.filter(s=>String(s.division_id)===String(division)).map(s=>{
+  const lines=CG.dailySOLines.filter(l=>String(l.so_id)===String(s.id));
+  const varianceCount=lines.filter(l=>Math.abs(Number(l.variance_qty_base))>0.000001).length;
+  const totalValue=lines.reduce((a,l)=>a+Number(l.variance_value_snapshot||0),0);
+  return '<tr><td><b>'+esc(s.so_date)+'</b><br><small class="mu">'+esc(opsDivName(s.division_id))+'</small></td><td>'+lines.length+' item</td><td>'+varianceCount+' selisih</td><td>'+cgMoney(totalValue)+'</td><td>'+(s.status==='submitted'?'<span class="cogs-pill">Disimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='submitted'?opsCancelButton('daily_so',s.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p></div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" '+(active?'disabled':'')+' placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan / WIP</th><th>Satuan dasar</th><th>Saldo harapan</th><th>Fisik</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada bahan atau WIP di divisi ini.</td></tr>')+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card"><h3>Riwayat Daily SO</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
+};
+
+</script>
 </body></html>
