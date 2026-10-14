@@ -223,6 +223,17 @@ details[open]>summary::after{transform:rotate(180deg)}
 .md{width:100%;max-width:500px;max-height:92vh;overflow:auto;padding:20px;background:var(--cd);border:1px solid var(--line);border-radius:calc(var(--r)*1.6);box-shadow:var(--cozy-lg);animation:komEnter .28s cubic-bezier(.2,.8,.2,1) backwards}
 .md .grid .btn{flex-direction:column;min-height:92px;gap:6px}
 .md .grid .btn .ic{color:inherit}
+/* Mobile spacing for inventory receipt dialog */
+.ov{padding:12px;overflow-y:auto;align-items:center}
+.md{max-height:calc(100vh - 24px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.md label{display:block;min-width:0;margin-bottom:10px}
+.md label input,.md label select,.md label textarea{display:block;width:100%;min-width:0;max-width:100%;margin-top:5px}
+.md .grid{min-width:0;align-items:start}
+.md #in_preview{margin:4px 0 12px;padding:12px;line-height:1.5}
+.md:has(#in_item)>.btn{display:block;width:100%;min-height:46px;margin-top:4px;white-space:normal}
+.md:has(#in_item)>.btns{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.md:has(#in_item)>.btns .btn{width:100%;min-height:42px}
+@media(max-width:520px){.ov{padding:10px}.md{max-height:calc(100vh - 20px);padding:16px}.md .grid{gap:8px!important}.md .grid>*{min-width:0}.md:has(#in_item)>.btns{margin-top:8px}}
 
 /* ---------- toast ---------- */
 #t{position:fixed;top:calc(10px + var(--st));left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:8px;width:min(94vw,400px)}
