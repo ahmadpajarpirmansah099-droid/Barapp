@@ -480,6 +480,17 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onload="window.__barappSupabaseLoaded=true;if(typeof sbLoad==='function'){sbLoad(true);initAuth();loadSharedSettings(true)}"></script>
 <script async src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
+(function(){
+  function showError(kind, message, line, col){
+    var a=document.getElementById('app');
+    if(!a) return;
+    a.innerHTML='<div style="margin:12px;padding:22px;border:1px solid #D9B6A1;border-radius:18px;background:#FFFCF6;color:#2C1A14;font:14px/1.6 system-ui;overflow-wrap:anywhere"><b>BARAPP · Diagnostik JavaScript</b><p style="margin:10px 0">Aplikasi berhenti sebelum UI tampil.</p><code style="white-space:pre-wrap">'+String(kind)+': '+String(message||'Error tidak terdeteksi').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})+(line?' (baris '+line+(col?':'+col:'')+')':'')+'</code><p style="margin-top:12px">Kirim screenshot ini ke Ka. Data Supabase tidak diubah.</p></div>';
+  }
+  window.addEventListener('error',function(e){showError('JS ERROR',e.message,e.lineno,e.colno)});
+  window.addEventListener('unhandledrejection',function(e){var r=e.reason;showError('PROMISE ERROR',r&&(r.stack||r.message)||r)});
+})();
+</script>
+<script>
 const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
