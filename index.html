@@ -1941,9 +1941,10 @@ loadSharedSettings(true);
 <script id="komorebi-ui-js">
 /* UI tambahan (murni tampilan): ikon judul kartu bergaya Lucide + kunang-kunang. Tidak menyentuh data/logika. */
 (()=>{
- const uri=(k,c)=>'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+window.ICP[k]+'</svg>')+'")';
+ const ICONS=(typeof ICP!=='undefined'&&ICP&&typeof ICP==='object')?ICP:((window.ICP&&typeof window.ICP==='object')?window.ICP:{});
+ const uri=(k,c)=>'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[k]||'')+'</svg>')+'")';
  const st=document.createElement('style');st.id='komorebi-h3-icons';
- const ks=Object.keys(window.ICP).filter(k=>k!='folder');
+ const ks=Object.keys(ICONS).filter(k=>k!='folder');
  st.textContent=ks.map(k=>'h3[data-ic="'+k+'"]::before{background-image:'+uri(k,'#7A9A60')+'}').join('\n')
   +'\n.card>h3:first-child::after{background-image:'+uri('chev','#A39A88')+'}\n.md>h3:first-child::after{background-image:'+uri('x','#A39A88')+'}\n.md>h3:first-child::after:hover{background-color:rgba(122,154,96,.14)}';
  document.head.append(st);
