@@ -293,7 +293,7 @@ begin
  union all
  select 'wip'::text,w.id,w.name,w.yield_unit,public.cogs_expected_wip_qty(w.id,p_division_id,p_as_of),co.unit_cost,co.cost_source
  from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.created_at::date<=p_as_of
- order by component_type,component_name;
+ order by 1,3;
 end; $$;
 revoke all on function public.cogs_get_stock_position(uuid,date) from public,anon;
 grant execute on function public.cogs_get_stock_position(uuid,date) to authenticated;
