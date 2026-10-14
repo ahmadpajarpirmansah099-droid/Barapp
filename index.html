@@ -1912,7 +1912,7 @@ async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse
 /* ===== COGS V1: data disimpan di Supabase; Master Bahan memakai barapp_items ===== */
 const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
 const cgRoleOK=()=>adm();
-const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>=0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
+const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
 const cgItem=id=>CG.items.find(x=>String(x.id)===String(id));
 const cgWip=id=>CG.wips.find(x=>String(x.id)===String(id));
 const cgMoney=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(Number(n)||0);
@@ -1923,7 +1923,7 @@ async function cgLoad(show){
  try{
   const c=sb();
   const rs=await Promise.all([
-   c.from('barapp_items').select('id,name,base_unit,conversions,reference_price_per_base,reference_price_amount,reference_price_unit,last_purchase_price_per_base,active,division_id').order('name'),
+   c.rpc('cogs_list_materials'),
    c.from('cogs_wip').select('*').order('name'),
    c.from('cogs_wip_recipe_lines').select('*').order('created_at'),
    c.from('cogs_menus').select('*').order('name'),
@@ -1939,12 +1939,12 @@ function cgInit(){if(!CG.ready&&!CG.loading)cgLoad(false)}
 function cgMaterialPrice(x){const p=cgPrice(x);return p?{value:p.value,source:p.source}:null}
 function cgWipCost(id,stack){
  stack=stack||[];if(stack.includes(String(id)))return{ok:false,reason:'Siklus WIP terdeteksi'};
- const w=cgWip(id);if(!w)return{ok:false,reason:'WIP tidak ditemukan'};
+ const w=cgWip(id);if(!w)return{ok:false,reason:'WIP tidak ditemukan'};if(!w.active)return{ok:false,reason:'WIP nonaktif'};
  const lines=CG.wipLines.filter(l=>String(l.wip_id)===String(id));if(!lines.length)return{ok:false,reason:'Resep belum diisi'};
  let total=0,source='purchase';
  for(const l of lines){
   const q=Number(l.qty_base);if(!(q>0))return{ok:false,reason:'Kuantitas resep tidak valid'};
-  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!p)return{ok:false,reason:'Harga bahan belum tersedia: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
+  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!x.active||!p)return{ok:false,reason:'Harga bahan belum tersedia atau bahan nonaktif: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
   else {const child=cgWipCost(l.component_wip_id,stack.concat(String(id)));if(!child.ok)return child;total+=q*child.unitCost;if(child.source==='reference')source='reference'}
  }
  const y=Number(w.yield_qty);if(!(y>0))return{ok:false,reason:'Hasil produksi belum valid'};
@@ -1952,7 +1952,7 @@ function cgWipCost(id,stack){
 }
 function cgMenuCost(id){const lines=CG.menuLines.filter(l=>String(l.menu_id)===String(id));if(!lines.length)return{ok:false,reason:'Resep belum diisi'};let total=0,source='purchase';
  for(const l of lines){const q=Number(l.qty_base);if(!(q>0))return{ok:false,reason:'Kuantitas resep tidak valid'};
-  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!p)return{ok:false,reason:'Harga bahan belum tersedia: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
+  if(l.component_type==='material'){const x=cgItem(l.item_id),p=cgMaterialPrice(x);if(!x||!x.active||!p)return{ok:false,reason:'Harga bahan belum tersedia atau bahan nonaktif: '+(x&&x.name||'bahan')};total+=q*p.value;if(p.source==='reference')source='reference'}
   else {const child=cgWipCost(l.component_wip_id,[]);if(!child.ok)return child;total+=q*child.unitCost;if(child.source==='reference')source='reference'}
  }
  return{ok:true,total,source}
