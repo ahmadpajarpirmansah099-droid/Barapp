@@ -435,6 +435,91 @@ body::before{display:none!important}
 .s-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));font-weight:700}
 .jd-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));border-color:color-mix(in srgb,#6d7fa0 60%,var(--line))}
 .s-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));font-weight:700}
+
+/* ===== BARAPP • EDITORIAL BISTRO DESIGN REFRESH =====
+   Visual-only layer inspired by the user's warm restaurant reference.
+   Keep existing modules, responsive inventory-table scrolling, and app logic unchanged.
+*/
+body{font-size:14px;line-height:1.55}
+body::before{background-image:none;opacity:0}
+h1,h2,h3{font-family:var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.025em}
+.app-top{background:var(--cd);border-bottom:2px solid var(--dk);box-shadow:0 3px 0 color-mix(in srgb,var(--dk) 10%,transparent);-webkit-backdrop-filter:none;backdrop-filter:none}
+.hd{gap:12px}
+.hd-t h1{font-family:var(--fh),'Fraunces',Georgia,serif;font-size:clamp(19px,2vw,24px);font-weight:650;letter-spacing:-.035em}
+.hd-t small{font-size:11px;line-height:1.4}
+.tile{background:var(--ac2);color:var(--tx);border:1.5px solid var(--dk);border-radius:12px}
+.brand{border-bottom:1.5px solid var(--dk)}
+.brand b{font:700 19px/1.15 var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.025em}
+.brand small{color:var(--ac);letter-spacing:.12em}
+.side{border-right:2px solid var(--dk)!important;background:var(--cd)}
+.nvl{font-size:10px;letter-spacing:.12em}
+.nvb{min-height:44px;border-radius:12px;padding:10px 13px;transition:background .2s,border-color .2s,transform .2s,box-shadow .2s}
+.nvb.on{background:var(--ac2);border:1.5px solid var(--dk);color:var(--tx);box-shadow:2px 2px 0 var(--dk)}
+.nvb:focus-visible,.ibtn:focus-visible,.task:focus-visible,.start:focus-visible,.btn:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
+main{padding-top:22px;padding-bottom:28px}
+.card{background:var(--cd);border:1.5px solid var(--dk);border-radius:14px;box-shadow:3px 3px 0 var(--dk);padding:clamp(15px,2vw,21px);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.card:hover{transform:translateY(-1px);box-shadow:4px 4px 0 var(--dk)}
+.card>h3:first-child,.md>h3:first-child{font:650 17px/1.3 var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.02em}
+.card>h3:first-child::before,.md>h3:first-child::before{background-color:var(--ac2);border:1.5px solid var(--dk);border-radius:10px}
+.grid{gap:14px}
+.btn{min-height:44px;border-radius:13px;padding:10px 17px;background:var(--ac);color:var(--onac);border:2px solid var(--dk);box-shadow:4px 4px 0 var(--dk);font-weight:700;letter-spacing:.01em;filter:none;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.btn:hover{filter:none;transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--dk)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--dk)}
+.btn.s,.btn.o,.btn.x:not(.d){background:var(--cd);color:var(--tx);border:1.5px solid var(--dk);box-shadow:2px 2px 0 var(--dk)}
+.btn.s:hover,.btn.o:hover,.btn.x:not(.d):hover{background:var(--ac2);border-color:var(--dk);box-shadow:3px 3px 0 var(--dk);transform:translate(-1px,-1px)}
+.btn.s:active,.btn.o:active,.btn.x:not(.d):active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--dk)}
+.btn.d{box-shadow:2px 2px 0 var(--dg);border:1.5px solid var(--dg)}
+.btn.x{min-height:36px;border-radius:10px}
+.ibtn{width:44px;height:44px;border-radius:12px;background:var(--cd);border:1.5px solid var(--dk);box-shadow:2px 2px 0 var(--dk)}
+.ibtn:hover{background:var(--ac2);border-color:var(--dk)}
+input,select,textarea{min-height:44px;background:var(--cd);border:1.5px solid color-mix(in srgb,var(--dk) 34%,var(--br));border-radius:10px;padding:10px 12px}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}
+label{font-size:12px;font-weight:700;color:var(--tx)}
+::placeholder{color:var(--mu);opacity:.8}
+table th{background:var(--lt);color:var(--tx);font-weight:800;letter-spacing:.07em;border-bottom:1.5px solid var(--dk)}
+table td{border-bottom:1px solid var(--br)}
+table tr:hover td{background:color-mix(in srgb,var(--ac2) 65%,var(--cd))}
+th:first-child{background:var(--lt)}
+.app-top .toolbar .btn{box-shadow:2px 2px 0 var(--dk)}
+.dd{border:1.5px solid var(--dk);border-radius:14px;box-shadow:4px 4px 0 var(--dk)}
+.dd button{min-height:44px;border-radius:9px}
+.ov{background:rgba(44,26,20,.42);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.md{background:var(--cd);border:2px solid var(--dk);border-radius:16px;box-shadow:5px 5px 0 var(--dk)}
+#t .w{background:var(--cd);border:1.5px solid var(--dk);border-radius:13px;box-shadow:3px 3px 0 var(--dk)}
+.statusbar{background:var(--cd);border:1.5px solid var(--dk);border-radius:13px;box-shadow:2px 2px 0 var(--dk);-webkit-backdrop-filter:none;backdrop-filter:none}
+.taskbar{background:var(--cd);border:1.5px solid var(--dk);border-radius:16px;box-shadow:3px 3px 0 var(--dk);-webkit-backdrop-filter:none;backdrop-filter:none}
+.start,.task{min-height:44px;border-radius:11px}
+.start{background:var(--ac2);color:var(--tx);border:1.5px solid var(--dk)}
+.task.on{background:var(--ac);color:var(--onac);border:1.5px solid var(--dk);box-shadow:2px 2px 0 var(--dk)}
+.tray{border:1px solid var(--br);border-radius:10px}
+.lgs{background:var(--bg)}
+.scene{opacity:.18}
+.lgc{background:var(--cd);border:2px solid var(--dk);border-radius:16px;box-shadow:5px 5px 0 var(--dk);-webkit-backdrop-filter:none;backdrop-filter:none}
+.lgc h1{font:700 clamp(29px,5vw,36px)/1.12 var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.035em}
+.logo{border-radius:13px}
+.lg-st{border-radius:10px;border-color:var(--br)}
+.fld .iw{border-radius:10px}
+@media(min-width:900px){
+  .app-top{padding:14px 30px}
+  main{padding:28px 30px}
+  .side .brand{padding:20px 18px 16px}
+}
+@media(max-width:520px){
+  main{padding:16px 12px 24px}
+  .card{padding:15px;border-radius:12px;box-shadow:2.5px 2.5px 0 var(--dk)}
+  .card:hover{transform:none;box-shadow:2.5px 2.5px 0 var(--dk)}
+  .card>h3:first-child,.md>h3:first-child{font-size:16px}
+  .btn{padding:10px 13px}
+  .btn.x{min-height:36px}
+  .statusbar{left:10px;right:10px}
+  .taskbar{left:10px;right:10px;gap:4px;padding:6px}
+  .task,.start{padding:8px 9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .card,.btn,.ibtn,.nvb,.task,.start{transition:none!important}
+  .card:hover{transform:none}
+}
+
 </style>
 </head><body>
 
@@ -452,10 +537,10 @@ try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
-const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
+const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fraunces',mode:'light',radius:14,speed:0.24,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
-v:6,logo:'',light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
-dark:{bg:'#1C2526',cd:'#273336',tx:'#EDE9DF',mu:'#B9B6A8',br:'#3A4A44',ac:'#9AB77C',ac2:'#35493D',dg:'#E08A75',gd:'#E2B66F',tt:'#31483B',tt2:'#7FA062',hl:'#43504B',lt:'#34413B',sh:'#131A1B',dk:'#101617'}};
+v:7,logo:'',light:{bg:'#FFF8EF',cd:'#FFFCF6',tx:'#2C1A14',mu:'#766258',br:'#E7CFC0',ac:'#F2673A',ac2:'#FFE4D7',dg:'#BA3F2B',gd:'#D99A3D',tt:'#4B271C',tt2:'#F2673A',hl:'#FFFFFF',lt:'#FFF0E4',sh:'#D9B6A1',dk:'#2C1A14'},
+dark:{bg:'#211915',cd:'#2D221D',tx:'#FFF2E7',mu:'#C9B5A8',br:'#584033',ac:'#FF8A63',ac2:'#4D3025',dg:'#F17F70',gd:'#E9B76C',tt:'#E67B54',tt2:'#FF996F',hl:'#372720',lt:'#3A2921',sh:'#120D0A',dk:'#140F0C'}};
 let TH=JSON.parse(JSON.stringify(THEME));if(D.th&&D.th.v==THEME.v)TH={...TH,...D.th,nav:{...THEME.nav,...D.th.nav},light:{...THEME.light,...D.th.light},dark:{...THEME.dark,...D.th.dark}};
 let LANG=D.lang||'id';const LANGS={id:'Bahasa Indonesia',en:'English'},L=(a,b)=>LANG=='en'?b:a;
 /* ===== FONT (nama, kategori, 1 = punya bobot tebal) — tambah font Google Fonts baru di sini ===== */
