@@ -538,3 +538,6 @@ revoke all on function public.cogs_expected_wip_qty(uuid,uuid,date) from public,
 revoke all on function public.cogs_assert_ops_division(uuid) from public,anon,authenticated;
 revoke all on function public.cogs_ops_can_access_division(uuid) from public,anon;
 grant execute on function public.cogs_ops_can_access_division(uuid) to authenticated;
+
+-- Trigger helpers should be callable only through triggers, not the public API.
+revoke all on function public.cogs_touch_updated_at() from public,anon,authenticated;
