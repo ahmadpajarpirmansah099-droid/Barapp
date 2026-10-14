@@ -48,6 +48,7 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const html = fs.readFileSync('index.html', 'utf8');
+          const sql = fs.readFileSync('barapp_cogs_daily_so_active_only_v1.sql', 'utf8');
           const required = [
             'COGS · Master Bahan',
             'COGS · Resep WIP',
@@ -58,9 +59,13 @@ jobs:
             'cogs_record_production',
             'cogs_record_menu_sale',
             'cogs_save_daily_so',
-            'cogs_get_stock_position'
+            'cogs_get_stock_position',
+            'Preserve the complete submitted SO snapshot'
           ];
           const missing = required.filter(value => !html.includes(value));
+          if (!sql.includes('i.active=true') || !sql.includes('w.active=true') || !sql.includes('COGS_SO_ITEM_INVALID_OR_INACTIVE') || !sql.includes('COGS_SO_WIP_INVALID_OR_INACTIVE')) {
+            missing.push('active-only Daily SO backend validation');
+          }
           if (missing.length) {
             console.error('Missing expected markers:', missing.join(', '));
             process.exit(1);
