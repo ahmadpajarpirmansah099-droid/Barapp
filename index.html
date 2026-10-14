@@ -503,8 +503,8 @@ const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
 const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
-v:6,logo:'',light:{bg:'#FFF8EF',cd:'#FFFCF6',tx:'#2C1A14',mu:'#766258',br:'#E7CFC0',ac:'#F2673A',ac2:'#FFE4D7',dg:'#BA3F2B',gd:'#D99A3D',tt:'#4B271C',tt2:'#F2673A',hl:'#FFFFFF',lt:'#FFF0E4',sh:'#D9B6A1',dk:'#2C1A14'},
-dark:{bg:'#211915',cd:'#2D221D',tx:'#FFF2E7',mu:'#C9B5A8',br:'#584033',ac:'#FF8A63',ac2:'#4D3025',dg:'#F17F70',gd:'#E9B76C',tt:'#E67B54',tt2:'#FF996F',hl:'#372720',lt:'#3A2921',sh:'#120D0A',dk:'#140F0C'}};
+v:6,logo:'',light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
+dark:{bg:'#1C2526',cd:'#273336',tx:'#EDE9DF',mu:'#B9B6A8',br:'#3A4A44',ac:'#9AB77C',ac2:'#35493D',dg:'#E08A75',gd:'#E2B66F',tt:'#31483B',tt2:'#7FA062',hl:'#43504B',lt:'#34413B',sh:'#131A1B',dk:'#101617'}};
 let TH=JSON.parse(JSON.stringify(THEME));if(D.th&&D.th.v==THEME.v)TH={...TH,...D.th,nav:{...THEME.nav,...D.th.nav},light:{...THEME.light,...D.th.light},dark:{...THEME.dark,...D.th.dark}};
 let LANG=D.lang||'id';const LANGS={id:'Bahasa Indonesia',en:'English'},L=(a,b)=>LANG=='en'?b:a;
 /* ===== FONT (nama, kategori, 1 = punya bobot tebal) — tambah font Google Fonts baru di sini ===== */
@@ -1938,34 +1938,7 @@ loadSharedSettings(true);
 })();
 </script>
 
-<script id="komorebi-ui-js">
-/* UI tambahan (murni tampilan): ikon judul kartu bergaya Lucide + kunang-kunang. Tidak menyentuh data/logika. */
-(()=>{
- const ICONS=(typeof ICP!=='undefined'&&ICP&&typeof ICP==='object')?ICP:((window.ICP&&typeof window.ICP==='object')?window.ICP:{});
- const uri=(k,c)=>'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[k]||'')+'</svg>')+'")';
- const st=document.createElement('style');st.id='komorebi-h3-icons';
- const ks=Object.keys(ICONS).filter(k=>k!='folder');
- st.textContent=ks.map(k=>'h3[data-ic="'+k+'"]::before{background-image:'+uri(k,'#7A9A60')+'}').join('\n')
-  +'\n.card>h3:first-child::after{background-image:'+uri('chev','#A39A88')+'}\n.md>h3:first-child::after{background-image:'+uri('x','#A39A88')+'}\n.md>h3:first-child::after:hover{background-color:rgba(122,154,96,.14)}';
- document.head.append(st);
- const MAP=[[/konfirmasi|hapus|peringatan|confirm|delete/,'warn'],[/lembur|overtime|extend/,'ot'],[/sambungan|supabase|memuat|loading|mengambil/,'database'],[/tema|theme|font|warna/,'palette'],[/periode|period|bandingkan|compare/,'cal'],[/distribusi|rekap|jumlah hadir|summary|distribution|present/,'bar'],[/karyawan|employee|riwayat|history/,'kar'],[/absensi|attendance|input/,'abs'],[/fitur|feature|tentang|about/,'trees'],[/laporan|report|atur|setting|export|import|excel/,'lap']];
- const tag=()=>document.querySelectorAll('.card>h3:first-child:not([data-ic]),.md>h3:first-child:not([data-ic])').forEach(h=>{const t=(h.textContent||'').toLowerCase();let k='sprout';for(const [re,ic] of MAP)if(re.test(t)){k=ic;break}h.dataset.ic=k});
- tag();new MutationObserver(()=>requestAnimationFrame(tag)).observe(document.body,{childList:true,subtree:true});
-})();
-/* Kunang-kunang lembut di latar (hormati prefers-reduced-motion, berhenti saat tab tersembunyi) */
-(()=>{
- const cv=document.getElementById('ff');if(!cv||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
- const cx=cv.getContext('2d');let W=0,H=0,P=[];
- const size=()=>{const d=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*d;H=cv.height=innerHeight*d;cx.setTransform(d,0,0,d,0,0);W=innerWidth;H=innerHeight;P=Array.from({length:Math.round(Math.min(28,Math.max(12,innerWidth/50)))},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+.8,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,ph:Math.random()*6.28,sp:.01+Math.random()*.02}))};
- addEventListener('resize',size);size();
- const frame=()=>{if(!document.hidden){cx.clearRect(0,0,W,H);const dk=document.documentElement.dataset.theme=='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);
-  for(const p of P){p.x+=p.vx;p.y+=p.vy;p.ph+=p.sp;if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;if(p.y<-10)p.y=H+10;if(p.y>H+10)p.y=-10;
-   const a=(.25+.75*Math.abs(Math.sin(p.ph)))*(dk?.9:.55),g=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*7);
-   g.addColorStop(0,'rgba(226,168,92,'+a+')');g.addColorStop(1,'rgba(226,168,92,0)');cx.fillStyle=g;cx.beginPath();cx.arc(p.x,p.y,p.r*7,0,6.283);cx.fill()}}
-  requestAnimationFrame(frame)};
- frame();
-})();
-</script>
+
 
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
 </body></html>
