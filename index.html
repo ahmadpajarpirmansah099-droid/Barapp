@@ -1400,7 +1400,66 @@ function jadPdf(){
     return `<section>${head}<table><thead><tr><th rowspan="2">NO</th><th rowspan="2">NAME</th><th rowspan="2">ROLE</th>${days.map(d=>`<th>${d.slice(8,10)}/${d.slice(5,7)}</th>`).join('')}</tr><tr>${dn.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></section>`;
   }).join('');
   const css="@page{size:landscape;margin:12mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0}section{page-break-after:always}section:last-child{page-break-after:auto}.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #7a2e22;padding-bottom:6px}.l{font-weight:700;font-size:16px}.r{font-weight:800;font-size:18px;color:#7a2e22}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #999;padding:5px 4px;text-align:center}th{background:#f1d9d1;font-weight:700}td.n{text-align:left}td.c{font-weight:700}.s-shift{background:#e3f1d6}.s-off{background:#e6e4e0}.s-sakit{background:#f8d6c4}.s-ph{background:#d4e3f6}.s-blank{background:#fff}";
-  const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+'
+/* ---------- Mobile usability pass: COGS + app navigation ---------- */
+@media(max-width:600px){
+  html{scroll-padding-top:78px}
+  body{font-size:14px}
+  .app-top{padding:calc(8px + var(--st)) 12px 9px}
+  .hd{gap:8px}
+  .hd-t h1{font-size:17px;line-height:1.25}
+  .hd-t small{font-size:10px}
+  main{padding:14px 12px calc(154px + var(--sf))}
+  #app.in{padding-bottom:0}
+  .card{border-radius:16px;margin-bottom:12px}
+  .taskbar{
+    left:8px;right:8px;bottom:calc(8px + var(--sf));
+    gap:4px;padding:6px;border-radius:18px;
+    overflow-x:auto;overflow-y:hidden;justify-content:flex-start;
+    scrollbar-width:none;scroll-snap-type:x proximity;
+  }
+  .taskbar::-webkit-scrollbar{display:none}
+  .start,.task{min-height:46px;padding:7px 9px;border-radius:13px;scroll-snap-align:start}
+  .start{flex:0 0 auto;gap:5px}
+  .task{flex:0 0 auto;max-width:118px;min-width:62px;gap:6px;font-size:11px}
+  .task span{max-width:82px}
+  .task .ic{width:18px;height:18px}
+  .statusbar{left:10px;right:10px;bottom:calc(66px + var(--sf));padding:5px 9px;border-radius:13px;gap:4px}
+  .sf{font-size:10px;padding:2px 4px}
+  .fab{right:14px;bottom:calc(124px + var(--sf))}
+  .sdi{right:14px;bottom:calc(184px + var(--sf))}
+  .toolbar{align-items:stretch;flex-wrap:wrap}
+  .toolbar>span{flex:1 1 100%;min-width:0}
+  .toolbar .btn,.toolbar button{min-height:42px}
+  .inv-toolbar{padding:14px;gap:10px}
+  .inv-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .inv-actions .btn{width:100%;min-width:0;min-height:42px;padding:10px 8px;font-size:12px}
+  .inv-actions .inv-search{grid-column:1/-1;width:100%;max-width:none}
+  .inv-table{padding:8px;border-radius:14px}
+  .inv-table-scroll{border-radius:10px}
+  .inv-table-scroll table{font-size:12px}
+  .inv-table-scroll th,.inv-table-scroll td{padding:9px 7px}
+  input,select,textarea{font-size:16px!important;max-width:100%}
+  .btn,button{touch-action:manipulation}
+  .btn{min-height:42px}
+  .md{width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100dvh - 24px);overflow:auto;padding:14px}
+  .modal,.dialog{max-width:calc(100vw - 20px)}
+  .inv-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .inv-detail-actions .btn{width:100%;min-width:0;min-height:42px}
+}
+@media(max-width:380px){
+  main{padding-left:9px;padding-right:9px}
+  .hd-t h1{font-size:16px}
+  .taskbar{left:5px;right:5px;gap:3px;padding:5px}
+  .start,.task{padding:7px 7px}
+  .task{max-width:100px;min-width:56px;font-size:10px}
+  .task span{max-width:65px}
+  .inv-actions{grid-template-columns:minmax(0,1fr)}
+  .inv-actions .inv-search{grid-column:auto}
+  .inv-detail-actions{grid-template-columns:minmax(0,1fr)}
+}
+
+</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
