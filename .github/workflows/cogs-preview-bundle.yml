@@ -1,0 +1,64 @@
+name: COGS preview bundle
+
+on:
+  push:
+    branches:
+      - feat/cogs-backend-v1
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+
+      - name: Validate inline JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(match => match[1])
+            .filter(script => script.trim().length > 0);
+          if (!scripts.length) throw new Error('No inline scripts found');
+          scripts.forEach((script, index) => {
+            new Function(script);
+            console.log(`Inline script ${index + 1}: syntax OK`);
+          });
+          NODE
+
+      - name: Assemble preview package
+        run: |
+          mkdir -p preview
+          cp index.html manifest.json sw.js icon-192.png icon-512.png preview/
+          cat > preview/TESTING-NOTES.txt <<'EOF'
+          BARAPP COGS — PREVIEW PACKAGE
+
+          This package was built from the feature branch, not from main.
+          Open index.html in Chrome for a visual/navigation check. Some browser
+          features, including service-worker/PWA behavior, may not work from a
+          local file URL.
+
+          SAFETY:
+          - The app configuration points to the existing Supabase project.
+          - Login uses the real app's authentication.
+          - Do not create, edit, delete, produce, sell, or submit Daily SO data
+            during this preview; writes would go to the shared Supabase project.
+          - Login/navigation checks only. CRUD testing must wait until a separate
+            staging database and test account are ready.
+          - Never share your password or session tokens in chat.
+          EOF
+
+      - name: Upload downloadable preview package
+        uses: actions/upload-artifact@v4
+        with:
+          name: barapp-cogs-preview-${{ github.sha }}
+          path: preview/
+          if-no-files-found: error
+          retention-days: 7
