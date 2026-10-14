@@ -1063,8 +1063,8 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'COGS · Master Bahan',ic:'package',page:'cogs_materials',adm:true,cogs:true},{name:'COGS · Resep WIP',ic:'layers',page:'cogs_wip',adm:true,cogs:true},{name:'COGS · COGS Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'COGS · Master Bahan',cogs_wip:'COGS · Resep WIP',cogs_menu:'COGS · COGS Menu'};
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'COGS · Master Bahan',ic:'package',page:'cogs_materials',adm:true,cogs:true},{name:'COGS · Resep WIP',ic:'layers',page:'cogs_wip',adm:true,cogs:true},{name:'COGS · COGS Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Produksi WIP',ic:'layers',page:'cogs_production',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-check',page:'cogs_daily_so',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt',page:'cogs_sales',adm:true,cogs:true},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Divisi & Admin',ic:'grid',page:'div',dev:true},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'COGS · Master Bahan',cogs_wip:'COGS · Resep WIP',cogs_menu:'COGS · COGS Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu'};
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
 const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk'].includes(k)||hasFeature('inventory.view'))&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr())&&(!k.startsWith('cogs_')||adm()))};
 const GRP=k=>k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk')?'inventory':'abs';
@@ -1910,7 +1910,8 @@ modal(`<h3>${L('Pengaturan Tema','Theme Settings')}</h3><div class="sb" style="m
 async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse(JSON.stringify(TH));try{await saveSharedSettings(snapshot);D.th=snapshot;T.bk=null;sv();closeM();toast(L('Tema tersimpan dan disinkronkan ke semua akun','Theme saved and synced to all accounts'));R()}catch(e){toast('Gagal menyimpan pengaturan bersama: '+(e.message||e)+' — jalankan SQL setup yang disertakan.','err')}}
 
 /* ===== COGS V1: data disimpan di Supabase; Master Bahan memakai barapp_items ===== */
-const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
+const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],divs:[],productions:[],productionInputs:[],sales:[],saleLines:[],dailySO:[],dailySOLines:[],ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
+const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',counts:{},prodQty:'',saleQty:'',salePrice:'',notes:''};
 const cgRoleOK=()=>adm();
 const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
 const cgItem=id=>CG.items.find(x=>String(x.id)===String(id));
@@ -1927,13 +1928,26 @@ async function cgLoad(show){
    c.from('cogs_wip').select('*').order('name'),
    c.from('cogs_wip_recipe_lines').select('*').order('created_at'),
    c.from('cogs_menus').select('*').order('name'),
-   c.from('cogs_menu_recipe_lines').select('*').order('created_at')
+   c.from('cogs_menu_recipe_lines').select('*').order('created_at'),
+   c.from('divisions').select('id,name,outlet_id,code,active').order('name'),
+   c.from('cogs_production_batches').select('*').order('produced_at',{ascending:false}).limit(5000),
+   c.from('cogs_production_inputs').select('*').limit(10000),
+   c.from('cogs_menu_sales').select('*').order('sold_at',{ascending:false}).limit(5000),
+   c.from('cogs_menu_sales_lines').select('*').limit(10000),
+   c.from('cogs_daily_so').select('*').order('so_date',{ascending:false}).limit(5000),
+   c.from('cogs_daily_so_lines').select('*').limit(10000)
   ]);
   const bad=rs.find(x=>x.error);if(bad)throw bad.error;
-  [CG.items,CG.wips,CG.wipLines,CG.menus,CG.menuLines]=rs.map(x=>x.data||[]);
+  [CG.items,CG.wips,CG.wipLines,CG.menus,CG.menuLines,CG.divs,CG.productions,CG.productionInputs,CG.sales,CG.saleLines,CG.dailySO,CG.dailySOLines]=rs.map(x=>x.data||[]);
+  CG.divs=CG.divs.filter(d=>d.active!==false&&(!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id));
+  if(T.dbRole==='div_admin'){
+   const {data:sc,error:se}=await c.from('user_scopes').select('outlet_id,division_id');if(se)throw se;
+   const scopes=sc||[];CG.divs=CG.divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))));
+  }
+  if(!OPS.division||!CG.divs.some(d=>String(d.id)===String(OPS.division)))OPS.division=CG.divs[0]?.id||'';
   CG.ready=true;
  }catch(e){CG.err=/cogs_|schema cache|does not exist|42P01|PGRST205/i.test(String(e&&e.message||e))?'Backend COGS belum siap di Supabase. Jalankan migrasi barapp_cogs_v1.sql terlebih dahulu.':errText(e);CG.ready=false;if(show)toast(CG.err,'err')}
- finally{CG.loading=false;if(['cogs_materials','cogs_wip','cogs_menu'].includes(pg))R()}
+ finally{CG.loading=false;if(['cogs_materials','cogs_wip','cogs_menu','cogs_production','cogs_daily_so','cogs_sales'].includes(pg))R()}
 }
 function cgInit(){if(!CG.ready&&!CG.loading)cgLoad(false)}
 function cgMaterialPrice(x){const p=cgPrice(x);return p?{value:p.value,source:p.source}:null}
@@ -2032,5 +2046,162 @@ loadSharedSettings(true);
 
 
 
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+
+/* ===== COGS OPERATIONS: production WIP, Daily SO, and menu sales ===== */
+const opsDivName=id=>(CG.divs.find(d=>String(d.id)===String(id))||{}).name||'Divisi';
+const opsWip=id=>CG.wips.find(x=>String(x.id)===String(id));
+const opsMenu=id=>CG.menus.find(x=>String(x.id)===String(id));
+const opsKey=(type,id)=>type+':'+id;
+const opsDate=()=>today();
+const opsErr=e=>{
+ const m=String(e&&e.message||e||'');
+ if(/COGS_SO_ALREADY_SUBMITTED/i.test(m))return 'Daily SO tanggal ini sudah disimpan. Batalkan rekaman lama dulu kalau perlu koreksi.';
+ if(/COGS_SO_MUST_COUNT_ALL_ITEMS/i.test(m))return 'Semua bahan dan WIP dalam daftar wajib dihitung.';
+ if(/COGS_PRICE_MISSING|COGS_CHILD_COST_MISSING/i.test(m))return 'HPP tidak valid: ada bahan tanpa harga pembelian terakhir maupun harga acuan.';
+ if(/COGS_RECIPE_EMPTY/i.test(m))return 'Resep belum lengkap.';
+ if(/COGS_DIVISION_FORBIDDEN|42501|row-level security/i.test(m))return 'Akses ke divisi ini ditolak oleh aturan keamanan.';
+ if(/COGS_WIP_NOT_ACTIVE/i.test(m))return 'WIP tidak aktif atau tidak ditemukan.';
+ if(/COGS_MENU_NOT_ACTIVE/i.test(m))return 'Menu tidak aktif atau tidak ditemukan.';
+ if(/schema cache|PGRST205|42P01|does not exist/i.test(m))return 'Backend operasi COGS belum tersedia. Periksa migrasi COGS Operations V1.';
+ return errText(e);
+};
+async function opsLoadPosition(show){
+ if(!CG.ready)return;
+ const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
+ if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.position=[];if(show)R();return}
+ if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
+ OPS.positionLoading=true;OPS.positionError='';if(show)R();
+ try{
+  const {data,error}=await sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
+  if(error)throw error;
+  let rows=data||[];
+  const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
+  if(existing){
+   const old=CG.dailySOLines.filter(l=>String(l.so_id)===String(existing.id));
+   rows=rows.map(p=>{
+    const l=old.find(x=>x.component_type===p.component_type&&String(p.component_id)==String(p.component_type==='material'?x.item_id:x.component_wip_id));
+    return l?Object.assign({},p,{component_name:l.component_name_snapshot,unit:l.unit_snapshot,expected_qty_base:l.expected_qty_base,unit_cost:l.unit_cost_snapshot,stored_counted_qty:l.counted_qty_base,stored_variance_qty:l.variance_qty_base,stored_variance_value:l.variance_value_snapshot}):p;
+   });
+   OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]=p.stored_counted_qty==null?'':String(p.stored_counted_qty));
+  }else{
+   OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]='');
+  }
+  OPS.position=rows;OPS.positionLoadedFor=key;
+ }catch(e){OPS.positionError=opsErr(e);OPS.position=[];if(show)toast(OPS.positionError,'err')}
+ finally{OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
+}
+function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
+function opsSetDate(date){OPS.date=date||opsDate();OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};opsLoadPosition(true)}
+function opsPreviewProduction(){
+ const q=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
+ if(!(q>0)||!id){el.textContent='Pilih WIP dan jumlah produksi.';return}
+ const c=cgWipCost(id,[]),w=opsWip(id);if(!c.ok){el.textContent='HPP belum valid: '+c.reason;return}
+ el.innerHTML='<b>HPP per '+esc(w.yield_unit)+': '+cgMoney(c.unitCost)+'</b><br>Perkiraan batch: <b>'+cgMoney(c.unitCost*q)+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">Mengandung harga acuan</span>':'');
+}
+async function opsRecordProduction(){
+ if(!cgRoleOK())return;
+ const division=v('ops_prod_div'),wip_id=v('ops_prod_wip'),produced_qty=Number(v('ops_prod_qty')),produced_at=v('ops_prod_date')||opsDate(),notes=v('ops_prod_note').trim();
+ if(!division||!wip_id||!(produced_qty>0))return toast('Lengkapi divisi, WIP, dan jumlah produksi.','warn');
+ const c=cgWipCost(wip_id,[]);if(!c.ok)return toast('Resep belum menghasilkan HPP valid: '+c.reason,'err');
+ try{
+  const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:wip_id,p_produced_qty:produced_qty,p_produced_at:produced_at,p_notes:notes||null});
+  if(error)throw error;
+  OPS.prodQty='';closeMIfAny();await opsReload();toast('Produksi WIP tersimpan. HPP batch disimpan sebagai snapshot.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+function opsPreviewSale(){
+ const qty=Number(v('ops_sale_qty')),id=v('ops_sale_menu'),priceRaw=v('ops_sale_price'),el=document.getElementById('ops_sale_preview');if(!el)return;
+ if(!(qty>0)||!id){el.textContent='Pilih menu dan jumlah terjual.';return}
+ const c=cgMenuCost(id),m=opsMenu(id);if(!c.ok){el.textContent='HPP belum valid: '+c.reason;return}
+ const price=priceRaw===''?Number(m.selling_price):Number(priceRaw);if(!Number.isFinite(price)||price<0){el.textContent='Harga jual tidak valid.';return}
+ const hpp=c.total*qty,sales=price*qty;
+ el.innerHTML='<b>Penjualan: '+cgMoney(sales)+'</b><br>HPP tersimpan: <b>'+cgMoney(hpp)+'</b><br>Margin kotor: <b>'+(sales-hpp>=0?cgMoney(sales-hpp):'-'+cgMoney(hpp-sales))+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">HPP estimasi</span>':'');
+}
+async function opsRecordSale(){
+ if(!cgRoleOK())return;
+ const division=v('ops_sale_div'),menu_id=v('ops_sale_menu'),qty=Number(v('ops_sale_qty')),sold_at=v('ops_sale_date')||opsDate(),raw=v('ops_sale_price').trim(),selling_price=raw===''?null:Number(raw),notes=v('ops_sale_note').trim();
+ if(!division||!menu_id||!(qty>0)||raw!==''&&(!Number.isFinite(selling_price)||selling_price<0))return toast('Lengkapi divisi, menu, jumlah, dan harga jual yang valid.','warn');
+ const c=cgMenuCost(menu_id);if(!c.ok)return toast('HPP menu belum valid: '+c.reason,'err');
+ try{
+  const {error}=await sb().rpc('cogs_record_menu_sale',{p_division_id:division,p_menu_id:menu_id,p_qty:qty,p_sold_at:sold_at,p_selling_price:selling_price,p_notes:notes||null});
+  if(error)throw error;
+  OPS.saleQty='';await opsReload();toast('Penjualan tersimpan dengan HPP historis.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+async function opsReload(){
+ OPS.positionLoadedFor='';OPS.position=[];
+ try{await cgLoad(true)}catch(e){}
+ if(pg==='cogs_daily_so')await opsLoadPosition(false);
+ R();
+}
+async function opsSaveDailySO(){
+ if(!cgRoleOK())return;
+ const division=v('ops_so_div')||OPS.division,so_date=v('ops_so_date')||OPS.date||opsDate(),notes=v('ops_so_note').trim();
+ const existing=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(so_date)&&s.status==='submitted');
+ if(existing)return toast('Daily SO untuk divisi dan tanggal ini sudah disimpan. Batalkan dulu jika ingin koreksi.','warn');
+ if(!OPS.position.length)return toast('Saldo belum dimuat. Tekan Muat saldo dulu.','warn');
+ const lines=OPS.position.map(p=>({type:p.component_type,id:p.component_id,counted_qty_base:OPS.counts[opsKey(p.component_type,p.component_id)]}));
+ if(lines.some(l=>l.counted_qty_base===''||l.counted_qty_base==null||!Number.isFinite(Number(l.counted_qty_base))||Number(l.counted_qty_base)<0))return toast('Isi jumlah fisik semua bahan dan WIP, termasuk angka 0 jika stok habis.','warn');
+ try{
+  const {error}=await sb().rpc('cogs_save_daily_so',{p_division_id:division,p_so_date:so_date,p_lines:lines.map(l=>({type:l.type,id:l.id,counted_qty_base:Number(l.counted_qty_base)})),p_notes:notes||null});
+  if(error)throw error;
+  await opsReload();toast('Daily SO tersimpan. Selisih stok dan nilai varians sudah disnapshot.','ok');
+ }catch(e){toast(opsErr(e),'err')}
+}
+function opsConfirmCancel(kind,id){
+ const label=kind==='production'?'produksi WIP':kind==='sale'?'penjualan menu':'Daily SO';
+ modal('<h3>Batalkan '+label+'?</h3><p class="mu">Rekaman historis tetap disimpan, tetapi tidak lagi masuk perhitungan saldo stok. Isi alasan pembatalan.</p><label>Alasan<input id="ops_cancel_reason" maxlength="500"></label><div class="btns"><button class="btn s" onclick="closeM()">Kembali</button><button class="btn" onclick="opsDoCancel(&quot;'+kind+'&quot;,&quot;'+id+'&quot;)">Konfirmasi batal</button></div>');
+}
+async function opsDoCancel(kind,id){
+ const reason=v('ops_cancel_reason').trim();
+ try{const {error}=await sb().rpc('cogs_cancel_operation',{p_kind:kind,p_id:id,p_reason:reason||null});if(error)throw error;closeM();await opsReload();toast('Rekaman dibatalkan. Data historis tetap tersimpan.','ok')}catch(e){toast(opsErr(e),'err')}
+}
+function opsCancelButton(kind,id){return '<button class="btn o x" onclick="opsConfirmCancel(&quot;'+kind+'&quot;,&quot;'+id+'&quot;)">Batalkan</button>'}
+V.cogs_production=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data produksi…</div>';
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OPS.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const wips=CG.wips.filter(w=>w.active);
+ const wipOptions=wips.map(w=>'<option value="'+w.id+'">'+esc(w.name)+' · hasil '+cgNum(w.yield_qty)+' '+esc(w.yield_unit)+'</option>').join('');
+ const rows=CG.productions.map(b=>{
+  const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
+  return '<tr><td><b>'+esc(b.wip_name_snapshot||w&&w.name||'WIP')+'</b><br><small class="mu">'+esc(b.produced_at)+' · '+esc(opsDivName(b.division_id))+'</small></td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.total_cost_snapshot)+(b.cost_source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':'')+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Catat jumlah hasil produksi. Konsumsi bahan dan HPP batch disimpan saat transaksi.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><label>Resep WIP<select id="ops_prod_wip" onchange="opsPreviewProduction()"><option value="">Pilih WIP</option>'+wipOptions+'</select></label><label>Jumlah hasil produksi<input id="ops_prod_qty" type="number" min="0.0001" step="any" oninput="opsPreviewProduction()" placeholder="Contoh: 2500"></label><div id="ops_prod_preview" class="card mu">Pilih WIP dan jumlah produksi untuk melihat perkiraan HPP.</div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Batch, shift, atau catatan produksi"></label><button class="btn" onclick="opsRecordProduction()">Simpan produksi</button></div><div class="card"><h3>Riwayat produksi</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>WIP / tanggal</th><th>Hasil</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
+};
+V.cogs_sales=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OPS.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const menuOptions=CG.menus.filter(m=>m.active).map(m=>'<option value="'+m.id+'">'+esc(m.name)+' · '+cgMoney(m.selling_price)+'</option>').join('');
+ const rows=CG.sales.map(s=>{
+  const margin=Number(s.gross_sales_snapshot)-Number(s.total_hpp_snapshot);
+  return '<tr><td><b>'+esc(s.menu_name_snapshot)+'</b><br><small class="mu">'+esc(s.sold_at)+' · '+esc(opsDivName(s.division_id))+'</small></td><td>'+cgNum(s.qty)+'</td><td>'+cgMoney(s.selling_price_snapshot)+'</td><td>'+cgMoney(s.total_hpp_snapshot)+(s.cost_source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':'')+'</td><td>'+cgMoney(margin)+'</td><td>'+(s.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='posted'?opsCancelButton('sale',s.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Penjualan Menu</h3><p class="mu">Simpan HPP dan harga jual sebagai snapshot transaksi; perubahan resep setelahnya tidak mengubah histori.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><label>Menu<select id="ops_sale_menu" onchange="opsPreviewSale()"><option value="">Pilih menu</option>'+menuOptions+'</select></label><div class="cogs-formgrid"><label>Jumlah terjual<input id="ops_sale_qty" type="number" min="0.0001" step="any" oninput="opsPreviewSale()" placeholder="Contoh: 12"></label><label>Harga jual per menu (opsional)<input id="ops_sale_price" type="number" min="0" step="any" oninput="opsPreviewSale()" placeholder="Gunakan harga master jika kosong"></label></div><div id="ops_sale_preview" class="card mu">Pilih menu dan jumlah terjual untuk melihat HPP dan margin.</div><label>Catatan / nomor transaksi<input id="ops_sale_note" maxlength="500"></label><button class="btn" onclick="opsRecordSale()">Simpan penjualan</button></div><div class="card"><h3>Riwayat penjualan</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Menu / tanggal</th><th>Qty</th><th>Harga jual</th><th>Total HPP snapshot</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan.</td></tr>')+'</tbody></table></div></div></div>';
+};
+V.cogs_daily_so=()=>{
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';
+ const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
+ const key=division+'|'+date;
+ if(!OPS.positionLoading&&OPS.positionLoadedFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
+ const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
+ const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+ const rows=OPS.position.map(p=>{
+  const k=opsKey(p.component_type,p.component_id),stored=active&&p.stored_counted_qty!=null;
+  const val=OPS.counts[k]??'';
+  const variance=stored?Number(p.stored_variance_qty):Number(val)===''?null:Number(val)-Number(p.expected_qty_base);
+  const varValue=stored?p.stored_variance_value:(variance==null||p.unit_cost==null?null:variance*Number(p.unit_cost));
+  const type=p.component_type==='material'?'Bahan':'WIP';
+  return '<tr><td><small class="mu">'+type+'</small><br><b>'+esc(p.component_name)+'</b></td><td>'+esc(p.unit)+'</td><td>'+cgNum(p.expected_qty_base)+'</td><td><input type="number" min="0" step="any" style="width:115px" value="'+esc(val)+'" '+(active?'disabled':'')+' oninput="OPS.counts[&quot;'+k+'&quot;]=this.value"></td><td>'+(variance==null?'–':cgNum(variance))+'</td><td>'+(varValue==null?'–':cgMoney(varValue))+'</td></tr>';
+ }).join('');
+ const hrows=CG.dailySO.map(s=>{
+  const lines=CG.dailySOLines.filter(l=>String(l.so_id)===String(s.id));
+  const varianceCount=lines.filter(l=>Math.abs(Number(l.variance_qty_base))>0.000001).length;
+  const totalValue=lines.reduce((a,l)=>a+Number(l.variance_value_snapshot||0),0);
+  return '<tr><td><b>'+esc(s.so_date)+'</b><br><small class="mu">'+esc(opsDivName(s.division_id))+'</small></td><td>'+lines.length+' item</td><td>'+varianceCount+' selisih</td><td>'+cgMoney(totalValue)+'</td><td>'+(s.status==='submitted'?'<span class="cogs-pill">Disimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='submitted'?opsCancelButton('daily_so',s.id):'')+'</td></tr>';
+ }).join('');
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p></div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" '+(active?'disabled':'')+' placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan / WIP</th><th>Satuan dasar</th><th>Saldo harapan</th><th>Fisik</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada bahan atau WIP di divisi ini.</td></tr>')+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card"><h3>Riwayat Daily SO</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
+};
+
+</script>
 </body></html>
