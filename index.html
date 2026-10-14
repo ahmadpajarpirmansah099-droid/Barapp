@@ -2085,6 +2085,17 @@ async function opsLoadPosition(show){
     const l=old.find(x=>x.component_type===p.component_type&&String(p.component_id)==String(p.component_type==='material'?x.item_id:x.component_wip_id));
     return l?Object.assign({},p,{component_name:l.component_name_snapshot,unit:l.unit_snapshot,expected_qty_base:l.expected_qty_base,unit_cost:l.unit_cost_snapshot,stored_counted_qty:l.counted_qty_base,stored_variance_qty:l.variance_qty_base,stored_variance_value:l.variance_value_snapshot}):p;
    });
+   // Preserve the complete submitted SO snapshot in history, including items later deactivated.
+   const present=new Set(rows.map(p=>opsKey(p.component_type,p.component_id)));
+   old.forEach(l=>{
+    const type=l.component_type,id=type==='material'?l.item_id:l.component_wip_id,k=opsKey(type,id);
+    if(!present.has(k)){
+     rows.push({component_type:type,component_id:id,component_name:l.component_name_snapshot,unit:l.unit_snapshot,
+      expected_qty_base:l.expected_qty_base,unit_cost:l.unit_cost_snapshot,cost_source:'snapshot',
+      stored_counted_qty:l.counted_qty_base,stored_variance_qty:l.variance_qty_base,stored_variance_value:l.variance_value_snapshot});
+     present.add(k);
+    }
+   });
    OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]=p.stored_counted_qty==null?'':String(p.stored_counted_qty));
   }else{
    OPS.counts={};rows.forEach(p=>OPS.counts[opsKey(p.component_type,p.component_id)]='');
