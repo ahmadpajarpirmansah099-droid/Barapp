@@ -620,6 +620,35 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cg-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:7px}
   .cg-line>*{width:100%;min-width:0}
 }
+
+/* Contain all COGS screens on narrow viewports; keep wide tables swipeable inside their own card. */
+.cogs-wrap{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.cogs-wrap>.card,.cogs-wrap .card{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.cogs-wrap .cogs-top>*{min-width:0;max-width:100%}
+.cogs-scroll{display:block;position:relative;width:100%;min-width:0;max-width:100%;margin:8px 0 0;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.cogs-scroll>.cogs-table{width:max-content;max-width:none;table-layout:auto}
+.cogs-table th,.cogs-table td{box-sizing:border-box}
+.cogs-actions>*{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:600px){
+  .cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{width:100%;min-width:0;max-width:100%}
+  .cogs-wrap>.card{overflow:hidden}
+  .cogs-scroll{margin:8px 0 0;border:1px solid var(--br);border-radius:11px;background:var(--cd)}
+  .cogs-scroll::-webkit-scrollbar{height:6px}
+  .cogs-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--dk) 38%,transparent);border-radius:999px}
+  .cogs-table{min-width:620px}
+  .cogs-table th,.cogs-table td{padding:10px 8px;white-space:nowrap}
+  .cogs-top{width:100%;min-width:0}
+  .cogs-actions{width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cogs-actions input,.cogs-actions select,.cogs-actions button{width:100%;min-width:0}
+  .cogs-formgrid,.cogs-line-list,.cogs-section{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+  .cogs-section{overflow:hidden}
+  .cg-line{max-width:100%;box-sizing:border-box}
+}
+@media(max-width:380px){
+  .cogs-table{min-width:620px}
+  .cogs-actions{grid-template-columns:minmax(0,1fr)}
+  .cogs-scroll{border-radius:9px}
+}
 </style>
 </head><body>
 
