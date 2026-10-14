@@ -439,9 +439,9 @@ body::before{display:none!important}
 /* BARAPP warm restaurant visual theme — CSS-only, business logic untouched */
 body{font-size:14px;line-height:1.55}
 body::before{background-image:none}
-h1,h2,h3{font-family:var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.02em}
+h1,h2,h3{font-family:var(--fh),'Fredoka',Georgia,serif;letter-spacing:-.02em}
 .app-top{background:var(--cd);border-bottom:2px solid var(--dk);box-shadow:0 2px 0 color-mix(in srgb,var(--dk) 10%,transparent);-webkit-backdrop-filter:none;backdrop-filter:none}
-.hd-t h1{font-family:var(--fh),'Fraunces',Georgia,serif;font-size:clamp(19px,2vw,24px)}
+.hd-t h1{font-family:var(--fh),'Fredoka',Georgia,serif;font-size:clamp(19px,2vw,24px)}
 .tile{background:var(--ac2);color:var(--tx);border:1.5px solid var(--dk);border-radius:12px}
 .brand{border-bottom:1.5px solid var(--dk)}
 .side{border-right:2px solid var(--dk);background:var(--cd)}
@@ -469,7 +469,7 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
 .start{background:var(--ac2);color:var(--tx);border:1.5px solid var(--dk)}
 .task.on{background:var(--ac);color:var(--onac);border:1.5px solid var(--dk);box-shadow:2px 2px 0 var(--dk)}
 .lgc{background:var(--cd);border:2px solid var(--dk);border-radius:16px;box-shadow:4px 4px 0 var(--dk);-webkit-backdrop-filter:none;backdrop-filter:none}
-.lgc h1{font-family:var(--fh),'Fraunces',Georgia,serif;letter-spacing:-.03em}
+.lgc h1{font-family:var(--fh),'Fredoka',Georgia,serif;letter-spacing:-.03em}
 @media(max-width:520px){main{padding:16px 12px 24px}.card{padding:15px;box-shadow:2px 2px 0 var(--dk)}.card:hover{transform:none;box-shadow:2px 2px 0 var(--dk)}}
 @media(prefers-reduced-motion:reduce){.card,.btn,.ibtn,.nvb,.task,.start{transition:none!important}.card:hover{transform:none}}
 
@@ -490,7 +490,7 @@ try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
-const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fraunces',mode:'light',radius:14,speed:0.24,
+const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
 v:6,logo:'',light:{bg:'#FFF8EF',cd:'#FFFCF6',tx:'#2C1A14',mu:'#766258',br:'#E7CFC0',ac:'#F2673A',ac2:'#FFE4D7',dg:'#BA3F2B',gd:'#D99A3D',tt:'#4B271C',tt2:'#F2673A',hl:'#FFFFFF',lt:'#FFF0E4',sh:'#D9B6A1',dk:'#2C1A14'},
 dark:{bg:'#211915',cd:'#2D221D',tx:'#FFF2E7',mu:'#C9B5A8',br:'#584033',ac:'#FF8A63',ac2:'#4D3025',dg:'#F17F70',gd:'#E9B76C',tt:'#E67B54',tt2:'#FF996F',hl:'#372720',lt:'#3A2921',sh:'#120D0A',dk:'#140F0C'}};
