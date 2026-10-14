@@ -435,6 +435,25 @@ body::before{display:none!important}
 .s-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));font-weight:700}
 .jd-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));border-color:color-mix(in srgb,#6d7fa0 60%,var(--line))}
 .s-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));font-weight:700}
+
+/* BARAPP_MOBILE_TABLE_SCROLL_FIX: isolated layout-only patch */
+.inv-table{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto !important;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x pan-y;
+}
+.inv-table table{
+  width:max-content;
+  min-width:560px;
+  max-width:none;
+}
+
 </style>
 </head><body>
 
