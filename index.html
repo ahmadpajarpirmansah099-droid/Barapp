@@ -2640,6 +2640,8 @@ function opsSetCountUnit(k,u){if(!OPS.unitSelections)OPS.unitSelections={};OPS.u
 function opsCountInput(k,val,factor){OPS.counts[k]=val===''?'':Number(val)*Number(factor);const key=(OPS.division||'')+'|'+(OPS.date||opsDate());OPS.countCache[key]=Object.assign({},OPS.counts)}
 async function opsLoadPosition(show){
  if(!CG.ready)return;
+ // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
+ if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
  if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.position=[];if(show)R();return}
  if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
