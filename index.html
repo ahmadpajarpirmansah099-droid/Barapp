@@ -2632,6 +2632,10 @@ const opsErr=e=>{
  if(/schema cache|PGRST205|42P01|does not exist/i.test(m))return 'Backend data operasional belum tersedia. Periksa migrasi modul operasional.';
  return errText(e);
 };
+function opsUnitList(p){if(p.component_type!=='material')return [{unit:p.unit||'UNIT',factor:1}];const item=invItem(p.component_id);let a=Array.isArray(item?.conversions)?item.conversions:[];a=a.filter(x=>x&&x.unit&&Number(x.factor)>0).map(x=>({unit:String(x.unit),factor:Number(x.factor)}));if(!a.some(x=>x.unit.toUpperCase()===String(p.unit||'').toUpperCase()))a.unshift({unit:p.unit||item?.base_unit||'UNIT',factor:1});const seen=new Set();return a.filter(x=>{const k=x.unit.toLowerCase();if(seen.has(k))return false;seen.add(k);return true})}
+function opsUnitFactor(p,k){const units=opsUnitList(p),want=OPS.unitSelections?.[k];return units.find(x=>x.unit===want)?.factor||1}
+function opsSetCountUnit(k,u){if(!OPS.unitSelections)OPS.unitSelections={};OPS.unitSelections[k]=u;R()}
+function opsCountInput(k,val,factor){OPS.counts[k]=val===''?'':Number(val)*Number(factor)}
 async function opsLoadPosition(show){
  if(!CG.ready)return;
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
@@ -2819,11 +2823,11 @@ async function exportSuppliesSOExcel(){
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const rows=OPS.position.map(p=>{
   const k=opsKey(p.component_type,p.component_id),stored=active&&p.stored_counted_qty!=null;
-  const val=OPS.counts[k]??'';
-  const variance=stored?Number(p.stored_variance_qty):Number(val)===''?null:Number(val)-Number(p.expected_qty_base);
+  const units=opsUnitList(p),factor=opsUnitFactor(p,k),baseVal=OPS.counts[k]??'',val=baseVal===''?'':Number(baseVal)/factor;
+  const variance=stored?Number(p.stored_variance_qty):Number(baseVal)===''?null:Number(baseVal)-Number(p.expected_qty_base);
   const varValue=stored?p.stored_variance_value:(variance==null||p.unit_cost==null?null:variance*Number(p.unit_cost));
   const type=p.component_type==='material'?'Bahan':'WIP';
-  return '<tr><td><small class="mu">'+type+'</small><br><b>'+esc(p.component_name)+'</b></td><td>'+esc(p.unit)+'</td><td>'+cgNum(p.expected_qty_base)+'</td><td><input type="number" min="0" step="any" style="width:115px" value="'+esc(val)+'" '+(active?'disabled':'')+' oninput="OPS.counts[&quot;'+k+'&quot;]=this.value"></td><td>'+(variance==null?'–':cgNum(variance))+'</td><td>'+(varValue==null?'–':cgMoney(varValue))+'</td></tr>';
+  return '<tr><td><small class="mu">'+type+'</small><br><b>'+esc(p.component_name)+'</b></td><td>'+(units.length>1&&!active?'<select style="min-width:86px;max-width:120px" onchange="opsSetCountUnit(\''+k+'\',this.value)">'+units.map(u=>'<option value="'+esc(u.unit)+'" '+(u.factor===factor?'selected':'')+'>'+esc(u.unit)+'</option>').join('')+'</select>':esc(p.unit)+(units.length>1&&active?' · satuan dasar':''))+'</td><td>'+cgNum(p.expected_qty_base)+'</td><td><input type="number" min="0" step="any" style="width:115px" value="'+esc(val)+'" '+(active?'disabled':'')+' oninput="opsCountInput(\''+k+'\',this.value,'+factor+')"></td><td>'+(variance==null?'–':cgNum(variance))+'</td><td>'+(varValue==null?'–':cgMoney(varValue))+'</td></tr>';
  }).join('');
  const soHistoryDate=OPS.soHistoryDate||opsDate();const hrows=CG.dailySO.filter(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(soHistoryDate)).sort((a,b)=>String(b.so_date||'').localeCompare(String(a.so_date||''))).map(s=>{
   const lines=CG.dailySOLines.filter(l=>String(l.so_id)===String(s.id));
