@@ -1553,30 +1553,38 @@ function invBulkPaint(){
  const n=INV.items.filter(x=>x.active&&String(x.division_id)===String(div.value)).length;
  const label=document.getElementById('in_bulk_count');if(label)label.textContent=n+' barang aktif · pilih satuan tiap barang; kolom jumlah kosong atau 0 dilewati.';
 }
-function invOpenBulkReceipt(){
+async function invOpenBulkReceipt(){
  if(!invNeed())return;
+ if(!CG.ready){cgInit();await cgLoad(false)}
  const divs=INV.divs;
  if(!divs.length)return toast('Belum ada divisi aktif.','warn');
- modal('<h3>Barang Masuk Massal / Stok Awal</h3><p class="mu">Input banyak barang sekaligus seperti Daily SO. Pilih satuan yang terdaftar di Master Barang (misalnya GALON atau CAN); jumlah otomatis dikonversi ke satuan dasar. Kolom kosong atau 0 dilewati.</p><label>Divisi<select id="in_bulk_div" onchange="invBulkPaint()">'+divs.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal masuk<input id="in_bulk_date" type="date" value="'+today()+'"></label><label>Catatan / keterangan<input id="in_bulk_note" maxlength="500" placeholder="Contoh: Stok awal 1 Oktober"></label><p id="in_bulk_count" class="mu"></p><div class="inv-table-scroll" style="max-height:48vh;overflow:auto"><table><thead><tr><th>Barang</th><th>Satuan masuk</th><th>Jumlah</th><th>Satuan dasar</th></tr></thead><tbody id="in_bulk_rows"></tbody></table></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="invSaveBulkReceipt()">Simpan Barang Masuk</button></div>');
+ modal('<h3>Barang Masuk Massal / Stok Awal</h3><p class="mu">Input bahan/barang dan stok awal WIP sekaligus. Satuan bahan mengikuti Master Barang; WIP memakai satuan hasil resep. Jumlah kosong atau 0 dilewati. Stok awal WIP tidak dianggap produksi dan tidak memotong bahan resep.</p><label>Divisi<select id="in_bulk_div" onchange="invBulkPaint()">'+divs.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal masuk / stok awal<input id="in_bulk_date" type="date" value="'+today()+'"></label><label>Catatan / keterangan<input id="in_bulk_note" maxlength="500" placeholder="Contoh: Stok awal"></label><p id="in_bulk_count" class="mu"></p><div class="inv-table-scroll" style="max-height:48vh;overflow:auto"><table><thead><tr><th>Item</th><th>Satuan masuk</th><th>Jumlah</th><th>Satuan dasar</th></tr></thead><tbody id="in_bulk_rows"></tbody></table></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="invSaveBulkReceipt()">Simpan Bahan + WIP</button></div>');
  invBulkPaint();
 }
 async function invSaveBulkReceipt(){
  if(!invNeed())return;
- const divId=v('in_bulk_div'),date=v('in_bulk_date')||today(),note=v('in_bulk_note').trim(),rows=[...document.querySelectorAll('.in-bulk-qty')];
- const records=[];
+ if(!CG.ready){cgInit();await cgLoad(false)}
+ const divId=v('in_bulk_div'),date=v('in_bulk_date')||today(),note=v('in_bulk_note').trim(),rows=[...document.querySelectorAll('.in-bulk-qty')],wipRows=[...document.querySelectorAll('.in-bulk-wip-qty')];
+ const records=[],wipRecords=[];
  for(const e of rows){
   const raw=e.value.trim(),qty=raw===''?0:Number(raw),x=invItem(e.dataset.item),unit=document.querySelector('.in-bulk-unit[data-item="'+e.dataset.item+'"]')?.value||'',factor=invFactor(x,unit);
   if(raw!==''&&(!Number.isFinite(qty)||qty<0))return toast('Jumlah harus 0 atau lebih.','err');
-  if(!x||!x.active||String(x.division_id)!==String(divId))continue;
-  if(qty<=0)continue;
+  if(!x||!x.active||String(x.division_id)!==String(divId)||qty<=0)continue;
   if(!Number.isFinite(factor)||factor<=0)return toast('Konversi satuan '+unit+' untuk '+x.name+' belum valid. Periksa Master Barang.','err');
   const qty_base=qty*factor,est=qty_base*Number(x.reference_price_per_base||0);
   records.push({item_id:x.id,division_id:x.division_id,received_at:date,qty_input:qty,unit_input:unit,qty_base,invoice_total:null,estimated_total:est,price_source:'master',status:'posted',notes:note||'Input massal / stok awal'});
  }
- if(!records.length)return toast('Isi jumlah lebih dari 0 pada minimal satu barang.','err');
- const {error}=await sb().from('barapp_stock_in').insert(records);
- if(error)return toast(invMsg(error),'err');
- closeM();await invLoad();toast(records.length+' barang berhasil dicatat sekaligus; satuan sudah dikonversi ke satuan dasar. Harga memakai estimasi Master Barang.','ok');
+ for(const e of wipRows){
+  const raw=e.value.trim(),qty=raw===''?0:Number(raw),w=(CG.wips||[]).find(z=>String(z.id)===String(e.dataset.wip));
+  if(raw!==''&&(!Number.isFinite(qty)||qty<0))return toast('Jumlah WIP harus 0 atau lebih.','err');
+  if(!w||!w.active||String(w.division_id)!==String(divId)||qty<=0)continue;
+  const cost=cgWipCost(w.id,[]),unitCost=cost.ok?Number(cost.unitCost):0;
+  wipRecords.push({division_id:divId,wip_id:w.id,produced_qty:qty,yield_unit:w.yield_unit,unit_cost_snapshot:unitCost,total_cost_snapshot:unitCost*qty,cost_source:cost.ok?cost.source:'opening',produced_at:date,notes:(note?note+' · ':'')+'STOK AWAL WIP (bukan produksi; tanpa pemakaian resep)',status:'posted',wip_name_snapshot:w.name});
+ }
+ if(!records.length&&!wipRecords.length)return toast('Isi jumlah lebih dari 0 pada minimal satu bahan atau WIP.','err');
+ if(records.length){const {error}=await sb().from('barapp_stock_in').insert(records);if(error)return toast(invMsg(error),'err')}
+ if(wipRecords.length){const {error}=await sb().from('cogs_production_batches').insert(wipRecords);if(error)return toast('Bahan/barang masuk tersimpan, tetapi stok awal WIP gagal disimpan: '+opsErr(error),'err')}
+ closeM();await invLoad();await cgLoad(true);toast('Berhasil: '+records.length+' bahan/barang dan '+wipRecords.length+' stok awal WIP. Stok awal WIP tidak memotong bahan resep.','ok');
 }
 function invReceiptForm(){let xs=INV.items.filter(x=>x.active);return '<h3>Catat Barang Masuk</h3><label>Bahan baku<select id="in_item" onchange="invReceiptUnits()"><option value="">Pilih barang</option>'+xs.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(invDiv(x.division_id))+'</option>').join('')+'</select></label><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><label>Jumlah<input id="in_qty" type="number" min="0.000001" step="any" oninput="invPreview()"></label><label>Satuan<select id="in_unit" onchange="invPreview()"><option value="">Pilih satuan</option></select></label></div><div id="in_preview" class="card mu">Pilih barang dan jumlah.</div><label>Harga invoice total (opsional)<input id="in_invoice" type="number" min="0" step="any" oninput="invPreview()" placeholder="Kosongkan jika tidak ada harga"></label><label>Tanggal diterima<input id="in_date" type="date" value="'+today()+'"></label><label>Catatan / nomor invoice<input id="in_note" maxlength="500"></label><p class="mu">Harga kosong memakai estimasi Master Barang dan tidak mengubah Harga Terakhir.</p><button class="btn" onclick="invSaveReceipt()">Simpan Barang Masuk</button>'}
 function invOpenReceipt(){if(!invNeed())return;modal(invReceiptForm()+'<div class="btns"><button class="btn s" onclick="closeM()">Batal</button></div>')}
