@@ -651,6 +651,21 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cogs-actions{grid-template-columns:minmax(0,1fr)}
   .cogs-scroll{border-radius:9px}
 }
+
+/* Desktop width fix for new COGS screens */
+@media(min-width:601px){
+  .cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+  .cogs-top{width:100%;min-width:0}
+  .cogs-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;box-sizing:border-box}
+  .cogs-scroll>.cogs-table{width:100%;min-width:680px;max-width:none;table-layout:auto}
+  .cogs-table th,.cogs-table td{white-space:normal;overflow-wrap:anywhere}
+  .cogs-actions{max-width:100%;min-width:0}
+  .cogs-search{width:min(100%,360px);min-width:180px}
+}
+@media(max-width:600px){
+  .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none;table-layout:auto}
+  .cogs-table th,.cogs-table td{white-space:nowrap}
+}
 </style>
 </head><body>
 
