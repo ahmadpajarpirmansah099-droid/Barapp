@@ -1055,15 +1055,20 @@ async function outInit(){
   if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
     D.outId=ok(r)?r:(D.ljId||null);sv()}
   return D.outId||D.ljId||null}
-function outSwitch(id){
+async function outSwitch(id){
+  if(!id||String(id)===String(D.outId))return;
   D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
   T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
   D.emp=[];D.att=[];D.ot=[];
-  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=true;
+  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
-  toast('Outlet diganti');
-  R();
-  sbLoad().then(async()=>{await payLoad();R()})}
+  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';
+  CG.items=[];CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];CG.ready=false;CG.err='';CG.filter='';CG.tab='active';
+  OPS.division='';OPS.position=[];OPS.positionLoadedFor='';OPS.positionLoading=false;OPS.positionError='';OPS.counts={};
+  toast('Outlet diganti · memuat data outlet baru…');R();
+  try{await sbLoad();await Promise.all([payLoad(),invLoad(true),cgLoad(true)]);if(pg==='cogs_daily_so'||pg==='cogs_production')await opsLoadPosition(true);R();toast('Data outlet baru sudah dimuat.','ok')}
+  catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
+}
 function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
