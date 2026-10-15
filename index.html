@@ -1062,7 +1062,7 @@ async function outSwitch(id){
   D.emp=[];D.att=[];D.ot=[];
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
-  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.stockOut=[];INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';
+  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.stockOut=[];INV.suppliesSO=[];INV.suppliesSOLines=[];INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';SUPS.division='';SUPS.date=today();SUPS.position=[];SUPS.positionLoadedFor='';SUPS.positionLoading=false;SUPS.positionError='';SUPS.actuals={};
   CG.items=[];CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];CG.ready=false;CG.err='';CG.filter='';CG.tab='active';
   OPS.division='';OPS.position=[];OPS.positionLoadedFor='';OPS.positionLoading=false;OPS.positionError='';OPS.counts={};
   toast('Outlet diganti · memuat data outlet baru…');R();
@@ -1530,7 +1530,7 @@ async function suppliesLoadPosition(show){
    SUPS.actuals={};
   }
   SUPS.position=rows;SUPS.positionLoadedFor=key;
- }catch(e){SUPS.positionError=invMsg(e);SUPS.position=[];SUPS.positionLoadedFor='';if(show)toast(SUPS.positionError,'err')}
+ }catch(e){SUPS.positionError=invMsg(e);SUPS.position=[];SUPS.positionLoadedFor=key;if(show)toast(SUPS.positionError,'err')}
  finally{SUPS.positionLoading=false;if(pg==='supplies')R()}
 }
 function suppliesSetDivision(id){SUPS.division=id;SUPS.positionLoadedFor='';SUPS.position=[];SUPS.actuals={};suppliesLoadPosition(true)}
@@ -1565,7 +1565,7 @@ V.supplies=()=>{
  if(!invCanWrite())return '<div class="card empty">Akses SUPLIES memerlukan izin Master Barang · lihat dan edit.</div>';
  invInit();if(!INV.ready)return INV.err?invHint():'<div class="card"><h3>Memuat SUPLIES…</h3></div>';
  const accessible=INV.divs.filter(d=>!D.outId||D.outId==='ALL'||!d.outlet_id||String(d.outlet_id)===String(D.outId));
- const first=accessible.find(d=>INV.items.some(x=>x.is_supply&&x.active&&String(x.division_id)===String(d.id)))||accessible[0];
+ const first=accessible.find(d=>INV.items.some(x=>x.is_supply&&x.active&&String(x.division_id)===String(d.id)))||accessible.find(d=>/service/i.test(String(d.name)))||accessible[0];
  const division=SUPS.division||first?.id||'';
  if(!SUPS.division&&division)SUPS.division=division;
  const date=SUPS.date||today();SUPS.date=date;
