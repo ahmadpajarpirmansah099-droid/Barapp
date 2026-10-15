@@ -1639,7 +1639,7 @@ function suppliesCancelSO(id){
 V.supplies=()=>{
  if(!invCanWrite())return '<div class="card empty">Akses SUPLIES memerlukan izin Master Barang · lihat dan edit.</div>';
  invInit();if(!INV.ready)return INV.err?invHint():'<div class="card"><h3>Memuat SUPLIES…</h3></div>';
- const accessible=INV.divs.filter(d=>INV.items.some(x=>String(x.division_id)===String(d.id)));
+ const accessible=INV.divs;
  const first=accessible.find(d=>INV.items.some(x=>x.is_supply&&x.active&&String(x.division_id)===String(d.id)))||accessible[0];
  const division=SUPS.division||first?.id||'';
  if(!SUPS.division&&division)SUPS.division=division;
