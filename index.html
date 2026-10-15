@@ -1336,6 +1336,7 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
   hd.onclick=e=>{e.stopPropagation();toggle()};if(!open)c.onclick=toggle;
  })}
 
+window.__barappRefreshUI=()=>{if(D.me)R()};
 function R(){if(D.me&&!T.pgInit){T.pgInit=1;try{const sp=sessionStorage.getItem('bar_pg');if(sp)pg=sp}catch(e){}}if(D.me){try{sessionStorage.setItem('bar_pg',pg)}catch(e){}}const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
