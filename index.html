@@ -2675,7 +2675,7 @@ async function opsLoadPosition(show){
  finally{OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
 }
 function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
-function opsSetDate(date){const next=date||opsDate();if(next===OPS.date&&OPS.positionLoadedFor===(OPS.division||CG.divs[0]?.id||'')+'|'+next)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.counts=Object.assign({},OPS.countCache?.[(OPS.division||CG.divs[0]?.id||'')+'|'+next]||{});opsLoadPosition(true)};opsLoadPosition(true)}
+function opsSetDate(date){const next=date||opsDate();if(next===OPS.date&&OPS.positionLoadedFor===(OPS.division||CG.divs[0]?.id||'')+'|'+next)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.counts=Object.assign({},OPS.countCache?.[(OPS.division||CG.divs[0]?.id||'')+'|'+next]||{});opsLoadPosition(true)}
 function opsPreviewProduction(){
  const batches=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
  if(!(batches>0)||!id){el.textContent='Pilih WIP dan jumlah batch produksi.';return}
