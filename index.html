@@ -1368,7 +1368,7 @@ const noP=()=>`<div class="card empty">Belum ada periode absensi.<br>${adm()?'<b
 
 /* ---------- Views ---------- */
 const V={};
-window.__barappRegisterViews=views=>Object.assign(V,views||{});
+window.__barappRegisterViews=views=>{Object.assign(V,views||{});if(typeof R==='function'&&D.me)R()};
 Object.assign(V,window.__barappPendingViews||{});
 /* ---------- KONVERSI SATUAN ---------- */
 let UNIT_DATA=[{id:'apple-juice',name:'Apple Juice',baseUnit:'ML',units:[{name:'KARTON',factor:6000},{name:'LITER',factor:1000},{name:'ML',factor:1}]}];
