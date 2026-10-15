@@ -1066,8 +1066,12 @@ function outSwitch(id){
   sbLoad().then(async()=>{await payLoad();R()})}
 function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
-  const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||((T.outlets||[])[0]||{}).id||'');
-  const opts=(T.outlets||[]).map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
+  if(!Array.isArray(T.outlets)||!T.outlets.length){
+    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
+    return '<div style="padding:8px 12px"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div><hr>';
+  }
+  const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
+  const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
 async function sbLoad(silent){
 if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
