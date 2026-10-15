@@ -1532,12 +1532,45 @@ function accsCard(){
   const dis=a.role=='dev'?'disabled':'';
   const has=perm=>a.role=='dev'||(T.featurePerms||[]).some(x=>x.user_id==a.user_id&&x.permission==perm);
   const grantList=[['Absensi · input karyawan','attendance.input'],['Gaji','payroll.view'],['Admin & Divisi · khusus HR','division.manage'],['Master Barang · lihat','inventory.view'],['Master Barang · edit','inventory.manage'],['Produksi WIP · lihat','cogs.production.view'],['Produksi WIP · edit','cogs.production.manage'],['Daily SO · lihat selisih','cogs.daily_so.difference'],['Daily SO · lihat sistem','cogs.daily_so.system'],['Daily SO · edit','cogs.daily_so.edit'],['Resep WIP · lihat','cogs.wip.view'],['Resep WIP · edit','cogs.wip.manage'],['Menu · lihat','cogs.menu.view'],['Menu · edit','cogs.menu.manage'],['Penjualan Menu · lihat','cogs.sales.view'],['Penjualan Menu · edit','cogs.sales.manage'],['Barang Masuk · lihat','inventory.inbound.view'],['Barang Masuk · edit','inventory.inbound.manage']];
- const grantHtml=grantList.map(([label,perm])=>'<label style="display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px"><input type="checkbox" '+(has(perm)?'checked':'')+' '+dis+' onchange="accFeaturePerm(\''+a.user_id+'\',\''+perm+'\',this.checked)" style="width:auto;flex:0 0 auto">'+label+'</label>').join('');
- return '<tr><td style="word-break:break-all">'+esc(a.email)+'</td><td><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></td><td>'+esc(dv)+'</td><td><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"></td><td colspan="4"><details><summary style="cursor:pointer;font-weight:600;padding:8px">Atur akses fitur · '+grantList.filter(x=>has(x[1])).length+' izin aktif</summary><div style="padding:8px 10px;min-width:220px;max-height:360px;overflow:auto;border:1px solid var(--line,#ddd);border-radius:10px">'+grantHtml+'<p class="mu" style="font-size:11px">Perubahan disimpan saat kotak dicentang.</p></div></details></td><td><button class="btn s x" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></td></tr>';
+ const draft=a.role=='dev'?null:accFeaturePermDraft(a.user_id,grantList.map(x=>x[1]));
+ const hasSelected=perm=>a.role=='dev'||!!(draft&&draft.selected.includes(perm));
+ const grantHtml=grantList.map(([label,perm])=>'<label style="display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px"><input type="checkbox" '+(hasSelected(perm)?'checked':'')+' '+dis+' onchange="accFeaturePermStage(\''+a.user_id+'\',\''+perm+'\',this.checked)" style="width:auto;flex:0 0 auto">'+label+'</label>').join('');
+ const selectedCount=grantList.filter(x=>hasSelected(x[1])).length;
+ const dirty=a.role!=='dev'&&accFeaturePermDirty(draft);
+ return '<tr><td style="word-break:break-all">'+esc(a.email)+'</td><td><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></td><td>'+esc(dv)+'</td><td><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"></td><td colspan="4"><details><summary id="ac_perm_summary_'+a.user_id+'" style="cursor:pointer;font-weight:600;padding:8px">Atur akses fitur · '+selectedCount+' izin aktif</summary><div style="padding:8px 10px;min-width:220px;max-height:360px;overflow:auto;border:1px solid var(--line,#ddd);border-radius:10px">'+grantHtml+'<p class="mu" id="ac_perm_status_'+a.user_id+'" style="font-size:11px">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</p><button class="btn s" id="ac_perm_save_'+a.user_id+'" '+(dirty?'':'disabled')+' onclick="accFeaturePermSave(\''+a.user_id+'\')">Simpan Perubahan</button></div></details></td><td><button class="btn s x" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></td></tr>';
  }).join('');
  return '<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Atur role, status, dan akses fitur tiap akun. Tekan “Atur akses fitur” untuk memilih izin yang diberikan. Developer selalu memiliki akses penuh. Reset password dilakukan di Supabase → Authentication.</p><div class="account-table-wrap"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th colspan="4">Izin fitur</th><th></th></tr>'+(rows||'<tr><td colspan="9">Belum ada akun.</td></tr>')+'</table></div></div>';
 }
-async function accFeaturePerm(uid,perm,on){const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perm',{p_user:uid,p_permission:perm,p_on:on})});if(ok){toast('Izin '+perm+(on?' diberikan':' dicabut'));divLoad()}else divLoad()}
+function accFeaturePermDraft(uid,permissions){
+ T.featurePermDrafts=T.featurePermDrafts||{};
+ if(!T.featurePermDrafts[uid]){
+  const current=(T.featurePerms||[]).filter(x=>String(x.user_id)===String(uid)&&permissions.includes(x.permission)).map(x=>x.permission);
+  T.featurePermDrafts[uid]={permissions:permissions.slice(),base:current.slice(),selected:current.slice()};
+ }
+ return T.featurePermDrafts[uid];
+}
+function accFeaturePermDirty(draft){
+ if(!draft)return false;
+ const a=[...draft.base].sort(),b=[...draft.selected].sort();
+ return a.length!==b.length||a.some((x,i)=>x!==b[i]);
+}
+function accFeaturePermStage(uid,perm,on){
+ const draft=T.featurePermDrafts&&T.featurePermDrafts[uid];if(!draft)return;
+ draft.selected=draft.selected.filter(x=>x!==perm);
+ if(on)draft.selected.push(perm);
+ const dirty=accFeaturePermDirty(draft);
+ const status=document.getElementById('ac_perm_status_'+uid),save=document.getElementById('ac_perm_save_'+uid),summary=document.getElementById('ac_perm_summary_'+uid);
+ if(status)status.textContent=dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru';
+ if(save){save.disabled=!dirty;save.textContent=dirty?'Simpan Perubahan':'Tersimpan'}
+ if(summary)summary.textContent='Atur akses fitur · '+draft.selected.length+' izin aktif';
+}
+async function accFeaturePermSave(uid){
+ const draft=T.featurePermDrafts&&T.featurePermDrafts[uid];
+ if(!draft||!accFeaturePermDirty(draft))return toast('Belum ada perubahan izin.','warn');
+ const changes=draft.permissions.map(permission=>({permission,enabled:draft.selected.includes(permission)}));
+ const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perms_bulk',{p_user:uid,p_changes:changes})});
+ if(ok){delete T.featurePermDrafts[uid];toast('Semua izin berhasil disimpan sekaligus.');divLoad()}
+}
 async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=document.getElementById('ac_a_'+uid);
  const ok=await sbRun(async()=>{await payRpc('dev_set_account',{p_user:uid,p_role:r?r.value:'hr',p_active:a?a.checked:true})});
  if(ok)toast('Akun diperbarui');divLoad()}
