@@ -585,6 +585,33 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .inv-detail-actions{grid-template-columns:minmax(0,1fr)}
 }
 
+
+/* COGS responsive layout: desktop/tablet widths must not inherit mobile overflow */
+.cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{box-sizing:border-box;width:100%;min-width:0;max-width:100%}
+.cogs-wrap>.card{overflow:hidden}
+.cogs-top{width:100%;min-width:0;align-items:flex-start;flex-wrap:wrap}
+.cogs-top>div:first-child{flex:1 1 320px;min-width:0;max-width:100%}
+.cogs-top>div:first-child p{max-width:100%;overflow-wrap:anywhere}
+.cogs-actions{min-width:0;max-width:100%;flex:0 1 auto;align-items:center}
+.cogs-actions>*{min-width:0;max-width:100%;box-sizing:border-box}
+.cogs-search{width:min(100%,320px);min-width:0}
+.cogs-scroll{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.cogs-scroll>.cogs-table{width:max-content;min-width:100%;max-width:none;table-layout:auto}
+.cogs-stats{width:100%;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))}
+.cogs-formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:601px){
+ .cogs-top>div:first-child{flex:1 1 100%}
+ .cogs-actions{flex:1 1 100%;display:flex;flex-wrap:wrap;justify-content:flex-start}
+ .cogs-actions .cogs-search{flex:0 1 320px}
+ .cogs-scroll{border-radius:10px}
+ .cogs-scroll>.cogs-table{min-width:100%;width:100%}
+}
+@media(max-width:600px){
+ .cogs-top>div:first-child{flex-basis:100%}
+ .cogs-actions{width:100%;flex:1 1 100%}
+ .cogs-scroll>.cogs-table{width:max-content;min-width:620px}
+ .cogs-formgrid{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 
 <style id="cogs-ui">
