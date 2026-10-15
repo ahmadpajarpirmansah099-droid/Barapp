@@ -666,6 +666,20 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none;table-layout:auto}
   .cogs-table th,.cogs-table td{white-space:nowrap}
 }
+
+/* Desktop width fix: inventory tables and new COGS modules */
+@media(min-width:601px){
+  .inv-toolbar,.inv-table{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+  .inv-table-scroll{width:100%;max-width:100%;min-width:0}
+  .inv-table-scroll table{width:100%;min-width:760px;max-width:none;table-layout:auto}
+  .cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+  .cogs-scroll{width:100%;max-width:100%;min-width:0}
+  .cogs-scroll>.cogs-table{width:100%;min-width:680px;max-width:none;table-layout:auto}
+}
+@media(max-width:600px){
+  .inv-table-scroll table{width:max-content;min-width:760px;max-width:none}
+  .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
+}
 </style>
 </head><body>
 
