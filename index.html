@@ -2680,12 +2680,27 @@ async function opsLoadPosition(show){
 }
 function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
 function opsSetDate(date){const next=date||opsDate();if(next===OPS.date&&OPS.positionLoadedFor===(OPS.division||CG.divs[0]?.id||'')+'|'+next)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.counts=Object.assign({},OPS.countCache?.[(OPS.division||CG.divs[0]?.id||'')+'|'+next]||{});opsLoadPosition(true)}
+async function opsAddEntryRow(kind){
+ const tbody=document.getElementById(kind==='sale'?'ops_sale_entry_rows':'ops_prod_entry_rows');if(!tbody)return;
+ const first=tbody.querySelector('.ops-entry-row');if(!first)return;
+ const row=first.cloneNode(true);
+ row.querySelectorAll('select').forEach(el=>el.value='');
+ row.querySelectorAll('input').forEach(el=>el.value='');
+ const action=row.querySelector('button');if(action){action.textContent='Hapus';action.className='btn x d';action.setAttribute('onclick',"this.closest('.ops-entry-row').remove()");}
+ tbody.appendChild(row);
+}
+function opsEntryRows(kind){
+ const rows=Array.from(document.querySelectorAll('.ops-entry-item[data-kind="'+kind+'"]')).map(el=>({id:el.value,qty:el.closest('.ops-entry-row')?.querySelector('.ops-entry-qty')?.value.trim()||''})).filter(x=>x.id&&x.qty!==''&&Number(x.qty)>0);
+ const seen=new Set();for(const x of rows){if(seen.has(String(x.id)))return {error:'Item yang sama dipilih lebih dari sekali. Gabungkan qty dalam satu baris.'};seen.add(String(x.id));}
+ return {rows};
+}
 async function opsRecordProductionBatch(){
  if(!cgRoleOK())return;
- const division=v('ops_prod_div'),produced_at=v('ops_prod_date')||opsDate(),notes=v('ops_prod_note').trim();
- const rows=Array.from(document.querySelectorAll('.ops-prod-qty')).map(el=>({wip_id:el.dataset.wip,qty:el.value.trim()})).filter(x=>x.qty!==''&&Number(x.qty)>0);
+ const division=v('ops_prod_div'),produced_at=v('ops_prod_date')||opsDate(),notes=v('ops_prod_note').trim(),parsed=opsEntryRows('production');
+ if(parsed.error)return toast(parsed.error,'warn');
+ const rows=parsed.rows.map(x=>({wip_id:x.id,qty:x.qty}));
  if(!division)return toast('Pilih divisi terlebih dahulu.','warn');
- if(!rows.length)return toast('Isi QTY PRODUKSI untuk minimal satu item WIP.','warn');
+ if(!rows.length)return toast('Pilih ITEM WIP dan isi QTY PRODUKSI untuk minimal satu baris.','warn');
  for(const x of rows){const w=opsWip(x.wip_id);if(!w)return toast('Item WIP tidak ditemukan. Muat ulang data.','err');if(!Number.isFinite(Number(x.qty))||Number(x.qty)<=0)return toast('Qty produksi harus lebih besar dari 0.','warn');const c=cgWipCost(x.wip_id,[]);if(!c.ok)return toast('Resep WIP '+w.name+' belum valid: '+c.reason,'err');}
  const btn=document.getElementById('ops_prod_save');if(btn){btn.disabled=true;btn.textContent='Menyimpan…'}
  try{
@@ -2696,15 +2711,16 @@ async function opsRecordProductionBatch(){
 }
 async function opsRecordSalesTable(){
  if(!cgRoleOK())return;
- const rows=Array.from(document.querySelectorAll('.ops-batch-qty[data-menu]')).map(el=>({menu_id:el.dataset.menu,qty:el.value.trim()})).filter(x=>x.qty!==''&&Number(x.qty)>0);
- if(!rows.length)return toast('Isi QTY TERJUAL untuk minimal satu menu.','warn');
- const host=document.getElementById('ops_sale_batch_rows');
- if(!host)return toast('Form penjualan tidak ditemukan. Muat ulang halaman.','err');
+ const parsed=opsEntryRows('sale');if(parsed.error)return toast(parsed.error,'warn');
+ const rows=parsed.rows.map(x=>({menu_id:x.id,qty:x.qty}));
+ if(!rows.length)return toast('Pilih ITEM MENU dan isi QTY YANG TERJUAL untuk minimal satu baris.','warn');
+ const host=document.getElementById('ops_sale_batch_rows');if(!host)return toast('Form penjualan tidak ditemukan. Muat ulang halaman.','err');
  host.innerHTML='';
  for(const x of rows){const row=document.createElement('div');row.className='card ops-sale-batch-row';row.style.display='none';row.innerHTML='<select class="ops-batch-menu"><option value="'+esc(x.menu_id)+'" selected>'+esc(opsMenu(x.menu_id)?.name||'Menu')+'</option></select><input class="ops-batch-qty" value="'+esc(x.qty)+'">';host.appendChild(row);}
  const saveBtn=document.getElementById('ops_sale_save');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Menyimpan…'}
  try{await opsRecordSaleBatch()}finally{const b=document.getElementById('ops_sale_save');if(b){b.disabled=false;b.textContent='Simpan penjualan'}}
 }
+function opsPreviewProduction(){
 function opsPreviewProduction(){
  const batches=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
  if(!(batches>0)||!id){el.textContent='Pilih WIP dan jumlah batch produksi.';return}
@@ -2837,28 +2853,28 @@ async function exportSuppliesSOExcel(){
  const selectedDiv=OPS.division||CG.divs[0]?.id||'';OPS.division=selectedDiv;
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(selectedDiv)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const wips=CG.wips.filter(w=>w.active&&String(w.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name));
- const wipOptions=wips.map(w=>'<option value="'+w.id+'">'+esc(w.name)+'</option>').join('');
+ const wipOptions='<option value="">Pilih item WIP</option>'+wips.map(w=>'<option value="'+w.id+'">'+esc(w.name)+'</option>').join('');
  const prodHistoryDate=OPS.prodHistoryDate||opsDate();
  const rows=CG.productions.filter(b=>String(b.division_id)===String(selectedDiv)&&String(b.produced_at)===String(prodHistoryDate)).sort((a,b)=>invAlpha(a.wip_name_snapshot||opsWip(a.wip_id)?.name,b.wip_name_snapshot||opsWip(b.wip_id)?.name)||String(b.produced_at||'').localeCompare(String(a.produced_at||''))).map(b=>{
   const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
   return '<tr><td><b>'+esc(b.wip_name_snapshot||w&&w.name||'WIP')+'</b></td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.total_cost_snapshot)+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
  }).join('');
- const inputRows=wips.map(w=>'<tr><td><b>'+esc(w.name)+'</b><div class="mu" style="font-size:12px">Satuan: '+esc(w.yield_unit||'UNIT')+'</div></td><td><input class="ops-prod-qty" data-wip="'+esc(w.id)+'" type="number" min="0" step="any" inputmode="decimal" placeholder="0" style="width:100%;min-width:80px" aria-label="Qty produksi '+esc(w.name)+'"></td></tr>').join('');
- return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Masukkan jumlah hasil produksi untuk setiap WIP. Isi hanya item yang diproduksi; angka 0 atau kosong tidak disimpan.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM WIP</th><th>QTY PRODUKSI</th></tr></thead><tbody>'+(inputRows||'<tr><td colspan="2" class="mu">Belum ada WIP aktif untuk divisi ini.</td></tr>')+'</tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(prodHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.prodHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP</th><th>Qty produksi</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Input seperti Daily SO: pilih ITEM WIP lalu isi QTY PRODUKSI. Tambahkan baris untuk WIP lainnya.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM WIP</th><th>QTY PRODUKSI</th><th>Aksi</th></tr></thead><tbody id="ops_prod_entry_rows"><tr class="ops-entry-row"><td><select class="ops-entry-item" data-kind="production" aria-label="Item WIP">'+wipOptions+'</select></td><td><input class="ops-entry-qty" type="number" min="0" step="any" inputmode="decimal" placeholder="Masukkan qty" aria-label="Qty produksi"></td><td><button class="btn x s" type="button" onclick="opsAddEntryRow(\'production\')">+ Baris</button></td></tr></tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(prodHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.prodHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP</th><th>Qty produksi</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
 };
+(window.__barappPendingViews||(window.__barappPendingViews={})).cogs_sales=()=>{
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_sales=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';
  const selectedDiv=OPS.division||CG.divs[0]?.id||'';OPS.division=selectedDiv;
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(selectedDiv)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const menus=CG.menus.filter(m=>m.active&&String(m.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name));
- const menuOptions=menus.map(m=>'<option value="'+m.id+'">'+esc(m.name)+'</option>').join('');
+ const menuOptions='<option value="">Pilih item menu</option>'+menus.map(m=>'<option value="'+m.id+'">'+esc(m.name)+'</option>').join('');
  const rows=CG.sales.filter(s=>String(s.division_id)===String(selectedDiv)&&String(s.sold_at)===String(OPS.saleHistoryDate||opsDate())).sort((a,b)=>invAlpha(a.menu_name_snapshot,b.menu_name_snapshot)).map(s=>{
   const margin=Number(s.gross_sales_snapshot)-Number(s.total_hpp_snapshot);
   return '<tr><td><b>'+esc(s.menu_name_snapshot)+'</b></td><td>'+cgNum(s.qty)+'</td><td>'+cgMoney(s.selling_price_snapshot)+'</td><td>'+cgMoney(s.total_hpp_snapshot)+'</td><td>'+cgMoney(margin)+'</td><td>'+(s.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='posted'?opsCancelButton('sale',s.id):'')+'</td></tr>';
  }).join('');
- const inputRows=menus.map(m=>'<tr><td><b>'+esc(m.name)+'</b><div class="mu" style="font-size:12px">Harga jual: '+cgMoney(m.selling_price)+'</div></td><td><input class="ops-batch-qty" data-menu="'+esc(m.id)+'" type="number" min="0" step="any" inputmode="decimal" placeholder="0" style="width:100%;min-width:80px" aria-label="Qty terjual '+esc(m.name)+'"></td></tr>').join('');
- return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Penjualan Menu</h3><p class="mu">Masukkan jumlah terjual per menu, seperti tabel Daily SO. Isi hanya menu yang terjual; angka 0 atau kosong tidak disimpan.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><template id="ops_sale_menu_source"><option value="">Pilih menu</option>'+menuOptions+'</template><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM MENU</th><th>QTY TERJUAL</th></tr></thead><tbody>'+(inputRows||'<tr><td colspan="2" class="mu">Belum ada menu aktif untuk divisi ini.</td></tr>')+'</tbody></table></div><label>Catatan / nomor transaksi (opsional)<input id="ops_sale_note" maxlength="500" placeholder="Contoh: Shift pagi / POS"></label><div id="ops_sale_batch_rows" style="display:none"></div><button class="btn" id="ops_sale_save" onclick="opsRecordSalesTable()">Simpan penjualan</button></div><div class="card"><div class="cogs-top"><h3>Riwayat penjualan</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(OPS.saleHistoryDate||opsDate())+'" max="'+opsDate()+'" onchange="OPS.saleHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item menu</th><th>Qty</th><th>Harga jual</th><th>Total HPP</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan pada tanggal ini.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Penjualan Menu</h3><p class="mu">Input seperti Daily SO: pilih ITEM MENU lalu isi QTY YANG TERJUAL. Tambahkan baris untuk menu lainnya.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM MENU</th><th>QTY YANG TERJUAL</th><th>Aksi</th></tr></thead><tbody id="ops_sale_entry_rows"><tr class="ops-entry-row"><td><select class="ops-entry-item" data-kind="sale" aria-label="Item menu">'+menuOptions+'</select></td><td><input class="ops-entry-qty" type="number" min="0" step="any" inputmode="decimal" placeholder="Masukkan qty" aria-label="Qty yang terjual"></td><td><button class="btn x s" type="button" onclick="opsAddEntryRow(\'sale\')">+ Baris</button></td></tr></tbody></table></div><label>Catatan / nomor transaksi (opsional)<input id="ops_sale_note" maxlength="500" placeholder="Contoh: Shift pagi / POS"></label><button class="btn" id="ops_sale_save" onclick="opsRecordSalesTable()">Simpan penjualan</button></div><div class="card"><div class="cogs-top"><h3>Riwayat penjualan</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(OPS.saleHistoryDate||opsDate())+'" max="'+opsDate()+'" onchange="OPS.saleHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item menu</th><th>Qty</th><th>Harga jual</th><th>Total HPP</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan pada tanggal ini.</td></tr>')+'</tbody></table></div></div></div>';
 };
+(window.__barappPendingViews||(window.__barappPendingViews={})).cogs_daily_so=()=>{
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_daily_so=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
