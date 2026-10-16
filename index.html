@@ -3538,8 +3538,11 @@ async function opsAddEntryRow(kind){
 }
 function opsEntryRows(kind){
  const tbodyId=kind==='sale'?'ops_sale_entry_rows':'ops_prod_entry_rows';
- const raw=Array.from(document.querySelectorAll('#'+tbodyId+' .ops-entry-row')).map(el=>({id:String(el.dataset.itemId||el.querySelector('.ops-entry-item')?.value||'').trim(),qty:String(el.querySelector('.ops-entry-qty')?.value||'').trim()}));
- const filled=raw.filter(x=>x.id||x.qty!=='');
+ const raw=Array.from(document.querySelectorAll('#'+tbodyId+' .ops-entry-row')).map(el=>({id:String(el.dataset.itemId||el.querySelector('.ops-entry-item')?.value||'').trim(),qty:String(el.querySelector('.ops-entry-qty')?.value||'').trim(),fixedItem:!!el.dataset.itemId}));
+ // Pada tabel yang menampilkan semua item, item sudah terpilih secara default.
+ // Baris tersebut baru dianggap mulai diisi ketika QTY diisi; untuk dropdown,
+ // pemilihan item saja tetap dianggap sebagai baris yang mulai diisi.
+ const filled=raw.filter(x=>x.qty!==''||(!x.fixedItem&&x.id));
  if(filled.some(x=>!x.id||x.qty===''))return {rows:[],error:kind==='sale'?'Lengkapi ITEM MENU dan QTY pada setiap baris yang mulai diisi.':'Lengkapi ITEM WIP dan jumlah batch pada setiap baris yang mulai diisi.'};
  if(filled.some(x=>!Number.isFinite(Number(x.qty))||Number(x.qty)<=0))return {rows:[],error:kind==='sale'?'QTY terjual harus angka lebih besar dari 0.':'Jumlah batch harus angka lebih besar dari 0.'};
  return {rows:filled};
