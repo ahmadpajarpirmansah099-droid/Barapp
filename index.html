@@ -708,6 +708,106 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
 </style>
+
+<style id="barapp-reference-layout">
+/* Barapp visual direction: charcoal + green, restrained accents; layout-only overrides. */
+:root{
+ --bg:#f5f7f6!important;--cd:#ffffff!important;--tx:#17211d!important;--mu:#64736b!important;
+ --br:#e3e9e5!important;--line:#e3e9e5!important;--ac:#07834f!important;--tint:#e6f5ed!important;
+ --in:#f8faf9!important;--sh:#dce5df!important;--dk:#111a17!important;
+ --cozy:0 2px 10px rgba(18,42,30,.035)!important;
+ --cozy-lg:0 16px 38px rgba(18,42,30,.09)!important;
+}
+body{background:#f5f7f6!important;color:#17211d!important}
+body::before{background-image:none!important}
+h1,h2,h3,.hd-t h1{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif!important;letter-spacing:-.025em}
+button,input,select,textarea{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif}
+.app-top{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e3e9e5!important;backdrop-filter:blur(14px)}
+.brand{background:#111a17!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.12)!important;padding:22px 20px 18px!important;min-height:82px}
+.brand .tile{background:#123d2b!important;border:1px solid #245b43!important;color:#65d6a0!important;border-radius:12px!important}
+.brand b{font:750 19px/1.2 Inter,'Plus Jakarta Sans',sans-serif!important;color:#fff!important}
+.brand small{color:#a6c8b5!important;letter-spacing:.015em!important;text-transform:none!important;font-weight:500!important}
+.nvl{color:#93a79b!important;padding-top:20px!important}
+.nv{gap:5px!important;padding:0 12px!important}
+.nvb{color:#d8e3dc!important;border:1px solid transparent!important;border-radius:9px!important;padding:11px 13px!important;font-weight:550!important}
+.nvb .ic{color:#b6c8bd!important}
+.nvb:hover{background:#1a2b23!important;color:#fff!important}
+.nvb.on{background:#e3f5eb!important;color:#087c4b!important;border-color:transparent!important;font-weight:700!important}
+.nvb.on .ic{color:#087c4b!important}
+.sidew{background:#17231d!important;border:1px solid #2a3b31!important;color:#bdcfc3!important;border-radius:12px!important;margin: auto 12px 14px!important}
+.sidew .ic{color:#55c991!important}
+@media(min-width:900px){
+ .side{background:#111a17!important;border-right:1px solid #24342b!important;box-shadow:none!important}
+ #app.in{--side:264px!important}
+ .app-top{padding:14px 30px!important}
+ main{max-width:none!important;padding:26px 30px!important}
+ .hd-t h1{font-size:28px!important;font-weight:750!important}
+ .hd-t small{font-size:13px!important}
+}
+.card{background:#fff!important;border:1px solid #e5ebe7!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(20,45,32,.025)!important;padding:20px!important}
+.card:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(20,45,32,.055)!important;border-color:#d6e4db!important}
+.card>h3:first-child,.md>h3:first-child{font-family:Inter,'Plus Jakarta Sans',sans-serif!important;font-size:16px!important;font-weight:700!important}
+.tile,.ibtn{border-radius:11px!important}
+.ibtn{background:#fff!important;border-color:#e1e8e3!important}
+.ibtn:hover{background:#eaf7ef!important;border-color:#b8dfc8!important}
+.btn{border-radius:10px!important;font-weight:650!important}
+input,select,textarea{border-radius:9px!important;border-color:#dfe7e2!important;background:#fff!important}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(7,131,79,.15)!important;border-color:#07834f!important}
+table{border-color:#e6ece8!important}
+th{background:#f4f7f5!important;color:#46564d!important;font-weight:700!important}
+td,th{border-color:#e8eeea!important}
+.statusbar{background:rgba(255,255,255,.97)!important;border-color:#e0e8e3!important;box-shadow:0 5px 18px rgba(20,45,32,.06)!important}
+@media(max-width:899px){
+ .app-top{padding:10px 14px!important}
+ main{padding:16px 12px!important}
+ .card{padding:16px!important}
+ .hd-t h1{font-size:19px!important}
+ .side{background:#111a17!important}
+}
+@media(max-width:520px){
+ .card{border-radius:12px!important;padding:14px!important}
+ main{padding:12px 10px!important}
+ .hd{gap:8px!important}
+ .hd-r{gap:6px!important}
+}
+@media(prefers-reduced-motion:reduce){.card{transition:none!important}}
+</style>
+<style id="barapp-icon-refresh">
+/* Unified Lucide-like icon language across sidebar, cards, controls and mobile feature picker. */
+.ic{flex-shrink:0;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nvb .ic{width:20px;height:20px}
+.ibtn .ic,.btn .ic{width:17px;height:17px}
+.app-top .ic{width:19px;height:19px}
+.card h3 .ic,.card .hd .ic{width:21px;height:21px;color:#07834f}
+.nvb.on .ic{color:#07834f}
+@media(max-width:899px){.nvb .ic{width:21px;height:21px}.app-top .ic{width:18px;height:18px}}
+</style>
+<style id="barapp-summary-layout-guard">
+/* Prevent accordion headers from expanding into blank panels in narrow layouts. */
+details{display:block!important;height:auto!important;min-height:0!important;flex:none!important;align-self:stretch}
+details>summary{box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:42px!important;height:auto!important;max-height:none!important;padding:10px 14px!important;line-height:1.35!important;color:var(--tx,#17211d)!important;background:#f8faf9!important;white-space:normal!important;overflow:visible!important;visibility:visible!important;opacity:1!important}
+details>summary::after{flex:0 0 16px!important;margin-left:auto!important}
+details:not([open])>*:not(summary){display:none!important}
+@media(max-width:899px){
+ details{margin:7px 0!important}
+ details>summary{min-height:42px!important;padding:10px 12px!important;font-size:14px!important}
+}
+</style>
+
+<style id="barapp-header-controls">
+/* Compact dashboard context controls: outlet, date, refresh, settings and account. */
+.hd-r{align-items:center!important;gap:8px!important;flex-wrap:wrap}
+.hd-context,.hd-date{display:inline-flex;align-items:center;gap:8px;min-height:38px;border:1px solid #dfe8e2;border-radius:11px;background:#fff;color:#25382e;padding:0 11px;font:600 12px/1.2 Inter,'Plus Jakarta Sans',system-ui,sans-serif;white-space:nowrap}
+.hd-context{cursor:pointer;max-width:230px}
+.hd-context>span:nth-child(2){overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.hd-context>.ic,.hd-date>.ic{color:#07834f;flex:0 0 auto}
+.hd-context-caret{color:#64736b;font-size:15px;margin-left:1px}
+.hd-date{color:#64736b;background:#f8faf9;font-weight:550}
+.hd-refresh{color:#087c4b!important}
+.hd-refresh:hover,.hd-context:hover{background:#eaf7f0!important;border-color:#c4e4d1!important}
+@media(max-width:899px){.hd-r{gap:5px!important}.hd-context,.hd-date{min-height:34px;padding:0 8px;font-size:11px;gap:5px}.hd-context{max-width:142px}.hd-context>span:nth-child(2){max-width:88px}.hd-date{display:none}.hd-refresh{display:none!important}}
+@media(max-width:380px){.hd-context{max-width:118px}.hd-context>span:nth-child(2){max-width:65px}.settings-btn{display:none!important}}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -961,6 +1061,27 @@ globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 
 trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
 grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
 };
+
+// UI refresh: consistent thin-line icons for the charcoal/green design system.
+ICP['calendar-days']='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m8 15 2 2 5-5"/>';
+ICP.gauge='<path d="M12 14 16 9"/><path d="M20.2 16a9 9 0 1 0-16.4 0"/><path d="M5 19h14"/><circle cx="12" cy="14" r="1"/>';
+ICP.boxes='<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/><path d="m7.5 5.5 9 5"/>';
+ICP['wallet-cards']='<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18"/><path d="M7 5V3h10v2"/><path d="M15 14h3"/>';
+ICP['badge-check']='<path d="m12 3 2.2 1.3 2.6-.1 1.1 2.4 2.2 1.4-.5 2.6.5 2.6-2.2 1.4-1.1 2.4-2.6-.1L12 18l-2.2-1.3-2.6.1-1.1-2.4-2.2-1.4.5-2.6-.5-2.6 2.2-1.4 1.1-2.4 2.6.1L12 3Z"/><path d="m8.5 10.5 2.2 2.2 4.8-4.8"/>';
+ICP['clipboard-check']='<rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4.5h6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2Z"/><path d="m8.5 12 2 2 5-5M9 18h6"/>';
+ICP['users-round']=ICP.kar;
+ICP['lock-keyhole']='<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/><circle cx="12" cy="15" r="1"/><path d="M12 16v2"/>';
+ICP['chart-no-axes-combined']='<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-7"/><path d="M16 6h4v4"/>';
+ICP['arrow-left-right']='<path d="M17 3 21 7l-4 4"/><path d="M3 7h18"/><path d="m7 21-4-4 4-4"/><path d="M21 17H3"/>';
+ICP['receipt-text']=ICP['receipt-text']||ICP.abs;
+ICP['bell']='<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>';
+ICP['store']='<path d="M3 10v11h18V10"/><path d="m2 10 2-7h16l2 7"/><path d="M2 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M9 21v-6h6v6"/>';
+ICP['layers']='<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/>';
+ICP['calendar-range']='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h7"/>';
+ICP['chart-column']='<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="13" y="8" width="3" height="10" rx=".5"/><rect x="19" y="4" width="2" height="14" rx=".5"/>';
+ICP['alert-triangle']='<path d="m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>';
+ICP['arrow-down-to-line']='<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>';
+ICP['arrow-up-from-line']='<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/>';
 ICP.package=ICP.box;
 ICP.folder=ICP.trees;
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
@@ -1312,7 +1433,7 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard Operasional',ic:'chart-no-axes-combined',page:'ops_dashboard',adm:true},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Approval Closing',ic:'approval',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-list',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'user-cog',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Segera hadir',ic:'lock',page:null}];
+const MODS=[{name:'Rekap',ic:'chart-no-axes-combined',page:'dash'},{name:'Input Harian',ic:'calendar-days',page:'abs'},{name:'Karyawan',ic:'users',page:'kar'},{name:'Lembur / Extend',ic:'clock-3',page:'ot'},{name:'Atur & Laporan',ic:'file-chart-column',page:'lap',adm:true},{name:'Konversi Unit',ic:'ruler',page:'unit',adm:true},{name:'Data Gaji',ic:'wallet-cards',page:'pay_data',adm:true,pay:true},{name:'Laporan Gaji',ic:'chart-column',page:'pay_lap',adm:true,pay:true},{name:'Kasbon',ic:'hand-coins',page:'pay_kas',adm:true,pay:true},{name:'Pengaturan Gaji',ic:'settings-2',page:'pay_set',adm:true,pay:true},{name:'Audit Log',ic:'scroll-text',page:'audit',dev:true},{name:'Produksi WIP',ic:'layers',page:'cogs_production',adm:true,cogs:true},{name:'Dashboard Operasional',ic:'gauge',page:'ops_dashboard',adm:true},{name:'Master Barang',ic:'boxes',page:'barang',adm:true,perm:'inventory.view'},{name:'Approval Closing',ic:'badge-check',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-check',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'users-round',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
 const DIV_MODULE_FIELDS=[
  {key:'supplies',label:'Daily SO SUPLIES',desc:'Stok guest supplies dan perlengkapan service'},
@@ -1389,7 +1510,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('dashboard',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><button type="button" class="hd-context" onclick="omn(this.closest('.hd').querySelector('.settings-btn'),event)" title="Pilih outlet melalui pengaturan" aria-label="Outlet aktif">${IC('store',17)}<span>${esc(outLabel()||L('Outlet','Outlet'))}</span><span class="hd-context-caret">⌄</span></button><span class="hd-date" title="Tanggal hari ini">${IC('calendar-days',16)}<span>${fd(today())}</span></span><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" title="${L('Muat ulang data','Reload data')}" aria-label="${L('Muat ulang data','Reload data')}">${IC('refresh-cw',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
@@ -3216,4 +3337,49 @@ if(window.__barappRefreshUI)window.__barappRefreshUI();
 
 </script>
 <script src="./closing.js?v=20261016-8"></script>
+<style id="barapp-desktop-feature-rail">
+@media(min-width:900px){
+ .side>.nvl:not(.feature-rail-title),.side>nav:not(.feature-rail){display:none!important}
+ .side .feature-rail-title{display:block;color:#93a79b;font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;padding:18px 14px 8px}
+ .side .feature-rail{display:flex;flex-direction:column;gap:4px;padding:0 12px 14px}
+ .side .feature-rail .nvb{display:flex;width:100%;align-items:center;gap:11px;text-align:left;min-height:42px}
+ .side .feature-rail .nvb .ic{width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 19px}
+ .side .feature-rail .nvb.active{background:#e3f5eb!important;color:#087c4b!important;font-weight:700!important}
+ .side .feature-rail .nvb.coming{color:#829087!important;cursor:default;opacity:.72}
+}
+@media(max-width:899px){.feature-rail-title,.feature-rail{display:none!important}}
+</style>
+<script id="barapp-desktop-feature-rail-script">
+(function(){
+ const iconMap={'Rekap':'chart-no-axes-combined','Input Harian':'calendar-days','Karyawan':'users','Lembur / Extend':'clock-3','Atur & Laporan':'file-chart-column','Konversi Unit':'ruler','Data Gaji':'wallet-cards','Laporan Gaji':'chart-column','Kasbon':'hand-coins','Pengaturan Gaji':'settings-2','Audit Log':'scroll-text','Absensi':'calendar-days','Dashboard Operasional':'gauge','Master Barang':'boxes','Gaji':'wallet-cards','Approval Closing':'badge-check','Daily SO':'clipboard-check','Divisi & Admin':'users-round'};
+ function enhance(){
+  if(window.innerWidth<900)return;
+  const side=document.querySelector('.side');
+  if(!side||typeof MODS==='undefined')return;
+  let rail=side.querySelector('.feature-rail');
+  if(!rail){
+   rail=document.createElement('nav');rail.className='feature-rail';
+   const title=document.createElement('div');title.className='feature-rail-title';title.textContent='FITUR';
+   const switchNav=[...side.querySelectorAll('nav')].find(n=>n.querySelector('[onclick*="openMods"]'));
+   if(switchNav){switchNav.before(title);switchNav.before(rail)}else side.append(title,rail);
+  }
+  const items=MODS.filter(m=>m.page&&(!m.dev||isDeveloper()||T.dbRole==='hr'||hasDivMgr()));
+  const key=items.map(m=>m.name+':'+m.page).join('|')+'|'+pg;
+  if(rail.dataset.key===key)return;rail.dataset.key=key;rail.innerHTML='';
+  items.forEach(m=>{
+   const locked=!allowed().includes(m.page);
+   const b=document.createElement('button');b.type='button';b.className='nvb'+(pg===m.page?' active':'');
+   b.innerHTML=IC(iconMap[m.name]||m.ic,18)+'<span></span>';b.lastElementChild.textContent=m.name;
+   b.title=m.name;b.setAttribute('aria-label',m.name);
+   b.onclick=()=>{if(locked){lockTip();return}go(m.page)};
+   rail.appendChild(b);
+  });
+  const soon=MODS.find(m=>!m.page&&m.name==='Segera hadir');
+  if(soon){const b=document.createElement('div');b.className='nvb coming';b.innerHTML=IC('lock-keyhole',18)+'<span>Segera hadir</span>';rail.appendChild(b)}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance);else enhance();
+ new MutationObserver(()=>enhance()).observe(document.documentElement,{childList:true,subtree:true});
+ window.addEventListener('resize',enhance);
+})();
+</script>
 </body></html>
