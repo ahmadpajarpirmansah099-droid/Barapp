@@ -904,6 +904,29 @@ table tr:hover td{background:#f7fbf8!important}
 @media(prefers-reduced-motion:reduce){
   :where(input,select,textarea){transition:none}
 }
+
+/* Inventory screens — consistent toolbar and readable mobile data tables */
+.inv-table{border:1px solid var(--br,#e5eee8);border-radius:14px;background:#fff}
+.inv-table-scroll{border-radius:10px;scroll-padding-inline:12px}
+.inv-table-scroll table thead th{
+  position:sticky;top:0;z-index:3;background:#f5faf6;color:#52675b;
+  border-bottom:1px solid #dfeae2;font-size:11px;font-weight:750;
+  letter-spacing:.025em;text-transform:uppercase
+}
+.inv-table-scroll tbody tr:nth-child(even){background:#fbfdfb}
+.inv-table-scroll tbody tr:hover{background:#f1f8f3}
+.inv-table-scroll tbody tr:hover td:first-child{background:#f1f8f3}
+.inv-table-scroll tbody td:first-child{background:#fff}
+.inv-table-scroll tbody tr:nth-child(even) td:first-child{background:#fbfdfb}
+.inv-table-scroll th:first-child{background:#f5faf6}
+.inv-search{min-height:42px;border-radius:10px}
+.inv-detail-actions button,.inv-detail-actions .btn{min-height:40px}
+@media(max-width:700px){
+  .inv-table{padding:12px!important;border-radius:12px}
+  .inv-table-scroll th,.inv-table-scroll td{padding:10px 9px}
+  .inv-table-scroll table{min-width:720px}
+  .inv-search{width:100%;min-width:0}
+}
 </style>
 </head><body>
 
