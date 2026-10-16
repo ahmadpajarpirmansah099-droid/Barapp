@@ -772,6 +772,16 @@ td,th{border-color:#e8eeea!important}
 }
 @media(prefers-reduced-motion:reduce){.card{transition:none!important}}
 </style>
+<style id="barapp-icon-refresh">
+/* Unified Lucide-like icon language across sidebar, cards, controls and mobile feature picker. */
+.ic{flex-shrink:0;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nvb .ic{width:20px;height:20px}
+.ibtn .ic,.btn .ic{width:17px;height:17px}
+.app-top .ic{width:19px;height:19px}
+.card h3 .ic,.card .hd .ic{width:21px;height:21px;color:#07834f}
+.nvb.on .ic{color:#07834f}
+@media(max-width:899px){.nvb .ic{width:21px;height:21px}.app-top .ic{width:18px;height:18px}}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -1025,6 +1035,27 @@ globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 
 trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
 grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
 };
+
+// UI refresh: consistent thin-line icons for the charcoal/green design system.
+ICP['calendar-days']='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m8 15 2 2 5-5"/>';
+ICP.gauge='<path d="M12 14 16 9"/><path d="M20.2 16a9 9 0 1 0-16.4 0"/><path d="M5 19h14"/><circle cx="12" cy="14" r="1"/>';
+ICP.boxes='<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/><path d="m7.5 5.5 9 5"/>';
+ICP['wallet-cards']='<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18"/><path d="M7 5V3h10v2"/><path d="M15 14h3"/>';
+ICP['badge-check']='<path d="m12 3 2.2 1.3 2.6-.1 1.1 2.4 2.2 1.4-.5 2.6.5 2.6-2.2 1.4-1.1 2.4-2.6-.1L12 18l-2.2-1.3-2.6.1-1.1-2.4-2.2-1.4.5-2.6-.5-2.6 2.2-1.4 1.1-2.4 2.6.1L12 3Z"/><path d="m8.5 10.5 2.2 2.2 4.8-4.8"/>';
+ICP['clipboard-check']='<rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4.5h6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2Z"/><path d="m8.5 12 2 2 5-5M9 18h6"/>';
+ICP['users-round']=ICP.kar;
+ICP['lock-keyhole']='<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/><circle cx="12" cy="15" r="1"/><path d="M12 16v2"/>';
+ICP['chart-no-axes-combined']='<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-7"/><path d="M16 6h4v4"/>';
+ICP['arrow-left-right']='<path d="M17 3 21 7l-4 4"/><path d="M3 7h18"/><path d="m7 21-4-4 4-4"/><path d="M21 17H3"/>';
+ICP['receipt-text']=ICP['receipt-text']||ICP.abs;
+ICP['bell']='<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>';
+ICP['store']='<path d="M3 10v11h18V10"/><path d="m2 10 2-7h16l2 7"/><path d="M2 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M9 21v-6h6v6"/>';
+ICP['layers']='<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/>';
+ICP['calendar-range']='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h7"/>';
+ICP['chart-column']='<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="13" y="8" width="3" height="10" rx=".5"/><rect x="19" y="4" width="2" height="14" rx=".5"/>';
+ICP['alert-triangle']='<path d="m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>';
+ICP['arrow-down-to-line']='<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>';
+ICP['arrow-up-from-line']='<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/>';
 ICP.package=ICP.box;
 ICP.folder=ICP.trees;
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
