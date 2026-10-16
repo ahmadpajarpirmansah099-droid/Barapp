@@ -957,6 +957,37 @@ main .card :is(button,.btn):disabled{cursor:not-allowed;opacity:.58;box-shadow:n
   main .card .grid{grid-template-columns:minmax(0,1fr)}
   main .card :is(input,select,textarea){font-size:16px}
 }
+
+/* Header and navigation refinement: keep controls aligned without squeezing page titles. */
+.app-top{min-width:0}
+.hd,.hd-t,.hd-r{min-width:0}
+.hd-r{display:flex;align-items:center;flex-wrap:wrap}
+.hd-r>.ibtn,.hd-r>.mn{flex:0 0 auto}
+.hd-r .ibtn{display:inline-flex;align-items:center;justify-content:center}
+.hd-date{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.nvb{transition:background-color .16s ease,color .16s ease,border-color .16s ease}
+.nvb .ic{flex:0 0 18px}
+.side{overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#d4e3d8 transparent}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-thumb{background:#d4e3d8;border-radius:999px}
+@media(min-width:900px){
+  .hd{min-width:0}
+  .hd-t{flex:1 1 auto}
+  .hd-r{flex:0 0 auto;flex-wrap:nowrap}
+}
+@media(max-width:899px){
+  .hd-r{justify-content:flex-end}
+  .hd-date{display:none}
+  .hd-t{flex:1 1 120px}
+}
+@media(max-width:520px){
+  .hd{align-items:center}
+  .hd-t{flex-basis:calc(100% - 48px)}
+  .hd-r{gap:5px}
+  .hd-r .ibtn{width:36px;height:36px;min-width:36px;padding:0}
+  .hd-r .settings-dd{max-width:calc(100vw - 24px)}
+  .nvb{min-height:44px}
+}
 </style>
 </head><body>
 
