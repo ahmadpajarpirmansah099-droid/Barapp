@@ -958,6 +958,32 @@ main .card :is(button,.btn):disabled{cursor:not-allowed;opacity:.58;box-shadow:n
   main .card :is(input,select,textarea){font-size:16px}
 }
 
+
+/* Dashboard surfaces: operational metrics, chart, and attendance summaries. */
+.cogs-wrap .card h2{font-size:clamp(18px,2vw,22px);line-height:1.3}
+.cogs-wrap .card h3{line-height:1.35}
+.cogs-wrap .card .mu{line-height:1.55}
+.cogs-wrap .card table{font-variant-numeric:tabular-nums}
+.cogs-wrap .card table td,.cogs-wrap .card table th{padding:11px 12px}
+.cogs-wrap .card table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-wrap .card table tbody tr:hover{background:#f0f8f3}
+.cogs-wrap .card table td{overflow-wrap:anywhere}
+.cogs-wrap .cogs-top>.btn{flex:0 0 auto;white-space:nowrap}
+.cogs-wrap .cogs-top>div{flex:1 1 240px}
+.vch{min-width:0;gap:clamp(5px,1vw,12px)}
+.vcol{min-width:0}
+.vn{overflow-wrap:anywhere;line-height:1.25}
+.rk{font-variant-numeric:tabular-nums}
+.rk td,.rk th{white-space:nowrap}
+.rk td:nth-child(2){white-space:normal;min-width:140px}
+@media(max-width:700px){
+  .cogs-wrap .card table td,.cogs-wrap .card table th{padding:10px 9px}
+  .cogs-wrap .cogs-top>div{flex-basis:100%}
+  .cogs-wrap .cogs-top>.btn{align-self:flex-start}
+  .vch{padding-bottom:4px;overflow-x:auto;overscroll-behavior-x:contain}
+  .vcol{flex:0 0 38px}
+  .vn{font-size:10px}
+}
 /* Header and navigation refinement: keep controls aligned without squeezing page titles. */
 .app-top{min-width:0}
 .hd,.hd-t,.hd-r{min-width:0}
