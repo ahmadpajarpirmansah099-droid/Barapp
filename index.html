@@ -2169,52 +2169,7 @@ function jadPdf(){
   }).join('');
   const css="@page{size:landscape;margin:12mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0}section{page-break-after:always}section:last-child{page-break-after:auto}.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #7a2e22;padding-bottom:6px}.l{font-weight:700;font-size:16px}.r{font-weight:800;font-size:18px;color:#7a2e22}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #999;padding:5px 4px;text-align:center}th{background:#f1d9d1;font-weight:700}td.n{text-align:left}td.c{font-weight:700}.s-shift{background:#e3f1d6}.s-off{background:#e6e4e0}.s-sakit{background:#f8d6c4}.s-ph{background:#d4e3f6}.s-blank{background:#fff}";
   const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt>
-<style id="barapp-desktop-feature-rail">
-@media(min-width:900px){
- .side .nvl:has(+nav .nvb[onclick*="openMods"]){display:none!important}
- .side nav:has(.nvb[onclick*="openMods"]){display:none!important}
- .side .feature-rail-title{display:block;color:#93a79b;font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;padding:18px 14px 8px}
- .side .feature-rail{display:flex;flex-direction:column;gap:4px;padding:0 12px 14px}
- .side .feature-rail .nvb{display:flex;width:100%;align-items:center;gap:11px;text-align:left;min-height:42px}
- .side .feature-rail .nvb .ic{width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 19px}
- .side .feature-rail .nvb.active{background:#e3f5eb!important;color:#087c4b!important;font-weight:700!important}
- .side .feature-rail .nvb.coming{color:#829087!important;cursor:default;opacity:.72}
-}
-@media(max-width:899px){.feature-rail-title,.feature-rail{display:none!important}}
-</style>
-<script id="barapp-desktop-feature-rail-script">
-(function(){
- const iconMap={'Absensi':'calendar-days','Dashboard Operasional':'gauge','Master Barang':'boxes','Gaji':'wallet-cards','Approval Closing':'badge-check','Daily SO':'clipboard-check','Divisi & Admin':'users-round'};
- function enhance(){
-  if(window.innerWidth<900)return;
-  const side=document.querySelector('.side');
-  if(!side||typeof MODS==='undefined')return;
-  let rail=side.querySelector('.feature-rail');
-  if(!rail){
-   rail=document.createElement('nav');rail.className='feature-rail';
-   const title=document.createElement('div');title.className='feature-rail-title';title.textContent='FITUR';
-   const switchNav=[...side.querySelectorAll('nav')].find(n=>n.querySelector('[onclick*="openMods"]'));
-   if(switchNav){switchNav.before(title);switchNav.before(rail)}else side.append(title,rail);
-  }
-  const items=MODS.filter(m=>m.page&&!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole==='hr'||hasDivMgr())&&(!m.cogs||adm()));
-  const key=items.map(m=>m.name+':'+m.page).join('|')+'|'+pg;
-  if(rail.dataset.key===key)return;rail.dataset.key=key;rail.innerHTML='';
-  items.forEach(m=>{
-   const locked=!allowed().includes(m.page);
-   const b=document.createElement('button');b.type='button';b.className='nvb'+(pg===m.page?' active':'');
-   b.innerHTML=IC(iconMap[m.name]||m.ic,18)+'<span></span>';b.lastElementChild.textContent=m.name;
-   b.title=m.name;b.setAttribute('aria-label',m.name);
-   b.onclick=()=>{if(locked){lockTip();return}go(m.page)};
-   rail.appendChild(b);
-  });
-  const soon=MODS.find(m=>!m.page&&m.name==='Segera hadir');
-  if(soon){const b=document.createElement('div');b.className='nvb coming';b.innerHTML=IC('lock-keyhole',18)+'<span>Segera hadir</span>';rail.appendChild(b)}
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance);else enhance();
- new MutationObserver(()=>enhance()).observe(document.documentElement,{childList:true,subtree:true});
- window.addEventListener('resize',enhance);
-})();
-</script>
+
 
 </body></html>';
   const w=window.open('','_blank');
@@ -3328,4 +3283,50 @@ if(window.__barappRefreshUI)window.__barappRefreshUI();
 
 </script>
 <script src="./closing.js?v=20261016-8"></script>
+<style id="barapp-desktop-feature-rail">
+@media(min-width:900px){
+ .side .nvl:has(+nav .nvb[onclick*="openMods"]){display:none!important}
+ .side nav:has(.nvb[onclick*="openMods"]){display:none!important}
+ .side .feature-rail-title{display:block;color:#93a79b;font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;padding:18px 14px 8px}
+ .side .feature-rail{display:flex;flex-direction:column;gap:4px;padding:0 12px 14px}
+ .side .feature-rail .nvb{display:flex;width:100%;align-items:center;gap:11px;text-align:left;min-height:42px}
+ .side .feature-rail .nvb .ic{width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 19px}
+ .side .feature-rail .nvb.active{background:#e3f5eb!important;color:#087c4b!important;font-weight:700!important}
+ .side .feature-rail .nvb.coming{color:#829087!important;cursor:default;opacity:.72}
+}
+@media(max-width:899px){.feature-rail-title,.feature-rail{display:none!important}}
+</style>
+<script id="barapp-desktop-feature-rail-script">
+(function(){
+ const iconMap={'Absensi':'calendar-days','Dashboard Operasional':'gauge','Master Barang':'boxes','Gaji':'wallet-cards','Approval Closing':'badge-check','Daily SO':'clipboard-check','Divisi & Admin':'users-round'};
+ function enhance(){
+  if(window.innerWidth<900)return;
+  const side=document.querySelector('.side');
+  if(!side||typeof MODS==='undefined')return;
+  let rail=side.querySelector('.feature-rail');
+  if(!rail){
+   rail=document.createElement('nav');rail.className='feature-rail';
+   const title=document.createElement('div');title.className='feature-rail-title';title.textContent='FITUR';
+   const switchNav=[...side.querySelectorAll('nav')].find(n=>n.querySelector('[onclick*="openMods"]'));
+   if(switchNav){switchNav.before(title);switchNav.before(rail)}else side.append(title,rail);
+  }
+  const items=MODS.filter(m=>m.page&&!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole==='hr'||hasDivMgr())&&(!m.cogs||adm()));
+  const key=items.map(m=>m.name+':'+m.page).join('|')+'|'+pg;
+  if(rail.dataset.key===key)return;rail.dataset.key=key;rail.innerHTML='';
+  items.forEach(m=>{
+   const locked=!allowed().includes(m.page);
+   const b=document.createElement('button');b.type='button';b.className='nvb'+(pg===m.page?' active':'');
+   b.innerHTML=IC(iconMap[m.name]||m.ic,18)+'<span></span>';b.lastElementChild.textContent=m.name;
+   b.title=m.name;b.setAttribute('aria-label',m.name);
+   b.onclick=()=>{if(locked){lockTip();return}go(m.page)};
+   rail.appendChild(b);
+  });
+  const soon=MODS.find(m=>!m.page&&m.name==='Segera hadir');
+  if(soon){const b=document.createElement('div');b.className='nvb coming';b.innerHTML=IC('lock-keyhole',18)+'<span>Segera hadir</span>';rail.appendChild(b)}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enhance);else enhance();
+ new MutationObserver(()=>enhance()).observe(document.documentElement,{childList:true,subtree:true});
+ window.addEventListener('resize',enhance);
+})();
+</script>
 </body></html>
