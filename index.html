@@ -3474,7 +3474,8 @@ async function opsLoadUnitMaster(){
  if(divResult.error)throw divResult.error;
  if(itemResult.error)throw itemResult.error;
  INV.divs=divResult.data||[];
- const visible=new Set(INV.divs.map(d=>String(d.id)));
+ // Daily SO only needs Master Barang rows for divisions the current COGS session is allowed to access.
+ const visible=new Set((CG.divs||[]).map(d=>String(d.id)));
  INV.items=(itemResult.data||[]).filter(x=>visible.has(String(x.division_id)));
 }
 async function opsLoadPosition(show){
