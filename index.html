@@ -1233,7 +1233,8 @@ details:not([open])>*:not(summary){display:none!important}
 </style>
 <style id="barapp-desktop-feature-rail">
 @media(min-width:900px){
- .side>.nvl:not(.feature-rail-title),.side>nav:not(.feature-rail){display:none!important}
+ /* Keep the original feature navigation visible until a real feature rail exists. */
+ .side>.nvl,.side>nav{display:block}
  .side .feature-rail-title{display:block;color:#93a79b;font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;padding:18px 14px 8px}
  .side .feature-rail{display:flex;flex-direction:column;gap:4px;padding:0 12px 14px}
  .side .feature-rail .nvb{display:flex;width:100%;align-items:center;gap:11px;text-align:left;min-height:42px}
