@@ -865,6 +865,45 @@ table tr:hover td{background:#f7fbf8!important}
   .btn{min-height:42px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* BARAPP operational polish — consistent controls, tables, and touch targets */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){
+  max-width:100%;box-sizing:border-box;border-color:var(--br,#e5eee8);
+  transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease
+}
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea):focus-visible{
+  outline:2px solid transparent;border-color:var(--ac,#168653);
+  box-shadow:0 0 0 3px rgba(22,134,83,.13)
+}
+:where(button,.btn,.ibtn,[role="button"]):focus-visible{
+  outline:2px solid var(--ac,#168653);outline-offset:2px
+}
+.cogs-scroll,.inv-table-scroll{overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#c7d9cd transparent}
+.cogs-table,.inv-table-scroll table{border-collapse:separate;border-spacing:0}
+.cogs-table thead th{
+  position:sticky;top:0;z-index:1;background:#f5faf6;color:#52675b;
+  font-size:11px;font-weight:750;letter-spacing:.035em;text-transform:uppercase;
+  border-bottom:1px solid #dfeae2
+}
+.cogs-table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-table tbody tr:hover{background:#f1f8f3}
+.cogs-table td,.cogs-table th{vertical-align:middle}
+.cogs-table td input,.cogs-table td select{min-height:40px;border-radius:9px}
+.cogs-top{gap:12px;align-items:center;flex-wrap:wrap}
+.cogs-top>div{min-width:0;flex:1}
+.cogs-formgrid label,.cogs-wrap> .card>label{display:flex;flex-direction:column;gap:7px}
+.cogs-wrap .btns{display:flex;gap:10px;flex-wrap:wrap}
+.cogs-wrap .btns .btn{min-height:42px}
+@media(max-width:700px){
+  .cogs-top{align-items:stretch}
+  .cogs-top>.btn,.cogs-top>button{align-self:flex-start}
+  .cogs-wrap .btns .btn{flex:1 1 145px}
+  .cogs-table thead th{font-size:10px;padding:10px 9px}
+  .cogs-table td{padding:10px 9px}
+}
+@media(prefers-reduced-motion:reduce){
+  :where(input,select,textarea){transition:none}
+}
 </style>
 </head><body>
 
