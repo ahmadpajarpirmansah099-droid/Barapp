@@ -3727,3 +3727,28 @@ if(window.__barappRefreshUI)window.__barappRefreshUI();
 </script>
 <script src="./closing.js?v=20261016-8"></script>
 </body></html>
+
+
+/* COGS workflows: consistent form rhythm, readable tables, and clear actions. */
+.cogs-wrap .card{border:1px solid var(--line,#e2ece5);border-radius:14px;box-shadow:0 2px 8px rgba(20,55,35,.035)}
+.cogs-wrap :is(input,select,textarea){box-sizing:border-box;max-width:100%;min-width:0}
+.cogs-wrap :is(input,select){min-height:40px}
+.cogs-wrap textarea{min-height:88px;resize:vertical}
+.cogs-wrap :is(label,.field-label){line-height:1.45;color:var(--tx,#172b23)}
+.cogs-wrap .cogs-formgrid>*{min-width:0}
+.cogs-wrap .cogs-table{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.cogs-wrap .cogs-table thead th{position:sticky;top:0;z-index:1;background:#f5faf6;color:#476354;font-size:12px;font-weight:700;letter-spacing:.015em}
+.cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{border-bottom:1px solid #e8f0eb;padding:10px 12px;vertical-align:middle}
+.cogs-wrap .cogs-table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-wrap .cogs-table tbody tr:hover{background:#eff8f2}
+.cogs-wrap .cogs-table :is(input,select){border:1px solid #dce9e0;border-radius:8px;background:#fff}
+.cogs-wrap .cogs-table :is(input,select):focus{border-color:#36a873;outline:3px solid rgba(34,160,107,.13)}
+.cogs-wrap .cogs-actions .btn,.cogs-wrap .cogs-actions button{min-height:38px}
+.cogs-wrap .cogs-stats>*{min-width:0}
+.cogs-wrap .cogs-stats :is(strong,b,.num){font-variant-numeric:tabular-nums}
+@media(max-width:600px){
+ .cogs-wrap .cogs-actions>*{flex:1 1 140px}
+ .cogs-wrap .cogs-actions .cogs-search{flex:1 1 100%;width:100%}
+ .cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{padding:9px 10px}
+ .cogs-wrap .cogs-formgrid{gap:12px}
+}
