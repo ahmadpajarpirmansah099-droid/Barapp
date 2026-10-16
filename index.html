@@ -1316,8 +1316,8 @@ const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard Operasional',
 const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
 const cogsPageFeature={cogs_materials:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.production.view','cogs.production.manage','cogs.sales.view','cogs.sales.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_wip:['cogs.wip.view','cogs.wip.manage'],cogs_menu:['cogs.menu.view','cogs.menu.manage'],cogs_production:['cogs.production.view','cogs.production.manage'],cogs_daily_so:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_sales:['cogs.sales.view','cogs.sales.manage']};
-const cogsPageOK=k=>k==='cogs_closing'?(isDeveloper()||T.dbRole==='div_admin'):(isDeveloper()||(cogsPageFeature[k]||[]).some(hasFeature));
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk','pengeluaran','supplies'].includes(k)||hasFeature(['pengeluaran','supplies'].includes(k)?'inventory.manage':'inventory.view'))&&(k!='ops_dashboard'||(adm()&&(isDeveloper()||['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'].some(hasFeature))))&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||hasFeature('employees.view')||hasFeature('employees.manage'))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||hasFeature('attendance.view')||payOK())&&(k!='div'||isDeveloper()||(T.dbRole==='div_admin'&&hasDivMgr()))&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper())&&(!k.startsWith('cogs_')||cogsPageOK(k)))};
+const cogsPageOK=k=>k==='cogs_closing'?(isDeveloper()||T.dbRole==='div_admin'):k==='cogs_materials'?(isDeveloper()||hasFeature('inventory.view')||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature)):(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature));
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk','pengeluaran','supplies'].includes(k)||hasFeature(['pengeluaran','supplies'].includes(k)?'inventory.manage':'inventory.view'))&&(k!='ops_dashboard'||(adm()&&(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature))))&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||hasFeature('employees.view')||hasFeature('employees.manage'))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||hasFeature('attendance.view')||payOK())&&(k!='div'||isDeveloper()||(T.dbRole==='div_admin'&&hasDivMgr()))&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper())&&(!k.startsWith('cogs_')||cogsPageOK(k)))};
 const GRP=k=>k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk'||k=='pengeluaran'||k=='supplies')?'inventory':'abs';
 const HIDE_NAV=['abs','unit','masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
@@ -1426,7 +1426,7 @@ function rPaint(){const box=document.getElementById('rbox');if(box){box.innerHTM
 
 
 /* ===== INVENTORY: Master Barang + Barang Masuk, persisted in Supabase ===== */
-const INV={items:[],wips:[],ins:[],rets:[],stockOut:[],suppliesSO:[],suppliesSOLines:[],divs:[],productionBatches:[],productionInputs:[],menuSales:[],menuSalesLines:[],dailySO:[],dailySOLines:[],ready:false,loading:false,init:false,err:'',filter:'',tab:'active',dateFrom:'',dateTo:''};
+const INV={items:[],wips:[],ins:[],rets:[],stockOut:[],suppliesSO:[],suppliesSOLines:[],divs:[],productionBatches:[],productionInputs:[],menuSales:[],menuSalesLines:[],dailySO:[],dailySOLines:[],qtyByItem:null,ready:false,loading:false,init:false,err:'',filter:'',tab:'active',dateFrom:'',dateTo:''};
 const SUPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',actuals:{},historyDate:today()};
 const invMoney=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(n)||0);
 const invAlpha=(a,b)=>String(a??'').localeCompare(String(b??''),'id',{sensitivity:'base',numeric:true});
@@ -1455,11 +1455,14 @@ async function invLoad(show=false){
    divs=divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))));
   }
   INV.divs=divs;
+  const canReadCogs=isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature);
+  INV.qtyByItem=null;
+  const getCogs=(...args)=>canReadCogs?invFetchAny(...args):Promise.resolve([]);
   const [items,wips,ins,rets,productionBatches,productionInputs,menuSales,menuSalesLines,dailySO,dailySOLines,stockOut,suppliesSO,suppliesSOLines]=await Promise.all([
-   invFetch('barapp_items','created_at'),invFetchAny('cogs_wip','created_at'),invFetch('barapp_stock_in','received_at'),
-   invFetch('barapp_stock_returns','returned_at'),invFetchAny('cogs_production_batches','produced_at'),invFetchAny('cogs_production_inputs'),
-   invFetchAny('cogs_menu_sales','sold_at'),invFetchAny('cogs_menu_sales_lines'),invFetchAny('cogs_daily_so','so_date'),
-   invFetchAny('cogs_daily_so_lines'),invFetchAny('barapp_stock_out','out_date'),invFetchAny('barapp_supplies_so','so_date'),
+   invFetch('barapp_items','created_at'),getCogs('cogs_wip','created_at'),invFetch('barapp_stock_in','received_at'),
+   invFetch('barapp_stock_returns','returned_at'),getCogs('cogs_production_batches','produced_at'),getCogs('cogs_production_inputs'),
+   getCogs('cogs_menu_sales','sold_at'),getCogs('cogs_menu_sales_lines'),getCogs('cogs_daily_so','so_date'),
+   getCogs('cogs_daily_so_lines'),invFetchAny('barapp_stock_out','out_date'),invFetchAny('barapp_supplies_so','so_date'),
    invFetchAny('barapp_supplies_so_lines')
   ]);
   const visible=new Set(INV.divs.map(d=>String(d.id)));
@@ -1476,6 +1479,11 @@ async function invLoad(show=false){
   INV.stockOut=(stockOut||[]).filter(x=>visible.has(String(x.from_division_id))||(x.to_division_id&&visible.has(String(x.to_division_id))));
   INV.suppliesSO=(suppliesSO||[]).filter(x=>visible.has(String(x.division_id)));
   INV.suppliesSOLines=(suppliesSOLines||[]).filter(x=>INV.suppliesSO.some(h=>String(h.id)===String(x.so_id)));
+  if(!canReadCogs){
+   const {data:positions,error:positionError}=await sb().rpc('barapp_get_inventory_positions',{p_outlet_id:activeOutletId,p_as_of:today()});
+   if(positionError)throw positionError;
+   INV.qtyByItem=Object.fromEntries((positions||[]).map(x=>[String(x.item_id),Number(x.qty_base||0)]));
+  }
   SUPS.positionLoadedFor='';SUPS.position=[];SUPS.actuals={};INV.ready=true;INV.init=true;
  }catch(e){INV.err=invMsg(e);INV.ready=false;if(show)toast(INV.err,'err')}
  finally{INV.loading=false;if(pg==='barang'||pg==='masuk'||pg==='pengeluaran'||pg==='supplies')R()}
@@ -1487,6 +1495,7 @@ const invItem=id=>INV.items.find(x=>String(x.id)===String(id));
 const invConv=x=>Array.isArray(x?.conversions)?x.conversions:[];
 const invFactor=(item,u)=>Number(invConv(item).find(c=>String(c.unit).toLowerCase()===String(u).toLowerCase())?.factor);
 const invQty=id=>{
+ if(INV.qtyByItem)return Number(INV.qtyByItem[String(id)]||0);
  const item=invItem(id);
  const activeSOs=INV.dailySO.filter(s=>s.status==='submitted'&&String(s.division_id)===String(item?.division_id)&&s.so_date<=today()).sort((a,b)=>String(b.so_date).localeCompare(String(a.so_date)));
  const lastSO=activeSOs.find(s=>INV.dailySOLines.some(l=>String(l.so_id)===String(s.id)&&l.component_type==='material'&&String(l.item_id)===String(id)));
