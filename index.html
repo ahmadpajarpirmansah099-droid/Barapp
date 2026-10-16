@@ -2791,7 +2791,16 @@ async function opsLoadPosition(show){
  // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
  if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
- if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.positionErrorFor=key;OPS.position=[];if(show)R();return}
+ if(!div){
+  const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
+  OPS.positionError=hasServiceDivision
+   ?'Divisi Service tidak memakai Daily SO COGS. Untuk stok guest supplies, buka menu SUPLIES (Daily SO SUPLIES).'
+   :'Belum ada divisi COGS yang bisa diakses untuk Daily SO ini.';
+  OPS.positionErrorFor=key;OPS.position=[];OPS.positionLoading=false;
+  // This branch can run after the asynchronous inventory load, so re-render even if show=false.
+  if(pg==='cogs_daily_so')R();
+  return;
+ }
  if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
  OPS.positionLoading=true;OPS.positionError='';OPS.positionErrorFor='';if(show)R();
  let timeoutId=null,controller=null;
@@ -3049,7 +3058,13 @@ async function exportSuppliesSOExcel(){
  if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
  if(OPS.positionErrorFor===key&&OPS.positionError){
   const retryDivs=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
-  return '<div class="cogs-wrap"><div class="card"><h3>Saldo Daily SO belum berhasil dimuat</h3><p class="cogs-pill bad">'+esc(OPS.positionError)+'</p><label>Divisi<select onchange="opsSetDivision(this.value)">'+retryDivs+'</select></label><label>Tanggal SO<input type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label><button class="btn" onclick="opsRetryPosition()">Coba muat saldo lagi</button></div></div>';
+  const serviceHint=/Divisi Service tidak memakai Daily SO COGS/i.test(OPS.positionError);
+  return '<div class="cogs-wrap"><div class="card"><h3>Saldo Daily SO belum berhasil dimuat</h3><p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>'+
+   (serviceHint&&allowed().includes('supplies')?'<button class="btn" onclick="go(&quot;supplies&quot;)">Buka SUPLIES · Daily SO</button>':'')+
+   (CG.divs.length?'<label>Divisi<select onchange="opsSetDivision(this.value)">'+retryDivs+'</select></label>':'')+
+   '<label>Tanggal SO<input type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label>'+
+   (CG.divs.length?'<button class="btn s" onclick="opsRetryPosition()">Coba muat saldo lagi</button>':'')+
+   '</div></div>';
  }
  const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
