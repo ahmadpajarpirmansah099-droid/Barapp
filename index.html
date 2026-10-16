@@ -2577,7 +2577,7 @@ async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse
 
 /* ===== COGS V1: data disimpan di Supabase; Master Bahan memakai barapp_items ===== */
 const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],divs:[],productions:[],productionInputs:[],sales:[],saleLines:[],dailySO:[],dailySOLines:[],division:'',ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
-const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',counts:{},countCache:{},unitSelections:{},notes:'',prodQty:'',saleQty:'',salePrice:'',prodHistoryDate:today(),soHistoryDate:today()};
+const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',positionErrorFor:'',counts:{},countCache:{},unitSelections:{},notes:'',prodQty:'',saleQty:'',salePrice:'',prodHistoryDate:today(),soHistoryDate:today()};
 const cgRoleOK=()=>adm();
 const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
 const cgItem=id=>CG.items.find(x=>String(x.id)===String(id));
@@ -2791,11 +2791,20 @@ async function opsLoadPosition(show){
  // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
  if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
- if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.position=[];if(show)R();return}
+ if(!div){OPS.positionError='Belum ada divisi yang bisa diakses.';OPS.positionErrorFor=key;OPS.position=[];if(show)R();return}
  if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
- OPS.positionLoading=true;OPS.positionError='';if(show)R();
+ OPS.positionLoading=true;OPS.positionError='';OPS.positionErrorFor='';if(show)R();
+ let timeoutId=null,controller=null;
  try{
-  const {data,error}=await sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
+  // Jangan biarkan layar menggantung selamanya jika RPC saldo tidak merespons.
+  const request=sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
+  if(typeof AbortController==='function'&&request&&typeof request.abortSignal==='function'){
+   controller=new AbortController();request.abortSignal(controller.signal);
+  }
+  const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>{if(controller)controller.abort();reject(new Error('SO_POSITION_TIMEOUT'))},25000)});
+  const result=await Promise.race([request,timeout]);
+  if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
+  const {data,error}=result;
   if(error)throw error;
   let rows=(data||[]).sort((a,b)=>invAlpha(a.component_name,b.component_name)||invAlpha(a.component_type,b.component_type));
   const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
@@ -2821,11 +2830,18 @@ async function opsLoadPosition(show){
    OPS.counts=Object.assign({},OPS.countCache?.[key]||{});rows.forEach(p=>{const k=opsKey(p.component_type,p.component_id);if(!(k in OPS.counts))OPS.counts[k]=''});
   }
   OPS.position=rows;OPS.positionLoadedFor=key;
- }catch(e){OPS.positionError=opsErr(e);OPS.position=[];if(show)toast(OPS.positionError,'err')}
- finally{OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
+ }catch(e){
+  if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
+  OPS.positionError=/SO_POSITION_TIMEOUT/.test(String(e&&e.message||e))
+   ?'Penghitungan saldo melewati 25 detik dan dibatalkan. Periksa koneksi lalu coba muat saldo lagi.'
+   :opsErr(e);
+  OPS.positionErrorFor=key;OPS.position=[];if(show)toast(OPS.positionError,'err')
+ }
+ finally{if(timeoutId)clearTimeout(timeoutId);OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
 }
-function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
-function opsSetDate(date){const next=date||opsDate();if(next===OPS.date&&OPS.positionLoadedFor===(OPS.division||CG.divs[0]?.id||'')+'|'+next)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.counts=Object.assign({},OPS.countCache?.[(OPS.division||CG.divs[0]?.id||'')+'|'+next]||{});opsLoadPosition(true)}
+function opsRetryPosition(){OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];opsLoadPosition(true)}
+function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
+function opsSetDate(date){const next=date||opsDate();if(next===OPS.date&&OPS.positionLoadedFor===(OPS.division||CG.divs[0]?.id||'')+'|'+next)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.positionErrorFor='';OPS.counts=Object.assign({},OPS.countCache?.[(OPS.division||CG.divs[0]?.id||'')+'|'+next]||{});opsLoadPosition(true)}
 async function opsAddEntryRow(kind){
  const tbody=document.getElementById(kind==='sale'?'ops_sale_entry_rows':'ops_prod_entry_rows');if(!tbody)return;
  const first=tbody.querySelector('.ops-entry-row');if(!first)return;
@@ -2918,7 +2934,7 @@ async function opsRecordSaleBatch(){
  catch(e){toast(opsErr(e),'err')}
 }
 async function opsReload(){
- OPS.positionLoadedFor='';OPS.position=[];
+ OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];
  try{await cgLoad(true)}catch(e){}
  if(pg==='cogs_daily_so')await opsLoadPosition(false);
  R();
@@ -3030,7 +3046,11 @@ async function exportSuppliesSOExcel(){
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
  const key=division+'|'+date;
- if(!OPS.positionLoading&&OPS.positionLoadedFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
+ if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
+ if(OPS.positionErrorFor===key&&OPS.positionError){
+  const retryDivs=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
+  return '<div class="cogs-wrap"><div class="card"><h3>Saldo Daily SO belum berhasil dimuat</h3><p class="cogs-pill bad">'+esc(OPS.positionError)+'</p><label>Divisi<select onchange="opsSetDivision(this.value)">'+retryDivs+'</select></label><label>Tanggal SO<input type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label><button class="btn" onclick="opsRetryPosition()">Coba muat saldo lagi</button></div></div>';
+ }
  const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const dailyShortcuts='<div class="card"><h3>Operasional Daily SO</h3><p class="mu">Akses cepat untuk transaksi yang memengaruhi saldo stok.</p><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">'+[['pengeluaran','Pengeluaran','arrow-left-right'],['supplies','Suplies','clipboard-list'],['masuk','Barang Masuk','truck'],['cogs_sales','Penjualan Menu','receipt-text'],['cogs_production','Produksi WIP','cooking-pot']].filter(x=>allowed().includes(x[0])).map(x=>'<button class="btn s" style="min-width:0;white-space:normal" onclick="go(&quot;'+x[0]+'&quot;)">'+IC(x[2],18)+' '+x[1]+'</button>').join('')+'</div></div>';
