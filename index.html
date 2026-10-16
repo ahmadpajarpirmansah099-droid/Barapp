@@ -893,7 +893,7 @@ try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
-const THEME={name:'BARAPP',sub:'Operasional',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
+const THEME={name:'BARAPP',sub:'Operasional',font:'Plus Jakarta Sans',hfont:'Plus Jakarta Sans',mode:'light',radius:16,speed:0.35,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
 v:6,logo:'',light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
 dark:{bg:'#1C2526',cd:'#273336',tx:'#EDE9DF',mu:'#B9B6A8',br:'#3A4A44',ac:'#9AB77C',ac2:'#35493D',dg:'#E08A75',gd:'#E2B66F',tt:'#31483B',tt2:'#7FA062',hl:'#43504B',lt:'#34413B',sh:'#131A1B',dk:'#101617'}};
@@ -1548,7 +1548,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
-${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
+${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
 <div class="statusbar ${pg==='dash'?'status-home':'status-hidden'}"><span class="sf" id="sbl">${sbLabel()}</span><span class="sf">${role}</span>${px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
@@ -2281,6 +2281,20 @@ function jadPdf(){
   .hd-t small{max-width:100%}
   .dd{max-width:calc(100vw - 24px)}
 }
+
+/* Typography and icon consistency: clean SaaS / Lucide visual language. */
+:root{--fn:'Plus Jakarta Sans';--fh:'Plus Jakarta Sans'}
+body,#app,button,input,select,textarea,.nvb,.dd button,.sdi button{
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif!important;
+}
+h1,h2,h3,h4,h5,h6,.brand b,.hd-t h1,.card>h3:first-child,.md>h3:first-child{
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif!important;
+  letter-spacing:-.025em;
+}
+.ic{flex:0 0 auto;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nvb .ic,.dd button .ic,.sdi button .ic,.ibtn .ic{width:18px;height:18px}
+.brand .ic,.brand-m .ic{width:21px;height:21px}
+.toolbar .ic{vertical-align:-3px;margin-right:3px}
 </style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
