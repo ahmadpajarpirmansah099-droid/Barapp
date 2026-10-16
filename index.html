@@ -782,6 +782,17 @@ td,th{border-color:#e8eeea!important}
 .nvb.on .ic{color:#07834f}
 @media(max-width:899px){.nvb .ic{width:21px;height:21px}.app-top .ic{width:18px;height:18px}}
 </style>
+<style id="barapp-summary-layout-guard">
+/* Prevent accordion headers from expanding into blank panels in narrow layouts. */
+details{display:block!important;height:auto!important;min-height:0!important;flex:none!important;align-self:stretch}
+details>summary{box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:42px!important;height:auto!important;max-height:none!important;padding:10px 14px!important;line-height:1.35!important;color:var(--tx,#17211d)!important;background:#f8faf9!important;white-space:normal!important;overflow:visible!important;visibility:visible!important;opacity:1!important}
+details>summary::after{flex:0 0 16px!important;margin-left:auto!important}
+details:not([open])>*:not(summary){display:none!important}
+@media(max-width:899px){
+ details{margin:7px 0!important}
+ details>summary{min-height:42px!important;padding:10px 12px!important;font-size:14px!important}
+}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
