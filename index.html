@@ -3565,8 +3565,10 @@ async function opsRecordProductionBatch(){
  }
  const btn=document.getElementById('ops_prod_save');if(btn){btn.disabled=true;btn.textContent='Menyimpan…'}
  try{
-  for(const x of rows){const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:x.wip_id,p_produced_qty:x.produced_qty,p_produced_at:produced_at,p_notes:notes||null});if(error)throw error;}
-  await opsReload();toast(rows.length+' item produksi WIP berhasil disimpan. Qty stok dihitung otomatis dari jumlah batch × hasil per batch.','ok');
+  const lines=rows.map(x=>({wip_id:x.wip_id,batches:x.batches}));
+  const {data,error}=await sb().rpc('cogs_record_production_batch',{p_division_id:division,p_produced_at:produced_at,p_lines:lines,p_notes:notes||null});
+  if(error)throw error;
+  await opsReload();toast('Berhasil menyimpan '+(data??rows.length)+' item produksi WIP. Qty stok dihitung otomatis dari jumlah batch × hasil per batch.','ok');
  }catch(e){toast(opsErr(e),'err')}
  finally{const b=document.getElementById('ops_prod_save');if(b){b.disabled=false;b.textContent='Simpan produksi'}}
 }
