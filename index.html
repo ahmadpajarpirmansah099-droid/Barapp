@@ -2392,6 +2392,32 @@ h1,h2,h3,h4,h5,h6,.brand b,.hd-t h1,.card>h3:first-child,.md>h3:first-child{
 @media(min-width:600px) and (max-width:899px){
   .modal .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Accessibility and compact header controls */
+.nvb:focus-visible,.ibtn:focus-visible,.brand:focus-visible,.brand-m:focus-visible,
+.btn:focus-visible,.dd button:focus-visible,.dd select:focus-visible{
+  outline:3px solid rgba(22,134,83,.32)!important;
+  outline-offset:2px!important;
+}
+.settings-mn{position:relative;flex:0 0 auto}
+.settings-dd{z-index:80;max-height:min(72vh,560px);overflow-y:auto;overscroll-behavior:contain}
+.settings-dd hr{border:0;border-top:1px solid var(--br);margin:7px 0}
+.settings-dd button,.settings-dd select{min-height:40px}
+.hd-r{align-items:center}
+@media(min-width:900px){
+  .app-top{position:sticky;top:0;z-index:25}
+  .hd-t{min-width:0}
+  .hd-t small{overflow-wrap:anywhere}
+}
+@media(max-width:599px){
+  .app-top{padding-top:10px!important;padding-bottom:10px!important}
+  .hd{align-items:center}
+  .hd-t{flex:1 1 110px;min-width:0}
+  .hd-t h1{overflow-wrap:anywhere}
+  .hd-r{gap:5px}
+  .settings-dd{right:0;left:auto;min-width:min(260px,calc(100vw - 24px))}
+  .settings-dd button{white-space:normal;text-align:left}
+}
 </style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
