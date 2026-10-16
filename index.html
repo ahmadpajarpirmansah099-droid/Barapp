@@ -1315,7 +1315,9 @@ async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard Operasional',ic:'chart-no-axes-combined',page:'ops_dashboard',adm:true},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Approval Closing',ic:'approval',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-list',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'user-cog',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Data Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
-const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk','pengeluaran','supplies'].includes(k)||hasFeature(['pengeluaran','supplies'].includes(k)?'inventory.manage':'inventory.view'))&&(k!='ops_dashboard'||adm())&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr())&&(!k.startsWith('cogs_')||adm())&&(k!='cogs_closing'||isDeveloper()||T.dbRole==='div_admin'))};
+const cogsPageFeature={cogs_materials:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.production.view','cogs.production.manage','cogs.sales.view','cogs.sales.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_wip:['cogs.wip.view','cogs.wip.manage'],cogs_menu:['cogs.menu.view','cogs.menu.manage'],cogs_production:['cogs.production.view','cogs.production.manage'],cogs_daily_so:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_sales:['cogs.sales.view','cogs.sales.manage']};
+const cogsPageOK=k=>k==='cogs_closing'?(isDeveloper()||T.dbRole==='div_admin'):(isDeveloper()||(cogsPageFeature[k]||[]).some(hasFeature));
+const allowed=()=>{const p=adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(!['barang','masuk','pengeluaran','supplies'].includes(k)||hasFeature(['pengeluaran','supplies'].includes(k)?'inventory.manage':'inventory.view'))&&(k!='ops_dashboard'||adm())&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||hasFeature('employees.view')||hasFeature('employees.manage'))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||hasFeature('attendance.view')||payOK())&&(k!='div'||hasDivMgr())&&(k!='audit'||isDeveloper())&&(k!='divdet'||hasDivMgr())&&(!k.startsWith('cogs_')||cogsPageOK(k)))};
 const GRP=k=>k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk'||k=='pengeluaran'||k=='supplies')?'inventory':'abs';
 const HIDE_NAV=['abs','unit','masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
@@ -1737,8 +1739,8 @@ function divMgrPermissionsCard(){
  if(!T.divMgrPermInit&&!T.divMgrPermLoading){T.divMgrPermLoading=true;setTimeout(()=>divMgrPermLoad().finally(()=>{T.divMgrPermLoading=false}),0)}
  const as=T.permManagedAccounts||[];
  const groups=[
-  {label:'Absensi',perms:['attendance.input']},
-  {label:'Gaji',perms:['payroll.view']},
+  {label:'Absensi',perms:['attendance.input','attendance.view','attendance.manage','attendance.approve','attendance.correct','employees.view','employees.manage']},
+  {label:'Gaji',perms:['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage']},
   {label:'Admin & Divisi · kelola izin akun',perms:['division.manage']},
   {label:'Master Barang',perms:['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage']},
   {label:'Daily SO',perms:['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage']},
@@ -1779,8 +1781,8 @@ function accsCard(){
   const dis=a.role=='dev'?'disabled':'';
   const has=perm=>a.role=='dev'||(T.featurePerms||[]).some(x=>x.user_id==a.user_id&&x.permission==perm);
   const grantGroups=[
-   {label:'Absensi',perms:['attendance.input']},
-   {label:'Gaji',perms:['payroll.view']},
+   {label:'Absensi',perms:['attendance.input','attendance.view','attendance.manage','attendance.approve','attendance.correct','employees.view','employees.manage']},
+   {label:'Gaji',perms:['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage']},
    {label:'Admin & Divisi · kelola izin akun',perms:['division.manage']},
    {label:'Master Barang',perms:['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage']},
    {label:'Daily SO',perms:['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage']},
@@ -1813,7 +1815,8 @@ function accFeaturePermDirty(draft){
 }
 function accFeaturePermGroupStage(uid,index,on){
  const groups=[
-  ['attendance.input'],['payroll.view'],['division.manage'],
+  ['attendance.input','attendance.view','attendance.manage','attendance.approve','attendance.correct','employees.view','employees.manage'],
+  ['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage'],['division.manage'],
   ['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage'],
   ['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'],[]
  ];
