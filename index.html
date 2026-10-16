@@ -3465,6 +3465,10 @@ function opsCountInput(k,val,factor){OPS.counts[k]=val===''?'':Number(val)*Numbe
 async function opsLoadPosition(show){
  if(!CG.ready)return;
  // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
+ // If another screen is already loading inventory, wait for that same load to finish before rendering unit options.
+ if(!INV.ready&&INV.loading){
+  while(INV.loading)await new Promise(resolve=>setTimeout(resolve,50));
+ }
  if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
  if(!div){
