@@ -2418,6 +2418,41 @@ h1,h2,h3,h4,h5,h6,.brand b,.hd-t h1,.card>h3:first-child,.md>h3:first-child{
   .settings-dd{right:0;left:auto;min-width:min(260px,calc(100vw - 24px))}
   .settings-dd button{white-space:normal;text-align:left}
 }
+
+/* Operational screen finishing pass: inventory, receiving, issues and COGS forms */
+main .card label{min-width:0}
+main .card input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+main .card select,main .card textarea{
+  max-width:100%;box-sizing:border-box
+}
+main .card input:disabled,main .card select:disabled,main .card textarea:disabled{
+  cursor:not-allowed;opacity:.72
+}
+.cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{min-width:0;max-width:100%}
+.cogs-scroll{
+  max-width:100%;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  scrollbar-width:thin;scrollbar-color:#cbd9cf transparent
+}
+.cogs-table{border-collapse:separate;border-spacing:0}
+.cogs-table td,.cogs-table th{vertical-align:middle}
+.cogs-table input,.cogs-table select{min-width:84px;max-width:100%}
+.inv-actions{align-items:center}
+.inv-actions>*{min-width:0}
+@media(max-width:700px){
+  .cogs-wrap .cogs-top{gap:10px}
+  .cogs-wrap .cogs-top>label{width:100%;max-width:none!important}
+  .cogs-wrap .cogs-top input,.cogs-wrap .cogs-top select{width:100%;box-sizing:border-box}
+  .cogs-wrap .btns{gap:8px}
+  .cogs-wrap .btns>.btn{min-width:0}
+  .inv-actions{gap:8px}
+  .inv-actions .btn{flex:1 1 135px}
+}
+@media(max-width:380px){
+  main .card{padding:12px!important}
+  .cogs-wrap .btns>.btn{flex:1 1 100%}
+  .inv-actions .btn{flex:1 1 100%}
+}
 </style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
