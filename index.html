@@ -1065,7 +1065,7 @@ async function outSwitch(id){
   D.emp=[];D.att=[];D.ot=[];
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
   PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
-  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.stockOut=[];INV.suppliesSO=[];INV.suppliesSOLines=[];INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';SUPS.division='';SUPS.date=today();SUPS.historyDate=today();SUPS.position=[];SUPS.positionLoadedFor='';SUPS.positionLoading=false;SUPS.positionError='';SUPS.actuals={};
+  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.stockOut=[];INV.suppliesSO=[];INV.suppliesSOLines=[];INV.qtyByItem=null;INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';SUPS.division='';SUPS.date=today();SUPS.historyDate=today();SUPS.position=[];SUPS.positionLoadedFor='';SUPS.positionLoading=false;SUPS.positionError='';SUPS.actuals={};
   CG.items=[];CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];CG.ready=false;CG.err='';CG.filter='';CG.tab='active';
   OPS.division='';OPS.date=today();OPS.prodHistoryDate=today();OPS.soHistoryDate=today();OPS.position=[];OPS.positionLoadedFor='';OPS.positionLoading=false;OPS.positionError='';OPS.counts={};
   toast('Outlet diganti · memuat data outlet baru…');R();
