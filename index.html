@@ -3472,23 +3472,26 @@ async function opsLoadUnitMaster(){
  if(INV.unitMasterOutletId===outletKey)return;
  const divResult=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
  if(divResult.error)throw divResult.error;
- INV.divs=divResult.data||[];
+ const outletDivs=divResult.data||[];
  // Query only Master Barang rows for divisions the current COGS session is allowed to access.
  const visibleIds=(CG.divs||[]).map(d=>String(d.id));
- if(!visibleIds.length){INV.items=[];INV.unitMasterOutletId=outletKey;return}
- const itemResult=await sb().from('barapp_items').select('*').in('division_id',visibleIds).order('created_at',{ascending:false}).limit(5000);
- if(itemResult.error)throw itemResult.error;
- INV.items=itemResult.data||[];
+ let items=[];
+ if(visibleIds.length){
+  const itemResult=await sb().from('barapp_items').select('*').in('division_id',visibleIds).order('created_at',{ascending:false}).limit(5000);
+  if(itemResult.error)throw itemResult.error;
+  items=itemResult.data||[];
+ }
+ // Do not let an old outlet request overwrite the cache after the user switches outlets.
+ if(String(await outInit())!==outletKey)return;
+ if(INV.ready)return;
+ INV.divs=outletDivs;
+ INV.items=items;
  INV.unitMasterOutletId=outletKey;
 }
 async function opsLoadPosition(show){
  if(!CG.ready)return;
- // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
- // If another screen is already loading inventory, wait for that same load to finish before rendering unit options.
- if(!INV.ready&&INV.loading){
-  while(INV.loading)await new Promise(resolve=>setTimeout(resolve,50));
- }
- if(!INV.ready&&!INV.loading){try{await opsLoadUnitMaster()}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
+ // Load the lightweight unit cache independently; do not block Daily SO on the full inventory history query.
+ if(!INV.ready){try{await opsLoadUnitMaster()}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
  if(!div){
   const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
