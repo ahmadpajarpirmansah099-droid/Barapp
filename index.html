@@ -3752,3 +3752,35 @@ if(window.__barappRefreshUI)window.__barappRefreshUI();
  .cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{padding:9px 10px}
  .cogs-wrap .cogs-formgrid{gap:12px}
 }
+
+
+/* Final consistency pass: keyboard access, dense data, and narrow-screen safeguards. */
+:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{
+  outline:3px solid rgba(19,134,83,.32);
+  outline-offset:2px;
+}
+:where(input,select,textarea):disabled{
+  cursor:not-allowed;
+  opacity:.72;
+}
+:where(button):disabled{
+  cursor:not-allowed!important;
+  opacity:.58;
+  transform:none!important;
+  box-shadow:none!important;
+}
+:where(table) :is(th,td){overflow-wrap:anywhere}
+:where(.card,.panel,.modal,.dialog){min-width:0}
+:where(.btns,.actions,.toolbar){flex-wrap:wrap}
+:where(.btn,.ibtn){touch-action:manipulation}
+.num,.money,.qty,[data-number]{font-variant-numeric:tabular-nums}
+@media(max-width:599px){
+  main :is(.card,.panel){max-width:100%;min-width:0}
+  main :is(input,select,textarea){max-width:100%}
+  main :is(.btns,.actions,.toolbar){gap:8px}
+  main :is(.btns,.actions)>.btn{max-width:100%;white-space:normal}
+  .modal,.dialog,[role="dialog"]{max-width:calc(100vw - 20px)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
