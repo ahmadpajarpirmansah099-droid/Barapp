@@ -50,9 +50,9 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const sql = fs.readFileSync('barapp_cogs_daily_so_active_only_v1.sql', 'utf8');
           const required = [
-            'COGS · Master Bahan',
-            'COGS · Resep WIP',
-            'COGS · COGS Menu',
+            'Master Bahan',
+            'Resep WIP',
+            'Menu',
             'Produksi WIP',
             'Daily SO',
             'Penjualan Menu',
