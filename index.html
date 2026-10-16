@@ -754,6 +754,61 @@ td{border-color:#edf2ee}
   .inv-table-scroll table{width:max-content;min-width:760px;max-width:none}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
+
+/* BARAPP CLEAN SAAS UI — desktop sidebar, unified icon rhythm, responsive header */
+:root{--bg:#f6faf7;--cd:#fff;--tx:#18352a;--mu:#718178;--br:#e5eee8;--ac:#168653;--ac2:#22a06b;--tt:#eaf7ef;--tt2:#087443;--line:#e1ece5;--in:#f7faf8;--r:12px;--rc:16px;--ri:10px;--side:264px;--cozy:0 1px 3px rgba(16,40,27,.04),0 5px 18px rgba(16,40,27,.035);--cozy-lg:0 14px 36px rgba(16,40,27,.14);color-scheme:light}
+body::before{background-image:none}
+.app-top{background:rgba(255,255,255,.94);border-bottom-color:#e5eee8;box-shadow:0 2px 10px rgba(24,53,42,.025)}
+.side{background:#fff;border-right:1px solid #e5eee8}
+.brand{padding:22px 18px 18px;border-bottom:1px solid #edf2ee}
+.tile,.brand-m{border-radius:12px;background:#eaf7ef;color:#168653;border-color:#d5eadc}
+.nvl{padding:20px 18px 8px;color:#829087;font-size:10px;letter-spacing:.11em}
+.nv{padding:0 12px;gap:4px}
+.nvb{min-height:42px;padding:10px 12px;border-radius:10px;gap:11px;font-size:13px;font-weight:600}
+.nvb .ic,.dd button .ic,.sdi button .ic,.ibtn .ic{width:18px;height:18px;flex:none}
+.nvb.on{background:#eaf7ef;border-color:#d9eee1;color:#087443}
+.nvb:hover{background:#f2f8f4}
+.card{border-color:#e5eee8;border-radius:16px;box-shadow:0 1px 3px rgba(16,40,27,.035),0 5px 18px rgba(16,40,27,.025)}
+.card>h3:first-child,.md>h3:first-child{font-family:var(--fn),system-ui,sans-serif;font-size:15px;font-weight:700}
+.card>h3:first-child::before,.md>h3:first-child::before{border-radius:10px;background-color:#eaf7ef;border-color:#d9eee1}
+.btn{border-radius:10px;background:var(--ac);box-shadow:none}
+.btn:hover{box-shadow:0 4px 12px rgba(22,134,83,.14)}
+.btn.s,.btn.o,.btn.x:not(.d){border-radius:10px}
+.ibtn{border-radius:10px;background:#f7faf8;border-color:#e5eee8}
+input,select,textarea{border-radius:10px;background:#fbfdfb;border-color:#e0e9e3}
+.dd{border-radius:14px;box-shadow:0 16px 40px rgba(24,53,42,.12)}
+/* desktop: persistent navigation and usable content width */
+@media(min-width:900px){
+ #app.in{padding-left:var(--side);padding-bottom:36px}
+ .side{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:var(--side);z-index:30;overflow:auto}
+ .app-top{padding:14px 28px}
+ .hd{gap:14px}
+ .hd-t h1{font-size:21px}
+ main{max-width:none;padding:26px 28px}
+ .toolbar{padding-top:12px;padding-bottom:12px}
+}
+/* header actions can wrap cleanly on smaller screens */
+@media(max-width:899px){
+ .app-top{padding-left:12px;padding-right:12px}
+ .hd{gap:8px;flex-wrap:wrap}
+ .hd-t{min-width:120px}
+ .hd-r{gap:6px}
+ .ibtn{width:38px;height:38px}
+ .toolbar{flex-wrap:wrap}
+ .toolbar>span{flex:0 0 100%}
+ .toolbar input[type=date]{flex:1 1 145px}
+ main{padding:16px 12px}
+ .card{padding:15px}
+}
+@media(max-width:520px){
+ .hd-t h1{font-size:17px}
+ .hd-t small{font-size:10px}
+ .hd-r{margin-left:auto}
+ .hd-r .ibtn{width:36px;height:36px;border-radius:10px}
+ .toolbar .btn{flex:1 1 auto}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 </style>
 
 <style id="barapp-clean-saas-final">
