@@ -1903,7 +1903,7 @@ async function divModulesSave(id){
  if(cfg.cogs_sales&&!cfg.cogs_menu)return toast('Aktifkan Menu sebelum Penjualan Menu.','warn');
  if(cfg.cogs_production&&!cfg.cogs_wip)return toast('Aktifkan Resep WIP sebelum Produksi WIP.','warn');
  const ok=await sbRun(async()=>{await payRpc('dev_update_division_modules',{p_id:id,p_modules:cfg})});
- if(ok){toast('Modul divisi berhasil diperbarui');closeM();T.divInit=0;T.divs=null;CG.ready=false;CG.loading=false;CG.err='';INV.ready=false;INV.loading=false;SUPS.positionLoadedFor='';OPS.positionLoadedFor='';await divLoad();try{await cgLoad(false)}catch(e){}try{await invLoad(false)}catch(e){}R()}
+ if(ok){toast('Modul divisi berhasil diperbarui');closeM();CG.ready=false;CG.err='';INV.ready=false;SUPS.positionLoadedFor='';OPS.positionLoadedFor='';await divLoad();try{await cgLoad(false)}catch(e){}try{await invLoad(false)}catch(e){}R()}
 }
 async function divDetLoad(id){try{const [em]=await Promise.all([payQ('employees','id,name,active,division_id')]);
  T.dvDet={id,emps:em.filter(e=>e.division_id==id),loaded:true}}catch(e){toast(errText(e),'err')}R()}
@@ -2659,7 +2659,7 @@ async function cgLoad(show){
    c.from('cogs_wip_recipe_lines').select('*').order('created_at'),
    c.from('cogs_menus').select('*').order('name'),
    c.from('cogs_menu_recipe_lines').select('*').order('created_at'),
-   c.from('divisions').select('id,name,outlet_id,code,active,has_cogs').order('name'),
+   c.from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').order('name'),
    c.from('cogs_production_batches').select('*').order('produced_at',{ascending:false}).limit(5000),
    c.from('cogs_production_inputs').select('*').limit(10000),
    c.from('cogs_menu_sales').select('*').order('sold_at',{ascending:false}).limit(5000),
