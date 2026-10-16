@@ -3462,6 +3462,21 @@ function opsDefaultUnit(p,k){const units=opsUnitList(p),item=opsUnitItem(p);if(O
 function opsUnitFactor(p,k){const units=opsUnitList(p),want=opsDefaultUnit(p,k);return units.find(x=>x.unit===want)?.factor||1}
 function opsSetCountUnit(k,u){if(!OPS.unitSelections)OPS.unitSelections={};OPS.unitSelections[k]=u;R()}
 function opsCountInput(k,val,factor){OPS.counts[k]=val===''?'':Number(val)*Number(factor);const key=(OPS.division||'')+'|'+(OPS.date||opsDate());OPS.countCache[key]=Object.assign({},OPS.counts)}
+async function opsLoadUnitMaster(){
+ if(INV.ready)return;
+ // Daily SO needs only item units/conversions, not the full inventory history.
+ const activeOutletId=await outInit();
+ if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
+ const [divResult,itemResult]=await Promise.all([
+  sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name'),
+  sb().from('barapp_items').select('*').order('created_at',{ascending:false}).limit(5000)
+ ]);
+ if(divResult.error)throw divResult.error;
+ if(itemResult.error)throw itemResult.error;
+ INV.divs=divResult.data||[];
+ const visible=new Set(INV.divs.map(d=>String(d.id)));
+ INV.items=(itemResult.data||[]).filter(x=>visible.has(String(x.division_id)));
+}
 async function opsLoadPosition(show){
  if(!CG.ready)return;
  // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
@@ -3469,7 +3484,7 @@ async function opsLoadPosition(show){
  if(!INV.ready&&INV.loading){
   while(INV.loading)await new Promise(resolve=>setTimeout(resolve,50));
  }
- if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
+ if(!INV.ready&&!INV.loading){try{await opsLoadUnitMaster()}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
  if(!div){
   const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
