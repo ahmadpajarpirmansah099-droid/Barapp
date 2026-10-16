@@ -2590,6 +2590,27 @@ async function cgLoad(show){
  if(CG.loading)return;CG.loading=true;CG.err='';
  try{
   const c=sb();
+  const canReadCogs=isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'].some(hasFeature);
+  if(!canReadCogs){
+   const [materials,divisions]=await Promise.all([
+    c.rpc('cogs_list_materials'),
+    c.from('divisions').select('id,name,outlet_id,code,active,has_cogs').order('name')
+   ]);
+   if(materials.error)throw materials.error;if(divisions.error)throw divisions.error;
+   CG.items=materials.data||[];
+   CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];
+   CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];
+   CG.divs=divisions.data||[];
+   CG.divs=CG.divs.filter(d=>d.active!==false&&d.has_cogs===true&&(!D.outId||D.outId==='ALL'||String(d.outlet_id)===String(D.outId)||!d.outlet_id));
+   if(T.dbRole==='div_admin'){
+    const {data:sc,error:se}=await c.from('user_scopes').select('outlet_id,division_id');if(se)throw se;
+    const scopes=sc||[];CG.divs=CG.divs.filter(d=>scopes.some(x=>String(x.outlet_id)===String(d.outlet_id)&&(x.division_id==null||String(x.division_id)===String(d.id))));
+   }
+   const visibleDivs=new Set(CG.divs.map(d=>String(d.id)));
+   CG.items=CG.items.filter(x=>visibleDivs.has(String(x.division_id)));
+   if(!OPS.division||!CG.divs.some(d=>String(d.id)===String(OPS.division)))OPS.division=CG.divs[0]?.id||'';
+   CG.ready=true;return;
+  }
   const rs=await Promise.all([
    c.rpc('cogs_list_materials'),
    c.from('cogs_wip').select('*').order('name'),
