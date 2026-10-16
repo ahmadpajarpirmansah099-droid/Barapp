@@ -708,6 +708,70 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
 </style>
+
+<style id="barapp-reference-layout">
+/* Barapp visual direction: charcoal + green, restrained accents; layout-only overrides. */
+:root{
+ --bg:#f5f7f6!important;--cd:#ffffff!important;--tx:#17211d!important;--mu:#64736b!important;
+ --br:#e3e9e5!important;--line:#e3e9e5!important;--ac:#07834f!important;--tint:#e6f5ed!important;
+ --in:#f8faf9!important;--sh:#dce5df!important;--dk:#111a17!important;
+ --cozy:0 2px 10px rgba(18,42,30,.035)!important;
+ --cozy-lg:0 16px 38px rgba(18,42,30,.09)!important;
+}
+body{background:#f5f7f6!important;color:#17211d!important}
+body::before{background-image:none!important}
+h1,h2,h3,.hd-t h1{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif!important;letter-spacing:-.025em}
+button,input,select,textarea{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif}
+.app-top{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e3e9e5!important;backdrop-filter:blur(14px)}
+.brand{background:#111a17!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.12)!important;padding:22px 20px 18px!important;min-height:82px}
+.brand .tile{background:#123d2b!important;border:1px solid #245b43!important;color:#65d6a0!important;border-radius:12px!important}
+.brand b{font:750 19px/1.2 Inter,'Plus Jakarta Sans',sans-serif!important;color:#fff!important}
+.brand small{color:#a6c8b5!important;letter-spacing:.015em!important;text-transform:none!important;font-weight:500!important}
+.nvl{color:#93a79b!important;padding-top:20px!important}
+.nv{gap:5px!important;padding:0 12px!important}
+.nvb{color:#d8e3dc!important;border:1px solid transparent!important;border-radius:9px!important;padding:11px 13px!important;font-weight:550!important}
+.nvb .ic{color:#b6c8bd!important}
+.nvb:hover{background:#1a2b23!important;color:#fff!important}
+.nvb.on{background:#e3f5eb!important;color:#087c4b!important;border-color:transparent!important;font-weight:700!important}
+.nvb.on .ic{color:#087c4b!important}
+.sidew{background:#17231d!important;border:1px solid #2a3b31!important;color:#bdcfc3!important;border-radius:12px!important;margin: auto 12px 14px!important}
+.sidew .ic{color:#55c991!important}
+@media(min-width:900px){
+ .side{background:#111a17!important;border-right:1px solid #24342b!important;box-shadow:none!important}
+ #app.in{--side:264px!important}
+ .app-top{padding:14px 30px!important}
+ main{max-width:none!important;padding:26px 30px!important}
+ .hd-t h1{font-size:28px!important;font-weight:750!important}
+ .hd-t small{font-size:13px!important}
+}
+.card{background:#fff!important;border:1px solid #e5ebe7!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(20,45,32,.025)!important;padding:20px!important}
+.card:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(20,45,32,.055)!important;border-color:#d6e4db!important}
+.card>h3:first-child,.md>h3:first-child{font-family:Inter,'Plus Jakarta Sans',sans-serif!important;font-size:16px!important;font-weight:700!important}
+.tile,.ibtn{border-radius:11px!important}
+.ibtn{background:#fff!important;border-color:#e1e8e3!important}
+.ibtn:hover{background:#eaf7ef!important;border-color:#b8dfc8!important}
+.btn{border-radius:10px!important;font-weight:650!important}
+input,select,textarea{border-radius:9px!important;border-color:#dfe7e2!important;background:#fff!important}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(7,131,79,.15)!important;border-color:#07834f!important}
+table{border-color:#e6ece8!important}
+th{background:#f4f7f5!important;color:#46564d!important;font-weight:700!important}
+td,th{border-color:#e8eeea!important}
+.statusbar{background:rgba(255,255,255,.97)!important;border-color:#e0e8e3!important;box-shadow:0 5px 18px rgba(20,45,32,.06)!important}
+@media(max-width:899px){
+ .app-top{padding:10px 14px!important}
+ main{padding:16px 12px!important}
+ .card{padding:16px!important}
+ .hd-t h1{font-size:19px!important}
+ .side{background:#111a17!important}
+}
+@media(max-width:520px){
+ .card{border-radius:12px!important;padding:14px!important}
+ main{padding:12px 10px!important}
+ .hd{gap:8px!important}
+ .hd-r{gap:6px!important}
+}
+@media(prefers-reduced-motion:reduce){.card{transition:none!important}}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
