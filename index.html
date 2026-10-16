@@ -927,6 +927,36 @@ table tr:hover td{background:#f7fbf8!important}
   .inv-table-scroll table{min-width:720px}
   .inv-search{width:100%;min-width:0}
 }
+
+/* Final responsive polish for shared operational forms and data tables. */
+main{min-width:0}
+main>.card,main>.grid,main>.row,main .card{min-width:0}
+main .card :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea){
+  min-height:40px;max-width:100%;box-sizing:border-box
+}
+main .card textarea{min-height:88px;resize:vertical}
+main .card :is(input,select,textarea):focus-visible{
+  outline:3px solid rgba(22,134,83,.18);outline-offset:1px;border-color:#168653
+}
+main .card :is(button,.btn):disabled{cursor:not-allowed;opacity:.58;box-shadow:none}
+.inv-table-scroll,.account-table-wrap,.inv-detail-table,.cogs-scroll{
+  max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin
+}
+.inv-table-scroll table,.account-table-wrap table{border-collapse:separate;border-spacing:0}
+.inv-table-scroll thead th,.account-table-wrap thead th{position:sticky;top:0;z-index:1}
+@media(max-width:700px){
+  main .card{overflow-wrap:anywhere}
+  main .card .grid{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+  main .card label{min-width:0}
+  main .card label input,main .card label select,main .card label textarea{width:100%}
+  .inv-table-scroll,.account-table-wrap,.inv-detail-table,.cogs-scroll{
+    border-radius:10px;scrollbar-gutter:stable
+  }
+}
+@media(max-width:380px){
+  main .card .grid{grid-template-columns:minmax(0,1fr)}
+  main .card :is(input,select,textarea){font-size:16px}
+}
 </style>
 </head><body>
 
