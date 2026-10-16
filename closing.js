@@ -135,3 +135,39 @@ window.__clDownloadSO=async()=>{if(window.__clDownloadingSO)return;window.__clDo
 window.__clConfirm=confirmModule;window.__clApprove=approve;window.__clReload=()=>{CL.ready=false;return load(true)};window.__clFilter=filter;
 window.__barappRegisterViews?.({cogs_closing:view});
 })();
+
+/* Desktop sidebar completion: expose every permitted operational module directly. */
+(function(){
+  if(typeof MODS==='undefined')return;
+  if(!MODS.some(m=>m.page==='cogs_production')){
+    const item={name:'Produksi WIP',ic:'layers',page:'cogs_production',adm:true,cogs:true};
+    const soon=MODS.findIndex(m=>!m.page&&m.name==='Segera hadir');
+    MODS.splice(soon<0?MODS.length:soon,0,item);
+  }
+  const excluded=['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'];
+  function completeRail(){
+    if(window.innerWidth<900)return;
+    const side=document.querySelector('.side');
+    const rail=side&&side.querySelector('.feature-rail');
+    if(!rail)return;
+    MODS.filter(m=>m.page&&excluded.includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole==='hr'||hasDivMgr())&&(!m.cogs||adm()))
+      .forEach(m=>{
+        if(rail.querySelector('[data-barapp-page="'+m.page+'"]'))return;
+        const b=document.createElement('button');
+        b.type='button';
+        b.className='nvb'+(pg===m.page?' active':'');
+        b.dataset.barappPage=m.page;
+        b.innerHTML=IC(m.ic,18)+'<span></span>';
+        b.lastElementChild.textContent=m.name;
+        b.title=m.name;
+        b.setAttribute('aria-label',m.name);
+        b.onclick=()=>{if(!allowed().includes(m.page)){lockTip();return;}go(m.page)};
+        rail.appendChild(b);
+      });
+  }
+  const obs=new MutationObserver(completeRail);
+  obs.observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('resize',completeRail);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',completeRail);
+  else completeRail();
+})();
