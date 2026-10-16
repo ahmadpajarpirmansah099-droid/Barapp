@@ -1507,7 +1507,7 @@ function outMenuHtml(){
   }
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
   const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
-  return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div><hr>`}
+  return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div>`}
 async function sbLoad(silent){
 if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
 await sbLoad0(silent);
