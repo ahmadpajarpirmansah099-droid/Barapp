@@ -1,6 +1,7 @@
 /* ===== DAILY CLOSING APPROVAL: six operational modules ===== */
 (function(){
 const CL={division:'',date:today(),period:null,modules:[],history:[],snapshots:{},loading:false,ready:false,error:'',busy:''};
+function clCanAccess(){return (typeof isDeveloper==='function'&&isDeveloper())||(typeof T!=='undefined'&&T.dbRole==='div_admin')}
 const MODS=[
  {key:'daily_so',name:'Daily SO',desc:'Stok fisik, saldo harapan, dan selisih',page:'cogs_daily_so'},
  {key:'pengeluaran',name:'Pengeluaran',desc:'Waste, QC, R&D, Kalibrasi, Move, Lainnya',page:'pengeluaran'},
@@ -20,6 +21,7 @@ function count(key,div,date){
 }
 function clError(e){
  const m=String(e?.message||e||'');
+ if(/CLOSING_ACCESS_DENIED|CLOSING_ROLE_FORBIDDEN/.test(m))return 'Approval Closing hanya tersedia untuk Developer dan Admin Divisi.';
  if(/CLOSING_INVALID_DATE/.test(m))return 'Tanggal closing tidak valid.';
  if(/CLOSING_MODULE_HAS_DATA/.test(m))return 'Modul memiliki transaksi. Pilih konfirmasi data, bukan konfirmasi kosong.';
  if(/CLOSING_CONFIRM_EMPTY_REQUIRED/.test(m))return 'Ada data pada modul ini. Konfirmasi sebagai data terisi.';
@@ -33,6 +35,7 @@ function clError(e){
 }
 function same(a,b){return !!a&&!!b&&String(a.fingerprint||'')===String(b.fingerprint||'')&&Number(a.count||0)===Number(b.count||0)&&Number(a.quantity||0)===Number(b.quantity||0)}
 async function load(show=true){
+ if(!clCanAccess()){CL.ready=false;CL.error='Approval Closing hanya tersedia untuk Developer dan Admin Divisi.';if(show&&pg==='cogs_closing')R();return;}
  if(CL.loading)return;
  CL.loading=true;CL.error='';
  try{
@@ -56,6 +59,7 @@ function init(){if(!CL.ready&&!CL.loading)load(true)}
 async function filter(k,val){if(k==='division')CL.division=val;else CL.date=val||today();CL.ready=false;await load(true)}
 function state(m){const saved=CL.modules.find(x=>x.module_key===m.key),cur=CL.snapshots[m.key],fresh=saved&&same(saved.snapshot,cur);if(saved&&fresh)return {saved,fresh:true};if(saved)return {saved,fresh:false};return {saved:null,fresh:false}}
 async function confirmModule(key){
+ if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');
  if(CL.busy)return;const m=MODS.find(x=>x.key===key);if(!m)return;const current=state(m);if(current.saved&&current.fresh)return toast(m.name+' sudah dikonfirmasi. Tidak perlu diklik lagi.','ok');
  if(CL.period?.status==='approved')return toast('Closing sudah approved. Perubahan harus melalui rekonsiliasi.','warn');
  const n=count(key,CL.division,CL.date);if(key==='daily_so'&&!n)return toast('Simpan Daily SO terlebih dahulu sebelum closing.','warn');
@@ -66,6 +70,7 @@ async function confirmModule(key){
  finally{CL.busy='';if(pg==='cogs_closing')R()}
 }
 async function approve(){
+ if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');
  if(CL.busy||CL.period?.status==='approved')return;
  const missing=MODS.filter(m=>{const x=state(m);return !x.saved||!x.fresh});
  if(missing.length)return toast('Konfirmasi ulang modul: '+missing.map(x=>x.name).join(', '),'warn');
@@ -77,7 +82,7 @@ async function approve(){
  finally{CL.busy='';if(pg==='cogs_closing')R()}
 }
 function view(){
- if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';
+ if(!clCanAccess())return '<div class="card empty">Approval Closing hanya tersedia untuk Developer dan Admin Divisi.</div>';
  init();
  if(CL.loading||!CG.ready||!INV.ready)return '<div class="card"><h3>Memuat Approval Closing…</h3><p class="mu">Mengambil transaksi dan status validasi dari Supabase.</p></div>';
  if(CL.error)return '<div class="card"><h3>Approval Closing</h3><p class="mu">'+esc(CL.error)+'</p><button class="btn" onclick="window.__clReload()">Muat ulang</button></div>';
@@ -93,8 +98,8 @@ function view(){
  const history=CL.history.map(h=>'<tr><td>'+esc(h.closing_date)+'</td><td><span class="cogs-pill '+(h.status==='approved'?'':'bad')+'">'+esc(h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status)+'</span></td><td>'+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</td></tr>').join('');
  return '<div class="cogs-wrap"><style>.cl-filter{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-filter label{min-width:0}.cl-module{padding:14px;margin-bottom:10px}.cl-module-head{display:flex;align-items:flex-start;gap:12px}.cl-status{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;font-size:18px;font-weight:800;background:var(--in);border:1px solid var(--line)}.cl-status.good{color:#167443;background:#e0f4e7;border-color:#8bc9a0}.cl-status.warn{color:#946200;background:#fff2c7;border-color:#e3c45e}.cl-status.bad{color:#bd5549;background:#fde8e5;border-color:#e5a49c}.cl-actions .btn[disabled]{opacity:.78;cursor:not-allowed;background:#e0f4e7;color:#167443;border-color:#8bc9a0}.cl-module-info{min-width:0;flex:1;display:grid;gap:5px}.cl-module-info b{font-size:15px}.cl-module-info small{color:var(--mu);line-height:1.4}.cl-module-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.cl-actions{display:flex;gap:6px;flex-wrap:wrap}.cl-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-summary>div{background:var(--in);border:1px solid var(--line);border-radius:14px;padding:12px}.cl-summary small{display:block;color:var(--mu)}.cl-summary b{display:block;font-size:17px;margin-top:4px}.cl-callout{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--in);margin:12px 0}.cl-callout p{margin:4px 0 0;color:var(--mu);font-size:12px}@media(max-width:420px){.cl-filter{grid-template-columns:1fr}.cl-module-foot{align-items:flex-start}.cl-actions{width:100%}.cl-actions .btn{flex:1}}</style><div class="card"><div class="cogs-top"><div><h3>Approval Closing</h3><p class="mu">Periksa enam modul operasional, rekonsiliasi saldo, lalu setujui snapshot closing harian.</p></div><button class="btn s" onclick="window.__clReload()">Muat ulang</button></div><div class="cl-filter"><label>Divisi<select onchange="window.__clFilter(\'division\',this.value)">'+divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(CL.division)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal closing<input type="date" max="'+today()+'" value="'+esc(CL.date)+'" onchange="window.__clFilter(\'date\',this.value)"></label></div><div class="cl-summary"><div><small>Divisi / periode</small><b>'+esc(divName)+'</b><small>'+esc(CL.date)+'</small></div><div><small>Status closing</small><b>'+esc(label)+'</b><small>'+MODS.filter(m=>{const x=state(m);return x.saved&&x.fresh}).length+' / 6 modul terkonfirmasi</small></div></div><div class="cl-callout"><b>Aturan closing</b><p>Modul kosong harus dikonfirmasi. Data yang berubah setelah konfirmasi wajib dikonfirmasi ulang. Approval menghitung ulang snapshot Daily SO dan menyimpan jejak audit.</p></div></div><div class="card"><h3>Checklist modul</h3>'+cards+'</div><div class="card"><h3>Ringkasan sebelum approval</h3><p class="mu">Daily SO wajib tersedia. Keenam modul harus dikonfirmasi dengan snapshot yang masih sama.</p><div class="cl-summary"><div><small>Rekaman Daily SO</small><b>'+count('daily_so',CL.division,CL.date)+'</b></div><div><small>Validasi</small><b>'+(approved?'Final':ready?'Siap diperiksa':'Belum lengkap')+'</b></div></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="window.__clReload()" '+(CL.busy?'disabled':'')+'>Validasi & muat ulang</button><button class="btn" onclick="window.__clApprove()" '+(!ready||approved||CL.busy?'disabled':'')+'>'+(CL.busy==='approve'?'Memproses…':approved?'Closing Approved':'Approval Closing')+'</button></div>'+(approved?'<p class="mu">Disetujui pada '+esc(new Date(CL.period.approved_at).toLocaleString('id-ID'))+'. Perubahan transaksi berikutnya harus melalui rekonsiliasi.</p>':'')+'</div><div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px"><h3 style="margin:0">Riwayat closing divisi</h3><button class="ibtn" type="button" onclick="window.__clDownloadClosingExcel()" aria-label="Unduh Excel closing" title="Unduh Excel closing" style="flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m7 9 5 5 5-5"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal</th><th>Status</th><th>Waktu approval</th></tr></thead><tbody>'+(history||'<tr><td colspan="3" class="mu">Belum ada riwayat closing.</td></tr>')+'</tbody></table></div></div></div>';
 }
-if(typeof V!=='undefined'&&typeof V.dash==='function'){const baseDash=V.dash;V.dash=()=>baseDash()+(typeof adm==='function'&&adm()?'<div class="card"><h3>Approval Closing</h3><p class="mu">Periksa Daily SO, Pengeluaran, Sales, Barang Masuk, Produksi WIP, dan Suplies sebelum menutup hari.</p><button class="btn" onclick="window.__clOpen()">Buka approval closing</button></div>':'');}
-window.__clOpen=()=>go('cogs_closing');
+if(typeof V!=='undefined'&&typeof V.dash==='function'){const baseDash=V.dash;V.dash=()=>baseDash()+(clCanAccess()?'<div class="card"><h3>Approval Closing</h3><p class="mu">Periksa Daily SO, Pengeluaran, Sales, Barang Masuk, Produksi WIP, dan Suplies sebelum menutup hari.</p><button class="btn" onclick="window.__clOpen()">Buka approval closing</button></div>':'');}
+window.__clOpen=()=>{if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');go('cogs_closing')};
 window.__clDownloadClosingExcel=async()=>{
  if(window.__clDownloadingSO)return;
  if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
