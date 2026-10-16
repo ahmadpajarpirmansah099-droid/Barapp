@@ -793,6 +793,21 @@ details:not([open])>*:not(summary){display:none!important}
  details>summary{min-height:42px!important;padding:10px 12px!important;font-size:14px!important}
 }
 </style>
+
+<style id="barapp-header-controls">
+/* Compact dashboard context controls: outlet, date, refresh, settings and account. */
+.hd-r{align-items:center!important;gap:8px!important;flex-wrap:wrap}
+.hd-context,.hd-date{display:inline-flex;align-items:center;gap:8px;min-height:38px;border:1px solid #dfe8e2;border-radius:11px;background:#fff;color:#25382e;padding:0 11px;font:600 12px/1.2 Inter,'Plus Jakarta Sans',system-ui,sans-serif;white-space:nowrap}
+.hd-context{cursor:pointer;max-width:230px}
+.hd-context>span:nth-child(2){overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.hd-context>.ic,.hd-date>.ic{color:#07834f;flex:0 0 auto}
+.hd-context-caret{color:#64736b;font-size:15px;margin-left:1px}
+.hd-date{color:#64736b;background:#f8faf9;font-weight:550}
+.hd-refresh{color:#087c4b!important}
+.hd-refresh:hover,.hd-context:hover{background:#eaf7f0!important;border-color:#c4e4d1!important}
+@media(max-width:899px){.hd-r{gap:5px!important}.hd-context,.hd-date{min-height:34px;padding:0 8px;font-size:11px;gap:5px}.hd-context{max-width:142px}.hd-context>span:nth-child(2){max-width:88px}.hd-date{display:none}.hd-refresh{display:none!important}}
+@media(max-width:380px){.hd-context{max-width:118px}.hd-context>span:nth-child(2){max-width:65px}.settings-btn{display:none!important}}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -1495,7 +1510,7 @@ const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><spa
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('dashboard',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><button type="button" class="hd-context" onclick="omn(this.closest('.hd').querySelector('.settings-btn'),event)" title="Pilih outlet melalui pengaturan" aria-label="Outlet aktif">${IC('store',17)}<span>${esc(outLabel()||L('Outlet','Outlet'))}</span><span class="hd-context-caret">⌄</span></button><span class="hd-date" title="Tanggal hari ini">${IC('calendar-days',16)}<span>${fd(today())}</span></span><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" title="${L('Muat ulang data','Reload data')}" aria-label="${L('Muat ulang data','Reload data')}">${IC('refresh-cw',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
