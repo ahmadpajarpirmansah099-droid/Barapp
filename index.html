@@ -612,6 +612,53 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
  .cogs-scroll>.cogs-table{width:max-content;min-width:620px}
  .cogs-formgrid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* BARAPP CLEAN SAAS UI — presentation-only overrides; preserve feature logic */
+:root{
+  --fn:'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --fh:'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --bg:#f7faf8; --cd:#ffffff; --tx:#172b23; --mu:#687970; --br:#e5eee8;
+  --ac:#138653; --ac2:#22a06b; --dg:#d92d20; --gd:#b7791f; --tt:#e8f6ee; --tt2:#087443;
+  --sky:#d8eee2; --terra:#d92d20; --rose:#fce8e6; --side:252px; --onac:#ffffff;
+  --tint:color-mix(in srgb,var(--ac) 9%,white);
+  --line:#e2ece5; --in:#f8fbf9;
+  --cozy:0 1px 3px rgba(16,40,27,.05),0 5px 16px rgba(16,40,27,.035);
+  --cozy-lg:0 14px 36px rgba(16,40,27,.14);
+  --r:12px; --rc:14px; --ri:9px; color-scheme:light;
+}
+:root[data-theme="dark"]{color-scheme:light;--bg:#f7faf8;--cd:#fff;--tx:#172b23;--mu:#687970;--br:#e5eee8;--ac:#138653;--ac2:#22a06b;--onac:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:light;--bg:#f7faf8;--cd:#fff;--tx:#172b23;--mu:#687970;--br:#e5eee8;--ac:#138653;--ac2:#22a06b;--onac:#fff}}
+body::before{display:none!important}
+h1,h2,h3,.brand b,.card>h3:first-child,.md>h3:first-child{font-family:var(--fh)!important;letter-spacing:-.025em}
+main{max-width:1440px;padding:24px clamp(16px,2.4vw,32px)}
+.card{border-color:#e4ece7;border-radius:14px;box-shadow:var(--cozy);padding:20px}
+.card>h3:first-child,.md>h3:first-child{font-size:16px;margin-bottom:16px}
+.card>h3:first-child::before,.md>h3:first-child::before{border-radius:10px;background-color:#eaf7ef;border-color:#d8eee1}
+.btn{border-radius:10px;background:var(--ac);border-color:var(--ac);box-shadow:none;font-weight:650}
+.btn:hover{box-shadow:0 4px 10px rgba(19,134,83,.16)}
+.btn.s,.btn.o,.btn.x:not(.d){background:#fff;border-color:#dce8e0;color:#33483d}
+input,select,textarea{background:#fff;border-color:#dce8e0;border-radius:9px}
+input:focus,select:focus,textarea:focus{border-color:#138653;box-shadow:0 0 0 3px rgba(19,134,83,.12)}
+th{background:#f4f8f5;color:#63756a;border-color:#e5eee8}
+td{border-color:#edf2ee}
+.tw,.inv-table-scroll,.account-table-wrap{border-color:#e3ece6}
+.app-top{border-bottom-color:#e6eee8;background:rgba(255,255,255,.92)}
+.tile{border-radius:11px;background:#eaf7ef;border-color:#d9eee1}
+.nvb{border-radius:9px;font-weight:550}
+.nvb.on{background:#e8f6ed;border-color:#d7eddf;color:#087443}
+.ibtn{background:#fff;border-color:#e1eae4;border-radius:10px}
+@media(min-width:900px){
+  .side{background:#fff;border-right:1px solid #e5eee8}
+  .app-top{padding-left:24px;padding-right:24px}
+}
+@media(max-width:700px){
+  main{padding:14px 12px}
+  .card{padding:15px;border-radius:12px;margin-bottom:12px}
+  .grid{gap:8px}
+  .btn{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
 </style>
 
 <style id="cogs-ui">
