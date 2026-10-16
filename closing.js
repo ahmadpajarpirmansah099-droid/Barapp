@@ -18,6 +18,19 @@ function count(key,div,date){
  if(key==='suplies')return INV.suppliesSO.filter(x=>String(x.division_id)===String(div)&&String(x.so_date)===String(date)&&x.status==='submitted').length;
  return 0;
 }
+function clError(e){
+ const m=String(e?.message||e||'');
+ if(/CLOSING_INVALID_DATE/.test(m))return 'Tanggal closing tidak valid.';
+ if(/CLOSING_MODULE_HAS_DATA/.test(m))return 'Modul memiliki transaksi. Pilih konfirmasi data, bukan konfirmasi kosong.';
+ if(/CLOSING_CONFIRM_EMPTY_REQUIRED/.test(m))return 'Ada data pada modul ini. Konfirmasi sebagai data terisi.';
+ if(/CLOSING_DAILY_SO_REQUIRED/.test(m))return 'Daily SO wajib disimpan sebelum closing.';
+ if(/CLOSING_MODULES_INCOMPLETE/.test(m))return 'Semua enam modul harus dikonfirmasi sebelum approval.';
+ if(/CLOSING_SO_ITEM_SET_CHANGED/.test(m))return 'Daftar item Daily SO berubah. Muat ulang dan periksa kembali daftar item.';
+ if(/CLOSING_ALREADY_APPROVED/.test(m))return 'Closing sudah disetujui. Gunakan proses rekonsiliasi untuk perubahan.';
+ if(/CLOSING_NOT_STARTED/.test(m))return 'Belum ada proses closing untuk tanggal dan divisi ini.';
+ if(/CLOSING_INVALID_MODULE/.test(m))return 'Modul closing tidak dikenali.';
+ return opsErr(e);
+}
 function same(a,b){return !!a&&!!b&&String(a.fingerprint||'')===String(b.fingerprint||'')&&Number(a.count||0)===Number(b.count||0)&&Number(a.quantity||0)===Number(b.quantity||0)}
 async function load(show=true){
  if(CL.loading)return;
@@ -49,7 +62,7 @@ async function confirmModule(key){
  if(n===0&&!confirm('Konfirmasi bahwa '+m.name+' memang tidak memiliki transaksi/data pada tanggal ini?'))return;
  CL.busy=key;R();
  try{const {error}=await sb().rpc('barapp_closing_confirm_module',{p_division_id:CL.division,p_closing_date:CL.date,p_module_key:key,p_confirmed_empty:n===0,p_note:null});if(error)throw error;CL.ready=false;await load(false);toast(m.name+' berhasil dikonfirmasi.','ok')}
- catch(e){toast(opsErr(e),'err')}
+ catch(e){toast(clError(e),'err')}
  finally{CL.busy='';if(pg==='cogs_closing')R()}
 }
 async function approve(){
