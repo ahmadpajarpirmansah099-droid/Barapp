@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="id"><head><meta charset="utf-8"><title>Absensi BAR · Lazy Jennie</title>
+<html lang="id"><head><meta charset="utf-8"><title>Barapp · Operasional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<meta name="theme-color" content="#FDFBF7">
+<meta name="theme-color" content="#168653">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -612,6 +612,55 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
  .cogs-scroll>.cogs-table{width:max-content;min-width:620px}
  .cogs-formgrid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* BARAPP CLEAN SAAS UI — presentation-only overrides; preserve feature logic */
+:root{
+  --fn:'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --fh:'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --bg:#f7faf8; --cd:#ffffff; --tx:#172b23; --mu:#687970; --br:#e5eee8;
+  --ac:#138653; --ac2:#22a06b; --dg:#d92d20; --gd:#b7791f; --tt:#e8f6ee; --tt2:#087443;
+  --sky:#d8eee2; --terra:#d92d20; --rose:#fce8e6; --side:252px; --onac:#ffffff;
+  --tint:color-mix(in srgb,var(--ac) 9%,white);
+  --line:#e2ece5; --in:#f8fbf9;
+  --cozy:0 1px 3px rgba(16,40,27,.05),0 5px 16px rgba(16,40,27,.035);
+  --cozy-lg:0 14px 36px rgba(16,40,27,.14);
+  --r:12px; --rc:14px; --ri:9px; color-scheme:light;
+}
+:root[data-theme="dark"]{color-scheme:light;--bg:#f7faf8;--cd:#fff;--tx:#172b23;--mu:#687970;--br:#e5eee8;--ac:#138653;--ac2:#22a06b;--onac:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:light;--bg:#f7faf8;--cd:#fff;--tx:#172b23;--mu:#687970;--br:#e5eee8;--ac:#138653;--ac2:#22a06b;--onac:#fff}}
+body::before{display:none!important}
+h1,h2,h3,.brand b,.card>h3:first-child,.md>h3:first-child{font-family:var(--fh)!important;letter-spacing:-.025em}
+main{max-width:1440px;padding:24px clamp(16px,2.4vw,32px)}
+.card{border-color:#e4ece7;border-radius:14px;box-shadow:var(--cozy);padding:20px}
+.card>h3:first-child,.md>h3:first-child{font-size:16px;margin-bottom:16px}
+.card>h3:first-child::before,.md>h3:first-child::before{border-radius:10px;background-color:#eaf7ef;border-color:#d8eee1}
+.btn{border-radius:10px;background:var(--ac);border-color:var(--ac);box-shadow:none;font-weight:650}
+.btn:hover{box-shadow:0 4px 10px rgba(19,134,83,.16)}
+.btn.s,.btn.o,.btn.x:not(.d){background:#fff;border-color:#dce8e0;color:#33483d}
+input,select,textarea{background:#fff;border-color:#dce8e0;border-radius:9px}
+input:focus,select:focus,textarea:focus{border-color:#138653;box-shadow:0 0 0 3px rgba(19,134,83,.12)}
+th{background:#f4f8f5;color:#63756a;border-color:#e5eee8}
+td{border-color:#edf2ee}
+.tw,.inv-table-scroll,.account-table-wrap{border-color:#e3ece6}
+.app-top{border-bottom-color:#e6eee8;background:rgba(255,255,255,.92)}
+.tile{border-radius:11px;background:#eaf7ef;border-color:#d9eee1}
+.nvb{border-radius:9px;font-weight:550}
+.nvb.on{background:#e8f6ed;border-color:#d7eddf;color:#087443}
+.ibtn{background:#fff;border-color:#e1eae4;border-radius:10px}
+@media(min-width:900px){
+  .side{background:#fff;border-right:1px solid #e5eee8}
+  .app-top{padding-left:24px;padding-right:24px}
+}
+@media(max-width:700px){
+  main{padding:14px 12px}
+  .card{padding:15px;border-radius:12px;margin-bottom:12px}
+  .grid{gap:8px}
+  .btn{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+
 </style>
 
 <style id="cogs-ui">
@@ -707,10 +756,496 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .inv-table-scroll table{width:max-content;min-width:760px;max-width:none}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
+
+/* BARAPP CLEAN SAAS UI — desktop sidebar, unified icon rhythm, responsive header */
+:root{--bg:#f6faf7;--cd:#fff;--tx:#18352a;--mu:#718178;--br:#e5eee8;--ac:#168653;--ac2:#22a06b;--tt:#eaf7ef;--tt2:#087443;--line:#e1ece5;--in:#f7faf8;--r:12px;--rc:16px;--ri:10px;--side:264px;--cozy:0 1px 3px rgba(16,40,27,.04),0 5px 18px rgba(16,40,27,.035);--cozy-lg:0 14px 36px rgba(16,40,27,.14);color-scheme:light}
+body::before{background-image:none}
+.app-top{background:rgba(255,255,255,.94);border-bottom-color:#e5eee8;box-shadow:0 2px 10px rgba(24,53,42,.025)}
+.side{background:#fff;border-right:1px solid #e5eee8}
+.brand{padding:22px 18px 18px;border-bottom:1px solid #edf2ee}
+.tile,.brand-m{border-radius:12px;background:#eaf7ef;color:#168653;border-color:#d5eadc}
+.nvl{padding:20px 18px 8px;color:#829087;font-size:10px;letter-spacing:.11em}
+.nv{padding:0 12px;gap:4px}
+.nvb{min-height:42px;padding:10px 12px;border-radius:10px;gap:11px;font-size:13px;font-weight:600}
+.nvb .ic,.dd button .ic,.sdi button .ic,.ibtn .ic{width:18px;height:18px;flex:none}
+.nvb.on{background:#eaf7ef;border-color:#d9eee1;color:#087443}
+.nvb:hover{background:#f2f8f4}
+.card{border-color:#e5eee8;border-radius:16px;box-shadow:0 1px 3px rgba(16,40,27,.035),0 5px 18px rgba(16,40,27,.025)}
+.card>h3:first-child,.md>h3:first-child{font-family:var(--fn),system-ui,sans-serif;font-size:15px;font-weight:700}
+.card>h3:first-child::before,.md>h3:first-child::before{border-radius:10px;background-color:#eaf7ef;border-color:#d9eee1}
+.btn{border-radius:10px;background:var(--ac);box-shadow:none}
+.btn:hover{box-shadow:0 4px 12px rgba(22,134,83,.14)}
+.btn.s,.btn.o,.btn.x:not(.d){border-radius:10px}
+.ibtn{border-radius:10px;background:#f7faf8;border-color:#e5eee8}
+input,select,textarea{border-radius:10px;background:#fbfdfb;border-color:#e0e9e3}
+.dd{border-radius:14px;box-shadow:0 16px 40px rgba(24,53,42,.12)}
+/* desktop: persistent navigation and usable content width */
+@media(min-width:900px){
+ #app.in{padding-left:var(--side);padding-bottom:36px}
+ .side{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:var(--side);z-index:30;overflow:auto}
+ .app-top{padding:14px 28px}
+ .hd{gap:14px}
+ .hd-t h1{font-size:21px}
+ main{max-width:none;padding:26px 28px}
+ .toolbar{padding-top:12px;padding-bottom:12px}
+}
+/* header actions can wrap cleanly on smaller screens */
+@media(max-width:899px){
+ .app-top{padding-left:12px;padding-right:12px}
+ .hd{gap:8px;flex-wrap:wrap}
+ .hd-t{min-width:120px}
+ .hd-r{gap:6px}
+ .ibtn{width:38px;height:38px}
+ .toolbar{flex-wrap:wrap}
+ .toolbar>span{flex:0 0 100%}
+ .toolbar input[type=date]{flex:1 1 145px}
+ main{padding:16px 12px}
+ .card{padding:15px}
+}
+@media(max-width:520px){
+ .hd-t h1{font-size:17px}
+ .hd-t small{font-size:10px}
+ .hd-r{margin-left:auto}
+ .hd-r .ibtn{width:36px;height:36px;border-radius:10px}
+ .toolbar .btn{flex:1 1 auto}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+</style>
+
+<style id="barapp-clean-saas-final">
+/* Final clean SaaS presentation layer. Deliberately last in the head so older theme rules cannot override it.
+   Presentation only: no application logic, Supabase calls, data attributes, or feature handlers changed. */
+:root{
+  color-scheme:light!important;
+  --bg:#f6f9f7;--cd:#ffffff;--tx:#172b23;--mu:#66786f;--br:#e3ece6;
+  --ac:#168653;--ac2:#e7f5ed;--dk:#d8e5dc;--lt:#f0f7f2;--onac:#ffffff;
+  --in:#f4f8f5;--tint:#e7f5ed;--line:#d2e9da;
+  --cozy:0 2px 8px rgba(20,55,36,.04),0 8px 24px rgba(20,55,36,.035);
+  --cozy-lg:0 10px 30px rgba(20,55,36,.09);
+}
+:root[data-theme="dark"]{color-scheme:light!important}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:light!important}}
+html,body{background:#f6f9f7!important;color:#172b23!important}
+body{font-family:Inter,"Plus Jakarta Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px;line-height:1.55}
+body::before{display:none!important}
+h1,h2,h3,.brand b,.hd-t h1,.lgc h1{font-family:Inter,"Plus Jakarta Sans",system-ui,sans-serif!important;letter-spacing:-.025em;font-weight:650}
+.app-top{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e3ece6!important;box-shadow:0 1px 2px rgba(20,55,36,.025)!important;backdrop-filter:blur(12px)!important;padding-bottom:12px}
+.hd-t h1{font-size:clamp(18px,2vw,24px)!important}
+.tile,.brand .tile{background:#e7f5ed!important;color:#168653!important;border:1px solid #d2e9da!important;border-radius:12px!important}
+.brand{border-bottom:1px solid #e3ece6!important}
+.side{background:#fff!important;border-right:1px solid #e3ece6!important}
+.nvl{color:#819087!important}
+.nvb{border:1px solid transparent!important;border-radius:10px!important;box-shadow:none!important;min-height:42px;font-weight:550}
+.nvb:hover,.nvb.on{background:#e7f5ed!important;border-color:#d2e9da!important;color:#14794b!important;box-shadow:none!important}
+main{padding-top:22px!important}
+.card,.lgc,.md,.dd,#t .w,.statusbar,.taskbar{background:#fff!important;border:1px solid #e3ece6!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(20,55,36,.035),0 8px 24px rgba(20,55,36,.025)!important;backdrop-filter:none!important}
+.card{transition:box-shadow .18s ease,border-color .18s ease!important}
+.card:hover{transform:none!important;box-shadow:0 5px 16px rgba(20,55,36,.07)!important;border-color:#d3e5d9!important}
+.card>h3:first-child::before,.md>h3:first-child::before{background:#e7f5ed!important;border:0!important;border-radius:9px!important}
+.btn{min-height:40px;border-radius:9px!important;background:#168653!important;color:#fff!important;border:1px solid #168653!important;box-shadow:none!important;font-weight:650!important}
+.btn:hover{background:#117447!important;transform:none!important;box-shadow:0 3px 8px rgba(22,134,83,.16)!important}
+.btn:active{transform:translateY(1px)!important;box-shadow:none!important}
+.btn.s,.btn.o,.btn.x:not(.d),.ibtn{background:#fff!important;color:#34483d!important;border:1px solid #dce7df!important;box-shadow:none!important;border-radius:9px!important}
+.btn.s:hover,.btn.o:hover,.btn.x:not(.d):hover,.ibtn:hover{background:#f3f8f4!important;border-color:#bcd9c7!important}
+input,select,textarea{background:#fff!important;color:#172b23!important;border:1px solid #dce7df!important;border-radius:9px!important;min-height:40px}
+input:focus,select:focus,textarea:focus{border-color:#168653!important;box-shadow:0 0 0 3px rgba(22,134,83,.12)!important;outline:none!important}
+label{color:#34483d!important;font-weight:600}
+table{border-color:#e3ece6!important}
+table th{background:#f4f8f5!important;color:#52675b!important;border-bottom:1px solid #e3ece6!important}
+table td{border-bottom:1px solid #edf2ee!important}
+table tr:hover td{background:#f7fbf8!important}
+.taskbar{border-radius:12px!important}
+.start,.task.on{background:#e7f5ed!important;color:#14794b!important;border:1px solid #d2e9da!important;box-shadow:none!important}
+.mods-title::before{display:none!important}
+@media(max-width:700px){
+  main{padding:14px 12px calc(154px + var(--sf))!important}
+  .card{padding:15px!important;border-radius:12px!important}
+  .card:hover{transform:none!important}
+  .app-top{padding-left:12px!important;padding-right:12px!important}
+  .hd-t h1{font-size:17px!important}
+  .btn{min-height:42px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* BARAPP operational polish — consistent controls, tables, and touch targets */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){
+  max-width:100%;box-sizing:border-box;border-color:var(--br,#e5eee8);
+  transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease
+}
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea):focus-visible{
+  outline:2px solid transparent;border-color:var(--ac,#168653);
+  box-shadow:0 0 0 3px rgba(22,134,83,.13)
+}
+:where(button,.btn,.ibtn,[role="button"]):focus-visible{
+  outline:2px solid var(--ac,#168653);outline-offset:2px
+}
+.cogs-scroll,.inv-table-scroll{overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#c7d9cd transparent}
+.cogs-table,.inv-table-scroll table{border-collapse:separate;border-spacing:0}
+.cogs-table thead th{
+  position:sticky;top:0;z-index:1;background:#f5faf6;color:#52675b;
+  font-size:11px;font-weight:750;letter-spacing:.035em;text-transform:uppercase;
+  border-bottom:1px solid #dfeae2
+}
+.cogs-table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-table tbody tr:hover{background:#f1f8f3}
+.cogs-table td,.cogs-table th{vertical-align:middle}
+.cogs-table td input,.cogs-table td select{min-height:40px;border-radius:9px}
+.cogs-top{gap:12px;align-items:center;flex-wrap:wrap}
+.cogs-top>div{min-width:0;flex:1}
+.cogs-formgrid label,.cogs-wrap> .card>label{display:flex;flex-direction:column;gap:7px}
+.cogs-wrap .btns{display:flex;gap:10px;flex-wrap:wrap}
+.cogs-wrap .btns .btn{min-height:42px}
+@media(max-width:700px){
+  .cogs-top{align-items:stretch}
+  .cogs-top>.btn,.cogs-top>button{align-self:flex-start}
+  .cogs-wrap .btns .btn{flex:1 1 145px}
+  .cogs-table thead th{font-size:10px;padding:10px 9px}
+  .cogs-table td{padding:10px 9px}
+}
+@media(prefers-reduced-motion:reduce){
+  :where(input,select,textarea){transition:none}
+}
+
+/* Inventory screens — consistent toolbar and readable mobile data tables */
+.inv-table{border:1px solid var(--br,#e5eee8);border-radius:14px;background:#fff}
+.inv-table-scroll{border-radius:10px;scroll-padding-inline:12px}
+.inv-table-scroll table thead th{
+  position:sticky;top:0;z-index:3;background:#f5faf6;color:#52675b;
+  border-bottom:1px solid #dfeae2;font-size:11px;font-weight:750;
+  letter-spacing:.025em;text-transform:uppercase
+}
+.inv-table-scroll tbody tr:nth-child(even){background:#fbfdfb}
+.inv-table-scroll tbody tr:hover{background:#f1f8f3}
+.inv-table-scroll tbody tr:hover td:first-child{background:#f1f8f3}
+.inv-table-scroll tbody td:first-child{background:#fff}
+.inv-table-scroll tbody tr:nth-child(even) td:first-child{background:#fbfdfb}
+.inv-table-scroll th:first-child{background:#f5faf6}
+.inv-search{min-height:42px;border-radius:10px}
+.inv-detail-actions button,.inv-detail-actions .btn{min-height:40px}
+@media(max-width:700px){
+  .inv-table{padding:12px!important;border-radius:12px}
+  .inv-table-scroll th,.inv-table-scroll td{padding:10px 9px}
+  .inv-table-scroll table{min-width:720px}
+  .inv-search{width:100%;min-width:0}
+}
+
+/* Final responsive polish for shared operational forms and data tables. */
+main{min-width:0}
+main>.card,main>.grid,main>.row,main .card{min-width:0}
+main .card :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea){
+  min-height:40px;max-width:100%;box-sizing:border-box
+}
+main .card textarea{min-height:88px;resize:vertical}
+main .card :is(input,select,textarea):focus-visible{
+  outline:3px solid rgba(22,134,83,.18);outline-offset:1px;border-color:#168653
+}
+main .card :is(button,.btn):disabled{cursor:not-allowed;opacity:.58;box-shadow:none}
+.inv-table-scroll,.account-table-wrap,.inv-detail-table,.cogs-scroll{
+  max-width:100%;overscroll-behavior-x:contain;scrollbar-width:thin
+}
+.inv-table-scroll table,.account-table-wrap table{border-collapse:separate;border-spacing:0}
+.inv-table-scroll thead th,.account-table-wrap thead th{position:sticky;top:0;z-index:1}
+@media(max-width:700px){
+  main .card{overflow-wrap:anywhere}
+  main .card .grid{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}
+  main .card label{min-width:0}
+  main .card label input,main .card label select,main .card label textarea{width:100%}
+  .inv-table-scroll,.account-table-wrap,.inv-detail-table,.cogs-scroll{
+    border-radius:10px;scrollbar-gutter:stable
+  }
+}
+@media(max-width:380px){
+  main .card .grid{grid-template-columns:minmax(0,1fr)}
+  main .card :is(input,select,textarea){font-size:16px}
+}
+
+
+
+
+/* Inventory workflows: clearer filters, transaction tables, and stock inputs. */
+.inv-toolbar .inv-search{min-width:0;max-width:100%;min-height:42px}
+.inv-toolbar .btns{align-items:center}
+.inv-table-scroll table{width:100%;border-collapse:separate;border-spacing:0}
+.inv-table-scroll th,.inv-table-scroll td{vertical-align:middle}
+.inv-table-scroll tbody tr:nth-child(even){background:#fbfdfb}
+.inv-table-scroll tbody tr:hover{background:#f0f8f3}
+.inv-table-scroll td .btns{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inv-table-scroll td .btns .btn{margin:0}
+.cogs-wrap .cogs-top{align-items:flex-start}
+.cogs-wrap .cogs-top label{min-width:0}
+.cogs-wrap .cogs-top input,.cogs-wrap .cogs-top select{width:100%;min-width:0}
+.cogs-wrap .cogs-table input[type=number]{width:100%;min-width:84px}
+.cogs-wrap .cogs-table :is(input,select){min-height:40px}
+.cogs-wrap .cogs-table td:first-child{min-width:145px}
+.cogs-wrap .cogs-table th{white-space:nowrap}
+.cogs-wrap .cogs-table td{overflow-wrap:anywhere}
+.cogs-wrap .cogs-table .btn{white-space:normal}
+@media(max-width:700px){
+  .inv-toolbar{gap:12px}
+  .inv-toolbar .inv-actions{width:100%}
+  .inv-toolbar .inv-search{flex:1 1 100%;width:100%}
+  .inv-toolbar .btns.inv-actions{display:flex;flex-wrap:wrap}
+  .inv-toolbar .btns.inv-actions .btn{flex:1 1 100px}
+  .inv-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .inv-table-scroll table{min-width:600px}
+  .cogs-wrap .cogs-table{min-width:640px}
+  .cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{padding:9px 8px}
+}
+@media(max-width:380px){
+  .inv-toolbar .btns.inv-actions .btn{flex-basis:100%}
+  .cogs-wrap .cogs-top .btn{width:100%}
+}
+/* Dialogs and feature picker: predictable sizing on phone and desktop. */
+.ov{overscroll-behavior:contain}
+.md{min-width:0;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#cbdccf transparent}
+.md form,.md label,.md .row,.md .grid{min-width:0;max-width:100%}
+.md label{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.md label input,.md label select,.md label textarea{width:100%;min-width:0}
+.md .row{align-items:center;gap:9px;flex-wrap:wrap}
+.md .row>.btn{flex:1 1 120px;min-width:0;white-space:normal}
+.md .btn{overflow-wrap:anywhere}
+.md .grid .btn{height:auto;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:700px){
+  .ov{align-items:flex-start;justify-content:center;padding:calc(10px + var(--st,0px)) 10px calc(10px + var(--sf,0px))}
+  .md{width:100%;max-width:560px;max-height:calc(100dvh - 20px - var(--st,0px) - var(--sf,0px));padding:16px}
+  .md h3{padding-right:4px;overflow-wrap:anywhere}
+  .md .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .md .grid .btn{min-height:82px;padding:10px 6px;font-size:12px}
+}
+@media(max-width:380px){
+  .ov{padding-left:7px;padding-right:7px}
+  .md{padding:13px}
+  .md .row>.btn{flex-basis:100%}
+  .md .grid .btn{min-height:76px;font-size:11px}
+}
+/* Dashboard surfaces: operational metrics, chart, and attendance summaries. */
+.cogs-wrap .card h2{font-size:clamp(18px,2vw,22px);line-height:1.3}
+.cogs-wrap .card h3{line-height:1.35}
+.cogs-wrap .card .mu{line-height:1.55}
+.cogs-wrap .card table{font-variant-numeric:tabular-nums}
+.cogs-wrap .card table td,.cogs-wrap .card table th{padding:11px 12px}
+.cogs-wrap .card table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-wrap .card table tbody tr:hover{background:#f0f8f3}
+.cogs-wrap .card table td{overflow-wrap:anywhere}
+.cogs-wrap .cogs-top>.btn{flex:0 0 auto;white-space:nowrap}
+.cogs-wrap .cogs-top>div{flex:1 1 240px}
+.vch{min-width:0;gap:clamp(5px,1vw,12px)}
+.vcol{min-width:0}
+.vn{overflow-wrap:anywhere;line-height:1.25}
+.rk{font-variant-numeric:tabular-nums}
+.rk td,.rk th{white-space:nowrap}
+.rk td:nth-child(2){white-space:normal;min-width:140px}
+@media(max-width:700px){
+  .cogs-wrap .card table td,.cogs-wrap .card table th{padding:10px 9px}
+  .cogs-wrap .cogs-top>div{flex-basis:100%}
+  .cogs-wrap .cogs-top>.btn{align-self:flex-start}
+  .vch{padding-bottom:4px;overflow-x:auto;overscroll-behavior-x:contain}
+  .vcol{flex:0 0 38px}
+  .vn{font-size:10px}
+}
+/* Header and navigation refinement: keep controls aligned without squeezing page titles. */
+.app-top{min-width:0}
+.hd,.hd-t,.hd-r{min-width:0}
+.hd-r{display:flex;align-items:center;flex-wrap:wrap}
+.hd-r>.ibtn,.hd-r>.mn{flex:0 0 auto}
+.hd-r .ibtn{display:inline-flex;align-items:center;justify-content:center}
+.hd-date{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.nvb{transition:background-color .16s ease,color .16s ease,border-color .16s ease}
+.nvb .ic{flex:0 0 18px}
+.side{overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#d4e3d8 transparent}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-thumb{background:#d4e3d8;border-radius:999px}
+@media(min-width:900px){
+  .hd{min-width:0}
+  .hd-t{flex:1 1 auto}
+  .hd-r{flex:0 0 auto;flex-wrap:nowrap}
+}
+@media(max-width:899px){
+  .hd-r{justify-content:flex-end}
+  .hd-date{display:none}
+  .hd-t{flex:1 1 120px}
+}
+@media(max-width:520px){
+  .hd{align-items:center}
+  .hd-t{flex-basis:calc(100% - 48px)}
+  .hd-r{gap:5px}
+  .hd-r .ibtn{width:36px;height:36px;min-width:36px;padding:0}
+  .hd-r .settings-dd{max-width:calc(100vw - 24px)}
+  .nvb{min-height:44px}
+}
+
+/* COGS workflows: consistent form rhythm, readable tables, and clear actions. */
+.cogs-wrap .card{border:1px solid var(--line,#e2ece5);border-radius:14px;box-shadow:0 2px 8px rgba(20,55,35,.035)}
+.cogs-wrap :is(input,select,textarea){box-sizing:border-box;max-width:100%;min-width:0}
+.cogs-wrap :is(input,select){min-height:40px}
+.cogs-wrap textarea{min-height:88px;resize:vertical}
+.cogs-wrap :is(label,.field-label){line-height:1.45;color:var(--tx,#172b23)}
+.cogs-wrap .cogs-formgrid>*{min-width:0}
+.cogs-wrap .cogs-table{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.cogs-wrap .cogs-table thead th{position:sticky;top:0;z-index:1;background:#f5faf6;color:#476354;font-size:12px;font-weight:700;letter-spacing:.015em}
+.cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{border-bottom:1px solid #e8f0eb;padding:10px 12px;vertical-align:middle}
+.cogs-wrap .cogs-table tbody tr:nth-child(even){background:#fbfdfb}
+.cogs-wrap .cogs-table tbody tr:hover{background:#eff8f2}
+.cogs-wrap .cogs-table :is(input,select){border:1px solid #dce9e0;border-radius:8px;background:#fff}
+.cogs-wrap .cogs-table :is(input,select):focus{border-color:#36a873;outline:3px solid rgba(34,160,107,.13)}
+.cogs-wrap .cogs-actions .btn,.cogs-wrap .cogs-actions button{min-height:38px}
+.cogs-wrap .cogs-stats>*{min-width:0}
+.cogs-wrap .cogs-stats :is(strong,b,.num){font-variant-numeric:tabular-nums}
+@media(max-width:600px){
+ .cogs-wrap .cogs-actions>*{flex:1 1 140px}
+ .cogs-wrap .cogs-actions .cogs-search{flex:1 1 100%;width:100%}
+ .cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{padding:9px 10px}
+ .cogs-wrap .cogs-formgrid{gap:12px}
+}
+
+
+/* Final consistency pass: keyboard access, dense data, and narrow-screen safeguards. */
+:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{
+  outline:3px solid rgba(19,134,83,.32);
+  outline-offset:2px;
+}
+:where(input,select,textarea):disabled{
+  cursor:not-allowed;
+  opacity:.72;
+}
+:where(button):disabled{
+  cursor:not-allowed!important;
+  opacity:.58;
+  transform:none!important;
+  box-shadow:none!important;
+}
+:where(table) :is(th,td){overflow-wrap:anywhere}
+:where(.card,.panel,.modal,.dialog){min-width:0}
+:where(.btns,.actions,.toolbar){flex-wrap:wrap}
+:where(.btn,.ibtn){touch-action:manipulation}
+.num,.money,.qty,[data-number]{font-variant-numeric:tabular-nums}
+@media(max-width:599px){
+  main :is(.card,.panel){max-width:100%;min-width:0}
+  main :is(input,select,textarea){max-width:100%}
+  main :is(.btns,.actions,.toolbar){gap:8px}
+  main :is(.btns,.actions)>.btn{max-width:100%;white-space:normal}
+  .modal,.dialog,[role="dialog"]{max-width:calc(100vw - 20px)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+<!-- Integrated charcoal-green responsive reference styles -->
+<style id="barapp-reference-layout">
+/* Barapp visual direction: charcoal + green, restrained accents; layout-only overrides. */
+:root{
+ --bg:#f5f7f6!important;--cd:#ffffff!important;--tx:#17211d!important;--mu:#64736b!important;
+ --br:#e3e9e5!important;--line:#e3e9e5!important;--ac:#07834f!important;--tint:#e6f5ed!important;
+ --in:#f8faf9!important;--sh:#dce5df!important;--dk:#111a17!important;
+ --cozy:0 2px 10px rgba(18,42,30,.035)!important;
+ --cozy-lg:0 16px 38px rgba(18,42,30,.09)!important;
+}
+body{background:#f5f7f6!important;color:#17211d!important}
+body::before{background-image:none!important}
+h1,h2,h3,.hd-t h1{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif!important;letter-spacing:-.025em}
+button,input,select,textarea{font-family:Inter,'Plus Jakarta Sans',system-ui,sans-serif}
+.app-top{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e3e9e5!important;backdrop-filter:blur(14px)}
+.brand{background:#111a17!important;border:0!important;border-bottom:1px solid rgba(255,255,255,.12)!important;padding:22px 20px 18px!important;min-height:82px}
+.brand .tile{background:#123d2b!important;border:1px solid #245b43!important;color:#65d6a0!important;border-radius:12px!important}
+.brand b{font:750 19px/1.2 Inter,'Plus Jakarta Sans',sans-serif!important;color:#fff!important}
+.brand small{color:#a6c8b5!important;letter-spacing:.015em!important;text-transform:none!important;font-weight:500!important}
+.nvl{color:#93a79b!important;padding-top:20px!important}
+.nv{gap:5px!important;padding:0 12px!important}
+.nvb{color:#d8e3dc!important;border:1px solid transparent!important;border-radius:9px!important;padding:11px 13px!important;font-weight:550!important}
+.nvb .ic{color:#b6c8bd!important}
+.nvb:hover{background:#1a2b23!important;color:#fff!important}
+.nvb.on{background:#e3f5eb!important;color:#087c4b!important;border-color:transparent!important;font-weight:700!important}
+.nvb.on .ic{color:#087c4b!important}
+.sidew{background:#17231d!important;border:1px solid #2a3b31!important;color:#bdcfc3!important;border-radius:12px!important;margin: auto 12px 14px!important}
+.sidew .ic{color:#55c991!important}
+@media(min-width:900px){
+ .side{background:#111a17!important;border-right:1px solid #24342b!important;box-shadow:none!important}
+ #app.in{--side:264px!important}
+ .app-top{padding:14px 30px!important}
+ main{max-width:none!important;padding:26px 30px!important}
+ .hd-t h1{font-size:28px!important;font-weight:750!important}
+ .hd-t small{font-size:13px!important}
+}
+.card{background:#fff!important;border:1px solid #e5ebe7!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(20,45,32,.025)!important;padding:20px!important}
+.card:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(20,45,32,.055)!important;border-color:#d6e4db!important}
+.card>h3:first-child,.md>h3:first-child{font-family:Inter,'Plus Jakarta Sans',sans-serif!important;font-size:16px!important;font-weight:700!important}
+.tile,.ibtn{border-radius:11px!important}
+.ibtn{background:#fff!important;border-color:#e1e8e3!important}
+.ibtn:hover{background:#eaf7ef!important;border-color:#b8dfc8!important}
+.btn{border-radius:10px!important;font-weight:650!important}
+input,select,textarea{border-radius:9px!important;border-color:#dfe7e2!important;background:#fff!important}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(7,131,79,.15)!important;border-color:#07834f!important}
+table{border-color:#e6ece8!important}
+th{background:#f4f7f5!important;color:#46564d!important;font-weight:700!important}
+td,th{border-color:#e8eeea!important}
+.statusbar{background:rgba(255,255,255,.97)!important;border-color:#e0e8e3!important;box-shadow:0 5px 18px rgba(20,45,32,.06)!important}
+@media(max-width:899px){
+ .app-top{padding:10px 14px!important}
+ main{padding:16px 12px!important}
+ .card{padding:16px!important}
+ .hd-t h1{font-size:19px!important}
+ .side{background:#111a17!important}
+}
+@media(max-width:520px){
+ .card{border-radius:12px!important;padding:14px!important}
+ main{padding:12px 10px!important}
+ .hd{gap:8px!important}
+ .hd-r{gap:6px!important}
+}
+@media(prefers-reduced-motion:reduce){.card{transition:none!important}}
+</style>
+<style id="barapp-icon-refresh">
+/* Unified Lucide-like icon language across sidebar, cards, controls and mobile feature picker. */
+.ic{flex-shrink:0;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nvb .ic{width:20px;height:20px}
+.ibtn .ic,.btn .ic{width:17px;height:17px}
+.app-top .ic{width:19px;height:19px}
+.card h3 .ic,.card .hd .ic{width:21px;height:21px;color:#07834f}
+.nvb.on .ic{color:#07834f}
+@media(max-width:899px){.nvb .ic{width:21px;height:21px}.app-top .ic{width:18px;height:18px}}
+</style>
+<style id="barapp-summary-layout-guard">
+/* Prevent accordion headers from expanding into blank panels in narrow layouts. */
+details{display:block!important;height:auto!important;min-height:0!important;flex:none!important;align-self:stretch}
+details>summary{box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;min-height:42px!important;height:auto!important;max-height:none!important;padding:10px 14px!important;line-height:1.35!important;color:var(--tx,#17211d)!important;background:#f8faf9!important;white-space:normal!important;overflow:visible!important;visibility:visible!important;opacity:1!important}
+details>summary::after{flex:0 0 16px!important;margin-left:auto!important}
+details:not([open])>*:not(summary){display:none!important}
+@media(max-width:899px){
+ details{margin:7px 0!important}
+ details>summary{min-height:42px!important;padding:10px 12px!important;font-size:14px!important}
+}
+</style>
+<style id="barapp-header-controls">
+/* Compact dashboard context controls: outlet, date, refresh, settings and account. */
+.hd-r{align-items:center!important;gap:8px!important;flex-wrap:wrap}
+.hd-context,.hd-date{display:inline-flex;align-items:center;gap:8px;min-height:38px;border:1px solid #dfe8e2;border-radius:11px;background:#fff;color:#25382e;padding:0 11px;font:600 12px/1.2 Inter,'Plus Jakarta Sans',system-ui,sans-serif;white-space:nowrap}
+.hd-context{cursor:pointer;max-width:230px}
+.hd-context>span:nth-child(2){overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.hd-context>.ic,.hd-date>.ic{color:#07834f;flex:0 0 auto}
+.hd-context-caret{color:#64736b;font-size:15px;margin-left:1px}
+.hd-date{color:#64736b;background:#f8faf9;font-weight:550}
+.hd-refresh{color:#087c4b!important}
+.hd-refresh:hover,.hd-context:hover{background:#eaf7f0!important;border-color:#c4e4d1!important}
+@media(max-width:899px){.hd-r{gap:5px!important}.hd-context,.hd-date{min-height:34px;padding:0 8px;font-size:11px;gap:5px}.hd-context{max-width:142px}.hd-context>span:nth-child(2){max-width:88px}.hd-date{display:none}.hd-refresh{display:none!important}}
+@media(max-width:380px){.hd-context{max-width:118px}.hd-context>span:nth-child(2){max-width:65px}.settings-btn{display:none!important}}
+</style>
+<style id="barapp-desktop-feature-rail">
+@media(min-width:900px){
+ .side>.nvl:not(.feature-rail-title),.side>nav:not(.feature-rail){display:none!important}
+ .side .feature-rail-title{display:block;color:#93a79b;font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;padding:18px 14px 8px}
+ .side .feature-rail{display:flex;flex-direction:column;gap:4px;padding:0 12px 14px}
+ .side .feature-rail .nvb{display:flex;width:100%;align-items:center;gap:11px;text-align:left;min-height:42px}
+ .side .feature-rail .nvb .ic{width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 19px}
+ .side .feature-rail .nvb.active{background:#e3f5eb!important;color:#087c4b!important;font-weight:700!important}
+ .side .feature-rail .nvb.coming{color:#829087!important;cursor:default;opacity:.72}
+}
+@media(max-width:899px){.feature-rail-title,.feature-rail{display:none!important}}
 </style>
 </head><body>
 
-<div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
+<div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onload="window.__barappSupabaseLoaded=true;if(typeof sbLoad==='function'){sbLoad(true);initAuth();loadSharedSettings(true)}"></script>
 <script async src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
@@ -735,7 +1270,7 @@ try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
 /* ===== KONFIGURASI TEMA — developer bisa edit langsung di sini, atau lewat menu Laporan > Edit tema ===== */
-const THEME={name:'Absensi BAR',sub:'Lazy Jennie',font:'Plus Jakarta Sans',hfont:'Fredoka',mode:'light',radius:16,speed:0.35,
+const THEME={name:'BARAPP',sub:'Operasional',font:'Plus Jakarta Sans',hfont:'Plus Jakarta Sans',mode:'light',radius:16,speed:0.35,
 nav:{dash:'Rekap',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan'},
 v:6,logo:'',light:{bg:'#FDFBF7',cd:'#FFFDF9',tx:'#5C4033',mu:'#8C6849',br:'#E6E3D6',ac:'#7A9A60',ac2:'#E5EDDF',dg:'#B95D48',gd:'#E2A85C',tt:'#3F5E4D',tt2:'#688651',hl:'#FFFFFF',lt:'#F5F0E6',sh:'#D6CDBE',dk:'#5C4033'},
 dark:{bg:'#1C2526',cd:'#273336',tx:'#EDE9DF',mu:'#B9B6A8',br:'#3A4A44',ac:'#9AB77C',ac2:'#35493D',dg:'#E08A75',gd:'#E2B66F',tt:'#31483B',tt2:'#7FA062',hl:'#43504B',lt:'#34413B',sh:'#131A1B',dk:'#101617'}};
@@ -963,6 +1498,10 @@ grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" 
 };
 ICP.package=ICP.box;
 ICP.folder=ICP.trees;
+/* Aliases used by the feature launcher; keep every menu icon in the same SVG style. */
+ICP['chart-no-axes-combined']=ICP.dashboard;
+ICP.utensils=ICP.soup;
+ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 
@@ -1076,11 +1615,11 @@ function outMenuHtml(){
   if(!(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'))return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
     if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
-    return '<div style="padding:8px 12px"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div><hr>';
+    return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
   }
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
   const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
-  return `<div style="padding:8px 12px"><small>Outlet</small><select onchange="outSwitch(this.value)" style="width:100%;margin-top:4px">${opts}</select></div><hr>`}
+  return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div>`}
 async function sbLoad(silent){
 if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
 await sbLoad0(silent);
@@ -1381,16 +1920,16 @@ a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>GRP(k)==gr&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())),pic=k=>({dash:'pc',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'pc',audit:'doc',divdet:'pc',barang:'box',masuk:'truck',pengeluaran:'arrow-left-right',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>allowed().includes(k)&&k!='divdet'&&!HIDE_NAV.includes(k)&&!MOVED.includes(k)&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())),pic=k=>({dash:'dashboard',ops_dashboard:'chart-no-axes-combined',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid',barang:'box',masuk:'truck',pengeluaran:'refresh',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar',cogs_closing:'approval'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
 const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
-<div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
-<div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('dashboard',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
+<div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
+
 <div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
-${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
 <div class="statusbar ${pg==='dash'?'status-home':'status-hidden'}"><span class="sf" id="sbl">${sbLabel()}</span><span class="sf">${role}</span>${px?`<span class="sf">${D.emp.filter(e=>e.aktif).length} ${L('karyawan aktif','active employees')}</span>`:`<span class="sf">${fd(rg.f)} – ${fd(rg.t)}</span><span class="sf">${vis().length} ${L('karyawan','employees')}</span>`}</div>
@@ -2104,7 +2643,154 @@ function jadPdf(){
     return `<section>${head}<table><thead><tr><th rowspan="2">NO</th><th rowspan="2">NAME</th><th rowspan="2">ROLE</th>${days.map(d=>`<th>${d.slice(8,10)}/${d.slice(5,7)}</th>`).join('')}</tr><tr>${dn.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rowsHtml}</tbody></table></section>`;
   }).join('');
   const css="@page{size:landscape;margin:12mm}body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0}section{page-break-after:always}section:last-child{page-break-after:auto}.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:2px solid #7a2e22;padding-bottom:6px}.l{font-weight:700;font-size:16px}.r{font-weight:800;font-size:18px;color:#7a2e22}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #999;padding:5px 4px;text-align:center}th{background:#f1d9d1;font-weight:700}td.n{text-align:left}td.c{font-weight:700}.s-shift{background:#e3f1d6}.s-off{background:#e6e4e0}.s-sakit{background:#f8d6c4}.s-ph{background:#d4e3f6}.s-blank{background:#fff}";
-  const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+  const extraCss=`/* Sidebar/header finishing pass: keep the full navigation list usable. */
+@media(min-width:900px){
+  .side{overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--br) transparent}
+  .side .brand{position:sticky;top:0;z-index:2;flex:0 0 auto;background:var(--cd)}
+  .side .nvl,.side .nv{flex:0 0 auto}
+  .side .nv{padding-bottom:3px}
+  .side .nvb{min-height:42px;padding-top:9px;padding-bottom:9px}
+  .side .nvb span{overflow-wrap:anywhere}
+  .side .sidew{flex:0 0 auto;margin-top:18px}
+  .app-top{padding-top:14px;padding-bottom:14px}
+  .hd-t small{max-width:min(68vw,760px)}
+}
+@media(max-width:899px){
+  .hd-t{flex:1 1 120px}
+  .hd-r{flex:0 0 auto}
+  .hd-t small{max-width:100%}
+  .dd{max-width:calc(100vw - 24px)}
+}
+
+/* Typography and icon consistency: clean SaaS / Lucide visual language. */
+:root{--fn:'Plus Jakarta Sans';--fh:'Plus Jakarta Sans'}
+body,#app,button,input,select,textarea,.nvb,.dd button,.sdi button{
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif!important;
+}
+h1,h2,h3,h4,h5,h6,.brand b,.hd-t h1,.card>h3:first-child,.md>h3:first-child{
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif!important;
+  letter-spacing:-.025em;
+}
+.ic{flex:0 0 auto;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nvb .ic,.dd button .ic,.sdi button .ic,.ibtn .ic{width:18px;height:18px}
+.brand .ic,.brand-m .ic{width:21px;height:21px}
+.toolbar .ic{vertical-align:-3px;margin-right:3px}
+
+/* Final header and navigation polish for the clean SaaS layout. */
+.hd{gap:10px}
+.hd-t h1{font-size:clamp(17px,1.25vw,20px);font-weight:750;letter-spacing:-.035em}
+.hd-t small{font-size:11.5px;line-height:1.45}
+.nvb{gap:11px}
+.nvb .ic{width:19px;height:19px}
+.nvb.on .ic{stroke-width:2}
+.settings-btn .ic{width:19px;height:19px}
+.dd select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--br);border-radius:10px;padding:9px 10px}
+@media(max-width:899px){
+  .hd{gap:8px}
+  .hd-t h1{font-size:17px}
+  .hd-t small{font-size:10.5px}
+  .hd-r{gap:6px}
+  .ibtn{width:40px;height:40px;border-radius:12px}
+}
+
+/* Mobile navigation and compact controls: avoid clipped labels and oversized drawers. */
+@media(max-width:599px){
+  .mods-title{letter-spacing:-.025em}
+  .modal .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .modal .btn{min-width:0;overflow-wrap:anywhere}
+  .modal .btn .ic{max-width:28px;max-height:28px}
+  .dd{min-width:min(236px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+  .hd-t{min-width:0}
+  .hd-t small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+@media(min-width:600px) and (max-width:899px){
+  .modal .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+/* Navigation state and compact header interaction polish. */
+.nvb[aria-current="page"]{font-weight:750;box-shadow:inset 3px 0 0 var(--ac)}
+.nvb .ic{transition:transform .18s ease}
+.nvb:hover .ic{transform:translateX(1px)}
+.nvb:active .ic{transform:scale(.96)}
+.settings-dd{padding:8px}
+.settings-dd button{border-radius:9px}
+.settings-dd button:hover{background:var(--in)}
+.hd-refresh:hover{border-color:#b8d8c4;color:var(--ac);background:#f3faf5}
+@media(prefers-reduced-motion:reduce){.nvb .ic{transition:none!important}}
+/* Always-visible date and refresh affordance in the main header. */
+.hd-date{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 11px;border:1px solid var(--br);border-radius:11px;background:var(--cd);color:var(--mu);font-size:11px;font-weight:650;white-space:nowrap}
+.hd-date .ic{width:16px;height:16px;color:var(--gr)}
+.hd-refresh{flex:0 0 auto}
+@media(max-width:899px){.hd-date{display:none}}
+@media(max-width:599px){.hd-refresh{width:38px;height:38px}}
+/* Accessibility and compact header controls */
+.nvb:focus-visible,.ibtn:focus-visible,.brand:focus-visible,.brand-m:focus-visible,
+.btn:focus-visible,.dd button:focus-visible,.dd select:focus-visible{
+  outline:3px solid rgba(22,134,83,.32)!important;
+  outline-offset:2px!important;
+}
+.settings-mn{position:relative;flex:0 0 auto}
+.settings-dd{z-index:80;max-height:min(72vh,560px);overflow-y:auto;overscroll-behavior:contain}
+.settings-dd hr{border:0;border-top:1px solid var(--br);margin:7px 0}
+.settings-dd button,.settings-dd select{min-height:40px}
+.hd-r{align-items:center}
+@media(min-width:900px){
+  .app-top{position:sticky;top:0;z-index:25}
+  .hd-t{min-width:0}
+  .hd-t small{overflow-wrap:anywhere}
+}
+@media(max-width:599px){
+  .app-top{padding-top:10px!important;padding-bottom:10px!important}
+  .hd{align-items:center}
+  .hd-t{flex:1 1 110px;min-width:0}
+  .hd-t h1{overflow-wrap:anywhere}
+  .hd-r{gap:5px}
+  .settings-dd{right:0;left:auto;min-width:min(260px,calc(100vw - 24px))}
+  .settings-dd button{white-space:normal;text-align:left}
+}
+
+/* Keep the active outlet visible in the desktop header for multi-outlet roles. */
+.hd-outlet{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:145px;max-width:205px;padding:0 4px}
+.hd-outlet>small{font-size:10px;color:var(--muted,#6b7b72);line-height:1.2}
+.hd-outlet select{width:100%;min-width:0;max-width:100%;min-height:36px;padding:6px 28px 6px 9px;border:1px solid var(--br,#dce8df);border-radius:9px;background:var(--card,#fff);color:var(--tx,#172b23);font:inherit;font-size:12px}
+@media(max-width:899px){.hd-outlet{min-width:112px;max-width:150px;padding:0}.hd-outlet select{min-height:34px;font-size:11px}}
+@media(max-width:599px){.hd-outlet{flex:1 1 100%;max-width:none;order:5}.hd-outlet select{min-height:36px}}
+/* Operational screen finishing pass: inventory, receiving, issues and COGS forms */
+main .card label{min-width:0}
+main .card input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+main .card select,main .card textarea{
+  max-width:100%;box-sizing:border-box
+}
+main .card input:disabled,main .card select:disabled,main .card textarea:disabled{
+  cursor:not-allowed;opacity:.72
+}
+.cogs-wrap,.cogs-wrap>.card,.cogs-wrap .card{min-width:0;max-width:100%}
+.cogs-scroll{
+  max-width:100%;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  scrollbar-width:thin;scrollbar-color:#cbd9cf transparent
+}
+.cogs-table{border-collapse:separate;border-spacing:0}
+.cogs-table td,.cogs-table th{vertical-align:middle}
+.cogs-table input,.cogs-table select{min-width:84px;max-width:100%}
+.inv-actions{align-items:center}
+.inv-actions>*{min-width:0}
+@media(max-width:700px){
+  .cogs-wrap .cogs-top{gap:10px}
+  .cogs-wrap .cogs-top>label{width:100%;max-width:none!important}
+  .cogs-wrap .cogs-top input,.cogs-wrap .cogs-top select{width:100%;box-sizing:border-box}
+  .cogs-wrap .btns{gap:8px}
+  .cogs-wrap .btns>.btn{min-width:0}
+  .inv-actions{gap:8px}
+  .inv-actions .btn{flex:1 1 135px}
+}
+@media(max-width:380px){
+  main .card{padding:12px!important}
+  .cogs-wrap .btns>.btn{flex:1 1 100%}
+  .inv-actions .btn{flex:1 1 100%}
+}
+`;
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
@@ -2888,10 +3574,36 @@ function opsDefaultUnit(p,k){const units=opsUnitList(p),item=opsUnitItem(p);if(O
 function opsUnitFactor(p,k){const units=opsUnitList(p),want=opsDefaultUnit(p,k);return units.find(x=>x.unit===want)?.factor||1}
 function opsSetCountUnit(k,u){if(!OPS.unitSelections)OPS.unitSelections={};OPS.unitSelections[k]=u;R()}
 function opsCountInput(k,val,factor){OPS.counts[k]=val===''?'':Number(val)*Number(factor);const key=(OPS.division||'')+'|'+(OPS.date||opsDate());OPS.countCache[key]=Object.assign({},OPS.counts)}
+async function opsLoadUnitMaster(){
+ if(INV.ready)return;
+ // Daily SO needs only item units/conversions, not the full inventory history.
+ const activeOutletId=await outInit();
+ if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
+ const outletKey=String(activeOutletId);
+ // Reuse the lightweight Master Barang cache for this outlet; INV.ready remains reserved for the full inventory load.
+ if(INV.unitMasterOutletId===outletKey)return;
+ const divResult=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
+ if(divResult.error)throw divResult.error;
+ const outletDivs=divResult.data||[];
+ // Query only Master Barang rows for divisions the current COGS session is allowed to access.
+ const visibleIds=(CG.divs||[]).map(d=>String(d.id));
+ let items=[];
+ if(visibleIds.length){
+  const itemResult=await sb().from('barapp_items').select('*').in('division_id',visibleIds).order('created_at',{ascending:false}).limit(5000);
+  if(itemResult.error)throw itemResult.error;
+  items=itemResult.data||[];
+ }
+ // Do not let an old outlet request overwrite the cache after the user switches outlets.
+ if(String(await outInit())!==outletKey)return;
+ if(INV.ready)return;
+ INV.divs=outletDivs;
+ INV.items=items;
+ INV.unitMasterOutletId=outletKey;
+}
 async function opsLoadPosition(show){
  if(!CG.ready)return;
- // Daily SO unit dropdowns must use the latest Master Barang conversions, even when inventory has not been opened in this session.
- if(!INV.ready&&!INV.loading){try{await invLoad(false)}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
+ // Load the lightweight unit cache independently; do not block Daily SO on the full inventory history query.
+ if(!INV.ready){try{await opsLoadUnitMaster()}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
  if(!div){
   const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
@@ -2917,6 +3629,9 @@ async function opsLoadPosition(show){
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
   const {data,error}=result;
   if(error)throw error;
+  // Ignore a slow response if the user has changed the outlet division or date while it was loading.
+  const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+  if(currentKey!==key)return;
   let rows=(data||[]).sort((a,b)=>invAlpha(a.component_name,b.component_name)||invAlpha(a.component_type,b.component_type));
   const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
   if(existing){
@@ -2948,7 +3663,15 @@ async function opsLoadPosition(show){
    :opsErr(e);
   OPS.positionErrorFor=key;OPS.position=[];if(show)toast(OPS.positionError,'err')
  }
- finally{if(timeoutId)clearTimeout(timeoutId);OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
+ finally{
+  if(timeoutId)clearTimeout(timeoutId);
+  OPS.positionLoading=false;
+  if(pg==='cogs_daily_so'){
+   R();
+   const latestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+   if(latestKey!==key)opsLoadPosition(false);
+  }
+ }
 }
 function opsRetryPosition(){OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];opsLoadPosition(true)}
 function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
@@ -2964,8 +3687,14 @@ async function opsAddEntryRow(kind){
 }
 function opsEntryRows(kind){
  const tbodyId=kind==='sale'?'ops_sale_entry_rows':'ops_prod_entry_rows';
- const rows=Array.from(document.querySelectorAll('#'+tbodyId+' .ops-entry-row')).map(el=>({id:el.dataset.itemId||el.querySelector('.ops-entry-item')?.value||'',qty:el.querySelector('.ops-entry-qty')?.value.trim()||''})).filter(x=>x.id&&x.qty!==''&&Number(x.qty)>0);
- return {rows};
+ const raw=Array.from(document.querySelectorAll('#'+tbodyId+' .ops-entry-row')).map(el=>({id:String(el.dataset.itemId||el.querySelector('.ops-entry-item')?.value||'').trim(),qty:String(el.querySelector('.ops-entry-qty')?.value||'').trim(),fixedItem:!!el.dataset.itemId}));
+ // Pada tabel yang menampilkan semua item, item sudah terpilih secara default.
+ // Baris tersebut baru dianggap mulai diisi ketika QTY diisi; untuk dropdown,
+ // pemilihan item saja tetap dianggap sebagai baris yang mulai diisi.
+ const filled=raw.filter(x=>x.qty!==''||(!x.fixedItem&&x.id));
+ if(filled.some(x=>!x.id||x.qty===''))return {rows:[],error:kind==='sale'?'Lengkapi ITEM MENU dan QTY pada setiap baris yang mulai diisi.':'Lengkapi ITEM WIP dan jumlah batch pada setiap baris yang mulai diisi.'};
+ if(filled.some(x=>!Number.isFinite(Number(x.qty))||Number(x.qty)<=0))return {rows:[],error:kind==='sale'?'QTY terjual harus angka lebih besar dari 0.':'Jumlah batch harus angka lebih besar dari 0.'};
+ return {rows:filled};
 }
 async function opsRecordProductionBatch(){
  if(!cgRoleOK())return;
@@ -2985,8 +3714,10 @@ async function opsRecordProductionBatch(){
  }
  const btn=document.getElementById('ops_prod_save');if(btn){btn.disabled=true;btn.textContent='Menyimpan…'}
  try{
-  for(const x of rows){const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:x.wip_id,p_produced_qty:x.produced_qty,p_produced_at:produced_at,p_notes:notes||null});if(error)throw error;}
-  await opsReload();toast(rows.length+' item produksi WIP berhasil disimpan. Qty stok dihitung otomatis dari jumlah batch × hasil per batch.','ok');
+  const lines=rows.map(x=>({wip_id:x.wip_id,batches:x.batches}));
+  const {data,error}=await sb().rpc('cogs_record_production_batch',{p_division_id:division,p_produced_at:produced_at,p_lines:lines,p_notes:notes||null});
+  if(error)throw error;
+  await opsReload();toast('Berhasil menyimpan '+(data??rows.length)+' item produksi WIP. Qty stok dihitung otomatis dari jumlah batch × hasil per batch.','ok');
  }catch(e){toast(opsErr(e),'err')}
  finally{const b=document.getElementById('ops_prod_save');if(b){b.disabled=false;b.textContent='Simpan produksi'}}
 }
