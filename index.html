@@ -3491,6 +3491,9 @@ async function opsLoadPosition(show){
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
   const {data,error}=result;
   if(error)throw error;
+  // Ignore a slow response if the user has changed the outlet division or date while it was loading.
+  const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+  if(currentKey!==key)return;
   let rows=(data||[]).sort((a,b)=>invAlpha(a.component_name,b.component_name)||invAlpha(a.component_type,b.component_type));
   const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
   if(existing){
@@ -3522,7 +3525,15 @@ async function opsLoadPosition(show){
    :opsErr(e);
   OPS.positionErrorFor=key;OPS.position=[];if(show)toast(OPS.positionError,'err')
  }
- finally{if(timeoutId)clearTimeout(timeoutId);OPS.positionLoading=false;if(pg==='cogs_daily_so')R()}
+ finally{
+  if(timeoutId)clearTimeout(timeoutId);
+  OPS.positionLoading=false;
+  if(pg==='cogs_daily_so'){
+   R();
+   const latestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+   if(latestKey!==key)opsLoadPosition(false);
+  }
+ }
 }
 function opsRetryPosition(){OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];opsLoadPosition(true)}
 function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
