@@ -1,0 +1,85 @@
+/* ===== DAILY CLOSING APPROVAL: six operational modules ===== */
+(function(){
+const CL={division:'',date:today(),period:null,modules:[],history:[],snapshots:{},loading:false,ready:false,error:'',busy:''};
+const MODS=[
+ {key:'daily_so',name:'Daily SO',desc:'Stok fisik, saldo harapan, dan selisih',page:'cogs_daily_so'},
+ {key:'pengeluaran',name:'Pengeluaran',desc:'Waste, QC, R&D, Kalibrasi, Move, Lainnya',page:'pengeluaran'},
+ {key:'sales',name:'Sales',desc:'Penjualan menu dan pemakaian resep',page:'cogs_sales'},
+ {key:'barang_masuk',name:'Barang Masuk',desc:'Penerimaan dan retur barang',page:'masuk'},
+ {key:'produksi_wip',name:'Produksi WIP',desc:'Hasil produksi dan pemakaian bahan',page:'cogs_production'},
+ {key:'suplies',name:'Suplies',desc:'Stok aktual perlengkapan service',page:'supplies'}
+];
+function count(key,div,date){
+ if(key==='daily_so')return CG.dailySO.filter(x=>String(x.division_id)===String(div)&&String(x.so_date)===String(date)&&x.status==='submitted').length;
+ if(key==='pengeluaran')return INV.stockOut.filter(x=>String(x.from_division_id)===String(div)&&String(x.out_date)===String(date)&&x.status==='posted').length;
+ if(key==='sales')return CG.sales.filter(x=>String(x.division_id)===String(div)&&String(x.sold_at)===String(date)&&x.status==='posted').length;
+ if(key==='barang_masuk')return INV.ins.filter(x=>String(x.division_id)===String(div)&&String(x.received_at)===String(date)&&x.status==='posted').length+INV.rets.filter(x=>String(x.division_id)===String(div)&&String(x.returned_at)===String(date)&&x.status==='posted').length;
+ if(key==='produksi_wip')return CG.productions.filter(x=>String(x.division_id)===String(div)&&String(x.produced_at)===String(date)&&x.status==='posted').length;
+ if(key==='suplies')return INV.suppliesSO.filter(x=>String(x.division_id)===String(div)&&String(x.so_date)===String(date)&&x.status==='submitted').length;
+ return 0;
+}
+function same(a,b){return !!a&&!!b&&String(a.fingerprint||'')===String(b.fingerprint||'')&&Number(a.count||0)===Number(b.count||0)&&Number(a.quantity||0)===Number(b.quantity||0)}
+async function load(show=true){
+ if(CL.loading)return;
+ CL.loading=true;CL.error='';
+ try{
+  if(!CG.ready)await cgLoad(false);
+  if(!INV.ready)await invLoad(false);
+  if(!CG.ready)throw new Error(CG.err||'Data operasional belum selesai dimuat.');
+  if(!INV.ready)throw new Error(INV.err||'Data inventori belum selesai dimuat.');
+  const divs=CG.divs.length?CG.divs:INV.divs;
+  if(!CL.division||!divs.some(d=>String(d.id)===String(CL.division)))CL.division=divs[0]?.id||'';
+  if(!CL.division)throw new Error('Tidak ada divisi yang bisa diakses pada outlet aktif.');
+  const {data:period,error:pe}=await sb().from('barapp_closing_periods').select('*').eq('division_id',CL.division).eq('closing_date',CL.date).maybeSingle();
+  if(pe)throw pe;CL.period=period||null;CL.modules=[];CL.snapshots={};
+  if(period){const {data:rows,error}=await sb().from('barapp_closing_modules').select('*').eq('closing_id',period.id);if(error)throw error;CL.modules=rows||[];}
+  await Promise.all(MODS.map(async m=>{const {data,error}=await sb().rpc('barapp_closing_module_snapshot',{p_division_id:CL.division,p_closing_date:CL.date,p_module_key:m.key});if(error)throw error;CL.snapshots[m.key]=data;}));
+  const {data:hist,error:he}=await sb().from('barapp_closing_periods').select('id,division_id,closing_date,status,approved_at,approved_by,summary').eq('division_id',CL.division).order('closing_date',{ascending:false}).limit(15);
+  if(he)throw he;CL.history=hist||[];CL.ready=true;
+ }catch(e){CL.error=String(e?.message||e||'Gagal memuat approval closing.');}
+ finally{CL.loading=false;if(show&&pg==='cogs_closing')R();}
+}
+function init(){if(!CL.ready&&!CL.loading)load(true)}
+async function filter(k,val){if(k==='division')CL.division=val;else CL.date=val||today();CL.ready=false;await load(true)}
+function state(m){const saved=CL.modules.find(x=>x.module_key===m.key),cur=CL.snapshots[m.key],fresh=saved&&same(saved.snapshot,cur);if(saved&&fresh)return {saved,fresh:true};if(saved)return {saved,fresh:false};return {saved:null,fresh:false}}
+async function confirmModule(key){
+ if(CL.busy)return;const m=MODS.find(x=>x.key===key);if(!m)return;
+ if(CL.period?.status==='approved')return toast('Closing sudah approved. Perubahan harus melalui rekonsiliasi.','warn');
+ const n=count(key,CL.division,CL.date);if(key==='daily_so'&&!n)return toast('Simpan Daily SO terlebih dahulu sebelum closing.','warn');
+ if(n===0&&!confirm('Konfirmasi bahwa '+m.name+' memang tidak memiliki transaksi/data pada tanggal ini?'))return;
+ CL.busy=key;R();
+ try{const {error}=await sb().rpc('barapp_closing_confirm_module',{p_division_id:CL.division,p_closing_date:CL.date,p_module_key:key,p_confirmed_empty:n===0,p_note:null});if(error)throw error;CL.ready=false;await load(false);toast(m.name+' berhasil dikonfirmasi.','ok')}
+ catch(e){toast(opsErr(e),'err')}
+ finally{CL.busy='';if(pg==='cogs_closing')R()}
+}
+async function approve(){
+ if(CL.busy||CL.period?.status==='approved')return;
+ const missing=MODS.filter(m=>{const x=state(m);return !x.saved||!x.fresh});
+ if(missing.length)return toast('Konfirmasi ulang modul: '+missing.map(x=>x.name).join(', '),'warn');
+ if(!count('daily_so',CL.division,CL.date))return toast('Daily SO wajib tersimpan sebelum closing.','warn');
+ if(!confirm('Setujui closing '+CL.date+'? Sistem menghitung ulang saldo dan mengunci snapshot closing.'))return;
+ CL.busy='approve';R();
+ try{const {error}=await sb().rpc('barapp_closing_approve',{p_division_id:CL.division,p_closing_date:CL.date,p_note:null});if(error)throw error;CL.ready=false;await load(false);toast('Closing berhasil disetujui. Snapshot stok sudah difinalisasi.','ok')}
+ catch(e){toast(opsErr(e),'err');CL.ready=false;await load(false)}
+ finally{CL.busy='';if(pg==='cogs_closing')R()}
+}
+function view(){
+ if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';
+ init();
+ if(CL.loading||!CG.ready||!INV.ready)return '<div class="card"><h3>Memuat Approval Closing…</h3><p class="mu">Mengambil transaksi dan status validasi dari Supabase.</p></div>';
+ if(CL.error)return '<div class="card"><h3>Approval Closing</h3><p class="mu">'+esc(CL.error)+'</p><button class="btn" onclick="CL.ready=false">Muat ulang</button></div>';
+ const divs=CG.divs.length?CG.divs:INV.divs,divName=divs.find(d=>String(d.id)===String(CL.division))?.name||'Divisi',approved=CL.period?.status==='approved';
+ const ready=MODS.every(m=>{const x=state(m);return x.saved&&x.fresh&&['confirmed','confirmed_empty'].includes(x.saved.status)})&&count('daily_so',CL.division,CL.date)>0;
+ const label=approved?'Approved':CL.period?.status==='needs_reconciliation'?'Perlu rekonsiliasi':ready?'Siap approval':'Draft';
+ const cards=MODS.map(m=>{
+  const x=state(m),n=count(m.key,CL.division,CL.date),empty=n===0,tone=x.saved&&x.fresh?'good':x.saved?'bad':'warn';
+  const txt=x.saved&&x.fresh?(x.saved.status==='confirmed_empty'?'Kosong dikonfirmasi':'Terkonfirmasi'):x.saved?'Data berubah':empty?'Belum ada data':'Belum dikonfirmasi';
+  let act=approved?'<span class="cogs-pill">Terkunci</span>':m.key==='daily_so'&&empty?'<button class="btn s x" onclick="go(\\'cogs_daily_so\\')">Isi Daily SO</button>':'<button class="btn s x" '+(CL.busy?'disabled':'')+' onclick="window.__clConfirm(\\''+m.key+'\\')">'+(CL.busy===m.key?'Memproses…':x.saved&&!x.fresh?'Konfirmasi ulang':empty?'Konfirmasi kosong':'Konfirmasi data')+'</button>';
+  return '<div class="card cl-module"><div class="cl-module-head"><div class="cl-status '+tone+'">'+(x.saved&&x.fresh?'✓':x.saved?'!':empty?'○':'•')+'</div><div class="cl-module-info"><b>'+esc(m.name)+'</b><small>'+esc(m.desc)+'</small><span class="cogs-pill '+(tone==='bad'?'bad':'')+'">'+esc(txt)+'</span></div></div><div class="cl-module-foot"><span class="mu">'+n+' transaksi/rekaman</span><div class="cl-actions"><button class="btn o x" onclick="go(\\''+m.page+'\\')">Detail</button>'+act+'</div></div></div>';
+ }).join('');
+ const history=CL.history.map(h=>'<tr><td>'+esc(h.closing_date)+'</td><td><span class="cogs-pill '+(h.status==='approved'?'':'bad')+'">'+esc(h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status)+'</span></td><td>'+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</td></tr>').join('');
+ return '<div class="cogs-wrap"><style>.cl-filter{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-filter label{min-width:0}.cl-module{padding:14px;margin-bottom:10px}.cl-module-head{display:flex;align-items:flex-start;gap:12px}.cl-status{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;font-size:18px;font-weight:800;background:var(--in);border:1px solid var(--line)}.cl-status.good{color:#238451}.cl-status.warn{color:#a56c19}.cl-status.bad{color:#bd5549}.cl-module-info{min-width:0;flex:1;display:grid;gap:5px}.cl-module-info b{font-size:15px}.cl-module-info small{color:var(--mu);line-height:1.4}.cl-module-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.cl-actions{display:flex;gap:6px;flex-wrap:wrap}.cl-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-summary>div{background:var(--in);border:1px solid var(--line);border-radius:14px;padding:12px}.cl-summary small{display:block;color:var(--mu)}.cl-summary b{display:block;font-size:17px;margin-top:4px}.cl-callout{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--in);margin:12px 0}.cl-callout p{margin:4px 0 0;color:var(--mu);font-size:12px}@media(max-width:420px){.cl-filter{grid-template-columns:1fr}.cl-module-foot{align-items:flex-start}.cl-actions{width:100%}.cl-actions .btn{flex:1}}</style><div class="card"><div class="cogs-top"><div><h3>Approval Closing</h3><p class="mu">Periksa enam modul operasional, rekonsiliasi saldo, lalu setujui snapshot closing harian.</p></div><button class="btn s" onclick="window.__clReload()">Muat ulang</button></div><div class="cl-filter"><label>Divisi<select onchange="window.__clFilter(\\'division\\',this.value)">'+divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(CL.division)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal closing<input type="date" max="'+today()+'" value="'+esc(CL.date)+'" onchange="window.__clFilter(\\'date\\',this.value)"></label></div><div class="cl-summary"><div><small>Divisi / periode</small><b>'+esc(divName)+'</b><small>'+esc(CL.date)+'</small></div><div><small>Status closing</small><b>'+esc(label)+'</b><small>'+MODS.filter(m=>{const x=state(m);return x.saved&&x.fresh}).length+' / 6 modul terkonfirmasi</small></div></div><div class="cl-callout"><b>Aturan closing</b><p>Modul kosong harus dikonfirmasi. Data yang berubah setelah konfirmasi wajib dikonfirmasi ulang. Approval menghitung ulang snapshot Daily SO dan menyimpan jejak audit.</p></div></div><div class="card"><h3>Checklist modul</h3>'+cards+'</div><div class="card"><h3>Ringkasan sebelum approval</h3><p class="mu">Daily SO wajib tersedia. Keenam modul harus dikonfirmasi dengan snapshot yang masih sama.</p><div class="cl-summary"><div><small>Rekaman Daily SO</small><b>'+count('daily_so',CL.division,CL.date)+'</b></div><div><small>Validasi</small><b>'+(approved?'Final':ready?'Siap diperiksa':'Belum lengkap')+'</b></div></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="window.__clReload()" '+(CL.busy?'disabled':'')+'>Validasi & muat ulang</button><button class="btn" onclick="window.__clApprove()" '+(!ready||approved||CL.busy?'disabled':'')+'>'+(CL.busy==='approve'?'Memproses…':approved?'Closing Approved':'Approval Closing')+'</button></div>'+(approved?'<p class="mu">Disetujui pada '+esc(new Date(CL.period.approved_at).toLocaleString('id-ID'))+'. Perubahan transaksi berikutnya harus melalui rekonsiliasi.</p>':'')+'</div><div class="card"><h3>Riwayat closing divisi</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal</th><th>Status</th><th>Waktu approval</th></tr></thead><tbody>'+(history||'<tr><td colspan="3" class="mu">Belum ada riwayat closing.</td></tr>')+'</tbody></table></div></div></div>';
+}
+window.__clConfirm=confirmModule;window.__clApprove=approve;window.__clReload=()=>{CL.ready=false;return load(true)};window.__clFilter=filter;
+window.__barappRegisterViews?.({cogs_closing:view});
+})();
