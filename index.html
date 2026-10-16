@@ -2709,7 +2709,7 @@ async function opsRecordProductionBatch(){
  }catch(e){toast(opsErr(e),'err')}
  finally{const b=document.getElementById('ops_prod_save');if(b){b.disabled=false;b.textContent='Simpan produksi'}}
 }
-async function opsRecordSalesTable(){
+async async function opsRecordSalesTable(){
  if(!cgRoleOK())return;
  const parsed=opsEntryRows('sale');if(parsed.error)return toast(parsed.error,'warn');
  const rows=parsed.rows.map(x=>({menu_id:x.id,qty:x.qty}));
@@ -2720,7 +2720,6 @@ async function opsRecordSalesTable(){
  const saveBtn=document.getElementById('ops_sale_save');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Menyimpan…'}
  try{await opsRecordSaleBatch()}finally{const b=document.getElementById('ops_sale_save');if(b){b.disabled=false;b.textContent='Simpan penjualan'}}
 }
-function opsPreviewProduction(){
 function opsPreviewProduction(){
  const batches=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
  if(!(batches>0)||!id){el.textContent='Pilih WIP dan jumlah batch produksi.';return}
