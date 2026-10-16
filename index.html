@@ -2760,7 +2760,7 @@ async function exportDailySOExcel(){
  const so=CG.dailySO.find(x=>String(x.division_id)===String(division)&&String(x.so_date)===String(date)&&x.status==='submitted');
  if(!so)return toast('Belum ada Daily SO tersimpan untuk divisi dan tanggal yang dipilih.','warn');
  const lines=CG.dailySOLines.filter(x=>String(x.so_id)===String(so.id));
- const rows=[['ITEM','BARANG MASUK','JUMLAH AKHIR AKTUAL','SELISIH','JUMLAH AKHIR SISTEM','TERPAKAI PENGELUARAN','TERPAKAI SALES','TERPAKAI PRODUKSI WIP','HARGA SATUAN','JUMLAH SELISIH DALAM RUPIAH']];
+ const rows=[['ITEM','BARANG MASUK','TERPAKAI SALES','TERPAKAI PENGELUARAN','SUPLIES','TERPAKAI PRODUKSI WIP','JUMLAH AKHIR AKTUAL','SELISIH','JUMLAH SISTEM','NILAI RP SELISIH']];
  const sum=(xs,fn)=>xs.reduce((a,x)=>a+Number(fn(x)||0),0);
  lines.forEach(l=>{
   const type=l.component_type==='material'?'material':'wip',id=type==='material'?l.item_id:l.component_wip_id;
@@ -2774,10 +2774,12 @@ async function exportDailySOExcel(){
   let price=l.unit_cost_snapshot==null?null:Number(l.unit_cost_snapshot);
   if(price==null){if(type==='material'){const p=cgPrice(item);price=p?.value??0}else{const p=cgWipCost(id,[]);price=p.ok?p.unitCost:0}}
   const variance=Number(l.variance_qty_base||0);
-  rows.push([l.component_name_snapshot||item?.name||'Item',incoming,Number(l.counted_qty_base||0),variance,Number(l.expected_qty_base||0),usedOut,sales,production,Number(price||0),variance*Number(price||0)]);
+  const supplyLine=(INV.suppliesSOLines||[]).find(q=>String(q.item_id)===String(id)&&String(q.so_id)==String((INV.suppliesSO||[]).find(z=>String(z.division_id)===String(division)&&String(z.so_date)===String(date)&&z.status==='submitted')?.id));
+  const suppliesUsed=supplyLine?Math.max(0,Number(supplyLine.expected_qty_base||0)-Number(supplyLine.counted_qty_base||0)):0;
+  rows.push([l.component_name_snapshot||item?.name||'Item',incoming,sales,usedOut,suppliesUsed,production,Number(l.counted_qty_base||0),variance,Number(l.expected_qty_base||0),variance*Number(price||0)]);
  });
- const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},{wch:17},{wch:22},{wch:14},{wch:22},{wch:22},{wch:18},{wch:24},{wch:18},{wch:26}];
- for(let r=2;r<=rows.length;r++)for(const c of ['I','J']){const cell=ws[c+r];if(cell)cell.z='"Rp" #,##0.00;[Red]-"Rp" #,##0.00'}
+ const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},{wch:17},{wch:18},{wch:24},{wch:14},{wch:24},{wch:22},{wch:14},{wch:18},{wch:22}];
+ for(let r=2;r<=rows.length;r++){const cell=ws['J'+r];if(cell)cell.z='"Rp" #,##0.00;[Red]-"Rp" #,##0.00'}
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Daily SO');
  XLSX.writeFile(wb,'Daily-SO-'+String(opsDivName(division)).replace(/[^a-z0-9]+/gi,'-')+'-'+date+'.xlsx');
 }
