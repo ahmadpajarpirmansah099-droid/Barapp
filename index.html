@@ -3467,15 +3467,19 @@ async function opsLoadUnitMaster(){
  // Daily SO needs only item units/conversions, not the full inventory history.
  const activeOutletId=await outInit();
  if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
+ const outletKey=String(activeOutletId);
+ // Reuse the lightweight Master Barang cache for this outlet; INV.ready remains reserved for the full inventory load.
+ if(INV.unitMasterOutletId===outletKey)return;
  const divResult=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
  if(divResult.error)throw divResult.error;
  INV.divs=divResult.data||[];
  // Query only Master Barang rows for divisions the current COGS session is allowed to access.
  const visibleIds=(CG.divs||[]).map(d=>String(d.id));
- if(!visibleIds.length){INV.items=[];return}
+ if(!visibleIds.length){INV.items=[];INV.unitMasterOutletId=outletKey;return}
  const itemResult=await sb().from('barapp_items').select('*').in('division_id',visibleIds).order('created_at',{ascending:false}).limit(5000);
  if(itemResult.error)throw itemResult.error;
  INV.items=itemResult.data||[];
+ INV.unitMasterOutletId=outletKey;
 }
 async function opsLoadPosition(show){
  if(!CG.ready)return;
