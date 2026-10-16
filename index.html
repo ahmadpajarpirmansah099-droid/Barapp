@@ -2,7 +2,7 @@
 <html lang="id"><head><meta charset="utf-8"><title>Absensi BAR · Lazy Jennie</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<meta name="theme-color" content="#FDFBF7">
+<meta name="theme-color" content="#168653">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -754,6 +754,62 @@ td{border-color:#edf2ee}
   .inv-table-scroll table{width:max-content;min-width:760px;max-width:none}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
+</style>
+
+<style id="barapp-clean-saas-final">
+/* Final clean SaaS presentation layer. Deliberately last in the head so older theme rules cannot override it.
+   Presentation only: no application logic, Supabase calls, data attributes, or feature handlers changed. */
+:root{
+  color-scheme:light!important;
+  --bg:#f6f9f7;--cd:#ffffff;--tx:#172b23;--mu:#66786f;--br:#e3ece6;
+  --ac:#168653;--ac2:#e7f5ed;--dk:#d8e5dc;--lt:#f0f7f2;--onac:#ffffff;
+  --in:#f4f8f5;--tint:#e7f5ed;--line:#d2e9da;
+  --cozy:0 2px 8px rgba(20,55,36,.04),0 8px 24px rgba(20,55,36,.035);
+  --cozy-lg:0 10px 30px rgba(20,55,36,.09);
+}
+:root[data-theme="dark"]{color-scheme:light!important}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:light!important}}
+html,body{background:#f6f9f7!important;color:#172b23!important}
+body{font-family:Inter,"Plus Jakarta Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px;line-height:1.55}
+body::before{display:none!important}
+h1,h2,h3,.brand b,.hd-t h1,.lgc h1{font-family:Inter,"Plus Jakarta Sans",system-ui,sans-serif!important;letter-spacing:-.025em;font-weight:650}
+.app-top{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e3ece6!important;box-shadow:0 1px 2px rgba(20,55,36,.025)!important;backdrop-filter:blur(12px)!important;padding-bottom:12px}
+.hd-t h1{font-size:clamp(18px,2vw,24px)!important}
+.tile,.brand .tile{background:#e7f5ed!important;color:#168653!important;border:1px solid #d2e9da!important;border-radius:12px!important}
+.brand{border-bottom:1px solid #e3ece6!important}
+.side{background:#fff!important;border-right:1px solid #e3ece6!important}
+.nvl{color:#819087!important}
+.nvb{border:1px solid transparent!important;border-radius:10px!important;box-shadow:none!important;min-height:42px;font-weight:550}
+.nvb:hover,.nvb.on{background:#e7f5ed!important;border-color:#d2e9da!important;color:#14794b!important;box-shadow:none!important}
+main{padding-top:22px!important}
+.card,.lgc,.md,.dd,#t .w,.statusbar,.taskbar{background:#fff!important;border:1px solid #e3ece6!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(20,55,36,.035),0 8px 24px rgba(20,55,36,.025)!important;backdrop-filter:none!important}
+.card{transition:box-shadow .18s ease,border-color .18s ease!important}
+.card:hover{transform:none!important;box-shadow:0 5px 16px rgba(20,55,36,.07)!important;border-color:#d3e5d9!important}
+.card>h3:first-child::before,.md>h3:first-child::before{background:#e7f5ed!important;border:0!important;border-radius:9px!important}
+.btn{min-height:40px;border-radius:9px!important;background:#168653!important;color:#fff!important;border:1px solid #168653!important;box-shadow:none!important;font-weight:650!important}
+.btn:hover{background:#117447!important;transform:none!important;box-shadow:0 3px 8px rgba(22,134,83,.16)!important}
+.btn:active{transform:translateY(1px)!important;box-shadow:none!important}
+.btn.s,.btn.o,.btn.x:not(.d),.ibtn{background:#fff!important;color:#34483d!important;border:1px solid #dce7df!important;box-shadow:none!important;border-radius:9px!important}
+.btn.s:hover,.btn.o:hover,.btn.x:not(.d):hover,.ibtn:hover{background:#f3f8f4!important;border-color:#bcd9c7!important}
+input,select,textarea{background:#fff!important;color:#172b23!important;border:1px solid #dce7df!important;border-radius:9px!important;min-height:40px}
+input:focus,select:focus,textarea:focus{border-color:#168653!important;box-shadow:0 0 0 3px rgba(22,134,83,.12)!important;outline:none!important}
+label{color:#34483d!important;font-weight:600}
+table{border-color:#e3ece6!important}
+table th{background:#f4f8f5!important;color:#52675b!important;border-bottom:1px solid #e3ece6!important}
+table td{border-bottom:1px solid #edf2ee!important}
+table tr:hover td{background:#f7fbf8!important}
+.taskbar{border-radius:12px!important}
+.start,.task.on{background:#e7f5ed!important;color:#14794b!important;border:1px solid #d2e9da!important;box-shadow:none!important}
+.mods-title::before{display:none!important}
+@media(max-width:700px){
+  main{padding:14px 12px calc(154px + var(--sf))!important}
+  .card{padding:15px!important;border-radius:12px!important}
+  .card:hover{transform:none!important}
+  .app-top{padding-left:12px!important;padding-right:12px!important}
+  .hd-t h1{font-size:17px!important}
+  .btn{min-height:42px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head><body>
 
