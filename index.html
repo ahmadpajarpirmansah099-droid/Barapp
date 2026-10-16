@@ -2931,15 +2931,37 @@ async function opsRecordProductionBatch(){
  finally{const b=document.getElementById('ops_prod_save');if(b){b.disabled=false;b.textContent='Simpan produksi'}}
 }
 async function opsRecordSalesTable(){
- if(!cgRoleOK())return;
- const parsed=opsEntryRows('sale');if(parsed.error)return toast(parsed.error,'warn');
- const rows=parsed.rows.map(x=>({menu_id:x.id,qty:x.qty}));
- if(!rows.length)return toast('Pilih ITEM MENU dan isi QTY YANG TERJUAL untuk minimal satu baris.','warn');
- const host=document.getElementById('ops_sale_batch_rows');if(!host)return toast('Form penjualan tidak ditemukan. Muat ulang halaman.','err');
- host.innerHTML='';
- for(const x of rows){const row=document.createElement('div');row.className='card ops-sale-batch-row';row.style.display='none';row.innerHTML='<select class="ops-batch-menu"><option value="'+esc(x.menu_id)+'" selected>'+esc(opsMenu(x.menu_id)?.name||'Menu')+'</option></select><input class="ops-batch-qty" value="'+esc(x.qty)+'">';host.appendChild(row);}
- const saveBtn=document.getElementById('ops_sale_save');if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Menyimpan…'}
- try{await opsRecordSaleBatch()}finally{const b=document.getElementById('ops_sale_save');if(b){b.disabled=false;b.textContent='Simpan penjualan'}}
+  if(!cgRoleOK())return;
+  const parsed=opsEntryRows('sale');
+  if(parsed.error)return toast(parsed.error,'warn');
+  const division=v('ops_sale_div'),sold_at=v('ops_sale_date')||opsDate(),notes=(v('ops_sale_note')||'').trim();
+  const rows=parsed.rows.map(x=>({menu_id:x.id,qty:Number(x.qty)}));
+  if(!division)return toast('Pilih divisi terlebih dahulu.','warn');
+  if(!rows.length)return toast('Pilih ITEM MENU dan isi QTY YANG TERJUAL untuk minimal satu baris.','warn');
+  const seen=new Set();
+  for(const x of rows){
+    if(!x.menu_id||!Number.isFinite(x.qty)||x.qty<=0)return toast('Periksa setiap baris: menu dan jumlah terjual wajib diisi dengan benar.','warn');
+    if(seen.has(String(x.menu_id)))return toast('Menu yang sama cukup satu baris; gabungkan jumlahnya.','warn');
+    seen.add(String(x.menu_id));
+    const menu=CG.menus.find(m=>String(m.id)===String(x.menu_id));
+    if(!menu||String(menu.division_id)!==String(division))return toast('Menu tidak sesuai dengan divisi yang dipilih. Muat ulang data lalu coba lagi.','err');
+    const cost=cgMenuCost(x.menu_id);
+    if(!cost.ok)return toast('HPP menu '+(opsMenu(x.menu_id)?.name||'')+' belum valid: '+cost.reason,'err');
+  }
+  const lines=rows.map(x=>({menu_id:x.menu_id,qty:x.qty,selling_price:null}));
+  const saveBtn=document.getElementById('ops_sale_save');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Menyimpan…'}
+  try{
+    const {data,error}=await sb().rpc('cogs_record_menu_sales_batch',{p_division_id:division,p_sold_at:sold_at,p_lines:lines,p_notes:notes||null});
+    if(error)throw error;
+    await opsReload();
+    toast('Berhasil menyimpan '+(data??rows.length)+' baris penjualan sekaligus.','ok');
+  }catch(e){
+    toast(opsErr(e),'err');
+  }finally{
+    const b=document.getElementById('ops_sale_save');
+    if(b){b.disabled=false;b.textContent='Simpan penjualan'}
+  }
 }
 function opsPreviewProduction(){
  const batches=Number(v('ops_prod_qty')),id=v('ops_prod_wip'),el=document.getElementById('ops_prod_preview');if(!el)return;
