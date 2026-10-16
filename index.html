@@ -2704,16 +2704,22 @@ function opsPreviewSale(){
  const hpp=c.total*qty,sales=price*qty;
  el.innerHTML='<b>Penjualan: '+cgMoney(sales)+'</b><br>HPP tersimpan: <b>'+cgMoney(hpp)+'</b><br>Margin kotor: <b>'+(sales-hpp>=0?cgMoney(sales-hpp):'-'+cgMoney(hpp-sales))+'</b>'+(c.source==='reference'?' <span class="cogs-pill ref">HPP estimasi</span>':'');
 }
-async function opsRecordSale(){
+function opsAddSaleRow(menuId='',qty='',price=''){
+ const host=document.getElementById('ops_sale_batch_rows');if(!host)return;
+ const row=document.createElement('div');row.className='card';row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(78px,.55fr) minmax(105px,.7fr) auto;gap:8px;align-items:end;padding:12px;margin:8px 0';
+ row.innerHTML='<label style="min-width:0">Menu<select class="ops-batch-menu"><option value="">Pilih menu</option>'+Array.from(document.querySelectorAll('#ops_sale_menu_source option')).map(o=>'<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>').join('')+'</select></label><label>Qty<input class="ops-batch-qty" type="number" min="0.0001" step="any" inputmode="decimal" placeholder="Qty"></label><label>Harga/unit<input class="ops-batch-price" type="number" min="0" step="any" inputmode="decimal" placeholder="Harga master"></label><button type="button" class="btn s" onclick="this.closest(\'.card\').remove()">Hapus</button>';
+ row.querySelector('.ops-batch-menu').value=menuId;row.querySelector('.ops-batch-qty').value=qty;row.querySelector('.ops-batch-price').value=price;host.appendChild(row);
+}
+async function opsRecordSaleBatch(){
  if(!cgRoleOK())return;
- const division=v('ops_sale_div'),menu_id=v('ops_sale_menu'),qty=Number(v('ops_sale_qty')),sold_at=v('ops_sale_date')||opsDate(),raw=v('ops_sale_price').trim(),selling_price=raw===''?null:Number(raw),notes=v('ops_sale_note').trim();
- if(!division||!menu_id||!(qty>0)||raw!==''&&(!Number.isFinite(selling_price)||selling_price<0))return toast('Lengkapi divisi, menu, jumlah, dan harga jual yang valid.','warn');
- const c=cgMenuCost(menu_id);if(!c.ok)return toast('HPP menu belum valid: '+c.reason,'err');
- try{
-  const {error}=await sb().rpc('cogs_record_menu_sale',{p_division_id:division,p_menu_id:menu_id,p_qty:qty,p_sold_at:sold_at,p_selling_price:selling_price,p_notes:notes||null});
-  if(error)throw error;
-  OPS.saleQty='';await opsReload();toast('Penjualan tersimpan dengan HPP historis.','ok');
- }catch(e){toast(opsErr(e),'err')}
+ const division=v('ops_sale_div'),sold_at=v('ops_sale_date')||opsDate(),notes=v('ops_sale_note').trim();
+ const rows=Array.from(document.querySelectorAll('#ops_sale_batch_rows .card')).map(row=>({menu_id:row.querySelector('.ops-batch-menu').value,qty:row.querySelector('.ops-batch-qty').value.trim(),selling_price:row.querySelector('.ops-batch-price').value.trim()})).filter(x=>x.menu_id||x.qty||x.selling_price);
+ if(!division||!rows.length)return toast('Pilih divisi dan isi minimal satu baris penjualan.','warn');
+ if(rows.some(x=>!x.menu_id||!(Number(x.qty)>0)||x.selling_price!==''&&(!Number.isFinite(Number(x.selling_price))||Number(x.selling_price)<0)))return toast('Periksa setiap baris: menu dan qty wajib diisi; harga boleh kosong untuk memakai harga master.','warn');
+ const seen=new Set();for(const x of rows){if(seen.has(x.menu_id))return toast('Menu yang sama cukup satu baris; gabungkan jumlahnya.','warn');seen.add(x.menu_id);const c=cgMenuCost(x.menu_id);if(!c.ok)return toast('HPP menu '+(opsMenu(x.menu_id)?.name||'')+' belum valid: '+c.reason,'err')}
+ const lines=rows.map(x=>({menu_id:x.menu_id,qty:Number(x.qty),selling_price:x.selling_price===''?null:Number(x.selling_price)}));
+ try{const {data,error}=await sb().rpc('cogs_record_menu_sales_batch',{p_division_id:division,p_sold_at:sold_at,p_lines:lines,p_notes:notes||null});if(error)throw error;await opsReload();toast('Berhasil menyimpan '+(data??rows.length)+' baris penjualan sekaligus.','ok')}
+ catch(e){toast(opsErr(e),'err')}
 }
 async function opsReload(){
  OPS.positionLoadedFor='';OPS.position=[];
@@ -2812,12 +2818,14 @@ async function exportSuppliesSOExcel(){
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OPS.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const selectedDiv=OPS.division||CG.divs[0]?.id||'';const menuOptions=CG.menus.filter(m=>m.active&&String(m.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name)).map(m=>'<option value="'+m.id+'">'+esc(m.name)+' · '+cgMoney(m.selling_price)+'</option>').join('');
+ if(!OPS.saleBatchInitialized){OPS.saleBatchInitialized=true;setTimeout(()=>{if(pg==='cogs_sales'&&document.getElementById('ops_sale_batch_rows')&&!document.querySelector('#ops_sale_batch_rows .card'))opsAddSaleRow()},0)}
  const rows=CG.sales.filter(s=>String(s.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.menu_name_snapshot,b.menu_name_snapshot)||String(b.sold_at||'').localeCompare(String(a.sold_at||''))).map(s=>{
   const margin=Number(s.gross_sales_snapshot)-Number(s.total_hpp_snapshot);
   return '<tr><td><b>'+esc(s.menu_name_snapshot)+'</b><br><small class="mu">'+esc(s.sold_at)+' · '+esc(opsDivName(s.division_id))+'</small></td><td>'+cgNum(s.qty)+'</td><td>'+cgMoney(s.selling_price_snapshot)+'</td><td>'+cgMoney(s.total_hpp_snapshot)+(s.cost_source==='reference'?' <span class="cogs-pill ref">Estimasi</span>':'')+'</td><td>'+cgMoney(margin)+'</td><td>'+(s.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='posted'?opsCancelButton('sale',s.id):'')+'</td></tr>';
  }).join('');
- return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Penjualan Menu</h3><p class="mu">Simpan HPP dan harga jual sebagai snapshot transaksi; perubahan resep setelahnya tidak mengubah histori.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><label>Menu<select id="ops_sale_menu" onchange="opsPreviewSale()"><option value="">Pilih menu</option>'+menuOptions+'</select></label><div class="cogs-formgrid"><label>Jumlah terjual<input id="ops_sale_qty" type="number" min="0.0001" step="any" oninput="opsPreviewSale()" placeholder="Contoh: 12"></label><label>Harga jual per menu (opsional)<input id="ops_sale_price" type="number" min="0" step="any" oninput="opsPreviewSale()" placeholder="Gunakan harga master jika kosong"></label></div><div id="ops_sale_preview" class="card mu">Pilih menu dan jumlah terjual untuk melihat HPP dan margin.</div><label>Catatan / nomor transaksi<input id="ops_sale_note" maxlength="500"></label><button class="btn" onclick="opsRecordSale()">Simpan penjualan</button></div><div class="card"><h3>Riwayat penjualan</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Menu / tanggal</th><th>Qty</th><th>Harga jual</th><th>Total HPP snapshot</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Input Penjualan Massal</h3><p class="mu">Masukkan banyak menu dalam satu kali simpan. Harga boleh dikosongkan untuk memakai harga master; HPP tiap menu disimpan sebagai snapshot.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_sale_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal penjualan<input id="ops_sale_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><select id="ops_sale_menu_source" style="display:none"><option value="">Pilih menu</option>'+menuOptions+'</select><div id="ops_sale_batch_rows"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn s" onclick="opsAddSaleRow()">+ Tambah menu</button><button class="btn" onclick="opsRecordSaleBatch()">Simpan semua penjualan</button></div><label>Catatan / nomor transaksi bersama (opsional)<input id="ops_sale_note" maxlength="500" placeholder="Contoh: Shift pagi / POS 16 Okt"></label><p class="mu">Baris kosong diabaikan. Menu yang sama cukup satu baris, jumlahnya digabung. Maksimal 200 menu per simpan.</p></div><div class="card"><h3>Riwayat penjualan</h3><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Menu / tanggal</th><th>Qty</th><th>Harga jual</th><th>Total HPP snapshot</th><th>Margin kotor</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada transaksi penjualan.</td></tr>')+'</tbody></table></div></div></div>';
 };
+ if(!document.getElementById('ops_sale_batch_rows')){}
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_daily_so=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
