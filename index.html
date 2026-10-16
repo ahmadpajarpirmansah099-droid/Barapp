@@ -2185,8 +2185,7 @@ function slipOps(it,als,run,f,t){
  y-=40;
  pdfCT(o,L,y,'Dibayarkan kepada karyawan sesuai periode di atas.',8);
  if(+it.net_pay<0){y-=12;pdfCT(o,L,y,'Nilai negatif: kewajiban karyawan yang harus diselesaikan, bukan pembayaran tunai.',8)}
- pdfCTR(o,R,800,'Dokumen dibuat otomatis oleh BAR APP pada '+fdp(today()),7);
- pdfCT(o,L,50,'Slip dibagikan oleh HR setelah periode ditutup. Dokumen ini tidak memerlukan tanda tangan.',7);
+
  return o}
 function rekapPages(items,run,f,t){const pages=[],edges=[235,292,349,406,463,545],hd=['Gaji','Potongan','Makan','Tunjangan','Kasbon','Net'];let o,y;
  const head=()=>{o=[];pages.push(o);y=800;pdfT(o,50,y,((typeof TH!='undefined'&&TH.name)||'BAR APP')+' - REKAP GAJI',13,1);y-=15;pdfT(o,50,y,'Periode: '+fdp(f)+' s/d '+fdp(t)+'    Status: '+pdfSt(run),9);y-=12;pdfL(o,y);y-=14;pdfT(o,50,y,'Nama',8,1);hd.forEach((h,i)=>pdfR(o,edges[i],y,h,8,1));y-=6;pdfL(o,y);y-=12};
