@@ -1727,7 +1727,7 @@ V.div=()=>{if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin 
  return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Divisi</th><th>Admin</th><th></th></tr>${rows||'<tr><td colspan="3">Belum ada divisi.</td></tr>'}</table></div></div>`+
  `${isDeveloper()?accsCard():(T.dbRole==='div_admin'&&hasDivMgr()?divMgrPermissionsCard():'')}<div class="card"><b>Tambah divisi</b><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
-async async function divMgrPermLoad(){
+async function divMgrPermLoad(){
  try{const [accounts,perms]=await Promise.all([payRpc('division_manager_list_accounts'),payRpc('division_manager_list_feature_perms')]);T.permManagedAccounts=accounts||[];T.featurePerms=perms||[];T.divMgrPermError=''}
  catch(e){T.divMgrPermError=errText(e);toast(T.divMgrPermError,'err')}
  T.divMgrPermInit=1;R();
