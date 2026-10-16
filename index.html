@@ -2698,18 +2698,26 @@ async function opsRecordProductionBatch(){
  if(!cgRoleOK())return;
  const division=v('ops_prod_div'),produced_at=v('ops_prod_date')||opsDate(),notes=v('ops_prod_note').trim(),parsed=opsEntryRows('production');
  if(parsed.error)return toast(parsed.error,'warn');
- const rows=parsed.rows.map(x=>({wip_id:x.id,qty:x.qty}));
+ const rows=parsed.rows.map(x=>({wip_id:x.id,batches:Number(x.qty)}));
  if(!division)return toast('Pilih divisi terlebih dahulu.','warn');
- if(!rows.length)return toast('Pilih ITEM WIP dan isi QTY PRODUKSI untuk minimal satu baris.','warn');
- for(const x of rows){const w=opsWip(x.wip_id);if(!w)return toast('Item WIP tidak ditemukan. Muat ulang data.','err');if(!Number.isFinite(Number(x.qty))||Number(x.qty)<=0)return toast('Qty produksi harus lebih besar dari 0.','warn');const c=cgWipCost(x.wip_id,[]);if(!c.ok)return toast('Resep WIP '+w.name+' belum valid: '+c.reason,'err');}
+ if(!rows.length)return toast('Pilih ITEM WIP dan isi jumlah batch untuk minimal satu baris.','warn');
+ for(const x of rows){
+  const w=opsWip(x.wip_id);
+  if(!w)return toast('Item WIP tidak ditemukan. Muat ulang data.','err');
+  if(!Number.isInteger(x.batches)||x.batches<=0)return toast('Jumlah batch harus bilangan bulat lebih besar dari 0.','warn');
+  if(!Number.isFinite(Number(w.yield_qty))||Number(w.yield_qty)<=0)return toast('Hasil per batch untuk WIP '+w.name+' belum diatur di resep.','err');
+  const c=cgWipCost(x.wip_id,[]);
+  if(!c.ok)return toast('Resep WIP '+w.name+' belum valid: '+c.reason,'err');
+  x.produced_qty=x.batches*Number(w.yield_qty);
+ }
  const btn=document.getElementById('ops_prod_save');if(btn){btn.disabled=true;btn.textContent='Menyimpan…'}
  try{
-  for(const x of rows){const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:x.wip_id,p_produced_qty:Number(x.qty),p_produced_at:produced_at,p_notes:notes||null});if(error)throw error;}
-  await opsReload();toast(rows.length+' item produksi WIP berhasil disimpan.','ok');
+  for(const x of rows){const {error}=await sb().rpc('cogs_record_production',{p_division_id:division,p_wip_id:x.wip_id,p_produced_qty:x.produced_qty,p_produced_at:produced_at,p_notes:notes||null});if(error)throw error;}
+  await opsReload();toast(rows.length+' item produksi WIP berhasil disimpan. Qty stok dihitung otomatis dari jumlah batch × hasil per batch.','ok');
  }catch(e){toast(opsErr(e),'err')}
  finally{const b=document.getElementById('ops_prod_save');if(b){b.disabled=false;b.textContent='Simpan produksi'}}
 }
-async async function opsRecordSalesTable(){
+async function opsRecordSalesTable(){
  if(!cgRoleOK())return;
  const parsed=opsEntryRows('sale');if(parsed.error)return toast(parsed.error,'warn');
  const rows=parsed.rows.map(x=>({menu_id:x.id,qty:x.qty}));
@@ -2858,7 +2866,7 @@ async function exportSuppliesSOExcel(){
   const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
   return '<tr><td><b>'+esc(b.wip_name_snapshot||w&&w.name||'WIP')+'</b></td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.total_cost_snapshot)+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
  }).join('');
- return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Input seperti Daily SO: pilih ITEM WIP lalu isi QTY PRODUKSI. Tambahkan baris untuk WIP lainnya.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM WIP</th><th>QTY PRODUKSI</th><th>Aksi</th></tr></thead><tbody id="ops_prod_entry_rows"><tr class="ops-entry-row"><td><select class="ops-entry-item" data-kind="production" aria-label="Item WIP">'+wipOptions+'</select></td><td><input class="ops-entry-qty" type="number" min="0" step="any" inputmode="decimal" placeholder="Masukkan qty" aria-label="Qty produksi"></td><td><button class="btn x s" type="button" onclick="opsAddEntryRow(\'production\')">+ Baris</button></td></tr></tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(prodHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.prodHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP</th><th>Qty produksi</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h3>Produksi WIP</h3><p class="mu">Isi jumlah batch saja. Stok hasil produksi dihitung otomatis dari hasil per batch pada resep WIP.</p></div><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>ITEM WIP</th><th>JUMLAH BATCH</th><th>Aksi</th></tr></thead><tbody id="ops_prod_entry_rows"><tr class="ops-entry-row"><td><select class="ops-entry-item" data-kind="production" aria-label="Item WIP">'+wipOptions+'</select></td><td><input class="ops-entry-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="Jumlah batch" aria-label="Jumlah batch produksi"></td><td><button class="btn x s" type="button" onclick="opsAddEntryRow(\'production\')">+ Baris</button></td></tr></tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(prodHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.prodHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP</th><th>Qty produksi</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
 };
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_sales=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';
