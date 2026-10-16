@@ -960,6 +960,40 @@ main .card :is(button,.btn):disabled{cursor:not-allowed;opacity:.58;box-shadow:n
 
 
 
+
+/* Inventory workflows: clearer filters, transaction tables, and stock inputs. */
+.inv-toolbar .inv-search{min-width:0;max-width:100%;min-height:42px}
+.inv-toolbar .btns{align-items:center}
+.inv-table-scroll table{width:100%;border-collapse:separate;border-spacing:0}
+.inv-table-scroll th,.inv-table-scroll td{vertical-align:middle}
+.inv-table-scroll tbody tr:nth-child(even){background:#fbfdfb}
+.inv-table-scroll tbody tr:hover{background:#f0f8f3}
+.inv-table-scroll td .btns{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.inv-table-scroll td .btns .btn{margin:0}
+.cogs-wrap .cogs-top{align-items:flex-start}
+.cogs-wrap .cogs-top label{min-width:0}
+.cogs-wrap .cogs-top input,.cogs-wrap .cogs-top select{width:100%;min-width:0}
+.cogs-wrap .cogs-table input[type=number]{width:100%;min-width:84px}
+.cogs-wrap .cogs-table :is(input,select){min-height:40px}
+.cogs-wrap .cogs-table td:first-child{min-width:145px}
+.cogs-wrap .cogs-table th{white-space:nowrap}
+.cogs-wrap .cogs-table td{overflow-wrap:anywhere}
+.cogs-wrap .cogs-table .btn{white-space:normal}
+@media(max-width:700px){
+  .inv-toolbar{gap:12px}
+  .inv-toolbar .inv-actions{width:100%}
+  .inv-toolbar .inv-search{flex:1 1 100%;width:100%}
+  .inv-toolbar .btns.inv-actions{display:flex;flex-wrap:wrap}
+  .inv-toolbar .btns.inv-actions .btn{flex:1 1 100px}
+  .inv-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .inv-table-scroll table{min-width:600px}
+  .cogs-wrap .cogs-table{min-width:640px}
+  .cogs-wrap .cogs-table td,.cogs-wrap .cogs-table th{padding:9px 8px}
+}
+@media(max-width:380px){
+  .inv-toolbar .btns.inv-actions .btn{flex-basis:100%}
+  .cogs-wrap .cogs-top .btn{width:100%}
+}
 /* Dialogs and feature picker: predictable sizing on phone and desktop. */
 .ov{overscroll-behavior:contain}
 .md{min-width:0;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#cbdccf transparent}
