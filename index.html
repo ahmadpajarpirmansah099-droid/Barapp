@@ -1754,7 +1754,7 @@ function divMgrPermissionsCard(){
  }).join('');
  return '<div class="card"><b>Atur akses akun</b><p class="mu" style="margin:6px 0 10px">Atur enam kategori izin akun tanpa mengubah role atau status akun. Developer tidak ditampilkan. Approval Closing otomatis aktif untuk Admin Divisi dan tidak aktif untuk HR.</p>'+(T.divMgrPermError?'<p class="mu">'+esc(T.divMgrPermError)+'</p>':'')+'<div style="overflow-x:auto"><table style="font-size:12px;min-width:460px"><tr><th>Email</th><th>Role</th><th>Izin fitur</th></tr>'+(rows||'<tr><td colspan="3">'+(T.divMgrPermInit?'Belum ada akun yang bisa diatur.':'Memuat akun…')+'</td></tr>')+'</table></div></div>';
 }
-function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
+async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
  if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
  const ok=await sbRun(async()=>{const oid=await outInit();if(!oid)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:oid,p_code:c,p_name:n})});
  if(ok){toast('Divisi ditambahkan');divLoad()}}
