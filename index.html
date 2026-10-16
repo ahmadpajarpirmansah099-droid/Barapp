@@ -1121,6 +1121,10 @@ grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" 
 };
 ICP.package=ICP.box;
 ICP.folder=ICP.trees;
+/* Aliases used by the feature launcher; keep every menu icon in the same SVG style. */
+ICP['chart-no-axes-combined']=ICP.dashboard;
+ICP.utensils=ICP.soup;
+ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 
@@ -2311,6 +2315,20 @@ h1,h2,h3,h4,h5,h6,.brand b,.hd-t h1,.card>h3:first-child,.md>h3:first-child{
   .hd-t small{font-size:10.5px}
   .hd-r{gap:6px}
   .ibtn{width:40px;height:40px;border-radius:12px}
+}
+
+/* Mobile navigation and compact controls: avoid clipped labels and oversized drawers. */
+@media(max-width:599px){
+  .mods-title{letter-spacing:-.025em}
+  .modal .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .modal .btn{min-width:0;overflow-wrap:anywhere}
+  .modal .btn .ic{max-width:28px;max-height:28px}
+  .dd{min-width:min(236px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+  .hd-t{min-width:0}
+  .hd-t small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+@media(min-width:600px) and (max-width:899px){
+  .modal .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 </style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
