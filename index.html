@@ -3467,16 +3467,15 @@ async function opsLoadUnitMaster(){
  // Daily SO needs only item units/conversions, not the full inventory history.
  const activeOutletId=await outInit();
  if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
- const [divResult,itemResult]=await Promise.all([
-  sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name'),
-  sb().from('barapp_items').select('*').order('created_at',{ascending:false}).limit(5000)
- ]);
+ const divResult=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
  if(divResult.error)throw divResult.error;
- if(itemResult.error)throw itemResult.error;
  INV.divs=divResult.data||[];
- // Daily SO only needs Master Barang rows for divisions the current COGS session is allowed to access.
- const visible=new Set((CG.divs||[]).map(d=>String(d.id)));
- INV.items=(itemResult.data||[]).filter(x=>visible.has(String(x.division_id)));
+ // Query only Master Barang rows for divisions the current COGS session is allowed to access.
+ const visibleIds=(CG.divs||[]).map(d=>String(d.id));
+ if(!visibleIds.length){INV.items=[];return}
+ const itemResult=await sb().from('barapp_items').select('*').in('division_id',visibleIds).order('created_at',{ascending:false}).limit(5000);
+ if(itemResult.error)throw itemResult.error;
+ INV.items=itemResult.data||[];
 }
 async function opsLoadPosition(show){
  if(!CG.ready)return;
