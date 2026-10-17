@@ -2578,7 +2578,7 @@ const fbar=(emp)=>{const {f,t}=rng();return`<div class="card"><div class="row">$
 /* ===== DASHBOARD OPERASIONAL ===== */
 const OD={from:'',to:'',division:'',loading:false,ready:false,error:'',closing:[],detail:null};
 const odToday=()=>today();
-const odStart=()=>{if(!OD.to)OD.to=odToday();if(!OD.from){const d=new Date(OD.to+'T12:00:00');d.setDate(d.getDate()-6);OD.from=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}};
+const odStart=()=>{const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(!OD.from&&!OD.to){const now=new Date(odToday()+'T12:00:00');OD.from=fmt(new Date(now.getFullYear(),now.getMonth(),1,12));OD.to=fmt(new Date(now.getFullYear(),now.getMonth()+1,0,12));return}if(!OD.from){const d=new Date((OD.to||odToday())+'T12:00:00');OD.from=fmt(new Date(d.getFullYear(),d.getMonth(),1,12))}if(!OD.to){const d=new Date(OD.from+'T12:00:00');OD.to=fmt(new Date(d.getFullYear(),d.getMonth()+1,0,12))}};
 const odN=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(Number(n)||0);
 const odRp=n=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(n)||0);
 const odDateLabel=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short'})}catch(e){return d}};
