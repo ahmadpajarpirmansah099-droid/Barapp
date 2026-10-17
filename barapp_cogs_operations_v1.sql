@@ -471,9 +471,10 @@ begin
  if p_produced_at is null or p_produced_at>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_PRODUCTION_DATE';
  end if;
- if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' or jsonb_array_length(coalesce(p_lines,'[]'::jsonb))=0 then
+ if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' then
   raise exception 'COGS_INVALID_PRODUCTION_LINES';
  end if;
+ if jsonb_array_length(p_lines)=0 then raise exception 'COGS_INVALID_PRODUCTION_LINES'; end if;
  for v_line in select value from jsonb_array_elements(p_lines) loop
   v_wip_id:=nullif(trim(coalesce(v_line->>'wip_id','')),'')::uuid;
   v_batches:=nullif(trim(coalesce(v_line->>'batches','')),'')::numeric;
@@ -499,9 +500,10 @@ begin
  if p_sold_at is null or p_sold_at>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_SALE_DATE';
  end if;
- if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' or jsonb_array_length(coalesce(p_lines,'[]'::jsonb))=0 then
+ if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' then
   raise exception 'COGS_INVALID_SALE_LINES';
  end if;
+ if jsonb_array_length(p_lines)=0 then raise exception 'COGS_INVALID_SALE_LINES'; end if;
  for v_line in select value from jsonb_array_elements(p_lines) loop
   v_menu_id:=nullif(trim(coalesce(v_line->>'menu_id','')),'')::uuid;
   v_qty:=nullif(trim(coalesce(v_line->>'qty','')),'')::numeric;
