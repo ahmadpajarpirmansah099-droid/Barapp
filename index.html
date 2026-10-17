@@ -665,6 +665,11 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .app-top{top:0!important;z-index:120!important;overscroll-behavior:contain}
 }
 
+/* Mobile header alignment for roles without an outlet selector. Keep utility controls at the right edge. */
+@media(max-width:600px){
+  .hd-r:not(:has(.hd-outlet)){justify-content:flex-end!important}
+  .hd-r:has(.hd-outlet){justify-content:space-between!important}
+}
 /* Daily SO shortcut: consistent return navigation on all five operational categories. */
 .daily-so-back{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 @media(max-width:600px){.daily-so-back{font-size:12px;padding:8px 10px;min-height:36px}}
