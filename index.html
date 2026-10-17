@@ -808,6 +808,36 @@ details:not([open])>*:not(summary){display:none!important}
 @media(max-width:899px){.hd-r{gap:5px!important}.hd-context,.hd-date{min-height:34px;padding:0 8px;font-size:11px;gap:5px}.hd-context{max-width:142px}.hd-context>span:nth-child(2){max-width:88px}.hd-date{display:none}.hd-refresh{display:none!important}}
 @media(max-width:380px){.hd-context{max-width:118px}.hd-context>span:nth-child(2){max-width:65px}.settings-btn{display:none!important}}
 </style>
+
+<style id="barapp-slide-sidebar">
+/* Shared responsive slide/collapse sidebar: navigation and feature permissions remain unchanged. */
+#app.in .side{transition:transform .24s ease,width .22s ease;overscroll-behavior:contain}
+.sidebar-scrim{display:none}
+.brand-m{cursor:pointer}
+@media(max-width:899px){
+ #app.in{padding-left:0!important}
+ #app.in .side{display:flex!important;position:fixed!important;inset:0 auto 0 0!important;width:min(84vw,300px)!important;max-width:calc(100vw - 44px)!important;height:100dvh!important;z-index:120!important;transform:translateX(-105%);overflow-y:auto!important;overscroll-behavior:contain;box-shadow:16px 0 40px rgba(8,25,16,.18)!important;padding-bottom:env(safe-area-inset-bottom,0px)}
+ #app.in.sidebar-open .side{transform:translateX(0)}
+ #app.in .sidebar-scrim{display:block;position:fixed;inset:0;z-index:119;border:0;padding:0;background:rgba(10,20,15,.48);opacity:0;pointer-events:none;transition:opacity .22s ease}
+ #app.in.sidebar-open .sidebar-scrim{opacity:1;pointer-events:auto}
+ #app.in .side .nvb{min-height:42px}
+ #app.in .app-top{z-index:10}
+}
+@media(min-width:900px){
+ #app.in .side{transition:width .22s ease}
+ #app.in.sidebar-collapsed{--side:76px!important;padding-left:76px!important}
+ #app.in.sidebar-collapsed .side{width:76px!important;overflow-x:hidden!important}
+ #app.in.sidebar-collapsed .side .brand{justify-content:center;padding:18px 8px!important}
+ #app.in.sidebar-collapsed .side .brand .bt,
+ #app.in.sidebar-collapsed .side .nvl,
+ #app.in.sidebar-collapsed .side .nvb span,
+ #app.in.sidebar-collapsed .side .sidew{display:none!important}
+ #app.in.sidebar-collapsed .side .nv{padding:0 10px!important}
+ #app.in.sidebar-collapsed .side .nvb{justify-content:center;padding:11px 8px!important}
+ #app.in.sidebar-collapsed .statusbar{left:104px!important}
+}
+@media(prefers-reduced-motion:reduce){#app.in .side,#app.in .sidebar-scrim{transition:none!important}}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Lazy Jennie</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -1497,8 +1527,10 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
  })}
 
 window.__barappRefreshUI=()=>{if(D.me)R()};
+function toggleSidebar(){const a=$('#app');if(!a)return;if(matchMedia('(min-width: 900px)').matches){a.classList.toggle('sidebar-collapsed');try{localStorage.setItem('bar_sidebar_collapsed',a.classList.contains('sidebar-collapsed')?'1':'0')}catch(e){}}else{a.classList.toggle('sidebar-open');const b=a.querySelector('.brand-m');if(b)b.setAttribute('aria-expanded',a.classList.contains('sidebar-open')?'true':'false')}}
+function closeSidebar(){const a=$('#app');if(!a)return;a.classList.remove('sidebar-open');const b=a.querySelector('.brand-m');if(b)b.setAttribute('aria-expanded','false')}
 function R(){if(D.me&&!T.pgInit){T.pgInit=1;try{const sp=sessionStorage.getItem('bar_pg');if(sp)pg=sp}catch(e){}}if(D.me){try{sessionStorage.setItem('bar_pg',pg)}catch(e){}}const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
-a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
+a.className='in';try{if(matchMedia('(min-width: 900px)').matches&&localStorage.getItem('bar_sidebar_collapsed')==='1')a.classList.add('sidebar-collapsed')}catch(e){}if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
@@ -1506,11 +1538,11 @@ const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':ad
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
-const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
+const nh=`<aside class="side" id="barapp-sidebar"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" onclick="go('${k}')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 <div class="nvl">${L('Fitur','Features')}</div><nav class="nv"><button class="nvb" onclick="openMods()">${IC('dashboard',18)}<span>${L('Ganti fitur','Switch feature')}</span></button></nav>
-<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><button type="button" class="hd-context" onclick="omn(this.closest('.hd').querySelector('.settings-btn'),event)" title="Pilih outlet melalui pengaturan" aria-label="Outlet aktif">${IC('store',17)}<span>${esc(outLabel()||L('Outlet','Outlet'))}</span><span class="hd-context-caret">⌄</span></button><span class="hd-date" title="Tanggal hari ini">${IC('calendar-days',16)}<span>${fd(today())}</span></span><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" title="${L('Muat ulang data','Reload data')}" aria-label="${L('Muat ulang data','Reload data')}">${IC('refresh-cw',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
+<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside><button type="button" class="sidebar-scrim" onclick="closeSidebar()" aria-label="Tutup menu"></button>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="toggleSidebar()" aria-label="Buka/tutup menu navigasi" aria-controls="barapp-sidebar" title="Buka/tutup menu navigasi">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r"><button type="button" class="hd-context" onclick="omn(this.closest('.hd').querySelector('.settings-btn'),event)" title="Pilih outlet melalui pengaturan" aria-label="Outlet aktif">${IC('store',17)}<span>${esc(outLabel()||L('Outlet','Outlet'))}</span><span class="hd-context-caret">⌄</span></button><span class="hd-date" title="Tanggal hari ini">${IC('calendar-days',16)}<span>${fd(today())}</span></span><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" title="${L('Muat ulang data','Reload data')}" aria-label="${L('Muat ulang data','Reload data')}">${IC('refresh-cw',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd"><button onclick="cmn();sbLoad()">${IC('refresh',16)}${L('Muat ulang data','Reload data')}</button><hr>${outMenuHtml()}${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">📅 ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
