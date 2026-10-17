@@ -2350,22 +2350,21 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
 .cogs-table{border-collapse:separate;border-spacing:0}
 .cogs-table td,.cogs-table th{vertical-align:middle}
 .cogs-table input,.cogs-table select{min-width:84px;max-width:100%}
-/* Mobile Penjualan Menu: constrain the table and quantity input to the viewport.
-   Desktop styles are intentionally untouched. */
+/* Mobile Penjualan Menu: roomy two-column rows like a native stock-count list.
+   Desktop table layout remains unchanged. */
 @media(max-width:600px){
  main .cogs-wrap .cogs-scroll:has(>.ops-sale-entry-table){overflow-x:hidden!important;width:100%!important;min-width:0!important}
- main .cogs-wrap table.ops-sale-entry-table{display:table!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;box-sizing:border-box!important}
+ main .cogs-wrap table.ops-sale-entry-table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;box-sizing:border-box!important;border-collapse:separate!important}
+ main .cogs-wrap .ops-sale-entry-table thead,
+ main .cogs-wrap .ops-sale-entry-table tbody{display:block!important;width:100%!important;min-width:0!important}
+ main .cogs-wrap .ops-sale-entry-table tr{display:grid!important;grid-template-columns:minmax(0,46%) minmax(0,54%)!important;width:100%!important;min-width:0!important;box-sizing:border-box!important}
  main .cogs-wrap .ops-sale-entry-table th,
- main .cogs-wrap .ops-sale-entry-table td{box-sizing:border-box!important;min-width:0!important;padding:10px 7px!important;white-space:normal!important;overflow-wrap:anywhere;overflow:hidden}
- main .cogs-wrap .ops-sale-entry-table th:nth-child(1),
- main .cogs-wrap .ops-sale-entry-table td:nth-child(1){width:44%!important}
- main .cogs-wrap .ops-sale-entry-table th:nth-child(2),
- main .cogs-wrap .ops-sale-entry-table td:nth-child(2){width:56%!important}
+ main .cogs-wrap .ops-sale-entry-table td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;padding:12px 8px!important;white-space:normal!important;overflow-wrap:break-word!important;overflow:hidden!important}
+ main .cogs-wrap .ops-sale-entry-table th{font-size:12px!important;line-height:1.3!important}
  main .cogs-wrap .ops-sale-entry-table th:nth-child(3),
  main .cogs-wrap .ops-sale-entry-table td:nth-child(3){display:none!important}
- main .cogs-wrap .ops-sale-entry-table th{font-size:10px!important;line-height:1.25!important}
- main .cogs-wrap .ops-sale-entry-table td b{overflow-wrap:anywhere;word-break:normal}
- main .cogs-wrap .ops-sale-entry-table input.ops-entry-qty{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:9px 7px!important;box-sizing:border-box!important;font-size:14px!important}
+ main .cogs-wrap .ops-sale-entry-table td b{display:block!important;max-width:100%!important;overflow-wrap:anywhere!important;word-break:normal!important;line-height:1.4!important}
+ main .cogs-wrap .ops-sale-entry-table input.ops-entry-qty{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:48px!important;margin:0!important;padding:10px 12px!important;box-sizing:border-box!important;font-size:16px!important;border-radius:10px!important}
 }
 .inv-actions{align-items:center}
 .inv-actions>*{min-width:0}
