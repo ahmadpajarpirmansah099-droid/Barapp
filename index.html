@@ -1264,6 +1264,16 @@ details:not([open])>*:not(summary){display:none!important}
  #app.in .sidebar-scrim{inset:0!important;width:100vw!important;height:100dvh!important}
 }
 
+
+/* Fix header dropdowns being covered by page cards on mobile. */
+@media(max-width:899px){
+ #app.in .app-top{position:sticky!important;top:0!important;z-index:300!important;isolation:isolate!important;overflow:visible!important}
+ #app.in .app-top .hd,#app.in .app-top .hd-r{overflow:visible!important}
+ #app.in .app-top .mn.open{z-index:320!important}
+ #app.in .app-top .mn.open>.dd{position:absolute!important;z-index:330!important;max-height:min(72dvh,560px)!important;overflow-y:auto!important}
+ #app.in main{position:relative;z-index:1}
+}
+
 <style id="barapp-slide-sidebar">
 /* Responsive navigation drawer for mobile and collapsible sidebar on desktop. */
 #app.in .side{transition:transform .24s ease,width .22s ease;overscroll-behavior:contain}
