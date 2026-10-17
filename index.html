@@ -3356,7 +3356,7 @@ async function exportDailySOExcel(){
  const so=CG.dailySO.find(x=>String(x.division_id)===String(division)&&String(x.so_date)===String(date)&&x.status==='submitted');
  if(!so)return toast('Belum ada Daily SO tersimpan untuk divisi dan tanggal yang dipilih.','warn');
  const lines=CG.dailySOLines.filter(x=>String(x.so_id)===String(so.id));
- const rows=[['LAPORAN DAILY SO'],['TANGGAL',date],['DIVISI',opsDivName(division)],[],['ITEM','BARANG MASUK','TERPAKAI SALES','TERPAKAI PENGELUARAN','SUPLIES','TERPAKAI PRODUKSI WIP','JUMLAH AKHIR AKTUAL','SELISIH','JUMLAH SISTEM','NILAI RP SELISIH']];
+ const rows=[['LAPORAN DAILY SO'],['TANGGAL',date],['DIVISI',opsDivName(division)],[],['ITEM','BARANG MASUK','TERPAKAI SALES','TERPAKAI PENGELUARAN','SUPLIES','TERPAKAI PRODUKSI WIP','STOCK AKHIR AKTUAL','STOCK SISTEM','SELISIH QTY','NILAI RP SELISIH']];
  const sum=(xs,fn)=>xs.reduce((a,x)=>a+Number(fn(x)||0),0);
  lines.forEach(l=>{
   const type=l.component_type==='material'?'material':'wip',id=type==='material'?l.item_id:l.component_wip_id;
@@ -3372,14 +3372,15 @@ async function exportDailySOExcel(){
   const variance=Number(l.variance_qty_base||0);
   const supplyLine=(INV.suppliesSOLines||[]).find(q=>String(q.item_id)===String(id)&&String(q.so_id)==String((INV.suppliesSO||[]).find(z=>String(z.division_id)===String(division)&&String(z.so_date)===String(date)&&z.status==='submitted')?.id));
   const suppliesUsed=supplyLine?Math.max(0,Number(supplyLine.expected_qty_base||0)-Number(supplyLine.counted_qty_base||0)):0;
-  rows.push([l.component_name_snapshot||item?.name||'Item',incoming,sales,usedOut,suppliesUsed,production,Number(l.counted_qty_base||0),variance,Number(l.expected_qty_base||0),variance*Number(price||0)]);
+  rows.push([l.component_name_snapshot||item?.name||'Item',incoming,sales,usedOut,suppliesUsed,production,Number(l.counted_qty_base||0),Number(l.expected_qty_base||0),variance,variance*Number(price||0)]);
  });
  const dataStart=6,dataEnd=rows.length+1;rows.push(['TOTAL','','','','','','','','',null]);
- const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},{wch:17},{wch:18},{wch:24},{wch:14},{wch:24},{wch:22},{wch:14},{wch:18},{wch:24}];
+ const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},{wch:17},{wch:18},{wch:24},{wch:14},{wch:24},{wch:22},{wch:18},{wch:14},{wch:24}];
  ws['J'+rows.length]={t:'n',f:'SUM(J'+dataStart+':J'+(rows.length-1)+')',z:'\"Rp\" #,##0.00;[Red]-\"Rp\" #,##0.00'};
  for(let r=dataStart;r<=rows.length;r++){const cell=ws['J'+r];if(cell)cell.z='"Rp" #,##0.00;[Red]-"Rp" #,##0.00'}
  ws['A1'].s={font:{bold:true,sz:14}};ws['A2'].s={font:{bold:true}};ws['A3'].s={font:{bold:true}};
- for(let col=0;col<10;col++){const cell=ws[XLSX.utils.encode_cell({r:4,c:col})];if(cell)cell.s={font:{bold:true}};}
+ for(let col=0;col<10;col++){const cell=ws[XLSX.utils.encode_cell({r:4,c:col})];if(cell)cell.s={font:{bold:true,color:{rgb:col===6?'1F4E78':col===7?'548235':col===8?'C65911':'FFFFFF'}},fill:{fgColor:{rgb:col===6?'D9EAF7':col===7?'E2F0D9':col===8?'FCE4D6':'5B463B'}}};}
+ for(let r=6;r<rows.length;r++){const actual=ws['G'+r],system=ws['H'+r],varianceCell=ws['I'+r];if(actual)actual.s={fill:{fgColor:{rgb:'D9EAF7'}}};if(system)system.s={fill:{fgColor:{rgb:'E2F0D9'}}};if(varianceCell)varianceCell.s={fill:{fgColor:{rgb:'FCE4D6'}}};}
  ws['A'+rows.length].s={font:{bold:true}};ws['J'+rows.length].s={font:{bold:true}};
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Daily SO');
  XLSX.writeFile(wb,'Daily-SO-'+String(opsDivName(division)).replace(/[^a-z0-9]+/gi,'-')+'-'+date+'.xlsx');
