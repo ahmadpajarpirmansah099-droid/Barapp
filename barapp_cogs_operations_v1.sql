@@ -419,10 +419,10 @@ begin
  select 'material'::text,i.id,i.name,i.base_unit,public.cogs_expected_material_qty(i.id,p_as_of),
   case when coalesce(i.last_purchase_price_per_base,0)>0 then i.last_purchase_price_per_base else nullif(i.reference_price_per_base,0) end,
   case when coalesce(i.last_purchase_price_per_base,0)>0 then 'purchase'::text when coalesce(i.reference_price_per_base,0)>0 then 'reference'::text else 'unknown'::text end
- from public.barapp_items i where i.division_id=p_division_id and i.active=true and coalesce(i.is_supply,false)=false and i.created_at::date<=p_as_of
+ from public.barapp_items i where i.division_id=p_division_id and i.active=true and coalesce(i.is_supply,false)=false and (i.created_at at time zone 'Asia/Jakarta')::date<=p_as_of
  union all
  select 'wip'::text,w.id,w.name,w.yield_unit,public.cogs_expected_wip_qty(w.id,p_division_id,p_as_of),co.unit_cost,co.cost_source
- from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.active=true and w.created_at::date<=p_as_of and public.division_module_enabled(p_division_id,'cogs_wip')
+ from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.active=true and (w.created_at at time zone 'Asia/Jakarta')::date<=p_as_of and public.division_module_enabled(p_division_id,'cogs_wip')
  order by 1,3;
 end; $$;
 revoke all on function public.cogs_get_stock_position(uuid,date) from public,anon;
@@ -652,8 +652,8 @@ begin
  if not public.has_perm('cogs.daily_so.edit') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_so_date is null or p_so_date>(now() at time zone 'Asia/Jakarta')::date then raise exception 'COGS_INVALID_SO_DATE'; end if;
  if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' then raise exception 'COGS_INVALID_SO_LINES'; end if;
- select (select count(*) from public.barapp_items where division_id=p_division_id and active=true and coalesce(is_supply,false)=false and created_at::date<=p_so_date)
- +(case when public.division_module_enabled(p_division_id,'cogs_wip') then (select count(*) from public.cogs_wip where division_id=p_division_id and active=true and created_at::date<=p_so_date) else 0 end) into v_item_count;
+ select (select count(*) from public.barapp_items where division_id=p_division_id and active=true and coalesce(is_supply,false)=false and (created_at at time zone 'Asia/Jakarta')::date<=p_so_date)
+ +(case when public.division_module_enabled(p_division_id,'cogs_wip') then (select count(*) from public.cogs_wip where division_id=p_division_id and active=true and (created_at at time zone 'Asia/Jakarta')::date<=p_so_date) else 0 end) into v_item_count;
  if jsonb_array_length(p_lines)<>v_item_count then raise exception 'COGS_SO_MUST_COUNT_ALL_ITEMS'; end if;
  if exists(select 1 from public.cogs_daily_so where division_id=p_division_id and so_date=p_so_date and status='submitted') then raise exception 'COGS_SO_ALREADY_SUBMITTED'; end if;
  insert into public.cogs_daily_so(division_id,so_date,notes,created_by) values(p_division_id,p_so_date,nullif(trim(coalesce(p_notes,'')),''),auth.uid()) returning id into v_so;
@@ -663,13 +663,13 @@ begin
   v_key:=v_type||':'||v_id::text; if v_key=any(v_seen_keys) then raise exception 'COGS_SO_DUPLICATE_ITEM'; end if; v_seen_keys:=array_append(v_seen_keys,v_key);
   if v_type='material' then
    select i.name,i.base_unit,public.cogs_expected_material_qty(i.id,p_so_date),case when coalesce(i.last_purchase_price_per_base,0)>0 then i.last_purchase_price_per_base else nullif(i.reference_price_per_base,0) end
-   into v_name,v_unit,v_expected,v_cost from public.barapp_items i where i.id=v_id and i.division_id=p_division_id and i.active=true and coalesce(i.is_supply,false)=false and i.created_at::date<=p_so_date;
+   into v_name,v_unit,v_expected,v_cost from public.barapp_items i where i.id=v_id and i.division_id=p_division_id and i.active=true and coalesce(i.is_supply,false)=false and (i.created_at at time zone 'Asia/Jakarta')::date<=p_so_date;
    if not found then raise exception 'COGS_SO_ITEM_INVALID_OR_INACTIVE'; end if;
   else
    if not public.division_module_enabled(p_division_id,'cogs_wip') then raise exception 'COGS_WIP_MODULE_DISABLED' using errcode='42501'; end if;
    select w.name,w.yield_unit,public.cogs_expected_wip_qty(w.id,p_division_id,p_so_date),co.unit_cost
    into v_name,v_unit,v_expected,v_cost from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co
-   where w.id=v_id and w.division_id=p_division_id and w.active=true and w.created_at::date<=p_so_date;
+   where w.id=v_id and w.division_id=p_division_id and w.active=true and (w.created_at at time zone 'Asia/Jakarta')::date<=p_so_date;
    if not found then raise exception 'COGS_SO_WIP_INVALID_OR_INACTIVE'; end if;
   end if;
   insert into public.cogs_daily_so_lines(so_id,component_type,item_id,component_wip_id,component_name_snapshot,unit_snapshot,expected_qty_base,counted_qty_base,variance_qty_base,unit_cost_snapshot,variance_value_snapshot)
