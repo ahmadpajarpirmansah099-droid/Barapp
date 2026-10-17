@@ -144,32 +144,96 @@ end;
 $$;
 revoke all on function public.cogs_assert_ops_division(uuid) from public,anon,authenticated;
 
+-- Table-read authorization must respect both the enabled module and the user's
+-- feature permission. The frontend loads several COGS datasets together, so each
+-- entity allows the specific related modules that genuinely need to read it.
+create or replace function public.cogs_ops_can_read_entity(
+ p_division_id uuid,p_entity text
+) returns boolean
+language plpgsql stable security definer set search_path=public,auth
+as $barapp_read_guard$
+begin
+ if auth.uid() is null or not public.cogs_ops_can_access_division(p_division_id) then
+  return false;
+ end if;
+ case p_entity
+  when 'wip' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_wip') and (public.has_perm('cogs.wip.view') or public.has_perm('cogs.wip.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')))
+    or (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage')));
+  when 'wip_recipe' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_wip') and (public.has_perm('cogs.wip.view') or public.has_perm('cogs.wip.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+  when 'menus' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+  when 'menu_recipe' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+  when 'production' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+  when 'opening_wip' then
+   return public.division_module_enabled(p_division_id,'cogs_production')
+    and (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage'));
+  when 'production_inputs' then
+   return public.division_module_enabled(p_division_id,'cogs_production')
+    and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage'));
+  when 'sales' then
+   return
+    (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+  when 'sales_lines' then
+   return public.division_module_enabled(p_division_id,'cogs_sales')
+    and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+  when 'daily_so' then
+   return public.division_module_enabled(p_division_id,'cogs_daily_so')
+    and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+  else
+   return false;
+ end case;
+end;
+$barapp_read_guard$;
+revoke all on function public.cogs_ops_can_read_entity(uuid,text) from public,anon;
+grant execute on function public.cogs_ops_can_read_entity(uuid,text) to authenticated;
+
 drop policy if exists cogs_wip_select_admin on public.cogs_wip;
-create policy cogs_wip_select_admin on public.cogs_wip for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_wip'));
+create policy cogs_wip_select_admin on public.cogs_wip for select to authenticated using(public.cogs_ops_can_read_entity(division_id,'wip'));
 drop policy if exists cogs_wip_lines_select_admin on public.cogs_wip_recipe_lines;
 create policy cogs_wip_lines_select_admin on public.cogs_wip_recipe_lines for select to authenticated
-using(exists(select 1 from public.cogs_wip w where w.id=wip_id and public.cogs_ops_can_access_division(w.division_id) and public.division_module_enabled(w.division_id,'cogs_wip')));
+using(exists(select 1 from public.cogs_wip w where w.id=wip_id and public.cogs_ops_can_read_entity(w.division_id,'wip_recipe')));
 drop policy if exists cogs_menus_select_admin on public.cogs_menus;
-create policy cogs_menus_select_admin on public.cogs_menus for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_menu'));
+create policy cogs_menus_select_admin on public.cogs_menus for select to authenticated using(public.cogs_ops_can_read_entity(division_id,'menus'));
 drop policy if exists cogs_menu_lines_select_admin on public.cogs_menu_recipe_lines;
 create policy cogs_menu_lines_select_admin on public.cogs_menu_recipe_lines for select to authenticated
-using(exists(select 1 from public.cogs_menus m where m.id=menu_id and public.cogs_ops_can_access_division(m.division_id) and public.division_module_enabled(m.division_id,'cogs_menu')));
+using(exists(select 1 from public.cogs_menus m where m.id=menu_id and public.cogs_ops_can_read_entity(m.division_id,'menu_recipe')));
 
 drop policy if exists cogs_production_select_admin on public.cogs_production_batches;
-create policy cogs_production_select_admin on public.cogs_production_batches for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_production'));
+create policy cogs_production_select_admin on public.cogs_production_batches for select to authenticated using((cost_source='opening' and public.cogs_ops_can_read_entity(division_id,'opening_wip')) or public.cogs_ops_can_read_entity(division_id,'production'));
 drop policy if exists cogs_production_inputs_select_admin on public.cogs_production_inputs;
 create policy cogs_production_inputs_select_admin on public.cogs_production_inputs for select to authenticated
-using(exists(select 1 from public.cogs_production_batches b where b.id=batch_id and public.cogs_ops_can_access_division(b.division_id) and public.division_module_enabled(b.division_id,'cogs_production')));
+using(exists(select 1 from public.cogs_production_batches b where b.id=batch_id and public.cogs_ops_can_read_entity(b.division_id,'production_inputs')));
 drop policy if exists cogs_menu_sales_select_admin on public.cogs_menu_sales;
-create policy cogs_menu_sales_select_admin on public.cogs_menu_sales for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_sales'));
+create policy cogs_menu_sales_select_admin on public.cogs_menu_sales for select to authenticated using(public.cogs_ops_can_read_entity(division_id,'sales'));
 drop policy if exists cogs_menu_sales_lines_select_admin on public.cogs_menu_sales_lines;
 create policy cogs_menu_sales_lines_select_admin on public.cogs_menu_sales_lines for select to authenticated
-using(exists(select 1 from public.cogs_menu_sales s where s.id=sale_id and public.cogs_ops_can_access_division(s.division_id) and public.division_module_enabled(s.division_id,'cogs_sales')));
+using(exists(select 1 from public.cogs_menu_sales s where s.id=sale_id and public.cogs_ops_can_read_entity(s.division_id,'sales_lines')));
 drop policy if exists cogs_daily_so_select_admin on public.cogs_daily_so;
-create policy cogs_daily_so_select_admin on public.cogs_daily_so for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_daily_so'));
+create policy cogs_daily_so_select_admin on public.cogs_daily_so for select to authenticated using(public.cogs_ops_can_read_entity(division_id,'daily_so'));
 drop policy if exists cogs_daily_so_lines_select_admin on public.cogs_daily_so_lines;
 create policy cogs_daily_so_lines_select_admin on public.cogs_daily_so_lines for select to authenticated
-using(exists(select 1 from public.cogs_daily_so s where s.id=so_id and public.cogs_ops_can_access_division(s.division_id) and public.division_module_enabled(s.division_id,'cogs_daily_so')));
+using(exists(select 1 from public.cogs_daily_so s where s.id=so_id and public.cogs_ops_can_read_entity(s.division_id,'daily_so')));
 
 revoke all on public.cogs_production_batches,public.cogs_production_inputs,public.cogs_menu_sales,public.cogs_menu_sales_lines,public.cogs_daily_so,public.cogs_daily_so_lines from public,anon,authenticated;
 grant select on public.cogs_production_batches,public.cogs_production_inputs,public.cogs_menu_sales,public.cogs_menu_sales_lines,public.cogs_daily_so,public.cogs_daily_so_lines to authenticated;
