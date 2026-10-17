@@ -2350,14 +2350,22 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
 .cogs-table{border-collapse:separate;border-spacing:0}
 .cogs-table td,.cogs-table th{vertical-align:middle}
 .cogs-table input,.cogs-table select{min-width:84px;max-width:100%}
-/* Mobile-only sizing for Penjualan Menu entry fields; desktop table sizing remains unchanged. */
+/* Mobile Penjualan Menu: constrain the table and quantity input to the viewport.
+   Desktop styles are intentionally untouched. */
 @media(max-width:600px){
- .ops-sale-entry-table{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}
- .ops-sale-entry-table th:nth-child(1),.ops-sale-entry-table td:nth-child(1){width:46%!important}
- .ops-sale-entry-table th:nth-child(2),.ops-sale-entry-table td:nth-child(2){width:39%!important}
- .ops-sale-entry-table th:nth-child(3),.ops-sale-entry-table td:nth-child(3){width:15%!important}
- .ops-sale-entry-table th,.ops-sale-entry-table td{padding:9px 6px!important;white-space:normal!important;overflow-wrap:anywhere}
- .ops-sale-entry-table .ops-entry-qty{display:block;width:100%!important;max-width:150px!important;min-width:0!important;box-sizing:border-box!important;padding:9px 8px!important}
+ main .cogs-wrap .cogs-scroll:has(>.ops-sale-entry-table){overflow-x:hidden!important;width:100%!important;min-width:0!important}
+ main .cogs-wrap table.ops-sale-entry-table{display:table!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;box-sizing:border-box!important}
+ main .cogs-wrap .ops-sale-entry-table th,
+ main .cogs-wrap .ops-sale-entry-table td{box-sizing:border-box!important;min-width:0!important;padding:10px 7px!important;white-space:normal!important;overflow-wrap:anywhere;overflow:hidden}
+ main .cogs-wrap .ops-sale-entry-table th:nth-child(1),
+ main .cogs-wrap .ops-sale-entry-table td:nth-child(1){width:44%!important}
+ main .cogs-wrap .ops-sale-entry-table th:nth-child(2),
+ main .cogs-wrap .ops-sale-entry-table td:nth-child(2){width:56%!important}
+ main .cogs-wrap .ops-sale-entry-table th:nth-child(3),
+ main .cogs-wrap .ops-sale-entry-table td:nth-child(3){display:none!important}
+ main .cogs-wrap .ops-sale-entry-table th{font-size:10px!important;line-height:1.25!important}
+ main .cogs-wrap .ops-sale-entry-table td b{overflow-wrap:anywhere;word-break:normal}
+ main .cogs-wrap .ops-sale-entry-table input.ops-entry-qty{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:9px 7px!important;box-sizing:border-box!important;font-size:14px!important}
 }
 .inv-actions{align-items:center}
 .inv-actions>*{min-width:0}
