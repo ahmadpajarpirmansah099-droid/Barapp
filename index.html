@@ -3280,7 +3280,7 @@ function opsApprovedReportHtml(div,date){
   const expense=sum((INV.stockOut||[]).filter(x=>String(x.item_id)===String(id)&&String(x.from_division_id)===String(div)&&x.status==='posted'&&String(x.out_date)===String(date)),x=>x.qty_base);
   return '<tr><td>'+esc(l.component_name_snapshot||'Item')+'</td><td>'+cgNum(Number(l.expected_qty_base||0))+'</td><td>'+cgNum(Number(l.counted_qty_base||0))+'</td><td>'+cgNum(sales)+'</td><td>'+cgNum(production)+'</td><td>'+cgNum(expense)+'</td><td>'+cgNum(Number(l.variance_qty_base||0))+'</td><td>'+cgMoney(Number(l.variance_value_snapshot||0))+'</td></tr>';
  }).join('');
- return '<div class="card ops-approved-report"><div class="cogs-top"><div><h3>Laporan Daily SO</h3><p class="mu">'+esc(date)+' · '+esc(opsDivName(div))+' · Approved</p></div><button class="btn s" onclick="opsPrintApprovedReport(\''+esc(div)+'\',\''+esc(date)+'\')">Cetak / Simpan PDF</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan / WIP</th><th>Jumlah sistem</th><th>Stok fisik</th><th>Pemakaian sales</th><th>Pemakaian WIP</th><th>Terpakai pengeluaran</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(body||'<tr><td colspan="8" class="mu">Tidak ada detail Daily SO.</td></tr>')+'</tbody></table></div><p class="mu">Laporan hanya ditampilkan setelah Approval Closing berstatus Approved.</p></div>';
+ return '<div class="card ops-approved-report"><div class="cogs-top"><div><h3>Laporan Daily SO</h3><p class="mu">'+esc(date)+' · '+esc(opsDivName(div))+' · Approved</p></div><button class="btn s" onclick="exportDailySOExcel(\''+esc(date)+'\',\''+esc(div)+'\')">Unduh Excel</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan / WIP</th><th>Jumlah sistem</th><th>Stok fisik</th><th>Pemakaian sales</th><th>Pemakaian WIP</th><th>Terpakai pengeluaran</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(body||'<tr><td colspan="8" class="mu">Tidak ada detail Daily SO.</td></tr>')+'</tbody></table></div><p class="mu">Laporan hanya ditampilkan setelah Approval Closing berstatus Approved.</p></div>';
 }
 function opsPrintApprovedReport(div,date){
  if(OPS.approvedReportKey!==String(div)+'|'+String(date)||OPS.approvedReportStatus!=='approved')return toast('Laporan hanya tersedia setelah Approved.','warn');
@@ -3515,10 +3515,10 @@ async function opsDoCancel(kind,id){
 }
 function opsCancelButton(kind,id){return '<button class="btn o x" onclick="opsConfirmCancel(&quot;'+kind+'&quot;,&quot;'+id+'&quot;)">Batalkan</button>'}
 
-async function exportDailySOExcel(){
+async function exportDailySOExcel(reportDate,reportDivision){
  if(!window.XLSX)return toast('Modul Excel belum siap. Tunggu sebentar lalu coba lagi.','warn');
  if(!INV.ready)await invLoad(true);if(!CG.ready)await cgLoad(true);
- const date=OPS.soHistoryDate||OPS.date||opsDate(),division=OPS.division||CG.divs[0]?.id||'';
+ const date=reportDate||OPS.soHistoryDate||OPS.date||opsDate(),division=reportDivision||OPS.division||CG.divs[0]?.id||'';
  const so=CG.dailySO.find(x=>String(x.division_id)===String(division)&&String(x.so_date)===String(date)&&x.status==='submitted');
  if(!so)return toast('Belum ada Daily SO tersimpan untuk divisi dan tanggal yang dipilih.','warn');
  const lines=CG.dailySOLines.filter(x=>String(x.so_id)===String(so.id));
