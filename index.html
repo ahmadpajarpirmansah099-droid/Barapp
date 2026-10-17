@@ -2255,71 +2255,7 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
   .inv-actions .btn{flex:1 1 100%}
 }
 `;
-const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'
-/* BARAPP UI polish patch — CSS only; preserve all app logic and integrations. */
-:root{
-  --barapp-ui-radius:14px;
-}
-.app-top{
-  box-sizing:border-box;
-  width:100%;
-}
-.hd,.hd-r,.hd-t{min-width:0}
-.hd-r{flex-wrap:nowrap}
-.hd-t h1{letter-spacing:-.025em}
-.ibtn,.tile,.nvb,.dd,.card,.md{
-  transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease;
-}
-.nvb{border-radius:12px}
-.nvb:focus-visible,.ibtn:focus-visible,.tile:focus-visible,
-.dd button:focus-visible,.btn:focus-visible,
-input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:2px solid var(--ac);
-  outline-offset:2px;
-}
-.side{overscroll-behavior:contain;scrollbar-width:thin}
-.dd{overscroll-behavior:contain}
-@media(min-width:900px){
-  .side{box-sizing:border-box;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-  .brand{flex:0 0 auto}
-  .nv{padding-left:12px;padding-right:12px}
-  .nvb{min-height:42px}
-  .app-top{padding-left:clamp(20px,2vw,32px);padding-right:clamp(20px,2vw,32px)}
-  main{min-width:0}
-}
-@media(max-width:899px){
-  .app-top{padding-left:12px;padding-right:12px}
-  .hd{gap:8px}
-  .hd-r{gap:6px}
-  .hd-t{flex:1 1 90px}
-  .hd-t h1{font-size:clamp(15px,4vw,18px)}
-  .hd-t small{max-width:100%;overflow-wrap:anywhere}
-  .dd{right:0;left:auto;max-width:calc(100vw - 24px)}
-  .side{max-height:100dvh}
-}
-@media(max-width:599px){
-  .app-top{padding-top:calc(8px + var(--st));padding-bottom:8px}
-  .brand-m{width:38px;height:38px;flex:0 0 38px;border-radius:12px}
-  .hd{gap:7px}
-  .hd-t{display:none}
-  .hd-r{flex:1 1 auto;min-width:0;justify-content:flex-end;gap:5px}
-  .hd-outlet{flex:1 1 96px;min-width:0;max-width:none}
-  .hd-outlet select{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font-size:12px}
-  .hd-date{display:none}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{
-    width:36px;height:36px;min-width:36px;flex:0 0 36px;border-radius:11px
-  }
-  .hd-r .settings-mn{flex:0 0 36px;min-width:36px}
-  .settings-dd{right:0;left:auto;max-width:calc(100vw - 24px)}
-  .modal{max-width:calc(100vw - 20px)}
-  .modal .grid{gap:8px}
-  main{min-width:0}
-}
-@media(prefers-reduced-motion:reduce){
-  .ibtn,.tile,.nvb,.dd,.card,.md,.nvb .ic{transition:none!important;animation:none!important}
-}
-
-</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
