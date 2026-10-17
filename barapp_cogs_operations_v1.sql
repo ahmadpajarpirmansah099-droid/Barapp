@@ -175,22 +175,26 @@ grant select on public.cogs_production_batches,public.cogs_production_inputs,pub
 create or replace function public.cogs_wip_unit_cost(p_wip_id uuid,p_stack uuid[] default array[]::uuid[])
 returns table(unit_cost numeric,cost_source text)
 language plpgsql security definer set search_path=public
-as $$
-declare v_yield numeric; v_total numeric:=0; v_last numeric; v_ref numeric; v_price numeric; v_src text:='purchase'; v_child_cost numeric; v_child_src text; v_line record; v_has_lines boolean:=false;
+as $
+declare v_yield numeric; v_division uuid; v_component_division uuid; v_total numeric:=0; v_last numeric; v_ref numeric; v_price numeric; v_src text:='purchase'; v_child_cost numeric; v_child_src text; v_line record; v_has_lines boolean:=false;
 begin
  if p_wip_id=any(coalesce(p_stack,array[]::uuid[])) then raise exception 'COGS_WIP_CYCLE'; end if;
- select yield_qty into v_yield from public.cogs_wip where id=p_wip_id and active=true;
+ select yield_qty,division_id into v_yield,v_division from public.cogs_wip where id=p_wip_id and active=true;
  if not found or coalesce(v_yield,0)<=0 then raise exception 'COGS_WIP_NOT_ACTIVE'; end if;
  for v_line in select * from public.cogs_wip_recipe_lines where wip_id=p_wip_id loop
   v_has_lines:=true;
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true;
+   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE'; end if;
+   if v_component_division is distinct from v_division then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    v_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
    if v_price is null then raise exception 'COGS_PRICE_MISSING'; end if;
    if coalesce(v_last,0)<=0 then v_src:='reference'; end if;
    v_total:=v_total+v_line.qty_base*v_price;
   else
+   select division_id into v_component_division from public.cogs_wip where id=v_line.component_wip_id and active=true;
+   if not found then raise exception 'COGS_WIP_NOT_ACTIVE'; end if;
+   if v_component_division is distinct from v_division then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    select c.unit_cost,c.cost_source into v_child_cost,v_child_src from public.cogs_wip_unit_cost(v_line.component_wip_id,coalesce(p_stack,array[]::uuid[])||p_wip_id) c;
    v_total:=v_total+v_line.qty_base*v_child_cost;
    if v_child_src='reference' then v_src:='reference'; end if;
@@ -199,7 +203,7 @@ begin
  if not v_has_lines then raise exception 'COGS_RECIPE_EMPTY'; end if;
  return query select v_total/v_yield,v_src;
 end;
-$$;
+$;
 create or replace function public.cogs_wip_unit_cost_or_null(p_wip_id uuid)
 returns table(unit_cost numeric,cost_source text) language plpgsql security definer set search_path=public
 as $$ begin return query select c.unit_cost,c.cost_source from public.cogs_wip_unit_cost(p_wip_id,array[]::uuid[]) c;
@@ -207,21 +211,25 @@ exception when others then return query select null::numeric,'unknown'::text; en
 create or replace function public.cogs_menu_unit_cost(p_menu_id uuid)
 returns table(unit_hpp numeric,selling_price numeric,cost_source text)
 language plpgsql security definer set search_path=public
-as $$
-declare v_menu record; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_child_cost numeric; v_child_src text; v_total numeric:=0; v_src text:='purchase'; v_has_lines boolean:=false;
+as $
+declare v_menu record; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_component_division uuid; v_child_cost numeric; v_child_src text; v_total numeric:=0; v_src text:='purchase'; v_has_lines boolean:=false;
 begin
  select * into v_menu from public.cogs_menus where id=p_menu_id and active=true;
  if not found then raise exception 'COGS_MENU_NOT_ACTIVE'; end if;
  for v_line in select * from public.cogs_menu_recipe_lines where menu_id=p_menu_id loop
   v_has_lines:=true;
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true;
+   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE'; end if;
+   if v_component_division is distinct from v_menu.division_id then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    v_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
    if v_price is null then raise exception 'COGS_PRICE_MISSING'; end if;
    if coalesce(v_last,0)<=0 then v_src:='reference'; end if;
    v_total:=v_total+v_line.qty_base*v_price;
   else
+   select division_id into v_component_division from public.cogs_wip where id=v_line.component_wip_id and active=true;
+   if not found then raise exception 'COGS_WIP_NOT_ACTIVE'; end if;
+   if v_component_division is distinct from v_menu.division_id then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    select c.unit_cost,c.cost_source into v_child_cost,v_child_src from public.cogs_wip_unit_cost(v_line.component_wip_id,array[]::uuid[]) c;
    v_total:=v_total+v_line.qty_base*v_child_cost;
    if v_child_src='reference' then v_src:='reference'; end if;
@@ -230,7 +238,7 @@ begin
  if not v_has_lines then raise exception 'COGS_RECIPE_EMPTY'; end if;
  return query select v_total,v_menu.selling_price,v_src;
 end;
-$$;
+$;
 revoke all on function public.cogs_wip_unit_cost(uuid,uuid[]) from public,anon,authenticated;
 revoke all on function public.cogs_wip_unit_cost_or_null(uuid) from public,anon,authenticated;
 revoke all on function public.cogs_menu_unit_cost(uuid) from public,anon,authenticated;
