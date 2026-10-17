@@ -2255,7 +2255,31 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
   .inv-actions .btn{flex:1 1 100%}
 }
 `;
-const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'
+/* Mobile header layout repair: keep outlet and actions on one clean row. */
+@media(max-width:599px){
+  .app-top{box-sizing:border-box;width:100%;padding:10px 12px!important;overflow:visible}
+  .hd{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;min-width:0}
+  .hd-t{display:none!important}
+  .brand-m{flex:0 0 38px!important;width:38px!important;height:38px!important}
+  .hd-r{display:flex!important;flex:1 1 auto!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important;min-width:0}
+  .hd-outlet{order:0!important;flex:1 1 110px!important;min-width:0!important;width:auto!important;max-width:none!important;padding:0!important}
+  .hd-outlet>small{font-size:10px!important;line-height:1.1!important;margin-bottom:2px}
+  .hd-outlet select{width:100%!important;min-width:0!important;max-width:100%!important;height:36px!important;min-height:36px!important;padding:4px 22px 4px 8px!important;font-size:11px!important;box-sizing:border-box!important}
+  .hd-date{display:none!important}
+  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{flex:0 0 36px!important;width:36px!important;height:36px!important;min-width:36px!important;border-radius:11px!important}
+  .hd-r .settings-mn{flex:0 0 36px!important;min-width:36px!important}
+  .hd-r .settings-dd{right:0!important;left:auto!important;max-width:calc(100vw - 24px)!important}
+}
+@media(min-width:600px) and (max-width:899px){
+  .hd{gap:10px!important}
+  .hd-t{flex:1 1 100px!important;min-width:0!important}
+  .hd-r{gap:6px!important;min-width:0}
+  .hd-outlet{min-width:110px!important;max-width:145px!important}
+  .hd-date{display:none!important}
+}
+
+</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
