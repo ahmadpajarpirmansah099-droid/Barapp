@@ -1707,7 +1707,7 @@ function invBulkItemsHtml(divId,values={}){
   const units=invConv(x),chosen=values[x.id]?.unit||x.base_unit,qty=values[x.id]?.qty??'';
   return '<tr><td><b>'+esc(x.name)+'</b><br><small class="mu">'+esc(invDiv(x.division_id))+'</small></td><td><select class="in-bulk-unit" data-item="'+x.id+'" style="min-width:100px;width:100%">'+units.map(c=>'<option value="'+esc(c.unit)+'" '+(String(c.unit).toLowerCase()===String(chosen).toLowerCase()?'selected':'')+'>'+esc(c.unit)+'</option>').join('')+'</select></td><td><input class="in-bulk-qty" data-item="'+x.id+'" type="number" min="0" step="any" inputmode="decimal" placeholder="Kosong = lewati" value="'+esc(qty)+'" style="min-width:110px;width:100%"></td><td class="mu">'+esc(x.base_unit)+'</td></tr>';
  }).join(''):'<tr><td colspan="4" class="mu">Belum ada barang aktif di divisi ini.</td></tr>';
- const ws=(CG.wips||[]).filter(w=>w.active&&String(w.division_id)===String(divId)).sort((a,b)=>invAlpha(a.name,b.name));
+ const wipCatalog=INV.wips&&INV.wips.length?INV.wips:(CG.wips||[]),ws=wipCatalog.filter(w=>w.active&&String(w.division_id)===String(divId)).sort((a,b)=>invAlpha(a.name,b.name));
  const wip=ws.length?ws.map(w=>'<tr><td><b>'+esc(w.name)+'</b><br><small class="mu">WIP · '+esc(invDiv(w.division_id))+'</small></td><td class="mu">'+esc(w.yield_unit||'')+'</td><td><input class="in-bulk-wip-qty" data-wip="'+w.id+'" type="number" min="0" step="any" inputmode="decimal" placeholder="Kosong = lewati" value="'+esc(values['wip_'+w.id]?.qty??'')+'" style="min-width:110px;width:100%"></td><td class="mu">'+esc(w.yield_unit||'')+'</td></tr>').join(''):'<tr><td colspan="4" class="mu">Belum ada WIP aktif di divisi ini.</td></tr>';
  return '<tr><td colspan="4" style="background:var(--tint);font-weight:700;text-align:left">BAHAN / BARANG</td></tr>'+mats+'<tr><td colspan="4" style="background:var(--tint);font-weight:700;text-align:left">WIP · STOK AWAL (tidak memotong resep bahan)</td></tr>'+wip;
 }
@@ -1740,7 +1740,7 @@ async function invSaveBulkReceipt(){
   records.push({item_id:x.id,division_id:x.division_id,received_at:date,qty_input:qty,unit_input:unit,qty_base,invoice_total:null,estimated_total:est,price_source:'master',status:'posted',notes:note||'Input massal / stok awal'});
  }
  for(const e of wipRows){
-  const raw=e.value.trim(),qty=raw===''?0:Number(raw),w=(CG.wips||[]).find(z=>String(z.id)===String(e.dataset.wip));
+  const raw=e.value.trim(),qty=raw===''?0:Number(raw),w=(INV.wips&&INV.wips.length?INV.wips:(CG.wips||[])).find(z=>String(z.id)===String(e.dataset.wip));
   if(raw!==''&&(!Number.isFinite(qty)||qty<0))return toast('Jumlah WIP harus 0 atau lebih.','err');
   if(!w||!w.active||String(w.division_id)!==String(divId)||qty<=0)continue;
   wipRecords.push({id:w.id,qty:qty,name:w.name});
