@@ -422,6 +422,56 @@ end; $$;
 revoke all on function public.cogs_expected_material_qty(uuid,date) from public,anon,authenticated;
 revoke all on function public.cogs_expected_wip_qty(uuid,uuid,date) from public,anon,authenticated;
 
+-- Inventory-only callers need end-of-day stock after a same-day SO has been submitted.
+-- Keep the Daily SO calculator's strict prior-day cutoff separate from on-hand positions.
+create or replace function public.cogs_expected_wip_on_hand_qty(p_wip_id uuid,p_division_id uuid,p_as_of date)
+returns numeric language plpgsql stable security definer set search_path=public
+as $barapp_wip_on_hand$
+declare v_cut date; v_base numeric;
+begin
+ if p_as_of is null or p_as_of>(now() at time zone 'Asia/Jakarta')::date then raise exception 'INVALID_INVENTORY_AS_OF_DATE'; end if;
+ select s.so_date,l.counted_qty_base into v_cut,v_base
+ from public.cogs_daily_so s join public.cogs_daily_so_lines l on l.so_id=s.id
+ where s.division_id=p_division_id and s.status='submitted' and s.so_date<=p_as_of
+  and l.component_type='wip' and l.component_wip_id=p_wip_id
+ order by s.so_date desc limit 1;
+ if found then
+  return coalesce(v_base,0)
+   +coalesce((select sum(b.produced_qty) from public.cogs_production_batches b where b.wip_id=p_wip_id and b.division_id=p_division_id and b.status='posted' and b.produced_at>v_cut and b.produced_at<=p_as_of),0)
+   -coalesce((select sum(l.qty_base) from public.cogs_production_inputs l join public.cogs_production_batches b on b.id=l.batch_id where l.component_type='wip' and l.component_wip_id=p_wip_id and b.division_id=p_division_id and b.status='posted' and b.produced_at>v_cut and b.produced_at<=p_as_of),0)
+   -coalesce((select sum(l.qty_base) from public.cogs_menu_sales_lines l join public.cogs_menu_sales s on s.id=l.sale_id where l.component_type='wip' and l.component_wip_id=p_wip_id and s.division_id=p_division_id and s.status='posted' and s.sold_at>v_cut and s.sold_at<=p_as_of),0)
+   -coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='wip' and o.wip_id=p_wip_id and o.from_division_id=p_division_id and o.status='posted' and o.out_date>v_cut and o.out_date<=p_as_of),0)
+   +coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='wip' and o.target_wip_id=p_wip_id and o.to_division_id=p_division_id and o.category='Move' and o.status='posted' and o.out_date>v_cut and o.out_date<=p_as_of),0);
+ end if;
+ return coalesce((select sum(b.produced_qty) from public.cogs_production_batches b where b.wip_id=p_wip_id and b.division_id=p_division_id and b.status='posted' and b.produced_at<=p_as_of),0)
+  -coalesce((select sum(l.qty_base) from public.cogs_production_inputs l join public.cogs_production_batches b on b.id=l.batch_id where l.component_type='wip' and l.component_wip_id=p_wip_id and b.division_id=p_division_id and b.status='posted' and b.produced_at<=p_as_of),0)
+  -coalesce((select sum(l.qty_base) from public.cogs_menu_sales_lines l join public.cogs_menu_sales s on s.id=l.sale_id where l.component_type='wip' and l.component_wip_id=p_wip_id and s.division_id=p_division_id and s.status='posted' and s.sold_at<=p_as_of),0)
+  -coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='wip' and o.wip_id=p_wip_id and o.from_division_id=p_division_id and o.status='posted' and o.out_date<=p_as_of),0)
+  +coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='wip' and o.target_wip_id=p_wip_id and o.to_division_id=p_division_id and o.category='Move' and o.status='posted' and o.out_date<=p_as_of),0);
+end; $barapp_wip_on_hand$;
+revoke all on function public.cogs_expected_wip_on_hand_qty(uuid,uuid,date) from public,anon,authenticated;
+
+-- Keep the inventory-facing position RPC aligned to current on-hand (SO date <= as-of).
+create or replace function public.barapp_get_wip_positions(p_outlet_id uuid,p_as_of date)
+returns table(wip_id uuid,division_id uuid,qty_base numeric)
+language plpgsql security definer set search_path=public,auth
+as $barapp_wip_positions$
+begin
+ if auth.uid() is null or not (public.has_perm('inventory.view') or public.has_perm('inventory.manage') or public.has_perm('inventory.inbound.view') or public.has_perm('inventory.inbound.manage')) then
+  raise exception 'INVENTORY_VIEW_DENIED' using errcode='42501';
+ end if;
+ if p_outlet_id is null then raise exception 'ACTIVE_OUTLET_REQUIRED'; end if;
+ if p_as_of is null or p_as_of>(now() at time zone 'Asia/Jakarta')::date then raise exception 'INVALID_INVENTORY_AS_OF_DATE'; end if;
+ return query
+ select w.id,w.division_id,public.cogs_expected_wip_on_hand_qty(w.id,w.division_id,p_as_of)
+ from public.cogs_wip w join public.divisions d on d.id=w.division_id
+ where d.outlet_id=p_outlet_id and d.active=true and w.active=true
+  and public.division_module_enabled(w.division_id,'cogs_wip')
+  and public.barapp_can_access_division(w.division_id);
+end; $barapp_wip_positions$;
+revoke all on function public.barapp_get_wip_positions(uuid,date) from public,anon;
+grant execute on function public.barapp_get_wip_positions(uuid,date) to authenticated;
+
 -- Queryable stock position for authorized COGS division only.
 create or replace function public.cogs_get_stock_position(p_division_id uuid,p_as_of date)
 returns table(component_type text,component_id uuid,component_name text,unit text,expected_qty_base numeric,unit_cost numeric,cost_source text)
