@@ -1003,6 +1003,48 @@ ICP.utensils=ICP.soup;
 ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
 const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
+/* Automatic, context-aware icons for card and modal headings across every feature. */
+const cardHeadingIcon=(raw)=>{
+ const t=String(raw||'').toLocaleLowerCase('id-ID').replace(/\\s+/g,' ').trim();
+ const rules=[
+  [/tren|grafik|chart|statistik|perbandingan|ringkasan kinerja/,'bar'],
+  [/menu terlaris|menu|resep|masakan|penjualan menu/,'soup'],
+  [/omzet|penjualan|transaksi|pendapatan|kasir/,'xls'],
+  [/move|transfer|pengeluaran|barang masuk|stok|inventori|persediaan|master barang|master bahan/,'package'],
+  [/approval|closing|persetujuan|disetujui/,'check'],
+  [/daily so|stock opname|opname|selisih/,'grid'],
+  [/produksi|wip|batch/,'sparkles'],
+  [/tanggal|harian|per hari|kalender|periode/,'cal'],
+  [/karyawan|pegawai|absensi|absen|jadwal|lembur|gaji|payroll|kasbon/,'kar'],
+  [/outlet|divisi|cabang/,'grid'],
+  [/supabase|database|sambungan|koneksi/,'database'],
+  [/import|export|excel|laporan|rekap/,'doc'],
+  [/tema|tampilan|warna/,'palette'],
+  [/pengaturan|setting|konfigurasi/,'settings'],
+  [/reset|hapus|delete/,'trash'],
+  [/password|pin|keamanan|akses/,'lock'],
+  [/notifikasi|pesan|email/,'mail'],
+  [/bantuan|peringatan|masalah|gagal|error/,'warn'],
+  [/cakupan|detail|rincian/,'doc'],
+  [/barang|bahan|produk/,'box']
+ ];
+ return (rules.find(([re])=>re.test(t))||[])[1]||'grid';
+};
+const decorateCardHeading=(h)=>{
+ if(!h||h.dataset.cardIconDone==='1'||!(h.matches('.card>h3:first-child,.md>h3:first-child')))return;
+ const title=Array.from(h.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim()||h.textContent.trim();
+ const icon=cardHeadingIcon(title);
+ const span=document.createElement('span');
+ span.className='card-head-icon';
+ span.setAttribute('aria-hidden','true');
+ span.innerHTML=IC(icon,20);
+ h.insertBefore(span,h.firstChild);
+ h.classList.add('has-card-head-icon');
+ h.dataset.cardIconDone='1';
+};
+const decorateAllCardHeadings=(root=document)=>{if(root.matches&&root.matches('.card>h3:first-child,.md>h3:first-child'))decorateCardHeading(root);root.querySelectorAll?.('.card>h3:first-child,.md>h3:first-child').forEach(decorateCardHeading)};
+(()=>{const css=document.createElement('style');css.id='context-card-heading-icons';css.textContent='.card>h3.has-card-head-icon::before,.md>h3.has-card-head-icon::before{display:none!important}.card-head-icon{flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:var(--ac2,var(--tint));border:1.5px solid var(--dk,var(--line));color:var(--ac,var(--tx))}.card-head-icon .ic{width:20px;height:20px;display:block;stroke:currentColor}';document.head.appendChild(css);decorateAllCardHeadings();if(typeof MutationObserver!=='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)decorateAllCardHeadings(n)}))).observe(document.body,{childList:true,subtree:true})})();
+
 
 const sv=()=>{try{const {emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
