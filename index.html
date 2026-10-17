@@ -3548,7 +3548,7 @@ async function exportSuppliesSOExcel(){
  const selectedDiv=OPS.division||CG.divs[0]?.id||'';OPS.division=selectedDiv;
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(selectedDiv)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const wips=CG.wips.filter(w=>w.active&&String(w.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name));
- 
+
  const prodHistoryDate=OPS.prodHistoryDate||opsDate();
  const rows=CG.productions.filter(b=>String(b.division_id)===String(selectedDiv)&&String(b.produced_at)===String(prodHistoryDate)).sort((a,b)=>invAlpha(a.wip_name_snapshot||opsWip(a.wip_id)?.name,b.wip_name_snapshot||opsWip(b.wip_id)?.name)||String(b.produced_at||'').localeCompare(String(a.produced_at||''))).map(b=>{
   const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
@@ -3561,7 +3561,7 @@ async function exportSuppliesSOExcel(){
  const selectedDiv=OPS.division||CG.divs[0]?.id||'';OPS.division=selectedDiv;
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(selectedDiv)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const menus=CG.menus.filter(m=>m.active&&String(m.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name));
- 
+
  const rows=CG.sales.filter(s=>String(s.division_id)===String(selectedDiv)&&String(s.sold_at)===String(OPS.saleHistoryDate||opsDate())).sort((a,b)=>invAlpha(a.menu_name_snapshot,b.menu_name_snapshot)).map(s=>{
   const margin=Number(s.gross_sales_snapshot)-Number(s.total_hpp_snapshot);
   return '<tr><td><b>'+esc(s.menu_name_snapshot)+'</b></td><td>'+cgNum(s.qty)+'</td><td>'+cgMoney(s.selling_price_snapshot)+'</td><td>'+cgMoney(s.total_hpp_snapshot)+'</td><td>'+cgMoney(margin)+'</td><td>'+(s.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='posted'?opsCancelButton('sale',s.id):'')+'</td></tr>';
