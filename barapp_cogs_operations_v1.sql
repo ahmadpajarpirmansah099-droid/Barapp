@@ -145,31 +145,31 @@ $$;
 revoke all on function public.cogs_assert_ops_division(uuid) from public,anon,authenticated;
 
 drop policy if exists cogs_wip_select_admin on public.cogs_wip;
-create policy cogs_wip_select_admin on public.cogs_wip for select to authenticated using(public.cogs_ops_can_access_division(division_id));
+create policy cogs_wip_select_admin on public.cogs_wip for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_wip'));
 drop policy if exists cogs_wip_lines_select_admin on public.cogs_wip_recipe_lines;
 create policy cogs_wip_lines_select_admin on public.cogs_wip_recipe_lines for select to authenticated
-using(exists(select 1 from public.cogs_wip w where w.id=wip_id and public.cogs_ops_can_access_division(w.division_id)));
+using(exists(select 1 from public.cogs_wip w where w.id=wip_id and public.cogs_ops_can_access_division(w.division_id) and public.division_module_enabled(w.division_id,'cogs_wip')));
 drop policy if exists cogs_menus_select_admin on public.cogs_menus;
-create policy cogs_menus_select_admin on public.cogs_menus for select to authenticated using(public.cogs_ops_can_access_division(division_id));
+create policy cogs_menus_select_admin on public.cogs_menus for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_menu'));
 drop policy if exists cogs_menu_lines_select_admin on public.cogs_menu_recipe_lines;
 create policy cogs_menu_lines_select_admin on public.cogs_menu_recipe_lines for select to authenticated
-using(exists(select 1 from public.cogs_menus m where m.id=menu_id and public.cogs_ops_can_access_division(m.division_id)));
+using(exists(select 1 from public.cogs_menus m where m.id=menu_id and public.cogs_ops_can_access_division(m.division_id) and public.division_module_enabled(m.division_id,'cogs_menu')));
 
 drop policy if exists cogs_production_select_admin on public.cogs_production_batches;
-create policy cogs_production_select_admin on public.cogs_production_batches for select to authenticated using(public.cogs_ops_can_access_division(division_id));
+create policy cogs_production_select_admin on public.cogs_production_batches for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_production'));
 drop policy if exists cogs_production_inputs_select_admin on public.cogs_production_inputs;
 create policy cogs_production_inputs_select_admin on public.cogs_production_inputs for select to authenticated
-using(exists(select 1 from public.cogs_production_batches b where b.id=batch_id and public.cogs_ops_can_access_division(b.division_id)));
+using(exists(select 1 from public.cogs_production_batches b where b.id=batch_id and public.cogs_ops_can_access_division(b.division_id) and public.division_module_enabled(b.division_id,'cogs_production')));
 drop policy if exists cogs_menu_sales_select_admin on public.cogs_menu_sales;
-create policy cogs_menu_sales_select_admin on public.cogs_menu_sales for select to authenticated using(public.cogs_ops_can_access_division(division_id));
+create policy cogs_menu_sales_select_admin on public.cogs_menu_sales for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_sales'));
 drop policy if exists cogs_menu_sales_lines_select_admin on public.cogs_menu_sales_lines;
 create policy cogs_menu_sales_lines_select_admin on public.cogs_menu_sales_lines for select to authenticated
-using(exists(select 1 from public.cogs_menu_sales s where s.id=sale_id and public.cogs_ops_can_access_division(s.division_id)));
+using(exists(select 1 from public.cogs_menu_sales s where s.id=sale_id and public.cogs_ops_can_access_division(s.division_id) and public.division_module_enabled(s.division_id,'cogs_sales')));
 drop policy if exists cogs_daily_so_select_admin on public.cogs_daily_so;
-create policy cogs_daily_so_select_admin on public.cogs_daily_so for select to authenticated using(public.cogs_ops_can_access_division(division_id));
+create policy cogs_daily_so_select_admin on public.cogs_daily_so for select to authenticated using(public.cogs_ops_can_access_division(division_id) and public.division_module_enabled(division_id,'cogs_daily_so'));
 drop policy if exists cogs_daily_so_lines_select_admin on public.cogs_daily_so_lines;
 create policy cogs_daily_so_lines_select_admin on public.cogs_daily_so_lines for select to authenticated
-using(exists(select 1 from public.cogs_daily_so s where s.id=so_id and public.cogs_ops_can_access_division(s.division_id)));
+using(exists(select 1 from public.cogs_daily_so s where s.id=so_id and public.cogs_ops_can_access_division(s.division_id) and public.division_module_enabled(s.division_id,'cogs_daily_so')));
 
 revoke all on public.cogs_production_batches,public.cogs_production_inputs,public.cogs_menu_sales,public.cogs_menu_sales_lines,public.cogs_daily_so,public.cogs_daily_so_lines from public,anon,authenticated;
 grant select on public.cogs_production_batches,public.cogs_production_inputs,public.cogs_menu_sales,public.cogs_menu_sales_lines,public.cogs_daily_so,public.cogs_daily_so_lines to authenticated;
@@ -303,7 +303,8 @@ returns table(component_type text,component_id uuid,component_name text,unit tex
 language plpgsql security definer set search_path=public
 as $$
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_daily_so');
+ if not (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  return query
  select 'material'::text,i.id,i.name,i.base_unit,public.cogs_expected_material_qty(i.id,p_as_of),
   case when coalesce(i.last_purchase_price_per_base,0)>0 then i.last_purchase_price_per_base else nullif(i.reference_price_per_base,0) end,
@@ -323,7 +324,8 @@ returns uuid language plpgsql security definer set search_path=public
 as $$
 declare v_yield numeric; v_unit text; v_wip_name text; v_unit_cost numeric; v_total numeric; v_source text; v_batch uuid; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_child_cost numeric;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_production');
+ if not public.has_perm('cogs.production.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_produced_at is null or p_produced_at>(now() at time zone 'Asia/Jakarta')::date then raise exception 'COGS_INVALID_PRODUCTION_DATE'; end if;
  if p_produced_qty is null or p_produced_qty<=0 then raise exception 'COGS_INVALID_PRODUCTION_QTY'; end if;
  select yield_qty,yield_unit,name into v_yield,v_unit,v_wip_name from public.cogs_wip where id=p_wip_id and active=true and division_id=p_division_id;
@@ -357,7 +359,8 @@ create or replace function public.cogs_record_opening_wip_stock(
 as $barapp_opening_wip$
 declare v_unit text; v_name text; v_batch uuid;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_production');
+ if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
@@ -388,7 +391,8 @@ begin
  where id=p_batch_id and cost_source='opening' and status='posted'
  for update;
  if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
- perform public.cogs_assert_ops_division(v_division);
+ perform public.cogs_assert_division_module(v_division, 'cogs_production');
+  if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
@@ -409,7 +413,8 @@ begin
  where id=p_batch_id and cost_source='opening' and status='posted'
  for update;
  if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
- perform public.cogs_assert_ops_division(v_division);
+ perform public.cogs_assert_division_module(v_division, 'cogs_production');
+ if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  update public.cogs_production_batches
  set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now()
  where id=p_batch_id and cost_source='opening' and status='posted';
@@ -420,7 +425,8 @@ returns uuid language plpgsql security definer set search_path=public
 as $$
 declare v_menu record; v_unit_hpp numeric; v_price numeric; v_source text; v_sale uuid; v_line record; v_last numeric; v_ref numeric; v_component_price numeric; v_child_cost numeric;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_sales');
+ if not public.has_perm('cogs.sales.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_sold_at is null or p_sold_at>(now() at time zone 'Asia/Jakarta')::date then raise exception 'COGS_INVALID_SALE_DATE'; end if;
  if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_SALE_QTY'; end if;
  select * into v_menu from public.cogs_menus where id=p_menu_id and active=true and division_id=p_division_id;
@@ -454,7 +460,8 @@ create or replace function public.cogs_record_production_batch(
 as $barapp_batch_ops$
 declare v_line jsonb; v_wip_id uuid; v_batches numeric; v_yield numeric; v_saved integer:=0;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_production');
+ if not public.has_perm('cogs.production.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_produced_at is null or p_produced_at>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_PRODUCTION_DATE';
  end if;
@@ -483,7 +490,8 @@ create or replace function public.cogs_record_menu_sales_batch(
 as $barapp_batch_ops$
 declare v_line jsonb; v_menu_id uuid; v_qty numeric; v_price numeric; v_saved integer:=0;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_sales');
+ if not public.has_perm('cogs.sales.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_sold_at is null or p_sold_at>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_SALE_DATE';
  end if;
@@ -523,7 +531,8 @@ returns uuid language plpgsql security definer set search_path=public
 as $$
 declare v_so uuid; v_line jsonb; v_type text; v_id uuid; v_count numeric; v_expected numeric; v_name text; v_unit text; v_cost numeric; v_item_count integer; v_seen integer:=0; v_seen_keys text[]:=array[]::text[]; v_key text;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_daily_so');
+ if not public.has_perm('cogs.daily_so.edit') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_so_date is null or p_so_date>(now() at time zone 'Asia/Jakarta')::date then raise exception 'COGS_INVALID_SO_DATE'; end if;
  if jsonb_typeof(coalesce(p_lines,'null'::jsonb))<>'array' then raise exception 'COGS_INVALID_SO_LINES'; end if;
  select (select count(*) from public.barapp_items where division_id=p_division_id and active=true and created_at::date<=p_so_date)
@@ -562,17 +571,20 @@ begin
  if lower(p_kind)='production' then
   select division_id into v_division from public.cogs_production_batches where id=p_id and status='posted';
   if not found then raise exception 'COGS_OPERATION_NOT_FOUND'; end if;
-  perform public.cogs_assert_ops_division(v_division);
+  perform public.cogs_assert_division_module(v_division, 'cogs_production');
+  if not public.has_perm('cogs.production.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
   update public.cogs_production_batches set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now(),notes=concat_ws(E'\n',notes,nullif(trim(coalesce(p_reason,'')),'')) where id=p_id and status='posted';
  elsif lower(p_kind)='sale' then
   select division_id into v_division from public.cogs_menu_sales where id=p_id and status='posted';
   if not found then raise exception 'COGS_OPERATION_NOT_FOUND'; end if;
-  perform public.cogs_assert_ops_division(v_division);
+  perform public.cogs_assert_division_module(v_division, 'cogs_sales');
+  if not public.has_perm('cogs.sales.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
   update public.cogs_menu_sales set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now(),notes=concat_ws(E'\n',notes,nullif(trim(coalesce(p_reason,'')),'')) where id=p_id and status='posted';
  elsif lower(p_kind)='daily_so' then
   select division_id into v_division from public.cogs_daily_so where id=p_id and status='submitted';
   if not found then raise exception 'COGS_OPERATION_NOT_FOUND'; end if;
-  perform public.cogs_assert_ops_division(v_division);
+  perform public.cogs_assert_division_module(v_division, 'cogs_daily_so');
+  if not public.has_perm('cogs.daily_so.edit') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
   update public.cogs_daily_so set status='void',voided_by=auth.uid(),voided_at=now(),notes=concat_ws(E'\n',notes,nullif(trim(coalesce(p_reason,'')),'')) where id=p_id and status='submitted';
  else raise exception 'COGS_INVALID_OPERATION_KIND';
  end if;
@@ -596,7 +608,8 @@ returns uuid language plpgsql security definer set search_path=public
 as $$
 declare v_parent uuid; v_line jsonb; v_type text; v_id uuid; v_qty numeric; v_unit text; v_base text; v_conv jsonb; v_factor numeric; v_child_unit text; v_child_div uuid; v_cycle boolean;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_wip');
+ if not public.has_perm('cogs.wip.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if nullif(trim(p_name),'') is null or length(trim(p_name))>120 then raise exception 'INVALID_WIP_NAME'; end if;
  if p_yield_qty is null or p_yield_qty<=0 or nullif(trim(p_yield_unit),'') is null or length(trim(p_yield_unit))>32 then raise exception 'INVALID_WIP_YIELD'; end if;
  if jsonb_typeof(coalesce(p_lines,'[]'::jsonb))<>'array' then raise exception 'INVALID_RECIPE_LINES'; end if;
@@ -633,7 +646,8 @@ returns uuid language plpgsql security definer set search_path=public
 as $$
 declare v_parent uuid; v_line jsonb; v_type text; v_id uuid; v_qty numeric; v_unit text; v_base text; v_conv jsonb; v_factor numeric; v_child_unit text; v_child_div uuid;
 begin
- perform public.cogs_assert_ops_division(p_division_id);
+ perform public.cogs_assert_division_module(p_division_id, 'cogs_menu');
+ if not public.has_perm('cogs.menu.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if nullif(trim(p_name),'') is null or length(trim(p_name))>120 then raise exception 'INVALID_MENU_NAME'; end if;
  if p_selling_price is null or p_selling_price<0 then raise exception 'INVALID_SELLING_PRICE'; end if;
  if jsonb_typeof(coalesce(p_lines,'[]'::jsonb))<>'array' then raise exception 'INVALID_RECIPE_LINES'; end if;
@@ -666,14 +680,16 @@ create or replace function public.cogs_set_wip_active(p_id uuid,p_active boolean
 returns void language plpgsql security definer set search_path=public
 as $$ declare v_division uuid; begin
  select division_id into v_division from public.cogs_wip where id=p_id; if not found then raise exception 'WIP_NOT_FOUND'; end if;
- perform public.cogs_assert_ops_division(v_division);
+ perform public.cogs_assert_division_module(v_division, 'cogs_wip');
+ if not public.has_perm('cogs.wip.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  update public.cogs_wip set active=coalesce(p_active,false),updated_by=auth.uid() where id=p_id;
 end; $$;
 create or replace function public.cogs_set_menu_active(p_id uuid,p_active boolean)
 returns void language plpgsql security definer set search_path=public
 as $$ declare v_division uuid; begin
  select division_id into v_division from public.cogs_menus where id=p_id; if not found then raise exception 'MENU_NOT_FOUND'; end if;
- perform public.cogs_assert_ops_division(v_division);
+ perform public.cogs_assert_division_module(v_division, 'cogs_menu');
+ if not public.has_perm('cogs.menu.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  update public.cogs_menus set active=coalesce(p_active,false),updated_by=auth.uid() where id=p_id;
 end; $$;
 revoke all on function public.cogs_set_wip_active(uuid,boolean) from public,anon;
@@ -688,8 +704,17 @@ language plpgsql security definer set search_path=public
 as $$
 begin
  if auth.uid() is null or coalesce(public.app_role(),'') not in ('dev','hr','div_admin','legacy_admin') then raise exception 'COGS_ADMIN_ONLY' using errcode='42501'; end if;
+ if not (
+  public.has_perm('inventory.view') or public.has_perm('inventory.manage')
+  or public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference')
+  or public.has_perm('cogs.daily_so.edit') or public.has_perm('cogs.production.view')
+  or public.has_perm('cogs.production.manage') or public.has_perm('cogs.wip.view')
+  or public.has_perm('cogs.wip.manage') or public.has_perm('cogs.menu.view')
+  or public.has_perm('cogs.menu.manage') or public.has_perm('cogs.sales.view')
+  or public.has_perm('cogs.sales.manage')
+ ) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  return query select i.id,i.name,i.base_unit,i.conversions,i.reference_price_per_base,i.reference_price_amount,i.reference_price_unit,i.last_purchase_price_per_base,i.active,i.division_id
- from public.barapp_items i join public.divisions d on d.id=i.division_id where d.has_cogs=true and public.cogs_ops_can_access_division(i.division_id) order by i.name;
+ from public.barapp_items i join public.divisions d on d.id=i.division_id where d.has_cogs=true and coalesce(i.is_supply,false)=false and public.cogs_ops_can_access_division(i.division_id) order by i.name;
 end; $$;
 revoke all on function public.cogs_list_materials() from public,anon;
 grant execute on function public.cogs_list_materials() to authenticated;
