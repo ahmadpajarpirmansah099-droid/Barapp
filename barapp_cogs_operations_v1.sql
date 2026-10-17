@@ -314,17 +314,6 @@ begin
  from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.active=true and w.created_at::date<=p_as_of
  order by 1,3;
 end; $$;
-revoke all on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) from public,anon;
-revoke all on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) from public,anon;
-revoke all on function public.cogs_cancel_opening_wip_stock(uuid) from public,anon;
-grant execute on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) to authenticated;
-grant execute on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) to authenticated;
-grant execute on function public.cogs_cancel_opening_wip_stock(uuid) to authenticated;
-
-revoke all on function public.cogs_record_production_batch(uuid,date,jsonb,text) from public,anon;
-revoke all on function public.cogs_record_menu_sales_batch(uuid,date,jsonb,text) from public,anon;
-grant execute on function public.cogs_record_production_batch(uuid,date,jsonb,text) to authenticated;
-grant execute on function public.cogs_record_menu_sales_batch(uuid,date,jsonb,text) to authenticated;
 revoke all on function public.cogs_get_stock_position(uuid,date) from public,anon;
 grant execute on function public.cogs_get_stock_position(uuid,date) to authenticated;
 
@@ -360,8 +349,6 @@ begin
  return v_batch;
 end; $$;
 
--- Opening WIP stock is a counted starting balance, not a production run:
--- it must never create recipe-input rows or consume raw materials.
 -- Opening WIP stock is a counted starting balance, not a production run:
 -- it must never create recipe-input rows or consume raw materials.
 create or replace function public.cogs_record_opening_wip_stock(
@@ -516,6 +503,20 @@ begin
  end loop;
  return v_saved;
 end; $barapp_batch_ops$;
+
+-- Grant access only after each RPC has been created; earlier placement fails on a fresh DB.
+revoke all on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) from public,anon;
+revoke all on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) from public,anon;
+revoke all on function public.cogs_cancel_opening_wip_stock(uuid) from public,anon;
+grant execute on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) to authenticated;
+grant execute on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) to authenticated;
+grant execute on function public.cogs_cancel_opening_wip_stock(uuid) to authenticated;
+
+revoke all on function public.cogs_record_production_batch(uuid,date,jsonb,text) from public,anon;
+revoke all on function public.cogs_record_menu_sales_batch(uuid,date,jsonb,text) from public,anon;
+grant execute on function public.cogs_record_production_batch(uuid,date,jsonb,text) to authenticated;
+grant execute on function public.cogs_record_menu_sales_batch(uuid,date,jsonb,text) to authenticated;
+
 
 create or replace function public.cogs_save_daily_so(p_division_id uuid,p_so_date date,p_lines jsonb,p_notes text default null)
 returns uuid language plpgsql security definer set search_path=public
