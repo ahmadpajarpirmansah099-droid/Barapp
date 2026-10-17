@@ -3353,7 +3353,7 @@ async function exportDailySOExcel(){
  });
  const dataStart=6,dataEnd=rows.length+1;rows.push(['TOTAL','','','','','','','','',null]);
  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},{wch:17},{wch:18},{wch:24},{wch:14},{wch:24},{wch:22},{wch:14},{wch:18},{wch:24}];
- ws['J'+(rows.length)].f='SUM(J'+dataStart+':J'+(rows.length-1)+')';
+ ws['J'+rows.length]={t:'n',f:'SUM(J'+dataStart+':J'+(rows.length-1)+')',z:'\"Rp\" #,##0.00;[Red]-\"Rp\" #,##0.00'};
  for(let r=dataStart;r<=rows.length;r++){const cell=ws['J'+r];if(cell)cell.z='"Rp" #,##0.00;[Red]-"Rp" #,##0.00'}
  ws['A1'].s={font:{bold:true,sz:14}};ws['A2'].s={font:{bold:true}};ws['A3'].s={font:{bold:true}};
  for(let col=0;col<10;col++){const cell=ws[XLSX.utils.encode_cell({r:4,c:col})];if(cell)cell.s={font:{bold:true}};}
