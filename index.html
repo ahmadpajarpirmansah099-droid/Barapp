@@ -2259,37 +2259,7 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
   .inv-actions .btn{flex:1 1 100%}
 }
 `;
-const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'
-/* Mobile header: match the intended single-line compact layout. */
-@media(max-width:599px){
-  .app-top{padding:4px 8px!important}
-  .hd{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px!important}
-  .hd>.brand-m{display:grid!important;place-items:center;flex:0 0 32px!important;width:32px!important;min-width:32px!important;height:34px!important;margin:0!important}
-  .hd-t{display:none!important}
-  .hd-r{display:flex!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;flex-wrap:nowrap!important;align-items:center!important;gap:4px!important;margin:0!important}
-  .hd-outlet{display:flex!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;order:0!important;padding:0!important;overflow:hidden}
-  .hd-outlet>small{display:none!important}
-  .hd-outlet select{width:100%!important;min-width:0!important;max-width:100%!important;height:34px!important;min-height:34px!important;padding:4px 14px 4px 7px!important;font-size:11px!important;line-height:1.1!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .hd-date{display:inline-flex!important;flex:0 0 88px!important;width:88px!important;min-width:88px!important;max-width:88px!important;order:1!important;align-items:center!important;justify-content:center!important;gap:3px!important;height:34px!important;min-height:34px!important;padding:0 2px!important;border:0!important;background:transparent!important;font-size:9px!important;font-weight:500!important;white-space:nowrap!important;overflow:hidden}
-  .hd-date .ic{width:13px!important;height:13px!important;flex:0 0 13px!important}
-  .hd-date>span{min-width:0!important;overflow:hidden!important;white-space:nowrap!important}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;height:34px!important;padding:0!important;border-radius:10px!important}
-  .hd-refresh{order:2!important}
-  .settings-mn{order:3!important;flex:0 0 30px!important;min-width:30px!important}
-  .hd-r>button[aria-label="Keluar"],.hd-r>button[aria-label="Exit"]{order:4!important}
-  .settings-dd{right:0!important;left:auto!important;max-width:calc(100vw - 16px)!important}
-}
-@media(max-width:370px){
-  .app-top{padding-left:6px!important;padding-right:6px!important}
-  .hd{gap:4px!important}
-  .hd-r{gap:3px!important}
-  .hd>.brand-m{flex-basis:30px!important;width:30px!important;min-width:30px!important}
-  .hd-date{flex-basis:78px!important;width:78px!important;min-width:78px!important;max-width:78px!important;font-size:8px!important}
-  .hd-outlet select{font-size:10px!important;padding-left:5px!important;padding-right:12px!important}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{flex-basis:28px!important;width:28px!important;min-width:28px!important}
-  .settings-mn{flex-basis:28px!important;min-width:28px!important}
-}
-</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
