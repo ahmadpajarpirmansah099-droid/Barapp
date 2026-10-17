@@ -708,16 +708,17 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .cogs-scroll>.cogs-table{width:max-content;min-width:620px;max-width:none}
 }
 
-/* Mobile header correction: fit every control inside the viewport. */
+
+/* Final mobile header alignment: equal control sizes, readable date/outlet, no overflow. */
 @media(max-width:599px){
   .app-top{padding:2px 10px 7px!important}
   .hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-  .hd>.brand-m{width:36px;height:36px;min-width:36px;flex:0 0 36px}
+  .hd>.brand-m{width:34px;height:34px;min-width:34px;flex:0 0 34px}
   .hd-t{display:none!important}
   .hd-r{
     display:flex;flex:1 1 100%;width:100%;min-width:0;
-    flex-wrap:nowrap;align-items:center;justify-content:space-between;
-    gap:5px;margin:0
+    flex-wrap:nowrap;align-items:center;justify-content:flex-start;
+    gap:6px;margin:0
   }
   .hd-outlet{
     display:flex;flex:1 1 0;min-width:0;max-width:none;order:0;
@@ -725,39 +726,36 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   }
   .hd-outlet>small{font-size:9px;line-height:1}
   .hd-outlet select{
-    width:100%;min-width:0;max-width:100%;height:32px;min-height:32px;
-    padding:4px 20px 4px 7px;font-size:10px;line-height:1.1;
+    width:100%;min-width:0;max-width:100%;height:34px;min-height:34px;
+    padding:4px 18px 4px 7px;font-size:10px;line-height:1.1;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap
   }
   .hd-date{
-    display:inline-flex;flex:0 1 auto;min-width:0;max-width:84px;
-    order:1;gap:3px;padding:0 5px;height:32px;min-height:32px;
-    font-size:9px;white-space:normal;line-height:1.05
+    display:inline-flex;flex:0 1 84px;min-width:0;max-width:84px;
+    order:1;align-items:center;gap:3px;padding:0 4px;height:34px;min-height:34px;
+    font-size:9px;white-space:normal;line-height:1.05;overflow:hidden
   }
   .hd-date .ic{width:13px;height:13px;flex:0 0 13px}
   .hd-date>span{min-width:0;overflow-wrap:anywhere}
   .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{
-    display:grid;place-items:center;width:32px;height:32px;min-width:32px;
-    flex:0 0 32px;padding:0;border-radius:9px
+    display:grid;place-items:center;width:34px;height:34px;min-width:34px;
+    flex:0 0 34px;padding:0;border-radius:9px
   }
   .hd-refresh{order:2}
-  .settings-mn{order:3;flex:0 0 32px;min-width:32px}
+  .settings-mn{order:3;flex:0 0 34px;min-width:34px}
   .hd-r>button[aria-label="Keluar"],
   .hd-r>button[aria-label="Exit"]{order:4}
   .settings-dd{right:0;left:auto;max-width:calc(100vw - 20px)}
 }
 @media(max-width:380px){
   .app-top{padding-left:8px!important;padding-right:8px!important}
-  .hd-r{gap:3px}
-  .hd-date{max-width:72px;padding:0 3px;font-size:8px}
-  .hd-outlet select{font-size:9px;padding-left:5px;padding-right:16px}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{width:30px;height:30px;min-width:30px;flex-basis:30px}
+  .hd-r{gap:4px}
+  .hd-date{flex-basis:74px;max-width:74px;padding:0 3px;font-size:8px}
+  .hd-outlet select{font-size:9px;padding-left:5px;padding-right:15px}
+  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{
+    width:30px;height:30px;min-width:30px;flex-basis:30px
+  }
   .settings-mn{flex-basis:30px;min-width:30px}
-}
-/* Reduce the unused top gap on narrow screens without changing page content. */
-@media(max-width:599px){
-  html{scroll-padding-top:54px}
-  .app-top{margin-top:0!important}
 }
 </style>
 </head><body>
