@@ -642,6 +642,28 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{flex-basis:27px!important;width:27px!important;min-width:27px!important}
   .settings-mn{flex-basis:27px!important;width:27px!important;min-width:27px!important}
 }
+
+/* Global persistent app header: keep outlet, current date, refresh, settings and logout visible while scrolling on every feature. */
+html{scroll-padding-top:var(--app-sticky-header-height,76px)}
+.app-top{
+ position:-webkit-sticky!important;
+ position:sticky!important;
+ top:0!important;
+ z-index:120!important;
+ isolation:isolate;
+ width:100%;
+ flex-shrink:0;
+ background:var(--cd)!important;
+ -webkit-backdrop-filter:none!important;
+ backdrop-filter:none!important;
+ box-shadow:0 3px 0 color-mix(in srgb,var(--dk,var(--line)) 10%,transparent);
+}
+@supports (padding-top: env(safe-area-inset-top)){
+ .app-top{scroll-margin-top:env(safe-area-inset-top)}
+}
+@media(max-width:600px){
+ .app-top{top:0!important;z-index:120!important;overscroll-behavior:contain}
+}
 </style>
 
 <style id="cogs-ui">
