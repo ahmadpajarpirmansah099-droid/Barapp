@@ -1245,6 +1245,25 @@ details:not([open])>*:not(summary){display:none!important}
 @media(max-width:899px){.feature-rail-title,.feature-rail{display:none!important}}
 </style>
 
+
+/* Mobile drawer alignment hotfix: keep the entire navigation panel anchored to the left edge. */
+@media(max-width:899px){
+ #app.in .side#barapp-sidebar{
+  box-sizing:border-box!important;left:0!important;right:auto!important;margin:0!important;
+  align-items:stretch!important;direction:ltr!important;text-align:left!important;
+  transform:translate3d(-110%,0,0)!important;width:min(84vw,300px)!important;
+  padding-left:0!important;padding-right:0!important;
+ }
+ #app.in.sidebar-open .side#barapp-sidebar{transform:translate3d(0,0,0)!important}
+ #app.in .side#barapp-sidebar>.brand,
+ #app.in .side#barapp-sidebar>.nvl,
+ #app.in .side#barapp-sidebar>nav,
+ #app.in .side#barapp-sidebar>.sidew{box-sizing:border-box!important;width:100%!important;min-width:0!important;align-self:stretch!important}
+ #app.in .side#barapp-sidebar>nav{display:flex!important;flex-direction:column!important;align-items:stretch!important}
+ #app.in .side#barapp-sidebar .nvb{box-sizing:border-box!important;width:100%!important;justify-content:flex-start!important;text-align:left!important}
+ #app.in .sidebar-scrim{inset:0!important;width:100vw!important;height:100dvh!important}
+}
+
 <style id="barapp-slide-sidebar">
 /* Responsive navigation drawer for mobile and collapsible sidebar on desktop. */
 #app.in .side{transition:transform .24s ease,width .22s ease;overscroll-behavior:contain}
