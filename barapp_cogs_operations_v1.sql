@@ -10,12 +10,12 @@
 -- assignment can expose or mix recipe data across divisions. Map legacy rows explicitly first.
 alter table public.cogs_wip add column if not exists division_id uuid references public.divisions(id) on delete restrict;
 alter table public.cogs_menus add column if not exists division_id uuid references public.divisions(id) on delete restrict;
-do $ begin
+do $$ begin
   if exists(select 1 from public.cogs_wip where division_id is null)
      or exists(select 1 from public.cogs_menus where division_id is null) then
     raise exception 'COGS_DIVISION_REQUIRED: assign every legacy WIP/menu row to its correct enabled division before applying this migration';
   end if;
-end $;
+end $$;
 alter table public.cogs_wip alter column division_id set not null;
 alter table public.cogs_menus alter column division_id set not null;
 drop index if exists public.cogs_wip_name_lower_uq;
