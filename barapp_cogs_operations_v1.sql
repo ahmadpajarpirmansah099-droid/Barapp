@@ -358,10 +358,12 @@ end; $$;
 
 -- Opening WIP stock is a counted starting balance, not a production run:
 -- it must never create recipe-input rows or consume raw materials.
+-- Opening WIP stock is a counted starting balance, not a production run:
+-- it must never create recipe-input rows or consume raw materials.
 create or replace function public.cogs_record_opening_wip_stock(
  p_division_id uuid,p_wip_id uuid,p_qty numeric,p_date date,p_notes text default null
 ) returns uuid language plpgsql security definer set search_path=public
-as $
+as $barapp_opening_wip$
 declare v_unit text; v_name text; v_batch uuid;
 begin
  perform public.cogs_assert_ops_division(p_division_id);
@@ -378,17 +380,16 @@ begin
   unit_cost_snapshot,total_cost_snapshot,cost_source,produced_at,notes,created_by
  ) values (
   p_division_id,p_wip_id,v_name,p_qty,v_unit,0,0,'opening',p_date,
-  concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',
-   nullif(trim(regexp_replace(coalesce(p_notes,''),'^STOK AWAL WIP \\(tanpa pemakaian resep\\)( · )?','','i')),'')),
+  concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',nullif(trim(coalesce(p_notes,'')),'')),
   auth.uid()
  ) returning id into v_batch;
  return v_batch;
-end; $;
+end; $barapp_opening_wip$;
 
 create or replace function public.cogs_update_opening_wip_stock(
  p_batch_id uuid,p_qty numeric,p_date date,p_notes text default null
 ) returns void language plpgsql security definer set search_path=public
-as $
+as $barapp_opening_wip$
 declare v_division uuid;
 begin
  select division_id into v_division
@@ -403,15 +404,13 @@ begin
  if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_OPENING_WIP_QTY'; end if;
  update public.cogs_production_batches
  set produced_qty=p_qty,produced_at=p_date,
-  notes=concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',
-   nullif(trim(regexp_replace(coalesce(p_notes,''),'^STOK AWAL WIP \\(tanpa pemakaian resep\\)( · )?','','i')),'')),
-  updated_by=auth.uid()
+  notes=concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',nullif(trim(coalesce(p_notes,'')),''))
  where id=p_batch_id and cost_source='opening' and status='posted';
-end; $;
+end; $barapp_opening_wip$;
 
 create or replace function public.cogs_cancel_opening_wip_stock(p_batch_id uuid)
 returns void language plpgsql security definer set search_path=public
-as $
+as $barapp_opening_wip$
 declare v_division uuid;
 begin
  select division_id into v_division
@@ -423,7 +422,7 @@ begin
  update public.cogs_production_batches
  set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now()
  where id=p_batch_id and cost_source='opening' and status='posted';
-end; $;
+end; $barapp_opening_wip$;
 
 create or replace function public.cogs_record_menu_sale(p_division_id uuid,p_menu_id uuid,p_qty numeric,p_sold_at date,p_selling_price numeric default null,p_notes text default null)
 returns uuid language plpgsql security definer set search_path=public
