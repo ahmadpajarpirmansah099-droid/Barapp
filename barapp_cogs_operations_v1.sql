@@ -127,7 +127,7 @@ alter table public.cogs_daily_so_lines enable row level security;
 
 create or replace function public.cogs_ops_can_access_division(p_division_id uuid)
 returns boolean language sql stable security definer set search_path=public,auth
-as $
+as $$
  select auth.uid() is not null
    and exists (
     select 1
@@ -158,7 +158,7 @@ as $
        )
       )
    );
-$;
+$$;
 revoke all on function public.cogs_ops_can_access_division(uuid) from public,anon;
 grant execute on function public.cogs_ops_can_access_division(uuid) to authenticated;
 
