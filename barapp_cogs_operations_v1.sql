@@ -479,6 +479,7 @@ begin
  from public.cogs_wip
  where id=p_wip_id and division_id=p_division_id and active=true;
  if not found then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
+ if exists(select 1 from public.cogs_daily_so h join public.cogs_daily_so_lines l on l.so_id=h.id where h.division_id=p_division_id and h.status='submitted' and h.so_date<=p_date and l.component_type='wip' and l.component_wip_id=p_wip_id) then raise exception 'COGS_OPENING_WIP_AFTER_DAILY_SO'; end if;
  if exists(select 1 from public.cogs_production_batches where division_id=p_division_id and wip_id=p_wip_id and cost_source='opening' and status='posted') then raise exception 'COGS_OPENING_WIP_ALREADY_EXISTS'; end if;
  insert into public.cogs_production_batches(
   division_id,wip_id,wip_name_snapshot,produced_qty,yield_unit,
@@ -495,9 +496,9 @@ create or replace function public.cogs_update_opening_wip_stock(
  p_batch_id uuid,p_qty numeric,p_date date,p_notes text default null
 ) returns void language plpgsql security definer set search_path=public
 as $barapp_opening_wip$
-declare v_division uuid;
+declare v_division uuid; v_wip_id uuid;
 begin
- select division_id into v_division
+ select division_id,wip_id into v_division,v_wip_id
  from public.cogs_production_batches
  where id=p_batch_id and cost_source='opening' and status='posted'
  for update;
@@ -508,6 +509,7 @@ begin
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
  if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_OPENING_WIP_QTY'; end if;
+ if exists(select 1 from public.cogs_daily_so h join public.cogs_daily_so_lines l on l.so_id=h.id where h.division_id=v_division and h.status='submitted' and h.so_date<=p_date and l.component_type='wip' and l.component_wip_id=v_wip_id) then raise exception 'COGS_OPENING_WIP_AFTER_DAILY_SO'; end if;
  update public.cogs_production_batches
  set produced_qty=p_qty,produced_at=p_date,
   notes=concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',nullif(trim(coalesce(p_notes,'')),''))
