@@ -455,7 +455,7 @@ as $barapp_opening_wip$
 declare v_unit text; v_name text; v_batch uuid;
 begin
  perform public.cogs_assert_division_module(p_division_id, 'cogs_production');
- if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
+ if not (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
@@ -487,7 +487,7 @@ begin
  for update;
  if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
  perform public.cogs_assert_division_module(v_division, 'cogs_production');
-  if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
+  if not (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
@@ -509,7 +509,7 @@ begin
  for update;
  if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
  perform public.cogs_assert_division_module(v_division, 'cogs_production');
- if not (public.has_perm('inventory.inbound.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
+ if not (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage')) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  update public.cogs_production_batches
  set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now()
  where id=p_batch_id and cost_source='opening' and status='posted';
