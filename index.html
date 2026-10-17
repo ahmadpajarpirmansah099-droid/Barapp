@@ -665,12 +665,15 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .app-top{top:0!important;z-index:120!important;overscroll-behavior:contain}
 }
 
-/* Consistent mobile header alignment for every role: one row, left-to-right, with utilities distributed across available space. */
+/* Mobile header: keep date beside the hamburger and cluster utility buttons at the right. */
 @media(max-width:600px){
-  .hd{flex-wrap:nowrap!important}
-  .hd-r{justify-content:space-between!important;flex-wrap:nowrap!important}
-  .hd-r>*{min-width:0}
-  .hd-outlet{flex:1 1 0!important}
+  .hd{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:6px!important}
+  .hd-r{display:flex!important;align-items:center!important;justify-content:flex-start!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;flex-wrap:nowrap!important;gap:5px!important;margin-left:0!important}
+  .hd-r>.hd-date{display:inline-flex!important;flex:0 0 auto!important;margin-right:auto!important;padding:0 4px!important;border:0!important;background:transparent!important;font-size:10px!important}
+  .hd-r>.hd-outlet{flex:0 1 150px!important;min-width:0!important;max-width:150px!important;order:0!important}
+  .hd-r>.hd-refresh,.hd-r>.settings-mn,.hd-r>button[aria-label="Keluar"],.hd-r>button[aria-label="Exit"]{flex:0 0 38px!important;width:38px!important;min-width:38px!important;margin-left:0!important}
+  .hd-r>.settings-mn{display:flex!important}
+  .hd-r>.settings-mn>.ibtn{width:38px!important;min-width:38px!important}
 }
 /* Daily SO shortcut: consistent return navigation on all five operational categories. */
 .daily-so-back{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
