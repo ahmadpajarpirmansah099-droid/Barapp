@@ -2576,7 +2576,7 @@ function flt(f,t){let l=rEmps(f,t);if(F.q)l=l.filter(e=>e.nama.toLowerCase().inc
 const fbar=(emp)=>{const {f,t}=rng();return`<div class="card"><div class="row">${emp&&D.me.r!='K'?`<label>Karyawan<select onchange="F.e=this.value;R()"><option value="">Semua karyawan</option>${D.emp.map(e=>`<option value="${esc(e.id)}" ${e.id==F.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label>`:''}<label>Cari nama<input value="${esc(F.q)}" oninput="F.q=this.value;clearTimeout(T.h);T.h=setTimeout(()=>{R();const i=document.querySelector('[data-q]');i&&(i.focus(),i.setSelectionRange(99,99))},350)" data-q></label></div></div>`};
 
 /* ===== DASHBOARD OPERASIONAL ===== */
-const OD={from:'',to:'',division:'',loading:false,ready:false,error:'',closing:[]};
+const OD={from:'',to:'',division:'',loading:false,ready:false,error:'',closing:[],detail:null};
 const odToday=()=>today();
 const odStart=()=>{if(!OD.to)OD.to=odToday();if(!OD.from){const d=new Date(OD.to+'T12:00:00');d.setDate(d.getDate()-6);OD.from=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}};
 const odN=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(Number(n)||0);
@@ -2606,8 +2606,17 @@ function odOpenCard(key){
  else if(key==='supplies'){title='Detail SO Supplies';add(sup.map(x=>[x.so_date,suppliesDivName(x.division_id),x.status||'—',x.id]),['Tanggal','Divisi','Status','ID rekapan'])}
  else if(key==='move'){title='Detail Move antar-divisi';add(move.map(x=>[x.out_date,x.item_name_snapshot||cgItem(x.item_id)?.name||'Barang',suppliesDivName(x.from_division_id),suppliesDivName(x.to_division_id),qty(x.qty_base),rp(x.estimated_total??x.total_value_snapshot)]),['Tanggal','Barang','Divisi asal','Divisi penerima','Qty dasar','Nilai'])}
  else if(key==='closing'){title='Detail Approval Closing';add(OD.closing.map(x=>[x.closing_date,suppliesDivName(x.division_id),x.status||'—',x.approved_at||'—']),['Tanggal','Divisi','Status','Waktu approval'])}
- const table=rows.length?'<div style="overflow:auto;max-width:100%"><table style="width:100%;border-collapse:collapse;min-width:540px"><thead><tr>'+headers.map(h=>'<th style="text-align:left;padding:9px;border-bottom:1px solid var(--line,#ddd)">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td style="padding:9px;border-bottom:1px solid var(--line,#ddd)">'+escv(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="empty">Tidak ada transaksi untuk kategori ini pada rentang tanggal dan divisi yang dipilih.</div>';
- modal('<h3>'+title+'</h3><p class="mu">Mengikuti filter tanggal dan divisi dashboard.</p>'+table+'<div class="btns"><button class="btn s" onclick="closeM()">Tutup</button></div>');
+ OD.detail={key,title,rows:rows.map(r=>r.slice()),headers:headers.slice()};
+ const byDate={};rows.forEach((r,i)=>{const date=String(r[0]||'—').slice(0,10);if(!byDate[date])byDate[date]=[];byDate[date].push(i)});
+ const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+ const table=dates.length?'<div style="overflow:auto;max-width:100%"><table style="width:100%;border-collapse:collapse;min-width:320px"><thead><tr><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line,#ddd)">Tanggal</th><th style="text-align:left;padding:9px;border-bottom:1px solid var(--line,#ddd)">Jumlah transaksi</th><th style="text-align:center;padding:9px;border-bottom:1px solid var(--line,#ddd)">Detail</th></tr></thead><tbody>'+dates.map(d=>'<tr><td style="padding:11px 9px;border-bottom:1px solid var(--line,#ddd);font-weight:700;white-space:nowrap">'+escv(d)+'</td><td style="padding:11px 9px;border-bottom:1px solid var(--line,#ddd)">'+byDate[d].length+'</td><td style="padding:8px;text-align:center;border-bottom:1px solid var(--line,#ddd)"><button type="button" class="btn s" onclick="odOpenCardDate(\''+key+'\',\''+d+'\')">Detail</button></td></tr>').join('')+'</tbody></table></div>':'<div class="empty">Tidak ada transaksi untuk kategori ini pada rentang tanggal dan divisi yang dipilih.</div>';
+ modal('<h3>'+title+'</h3><p class="mu">Mengikuti filter tanggal dan divisi dashboard. Pilih Detail pada tanggal untuk melihat seluruh transaksi hari itu.</p>'+table+'<div class="btns"><button class="btn s" onclick="closeM()">Tutup</button></div>');
+}
+function odOpenCardDate(key,date){
+ const d=OD.detail;if(!d||d.key!==key)return toast('Detail tidak tersedia. Buka ulang card dashboard.','warn');
+ const rows=d.rows.filter(r=>String(r[0]||'—').slice(0,10)===date),headers=d.headers,escv=x=>esc(x==null?'—':String(x));
+ const table=rows.length?'<div style="overflow:auto;max-width:100%"><table style="width:100%;border-collapse:collapse;min-width:540px"><thead><tr>'+headers.map(h=>'<th style="text-align:left;padding:9px;border-bottom:1px solid var(--line,#ddd)">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td style="padding:9px;border-bottom:1px solid var(--line,#ddd)">'+escv(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="empty">Tidak ada transaksi pada tanggal ini.</div>';
+ modal('<h3>'+d.title+' · '+escv(date)+'</h3><p class="mu">'+rows.length+' transaksi pada tanggal ini.</p>'+table+'<div class="btns"><button class="btn s" onclick="odOpenCard(\''+key+'\')">Kembali</button><button class="btn s" onclick="closeM()">Tutup</button></div>');
 }
 async function odLoad(){
  if(OD.loading)return;OD.loading=true;OD.error='';
