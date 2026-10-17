@@ -402,7 +402,7 @@ begin
  select 'material'::text,i.id,i.name,i.base_unit,public.cogs_expected_material_qty(i.id,p_as_of),
   case when coalesce(i.last_purchase_price_per_base,0)>0 then i.last_purchase_price_per_base else nullif(i.reference_price_per_base,0) end,
   case when coalesce(i.last_purchase_price_per_base,0)>0 then 'purchase'::text when coalesce(i.reference_price_per_base,0)>0 then 'reference'::text else 'unknown'::text end
- from public.barapp_items i where i.division_id=p_division_id and i.active=true and i.created_at::date<=p_as_of
+ from public.barapp_items i where i.division_id=p_division_id and i.active=true and coalesce(i.is_supply,false)=false and i.created_at::date<=p_as_of
  union all
  select 'wip'::text,w.id,w.name,w.yield_unit,public.cogs_expected_wip_qty(w.id,p_division_id,p_as_of),co.unit_cost,co.cost_source
  from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.active=true and w.created_at::date<=p_as_of and public.division_module_enabled(p_division_id,'cogs_wip')
