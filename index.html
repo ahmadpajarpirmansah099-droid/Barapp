@@ -2350,6 +2350,7 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
 .cogs-table{border-collapse:separate;border-spacing:0}
 .cogs-table td,.cogs-table th{vertical-align:middle}
 .cogs-table input,.cogs-table select{min-width:84px;max-width:100%}
+.ops-so-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,1fr);gap:12px;align-items:start}.ops-so-layout>.card{min-width:0}.ops-approved-report{overflow:hidden}.ops-approved-report .cogs-table{min-width:820px}@media(max-width:900px){.ops-so-layout{grid-template-columns:minmax(0,1fr)}}
 /* Mobile Daily SO: make the unit column roughly half-width without affecting other tables. */
 @media(max-width:600px){
  main .cogs-wrap .ops-daily-so-table th:nth-child(3),
@@ -3019,7 +3020,7 @@ async function saveTheme(){if(!developerGuard())return;const snapshot=JSON.parse
 
 /* ===== COGS V1: data disimpan di Supabase; Master Bahan memakai barapp_items ===== */
 const CG={items:[],wips:[],wipLines:[],menus:[],menuLines:[],divs:[],productions:[],productionInputs:[],sales:[],saleLines:[],dailySO:[],dailySOLines:[],division:'',ready:false,loading:false,err:'',filter:'',tab:'active',editLines:[],editType:'',editId:null};
-const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',positionErrorFor:'',counts:{},countCache:{},unitSelections:{},notes:'',prodQty:'',saleQty:'',salePrice:'',prodHistoryDate:today(),soHistoryDate:today()};
+const OPS={division:'',date:today(),position:[],positionLoadedFor:'',positionLoading:false,positionError:'',positionErrorFor:'',counts:{},countCache:{},unitSelections:{},notes:'',prodQty:'',saleQty:'',salePrice:'',prodHistoryDate:today(),soHistoryDate:today(),approvedReportKey:'',approvedReportStatus:'loading',approvedReportPeriod:null};
 const cgRoleOK=()=>adm();
 const cgPrice=x=>{if(x&&x.last_purchase_price_per_base!=null&&Number(x.last_purchase_price_per_base)>0)return{value:Number(x.last_purchase_price_per_base),source:'purchase'};if(x&&x.reference_price_per_base!=null&&Number(x.reference_price_per_base)>0)return{value:Number(x.reference_price_per_base),source:'reference'};return null};
 const cgItem=id=>CG.items.find(x=>String(x.id)===String(id));
@@ -3253,6 +3254,39 @@ async function opsLoadUnitMaster(){
  INV.divs=outletDivs;
  INV.items=items;
  INV.unitMasterOutletId=outletKey;
+}
+async function opsLoadApprovedReport(div,date){
+ const key=String(div)+'|'+String(date);
+ if(OPS.approvedReportKey===key&&['loading','approved','hidden','error'].includes(OPS.approvedReportStatus))return;
+ OPS.approvedReportKey=key;OPS.approvedReportStatus='loading';OPS.approvedReportPeriod=null;
+ try{const {data,error}=await sb().from('barapp_closing_periods').select('id,status,approved_at,approved_by').eq('division_id',div).eq('closing_date',date).maybeSingle();if(error)throw error;if(OPS.approvedReportKey!==key)return;OPS.approvedReportPeriod=data||null;OPS.approvedReportStatus=data&&data.status==='approved'?'approved':'hidden';}
+ catch(e){if(OPS.approvedReportKey===key)OPS.approvedReportStatus='error';}
+ if(pg==='cogs_daily_so'&&String(OPS.division||CG.divs[0]?.id||'')+'|'+String(OPS.date||opsDate())===key)R();
+}
+function opsApprovedReportHtml(div,date){
+ const key=String(div)+'|'+String(date);
+ if(OPS.approvedReportKey!==key){opsLoadApprovedReport(div,date);return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Memeriksa status approval…</p></div>'}
+ if(OPS.approvedReportStatus==='loading')return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Memeriksa status approval…</p></div>';
+ if(OPS.approvedReportStatus==='hidden')return '';
+ if(OPS.approvedReportStatus==='error')return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Status approval tidak dapat diverifikasi. Laporan disembunyikan demi keamanan.</p><button class="btn s" onclick="OPS.approvedReportKey=\'\';R()">Coba lagi</button></div>';
+ const so=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
+ if(!so)return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Closing sudah Approved, tetapi detail Daily SO tidak ditemukan.</p></div>';
+ const lines=CG.dailySOLines.filter(l=>String(l.so_id)===String(so.id));
+ const sum=(xs,fn)=>xs.reduce((a,x)=>a+Number(fn(x)||0),0);
+ const body=lines.map(l=>{
+  const material=l.component_type==='material',id=material?l.item_id:l.component_wip_id;
+  const sales=sum((CG.saleLines||[]).filter(x=>x.component_type===(material?'material':'wip')&&String(material?x.item_id:x.component_wip_id)===String(id)&&CG.sales.some(s=>String(s.id)===String(x.sale_id)&&String(s.division_id)===String(div)&&s.status==='posted'&&String(s.sold_at)===String(date))),x=>x.qty_base);
+  const production=material?sum((CG.productionInputs||[]).filter(x=>x.component_type==='material'&&String(x.item_id)===String(id)&&CG.productions.some(p=>String(p.id)===String(x.batch_id)&&String(p.division_id)===String(div)&&p.status==='posted'&&String(p.produced_at)===String(date))),x=>x.qty_base):0;
+  const expense=sum((INV.stockOut||[]).filter(x=>String(x.item_id)===String(id)&&String(x.from_division_id)===String(div)&&x.status==='posted'&&String(x.out_date)===String(date)),x=>x.qty_base);
+  return '<tr><td>'+esc(l.component_name_snapshot||'Item')+'</td><td>'+cgNum(Number(l.expected_qty_base||0))+'</td><td>'+cgNum(Number(l.counted_qty_base||0))+'</td><td>'+cgNum(sales)+'</td><td>'+cgNum(production)+'</td><td>'+cgNum(expense)+'</td><td>'+cgNum(Number(l.variance_qty_base||0))+'</td><td>'+cgMoney(Number(l.variance_value_snapshot||0))+'</td></tr>';
+ }).join('');
+ return '<div class="card ops-approved-report"><div class="cogs-top"><div><h3>Laporan Daily SO</h3><p class="mu">'+esc(date)+' · '+esc(opsDivName(div))+' · Approved</p></div><button class="btn s" onclick="opsPrintApprovedReport(\''+esc(div)+'\',\''+esc(date)+'\')">Cetak / Simpan PDF</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Bahan / WIP</th><th>Jumlah sistem</th><th>Stok fisik</th><th>Pemakaian sales</th><th>Pemakaian WIP</th><th>Terpakai pengeluaran</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(body||'<tr><td colspan="8" class="mu">Tidak ada detail Daily SO.</td></tr>')+'</tbody></table></div><p class="mu">Laporan hanya ditampilkan setelah Approval Closing berstatus Approved.</p></div>';
+}
+function opsPrintApprovedReport(div,date){
+ if(OPS.approvedReportKey!==String(div)+'|'+String(date)||OPS.approvedReportStatus!=='approved')return toast('Laporan hanya tersedia setelah Approved.','warn');
+ const card=document.querySelector('.ops-approved-report');if(!card)return toast('Laporan belum tampil.','warn');
+ const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up untuk mencetak laporan.','warn');
+ w.document.write('<!doctype html><html><head><title>Daily SO '+esc(date)+'</title><meta charset="utf-8"><style>body{font:12px Arial;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:6px;text-align:left}h3{margin-bottom:4px}.mu{color:#666}</style></head><body>'+card.innerHTML+'</body></html>');w.document.close();w.focus();w.print();
 }
 async function opsLoadPosition(show){
  if(!CG.ready)return;
@@ -3598,7 +3632,7 @@ async function exportSuppliesSOExcel(){
   const totalValue=lines.reduce((a,l)=>a+Number(l.variance_value_snapshot||0),0);
   return '<tr><td><b>'+esc(s.so_date)+'</b><br><small class="mu">'+esc(opsDivName(s.division_id))+'</small></td><td>'+lines.length+' item</td><td>'+varianceCount+' selisih</td><td>'+cgMoney(totalValue)+'</td><td>'+(s.status==='submitted'?'<span class="cogs-pill">Disimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='submitted'?opsCancelButton('daily_so',s.id):'')+'</td></tr>';
  }).join('');
- return '<div class="cogs-wrap">'+dailyShortcuts+'<div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p></div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada bahan atau WIP di divisi ini.</td></tr>')+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap">'+dailyShortcuts+'<div class="ops-so-layout"><div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p></div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada bahan atau WIP di divisi ini.</td></tr>')+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;))">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div>'+opsApprovedReportHtml(division,date)+'</div><div class="card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
 };
 
 // Register deferred feature views from the shared window bridge.
