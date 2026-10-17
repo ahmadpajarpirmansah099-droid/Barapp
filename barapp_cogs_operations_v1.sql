@@ -6,18 +6,16 @@
 -- Production project has already received these schema changes; do not rerun needlessly.
 -- Direct table writes are revoked; authorized writes go through authenticated admin RPCs.
 
--- Scope recipes to division. The first migration created empty recipe tables; null legacy rows
--- (if any) get mapped to the first COGS-enabled division and should be reviewed before production use.
+-- Scope recipes to division. Never guess a division for legacy rows: a wrong automatic
+-- assignment can expose or mix recipe data across divisions. Map legacy rows explicitly first.
 alter table public.cogs_wip add column if not exists division_id uuid references public.divisions(id) on delete restrict;
 alter table public.cogs_menus add column if not exists division_id uuid references public.divisions(id) on delete restrict;
-update public.cogs_wip set division_id=(select id from public.divisions where has_cogs=true order by outlet_id,name,id limit 1) where division_id is null;
-update public.cogs_menus set division_id=(select id from public.divisions where has_cogs=true order by outlet_id,name,id limit 1) where division_id is null;
-do $$ begin
+do $ begin
   if exists(select 1 from public.cogs_wip where division_id is null)
      or exists(select 1 from public.cogs_menus where division_id is null) then
-    raise exception 'COGS_DIVISION_REQUIRED: map existing recipe rows to an enabled division first';
+    raise exception 'COGS_DIVISION_REQUIRED: assign every legacy WIP/menu row to its correct enabled division before applying this migration';
   end if;
-end $$;
+end $;
 alter table public.cogs_wip alter column division_id set not null;
 alter table public.cogs_menus alter column division_id set not null;
 drop index if exists public.cogs_wip_name_lower_uq;
