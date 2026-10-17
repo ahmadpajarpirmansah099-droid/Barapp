@@ -2585,7 +2585,30 @@ const odDateLabel=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('id-
 const odInRange=(d)=>String(d||'')>=OD.from&&String(d||'')<=OD.to;
 const odDivisionRows=()=>OD.division?CG.divs.filter(d=>String(d.id)===String(OD.division)):CG.divs.slice();
 const odFilter=(rows,field)=>{const ids=new Set(odDivisionRows().map(d=>String(d.id)));return (rows||[]).filter(x=>ids.has(String(x.division_id))&&odInRange(x[field])&&(!x.status||!['cancelled','void','voided','rejected'].includes(String(x.status).toLowerCase())))};
-const odStat=(label,value,sub,icon)=>'<div class="card" style="margin:0;min-width:0;padding:14px"><div style="display:flex;align-items:center;gap:8px;color:var(--muted,#777);font-size:12px">'+IC(icon||'chart-no-axes-combined',17)+'<span>'+label+'</span></div><div style="font-size:clamp(20px,3.5vw,27px);font-weight:800;line-height:1.2;margin:9px 0;overflow-wrap:anywhere">'+value+'</div><div style="font-size:11px;color:var(--muted,#777)">'+sub+'</div></div>';
+const odStat=(label,value,sub,icon,key)=>'<button type="button" class="card od-stat" onclick="odOpenCard(\''+key+'\')" style="text-align:left;cursor:pointer;margin:0;min-width:0;width:100%;padding:14px;color:inherit;font:inherit;display:block"><div style="display:flex;align-items:center;gap:8px;color:var(--muted,#777);font-size:12px">'+IC(icon||'chart-no-axes-combined',17)+'<span>'+label+'</span></div><div style="font-size:clamp(20px,3.5vw,27px);font-weight:800;line-height:1.2;margin:9px 0;overflow-wrap:anywhere">'+value+'</div><div style="font-size:11px;color:var(--muted,#777)">'+sub+'</div><div style="font-size:10px;color:var(--accent,#7c9866);margin-top:8px">Lihat detail →</div></button>';
+function odOpenCard(key){
+ if(!OD.ready)return toast('Data dashboard belum siap.','warn');
+ const sales=odFilter(CG.sales,'sold_at'),prod=odFilter(CG.productions,'produced_at'),ins=odFilter(INV.ins,'received_at'),outs=odFilter(INV.stockOut,'out_date'),sos=odFilter(CG.dailySO,'so_date'),sup=odFilter(INV.suppliesSO,'so_date');
+ const move=outs.filter(x=>['move','transfer'].includes(String(x.category||'').toLowerCase()));
+ const expense=outs.filter(x=>!['move','transfer'].includes(String(x.category||'').toLowerCase()));
+ const soLines=CG.dailySOLines.filter(l=>sos.some(s=>String(s.id)===String(l.so_id)));
+ const variance=soLines.filter(l=>Math.abs(Number(l.variance_qty_base)||0)>0.000001);
+ const rp=n=>odRp(Number(n)||0),qty=n=>odN(Number(n)||0),escv=x=>esc(x==null?'—':String(x));
+ let title='',rows=[],headers=[];
+ const add=(arr,head)=>{rows=arr;headers=head};
+ if(key==='sales'){title='Detail omzet penjualan menu';add(sales.map(x=>[x.sold_at,x.menu_name_snapshot||CG.menus.find(m=>String(m.id)===String(x.menu_id))?.name||'Menu',qty(x.qty),rp(x.gross_sales_snapshot),rp(x.total_hpp_snapshot)]),['Tanggal','Menu','Qty','Omzet','HPP'])}
+ else if(key==='hpp'){title='Detail HPP menu terjual';add(sales.map(x=>[x.sold_at,x.menu_name_snapshot||'Menu',qty(x.qty),rp(x.total_hpp_snapshot),rp(Number(x.gross_sales_snapshot||0)-Number(x.total_hpp_snapshot||0))]),['Tanggal','Menu','Qty','HPP','Margin kotor'])}
+ else if(key==='incoming'){title='Detail barang masuk';add(ins.map(x=>[x.received_at,x.item_name_snapshot||cgItem(x.item_id)?.name||'Barang',odDivName(x.division_id),qty(x.qty_base),rp(x.invoice_total??x.estimated_total)]),['Tanggal','Barang','Divisi','Qty dasar','Nilai'])}
+ else if(key==='expense'){title='Detail pengeluaran stok';add(expense.map(x=>[x.out_date,x.category||'Lainnya',x.item_name_snapshot||cgItem(x.item_id)?.name||'Barang',odDivName(x.from_division_id),qty(x.qty_base)]),['Tanggal','Kategori','Barang','Divisi asal','Qty'])}
+ else if(key==='production'){title='Detail produksi WIP';add(prod.map(x=>[x.produced_at,opsWip(x.wip_id)?.name||x.wip_name_snapshot||'WIP',odDivName(x.division_id),qty(x.produced_qty),rp(x.total_cost_snapshot)]),['Tanggal','WIP','Divisi','Qty produksi','Nilai'])}
+ else if(key==='variance'){title='Detail selisih Daily SO';add(variance.map(l=>{const so=CG.dailySO.find(s=>String(s.id)===String(l.so_id));return [so?.so_date||'—',opsDivName(so?.division_id),l.component_name_snapshot||'Item',qty(l.variance_qty_base),rp(Math.abs(Number(l.variance_value_snapshot)||0))]}),['Tanggal','Divisi','Item','Selisih qty','Nilai selisih'])}
+ else if(key==='dailyso'){title='Detail Daily SO tersimpan';add(sos.map(x=>[x.so_date,opsDivName(x.division_id),x.status||'—',qty(CG.dailySOLines.filter(l=>String(l.so_id)===String(x.id)).length)]),['Tanggal','Divisi','Status','Jumlah item'])}
+ else if(key==='supplies'){title='Detail SO Supplies';add(sup.map(x=>[x.so_date,odDivName(x.division_id),x.status||'—',x.id]),['Tanggal','Divisi','Status','ID rekapan'])}
+ else if(key==='move'){title='Detail Move antar-divisi';add(move.map(x=>[x.out_date,x.item_name_snapshot||cgItem(x.item_id)?.name||'Barang',odDivName(x.from_division_id),odDivName(x.to_division_id),qty(x.qty_base),rp(x.estimated_total??x.total_value_snapshot)]),['Tanggal','Barang','Divisi asal','Divisi penerima','Qty dasar','Nilai'])}
+ else if(key==='closing'){title='Detail Approval Closing';add(OD.closing.map(x=>[x.closing_date,odDivName(x.division_id),x.status||'—',x.approved_at||'—']),['Tanggal','Divisi','Status','Waktu approval'])}
+ const table=rows.length?'<div style="overflow:auto;max-width:100%"><table style="width:100%;border-collapse:collapse;min-width:540px"><thead><tr>'+headers.map(h=>'<th style="text-align:left;padding:9px;border-bottom:1px solid var(--line,#ddd)">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td style="padding:9px;border-bottom:1px solid var(--line,#ddd)">'+escv(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="empty">Tidak ada transaksi untuk kategori ini pada rentang tanggal dan divisi yang dipilih.</div>';
+ modal('<h3>'+title+'</h3><p class="mu">Mengikuti filter tanggal dan divisi dashboard.</p>'+table+'<div class="btns"><button class="btn s" onclick="closeM()">Tutup</button></div>');
+}
 async function odLoad(){
  if(OD.loading)return;OD.loading=true;OD.error='';
  try{
@@ -2624,16 +2647,16 @@ function odView(){
  const catTable=table(['Kategori pengeluaran','Qty dasar','Transaksi'],catRows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+odN(x.qty)+'</td><td>'+x.rows+'</td></tr>'),'Belum ada pengeluaran.');
  const dailyTable=table(['Tanggal','Omzet menu','Produksi WIP','Barang masuk'],days.slice().reverse().map(d=>'<tr><td>'+d.label+'</td><td>'+odRp(d.sales)+'</td><td>'+odRp(d.prod)+'</td><td>'+odRp(d.ins)+'</td></tr>'),'Belum ada data harian.');
  return '<div class="cogs-wrap"><div class="card"><div class="cogs-top"><div><h2 style="margin:0">Dashboard Operasional</h2><p class="mu">Ringkasan aktivitas outlet dari transaksi yang tersimpan.</p></div><button class="btn s" onclick="odRefresh()" '+(OD.loading?'disabled':'')+'>Muat ulang</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:9px;margin-top:14px"><label>Dari tanggal<input type="date" value="'+OD.from+'" max="'+OD.to+'" onchange="odSet(\'from\',this.value)"></label><label>Sampai tanggal<input type="date" value="'+OD.to+'" min="'+OD.from+'" onchange="odSet(\'to\',this.value)"></label><label>Divisi<select onchange="odSet(\'division\',this.value)"><option value="">Semua divisi yang dapat diakses</option>'+CG.divs.map(d=>'<option value="'+d.id+'" '+(String(OD.division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:10px;margin:12px 0">'+
- odStat('Omzet penjualan menu',odRp(gross),odN(salesQty)+' menu terjual','receipt-text')+
- odStat('HPP menu terjual',odRp(hpp),'Margin kotor '+odRp(gross-hpp),'chart-no-axes-combined')+
- odStat('Barang masuk',odRp(stockInValue),ins.length+' transaksi masuk','truck')+
- odStat('Pengeluaran stok',odN(outQty),'Qty dasar · '+expenseRows.length+' transaksi','arrow-left-right')+
- odStat('Produksi WIP',odN(prodQty),odRp(prodCost)+' nilai produksi','cooking-pot')+
- odStat('Selisih Daily SO',variance.length+' item',odRp(varianceValue)+' nilai absolut selisih','clipboard-list')+
- odStat('Daily SO tersimpan',sos.length,'Tanggal/divisi sesuai filter','package-check')+
- odStat('SO Suplies',sup.length,'Pencatatan stok guest supplies','clipboard-list')+
- odStat('Move antar-divisi',moveRows.length,'Transaksi transfer · tidak dihitung sebagai waste','arrow-left-right')+
- odStat('Approval Closing',OD.closing.length?approved+' disetujui': '–',OD.closing.length?pending+' menunggu approval':'Data closing tidak tersedia/di luar izin','shield-check')+
+ odStat('Omzet penjualan menu',odRp(gross),odN(salesQty)+' menu terjual','receipt-text','sales')+
+ odStat('HPP menu terjual',odRp(hpp),'Margin kotor '+odRp(gross-hpp),'chart-no-axes-combined','hpp')+
+ odStat('Barang masuk',odRp(stockInValue),ins.length+' transaksi masuk','truck','incoming')+
+ odStat('Pengeluaran stok',odN(outQty),'Qty dasar · '+expenseRows.length+' transaksi','arrow-left-right','expense')+
+ odStat('Produksi WIP',odN(prodQty),odRp(prodCost)+' nilai produksi','cooking-pot','production')+
+ odStat('Selisih Daily SO',odRp(varianceValue),'Total nilai rupiah selisih','clipboard-list','variance')+
+ odStat('Daily SO tersimpan',sos.length,'Tanggal/divisi sesuai filter','package-check','dailyso')+
+ odStat('SO Suplies',sup.length,'Pencatatan stok guest supplies','clipboard-list','supplies')+
+ odStat('Move antar-divisi',moveRows.length,'Transaksi transfer · tidak dihitung sebagai waste','arrow-left-right','move')+
+ odStat('Approval Closing',OD.closing.length?approved+' disetujui': '–',OD.closing.length?pending+' menunggu approval':'Data closing tidak tersedia/di luar izin','shield-check','closing')+
  '</div><div class="card"><h3>Tren operasional</h3><p class="mu">Per hari · nilai penjualan, produksi WIP, dan barang masuk</p><div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin:8px 0"><span>🟦 Omzet menu</span><span>🟩 Produksi WIP</span><span>🟨 Barang masuk</span></div>'+chart+'</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px"><div class="card" style="min-width:0"><h3>Menu terlaris</h3>'+menuTable+'</div><div class="card" style="min-width:0"><h3>Rincian pengeluaran</h3>'+catTable+'</div></div><div class="card"><h3>Rincian per hari</h3>'+dailyTable+'</div><div class="card"><h3>Ringkasan cakupan</h3><p class="mu">'+divs.length+' divisi · '+OD.from+' s.d. '+OD.to+'. Move antar-divisi dihitung terpisah dari pengeluaran agar tidak menggandakan pemakaian stok.</p></div></div>';
 }
 V.ops_dashboard=()=>odView();
