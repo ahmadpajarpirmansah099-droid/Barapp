@@ -422,6 +422,62 @@ end; $$;
 revoke all on function public.cogs_expected_material_qty(uuid,date) from public,anon,authenticated;
 revoke all on function public.cogs_expected_wip_qty(uuid,uuid,date) from public,anon,authenticated;
 
+-- An opening balance must precede all movements for that WIP; date-only records
+-- cannot safely order an opening count against another movement on the same day.
+create or replace function public.cogs_opening_wip_date_is_safe(
+ p_division_id uuid,p_wip_id uuid,p_date date
+) returns boolean
+language sql stable security definer set search_path=public
+as $barapp_opening_date_check$
+ select
+  not exists (
+   select 1 from public.cogs_production_batches b
+   where b.division_id=p_division_id and b.wip_id=p_wip_id
+    and b.cost_source<>'opening' and b.status='posted' and b.produced_at<=p_date
+  )
+  and not exists (
+   select 1 from public.cogs_production_inputs i
+   join public.cogs_production_batches b on b.id=i.batch_id
+   where i.component_type='wip' and i.component_wip_id=p_wip_id
+    and b.division_id=p_division_id and b.status='posted' and b.produced_at<=p_date
+  )
+  and not exists (
+   select 1 from public.cogs_menu_sales_lines l
+   join public.cogs_menu_sales s on s.id=l.sale_id
+   where l.component_type='wip' and l.component_wip_id=p_wip_id
+    and s.division_id=p_division_id and s.status='posted' and s.sold_at<=p_date
+  )
+  and not exists (
+   select 1 from public.barapp_stock_out o
+   where o.item_type='wip' and o.wip_id=p_wip_id
+    and o.from_division_id=p_division_id and o.status='posted' and o.out_date<=p_date
+  )
+  and not exists (
+   select 1 from public.barapp_stock_out o
+   where o.item_type='wip' and o.target_wip_id=p_wip_id
+    and o.to_division_id=p_division_id and o.category='Move'
+    and o.status='posted' and o.out_date<=p_date
+  )
+  and not exists (
+   select 1 from public.cogs_daily_so h
+   join public.cogs_daily_so_lines l on l.so_id=h.id
+   where h.division_id=p_division_id and h.status='submitted' and h.so_date<=p_date
+    and l.component_type='wip' and l.component_wip_id=p_wip_id
+  );
+$barapp_opening_date_check$;
+revoke all on function public.cogs_opening_wip_date_is_safe(uuid,uuid,date) from public,anon,authenticated;
+
+do $barapp_opening_date_preflight$
+begin
+ if exists (
+  select 1 from public.cogs_production_batches o
+  where o.cost_source='opening' and o.status='posted'
+   and not public.cogs_opening_wip_date_is_safe(o.division_id,o.wip_id,o.produced_at)
+ ) then
+  raise exception 'COGS_OPENING_WIP_DATE_CONFLICT: resolve opening WIP rows that overlap existing production, consumption, stock-out/move, or submitted Daily SO activity before applying this migration';
+ end if;
+end; $barapp_opening_date_preflight$;
+
 -- Inventory-only callers need end-of-day stock after a same-day SO has been submitted.
 -- Keep the Daily SO calculator's strict prior-day cutoff separate from on-hand positions.
 create or replace function public.cogs_expected_wip_on_hand_qty(p_wip_id uuid,p_division_id uuid,p_as_of date)
@@ -545,7 +601,7 @@ begin
  from public.cogs_wip
  where id=p_wip_id and division_id=p_division_id and active=true;
  if not found then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
- if exists(select 1 from public.cogs_daily_so h join public.cogs_daily_so_lines l on l.so_id=h.id where h.division_id=p_division_id and h.status='submitted' and h.so_date<=p_date and l.component_type='wip' and l.component_wip_id=p_wip_id) then raise exception 'COGS_OPENING_WIP_AFTER_DAILY_SO'; end if;
+ if not public.cogs_opening_wip_date_is_safe(p_division_id,p_wip_id,p_date) then raise exception 'COGS_OPENING_WIP_DATE_CONFLICT'; end if;
  if exists(select 1 from public.cogs_production_batches where division_id=p_division_id and wip_id=p_wip_id and cost_source='opening' and status='posted') then raise exception 'COGS_OPENING_WIP_ALREADY_EXISTS'; end if;
  insert into public.cogs_production_batches(
   division_id,wip_id,wip_name_snapshot,produced_qty,yield_unit,
@@ -575,7 +631,7 @@ begin
   raise exception 'COGS_INVALID_OPENING_WIP_DATE';
  end if;
  if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_OPENING_WIP_QTY'; end if;
- if exists(select 1 from public.cogs_daily_so h join public.cogs_daily_so_lines l on l.so_id=h.id where h.division_id=v_division and h.status='submitted' and h.so_date<=p_date and l.component_type='wip' and l.component_wip_id=v_wip_id) then raise exception 'COGS_OPENING_WIP_AFTER_DAILY_SO'; end if;
+ if not public.cogs_opening_wip_date_is_safe(v_division,v_wip_id,p_date) then raise exception 'COGS_OPENING_WIP_DATE_CONFLICT'; end if;
  update public.cogs_production_batches
  set produced_qty=p_qty,produced_at=p_date,
   notes=concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',nullif(trim(coalesce(p_notes,'')),''))
