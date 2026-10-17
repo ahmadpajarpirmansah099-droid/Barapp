@@ -281,7 +281,7 @@ begin
  for v_line in select * from public.cogs_wip_recipe_lines where wip_id=p_wip_id loop
   v_has_lines:=true;
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true;
+   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true and coalesce(is_supply,false)=false;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE'; end if;
    if v_component_division is distinct from v_division then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    v_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
@@ -316,7 +316,7 @@ begin
  for v_line in select * from public.cogs_menu_recipe_lines where menu_id=p_menu_id loop
   v_has_lines:=true;
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true;
+   select last_purchase_price_per_base,reference_price_per_base,division_id into v_last,v_ref,v_component_division from public.barapp_items where id=v_line.item_id and active=true and coalesce(is_supply,false)=false;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE'; end if;
    if v_component_division is distinct from v_menu.division_id then raise exception 'COGS_COMPONENT_DIVISION_MISMATCH'; end if;
    v_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
@@ -431,7 +431,7 @@ begin
  values(p_division_id,p_wip_id,v_wip_name,p_produced_qty,v_unit,v_unit_cost,v_total,v_source,p_produced_at,nullif(trim(coalesce(p_notes,'')),''),auth.uid()) returning id into v_batch;
  for v_line in select * from public.cogs_wip_recipe_lines where wip_id=p_wip_id loop
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true and division_id=p_division_id;
+   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true and division_id=p_division_id and coalesce(is_supply,false)=false;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE_IN_DIVISION'; end if;
    v_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
    if v_price is null then raise exception 'COGS_PRICE_MISSING'; end if;
@@ -532,7 +532,7 @@ begin
  values(p_division_id,p_menu_id,v_menu.name,p_qty,v_price,v_unit_hpp,v_unit_hpp*p_qty,v_price*p_qty,v_source,p_sold_at,nullif(trim(coalesce(p_notes,'')),''),auth.uid()) returning id into v_sale;
  for v_line in select * from public.cogs_menu_recipe_lines where menu_id=p_menu_id loop
   if v_line.component_type='material' then
-   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true and division_id=p_division_id;
+   select last_purchase_price_per_base,reference_price_per_base into v_last,v_ref from public.barapp_items where id=v_line.item_id and active=true and division_id=p_division_id and coalesce(is_supply,false)=false;
    if not found then raise exception 'COGS_MATERIAL_NOT_ACTIVE_IN_DIVISION'; end if;
    v_component_price:=case when coalesce(v_last,0)>0 then v_last else nullif(v_ref,0) end;
    if v_component_price is null then raise exception 'COGS_PRICE_MISSING'; end if;
@@ -722,7 +722,7 @@ begin
   v_type:=lower(trim(coalesce(v_line->>'type',''))); v_id:=nullif(trim(coalesce(v_line->>'id','')),'')::uuid; v_qty:=nullif(trim(coalesce(v_line->>'qty','')),'')::numeric; v_unit:=nullif(trim(coalesce(v_line->>'unit','')),'');
   if v_type not in ('material','wip') or v_id is null or v_qty is null or v_qty<=0 or v_unit is null or length(v_unit)>32 then raise exception 'INVALID_RECIPE_LINE'; end if;
   if v_type='material' then
-   select base_unit,conversions into v_base,v_conv from public.barapp_items where id=v_id and active=true and division_id=p_division_id; if not found then raise exception 'MATERIAL_NOT_FOUND_IN_DIVISION_OR_INACTIVE'; end if;
+   select base_unit,conversions into v_base,v_conv from public.barapp_items where id=v_id and active=true and division_id=p_division_id and coalesce(is_supply,false)=false; if not found then raise exception 'MATERIAL_NOT_FOUND_IN_DIVISION_OR_INACTIVE'; end if;
    if lower(v_unit)=lower(v_base) then v_factor:=1; else select nullif(c->>'factor','')::numeric into v_factor from jsonb_array_elements(coalesce(v_conv,'[]'::jsonb)) c where lower(coalesce(c->>'unit',''))=lower(v_unit) limit 1; end if;
    if v_factor is null or v_factor<=0 then raise exception 'INVALID_MATERIAL_UNIT'; end if;
    insert into public.cogs_wip_recipe_lines(wip_id,component_type,item_id,qty_input,unit_input,qty_base) values(v_parent,'material',v_id,v_qty,v_unit,v_qty*v_factor);
@@ -760,7 +760,7 @@ begin
   v_type:=lower(trim(coalesce(v_line->>'type',''))); v_id:=nullif(trim(coalesce(v_line->>'id','')),'')::uuid; v_qty:=nullif(trim(coalesce(v_line->>'qty','')),'')::numeric; v_unit:=nullif(trim(coalesce(v_line->>'unit','')),'');
   if v_type not in ('material','wip') or v_id is null or v_qty is null or v_qty<=0 or v_unit is null or length(v_unit)>32 then raise exception 'INVALID_RECIPE_LINE'; end if;
   if v_type='material' then
-   select base_unit,conversions into v_base,v_conv from public.barapp_items where id=v_id and active=true and division_id=p_division_id; if not found then raise exception 'MATERIAL_NOT_FOUND_IN_DIVISION_OR_INACTIVE'; end if;
+   select base_unit,conversions into v_base,v_conv from public.barapp_items where id=v_id and active=true and division_id=p_division_id and coalesce(is_supply,false)=false; if not found then raise exception 'MATERIAL_NOT_FOUND_IN_DIVISION_OR_INACTIVE'; end if;
    if lower(v_unit)=lower(v_base) then v_factor:=1; else select nullif(c->>'factor','')::numeric into v_factor from jsonb_array_elements(coalesce(v_conv,'[]'::jsonb)) c where lower(coalesce(c->>'unit',''))=lower(v_unit) limit 1; end if;
    if v_factor is null or v_factor<=0 then raise exception 'INVALID_MATERIAL_UNIT'; end if;
    insert into public.cogs_menu_recipe_lines(menu_id,component_type,item_id,qty_input,unit_input,qty_base) values(v_parent,'material',v_id,v_qty,v_unit,v_qty*v_factor);
