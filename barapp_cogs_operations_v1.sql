@@ -170,20 +170,20 @@ begin
     (public.division_module_enabled(p_division_id,'cogs_wip') and (public.has_perm('cogs.wip.view') or public.has_perm('cogs.wip.manage')))
     or (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
     or (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
-    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')));
   when 'menus' then
    return
     (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
     or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
-    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')));
   when 'menu_recipe' then
    return
     (public.division_module_enabled(p_division_id,'cogs_menu') and (public.has_perm('cogs.menu.view') or public.has_perm('cogs.menu.manage')))
-    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+    or (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')));
   when 'production' then
    return
     (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
-    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')));
   when 'opening_wip' then
    return public.division_module_enabled(p_division_id,'cogs_production')
     and (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage'));
@@ -193,7 +193,7 @@ begin
   when 'sales' then
    return
     (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
-    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')));
   when 'sales_lines' then
    return public.division_module_enabled(p_division_id,'cogs_sales')
     and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
