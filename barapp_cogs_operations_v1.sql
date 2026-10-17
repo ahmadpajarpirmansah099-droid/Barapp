@@ -175,7 +175,7 @@ grant select on public.cogs_production_batches,public.cogs_production_inputs,pub
 create or replace function public.cogs_wip_unit_cost(p_wip_id uuid,p_stack uuid[] default array[]::uuid[])
 returns table(unit_cost numeric,cost_source text)
 language plpgsql security definer set search_path=public
-as $
+as $$
 declare v_yield numeric; v_division uuid; v_component_division uuid; v_total numeric:=0; v_last numeric; v_ref numeric; v_price numeric; v_src text:='purchase'; v_child_cost numeric; v_child_src text; v_line record; v_has_lines boolean:=false;
 begin
  if p_wip_id=any(coalesce(p_stack,array[]::uuid[])) then raise exception 'COGS_WIP_CYCLE'; end if;
@@ -203,7 +203,7 @@ begin
  if not v_has_lines then raise exception 'COGS_RECIPE_EMPTY'; end if;
  return query select v_total/v_yield,v_src;
 end;
-$;
+$$;
 create or replace function public.cogs_wip_unit_cost_or_null(p_wip_id uuid)
 returns table(unit_cost numeric,cost_source text) language plpgsql security definer set search_path=public
 as $$ begin return query select c.unit_cost,c.cost_source from public.cogs_wip_unit_cost(p_wip_id,array[]::uuid[]) c;
@@ -211,7 +211,7 @@ exception when others then return query select null::numeric,'unknown'::text; en
 create or replace function public.cogs_menu_unit_cost(p_menu_id uuid)
 returns table(unit_hpp numeric,selling_price numeric,cost_source text)
 language plpgsql security definer set search_path=public
-as $
+as $$
 declare v_menu record; v_line record; v_last numeric; v_ref numeric; v_price numeric; v_component_division uuid; v_child_cost numeric; v_child_src text; v_total numeric:=0; v_src text:='purchase'; v_has_lines boolean:=false;
 begin
  select * into v_menu from public.cogs_menus where id=p_menu_id and active=true;
@@ -238,7 +238,7 @@ begin
  if not v_has_lines then raise exception 'COGS_RECIPE_EMPTY'; end if;
  return query select v_total,v_menu.selling_price,v_src;
 end;
-$;
+$$;
 revoke all on function public.cogs_wip_unit_cost(uuid,uuid[]) from public,anon,authenticated;
 revoke all on function public.cogs_wip_unit_cost_or_null(uuid) from public,anon,authenticated;
 revoke all on function public.cogs_menu_unit_cost(uuid) from public,anon,authenticated;
