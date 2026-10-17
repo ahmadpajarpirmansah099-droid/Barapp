@@ -45,6 +45,21 @@ alter table public.cogs_production_batches
  add constraint cogs_production_batches_cost_source_check check (cost_source in ('purchase','reference','opening'));
 create index if not exists cogs_production_div_date_idx on public.cogs_production_batches(division_id,produced_at);
 create index if not exists cogs_production_wip_idx on public.cogs_production_batches(wip_id,produced_at);
+-- Opening stock is a baseline, so only one posted opening entry may exist per WIP.
+-- A preflight error is safer than silently double-counting legacy duplicates.
+do $barapp_opening_check$
+begin
+ if exists (
+  select 1 from public.cogs_production_batches
+  where cost_source='opening' and status='posted'
+  group by division_id,wip_id having count(*)>1
+ ) then
+  raise exception 'COGS_OPENING_WIP_DUPLICATE: resolve duplicate posted opening WIP rows before applying this migration';
+ end if;
+end; $barapp_opening_check$;
+create unique index if not exists cogs_production_one_posted_opening_wip_uq
+ on public.cogs_production_batches(division_id,wip_id)
+ where cost_source='opening' and status='posted';
 alter table public.cogs_production_batches add column if not exists wip_name_snapshot text;
 update public.cogs_production_batches b set wip_name_snapshot=w.name from public.cogs_wip w where w.id=b.wip_id and (b.wip_name_snapshot is null or b.wip_name_snapshot='');
 update public.cogs_production_batches set wip_name_snapshot='WIP' where wip_name_snapshot is null or wip_name_snapshot='';
@@ -464,6 +479,7 @@ begin
  from public.cogs_wip
  where id=p_wip_id and division_id=p_division_id and active=true;
  if not found then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
+ if exists(select 1 from public.cogs_production_batches where division_id=p_division_id and wip_id=p_wip_id and cost_source='opening' and status='posted') then raise exception 'COGS_OPENING_WIP_ALREADY_EXISTS'; end if;
  insert into public.cogs_production_batches(
   division_id,wip_id,wip_name_snapshot,produced_qty,yield_unit,
   unit_cost_snapshot,total_cost_snapshot,cost_source,produced_at,notes,created_by
