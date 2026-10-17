@@ -32,12 +32,17 @@ create table if not exists public.cogs_production_batches (
  wip_name_snapshot text not null, produced_qty numeric not null check(produced_qty>0), yield_unit text not null,
  unit_cost_snapshot numeric not null check(unit_cost_snapshot>=0),
  total_cost_snapshot numeric not null check(total_cost_snapshot>=0),
- cost_source text not null check(cost_source in ('purchase','reference')),
+ cost_source text not null check(cost_source in ('purchase','reference','opening')),
  produced_at date not null default ((now() at time zone 'Asia/Jakarta')::date),
  notes text, status text not null default 'posted' check(status in ('posted','cancelled')),
  created_by uuid references auth.users(id) on delete set null, created_at timestamptz not null default now(),
  cancelled_by uuid references auth.users(id) on delete set null, cancelled_at timestamptz
 );
+-- Keep the existing production-batch constraint compatible with opening WIP stock
+-- on databases where this table was created by an earlier version of the migration.
+alter table public.cogs_production_batches drop constraint if exists cogs_production_batches_cost_source_check;
+alter table public.cogs_production_batches
+ add constraint cogs_production_batches_cost_source_check check (cost_source in ('purchase','reference','opening'));
 create index if not exists cogs_production_div_date_idx on public.cogs_production_batches(division_id,produced_at);
 create index if not exists cogs_production_wip_idx on public.cogs_production_batches(wip_id,produced_at);
 alter table public.cogs_production_batches add column if not exists wip_name_snapshot text;
@@ -309,6 +314,13 @@ begin
  from public.cogs_wip w cross join lateral public.cogs_wip_unit_cost_or_null(w.id) co where w.division_id=p_division_id and w.active=true and w.created_at::date<=p_as_of
  order by 1,3;
 end; $$;
+revoke all on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) from public,anon;
+revoke all on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) from public,anon;
+revoke all on function public.cogs_cancel_opening_wip_stock(uuid) from public,anon;
+grant execute on function public.cogs_record_opening_wip_stock(uuid,uuid,numeric,date,text) to authenticated;
+grant execute on function public.cogs_update_opening_wip_stock(uuid,numeric,date,text) to authenticated;
+grant execute on function public.cogs_cancel_opening_wip_stock(uuid) to authenticated;
+
 revoke all on function public.cogs_get_stock_position(uuid,date) from public,anon;
 grant execute on function public.cogs_get_stock_position(uuid,date) to authenticated;
 
@@ -343,6 +355,75 @@ begin
  end loop;
  return v_batch;
 end; $$;
+
+-- Opening WIP stock is a counted starting balance, not a production run:
+-- it must never create recipe-input rows or consume raw materials.
+create or replace function public.cogs_record_opening_wip_stock(
+ p_division_id uuid,p_wip_id uuid,p_qty numeric,p_date date,p_notes text default null
+) returns uuid language plpgsql security definer set search_path=public
+as $
+declare v_unit text; v_name text; v_batch uuid;
+begin
+ perform public.cogs_assert_ops_division(p_division_id);
+ if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
+  raise exception 'COGS_INVALID_OPENING_WIP_DATE';
+ end if;
+ if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_OPENING_WIP_QTY'; end if;
+ select yield_unit,name into v_unit,v_name
+ from public.cogs_wip
+ where id=p_wip_id and division_id=p_division_id and active=true;
+ if not found then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
+ insert into public.cogs_production_batches(
+  division_id,wip_id,wip_name_snapshot,produced_qty,yield_unit,
+  unit_cost_snapshot,total_cost_snapshot,cost_source,produced_at,notes,created_by
+ ) values (
+  p_division_id,p_wip_id,v_name,p_qty,v_unit,0,0,'opening',p_date,
+  concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',
+   nullif(trim(regexp_replace(coalesce(p_notes,''),'^STOK AWAL WIP \\(tanpa pemakaian resep\\)( · )?','','i')),'')),
+  auth.uid()
+ ) returning id into v_batch;
+ return v_batch;
+end; $;
+
+create or replace function public.cogs_update_opening_wip_stock(
+ p_batch_id uuid,p_qty numeric,p_date date,p_notes text default null
+) returns void language plpgsql security definer set search_path=public
+as $
+declare v_division uuid;
+begin
+ select division_id into v_division
+ from public.cogs_production_batches
+ where id=p_batch_id and cost_source='opening' and status='posted'
+ for update;
+ if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
+ perform public.cogs_assert_ops_division(v_division);
+ if p_date is null or p_date>(now() at time zone 'Asia/Jakarta')::date then
+  raise exception 'COGS_INVALID_OPENING_WIP_DATE';
+ end if;
+ if p_qty is null or p_qty<=0 then raise exception 'COGS_INVALID_OPENING_WIP_QTY'; end if;
+ update public.cogs_production_batches
+ set produced_qty=p_qty,produced_at=p_date,
+  notes=concat_ws(' · ','STOK AWAL WIP (tanpa pemakaian resep)',
+   nullif(trim(regexp_replace(coalesce(p_notes,''),'^STOK AWAL WIP \\(tanpa pemakaian resep\\)( · )?','','i')),'')),
+  updated_by=auth.uid()
+ where id=p_batch_id and cost_source='opening' and status='posted';
+end; $;
+
+create or replace function public.cogs_cancel_opening_wip_stock(p_batch_id uuid)
+returns void language plpgsql security definer set search_path=public
+as $
+declare v_division uuid;
+begin
+ select division_id into v_division
+ from public.cogs_production_batches
+ where id=p_batch_id and cost_source='opening' and status='posted'
+ for update;
+ if not found then raise exception 'COGS_OPENING_WIP_NOT_FOUND'; end if;
+ perform public.cogs_assert_ops_division(v_division);
+ update public.cogs_production_batches
+ set status='cancelled',cancelled_by=auth.uid(),cancelled_at=now()
+ where id=p_batch_id and cost_source='opening' and status='posted';
+end; $;
 
 create or replace function public.cogs_record_menu_sale(p_division_id uuid,p_menu_id uuid,p_qty numeric,p_sold_at date,p_selling_price numeric default null,p_notes text default null)
 returns uuid language plpgsql security definer set search_path=public
