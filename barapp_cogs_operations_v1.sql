@@ -458,7 +458,7 @@ create or replace function public.cogs_record_production_batch(
  p_division_id uuid,p_produced_at date,p_lines jsonb,p_notes text default null
 ) returns integer language plpgsql security definer set search_path=public
 as $barapp_batch_ops$
-declare v_line jsonb; v_wip_id uuid; v_batches numeric; v_yield numeric; v_saved integer:=0;
+declare v_line jsonb; v_wip_id uuid; v_batches numeric; v_yield numeric; v_saved integer:=0; v_seen uuid[]:=array[]::uuid[];
 begin
  perform public.cogs_assert_division_module(p_division_id, 'cogs_production');
  if not public.has_perm('cogs.production.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
@@ -469,12 +469,15 @@ begin
   raise exception 'COGS_INVALID_PRODUCTION_LINES';
  end if;
  if jsonb_array_length(p_lines)=0 then raise exception 'COGS_INVALID_PRODUCTION_LINES'; end if;
+ if jsonb_array_length(p_lines)>200 then raise exception 'COGS_INVALID_PRODUCTION_LINES'; end if;
  for v_line in select value from jsonb_array_elements(p_lines) loop
   v_wip_id:=nullif(trim(coalesce(v_line->>'wip_id','')),'')::uuid;
   v_batches:=nullif(trim(coalesce(v_line->>'batches','')),'')::numeric;
   if v_wip_id is null or v_batches is null or v_batches<=0 or v_batches<>trunc(v_batches) then
    raise exception 'COGS_INVALID_PRODUCTION_BATCH_LINE';
   end if;
+  if v_wip_id=any(v_seen) then raise exception 'COGS_DUPLICATE_WIP_IN_BATCH'; end if;
+  v_seen:=array_append(v_seen,v_wip_id);
   select yield_qty into v_yield from public.cogs_wip
    where id=v_wip_id and division_id=p_division_id and active=true;
   if not found or coalesce(v_yield,0)<=0 then raise exception 'COGS_WIP_NOT_ACTIVE_OR_WRONG_DIVISION'; end if;
@@ -488,7 +491,7 @@ create or replace function public.cogs_record_menu_sales_batch(
  p_division_id uuid,p_sold_at date,p_lines jsonb,p_notes text default null
 ) returns integer language plpgsql security definer set search_path=public
 as $barapp_batch_ops$
-declare v_line jsonb; v_menu_id uuid; v_qty numeric; v_price numeric; v_saved integer:=0;
+declare v_line jsonb; v_menu_id uuid; v_qty numeric; v_price numeric; v_saved integer:=0; v_seen uuid[]:=array[]::uuid[];
 begin
  perform public.cogs_assert_division_module(p_division_id, 'cogs_sales');
  if not public.has_perm('cogs.sales.manage') then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
@@ -499,6 +502,7 @@ begin
   raise exception 'COGS_INVALID_SALE_LINES';
  end if;
  if jsonb_array_length(p_lines)=0 then raise exception 'COGS_INVALID_SALE_LINES'; end if;
+ if jsonb_array_length(p_lines)>200 then raise exception 'COGS_TOO_MANY_SALE_LINES'; end if;
  for v_line in select value from jsonb_array_elements(p_lines) loop
   v_menu_id:=nullif(trim(coalesce(v_line->>'menu_id','')),'')::uuid;
   v_qty:=nullif(trim(coalesce(v_line->>'qty','')),'')::numeric;
@@ -506,6 +510,8 @@ begin
   if v_menu_id is null or v_qty is null or v_qty<=0 or (v_price is not null and v_price<0) then
    raise exception 'COGS_INVALID_SALE_LINE';
   end if;
+  if v_menu_id=any(v_seen) then raise exception 'COGS_DUPLICATE_MENU_IN_BATCH'; end if;
+  v_seen:=array_append(v_seen,v_menu_id);
   perform public.cogs_record_menu_sale(p_division_id,v_menu_id,v_qty,p_sold_at,v_price,p_notes);
   v_saved:=v_saved+1;
  end loop;
