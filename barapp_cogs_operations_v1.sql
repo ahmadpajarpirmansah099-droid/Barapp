@@ -216,15 +216,17 @@ begin
    return public.division_module_enabled(p_division_id,'cogs_production')
     and (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage') or public.has_perm('cogs.production.manage'));
   when 'production_inputs' then
-   return public.division_module_enabled(p_division_id,'cogs_production')
-    and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage'));
+   return
+    (public.division_module_enabled(p_division_id,'cogs_production') and (public.has_perm('cogs.production.view') or public.has_perm('cogs.production.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
   when 'sales' then
    return
     (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
     or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit')));
   when 'sales_lines' then
-   return public.division_module_enabled(p_division_id,'cogs_sales')
-    and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage'));
+   return
+    (public.division_module_enabled(p_division_id,'cogs_sales') and (public.has_perm('cogs.sales.view') or public.has_perm('cogs.sales.manage')))
+    or (public.division_module_enabled(p_division_id,'cogs_daily_so') and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
   when 'daily_so' then
    return public.division_module_enabled(p_division_id,'cogs_daily_so')
     and (public.has_perm('cogs.daily_so.system') or public.has_perm('cogs.daily_so.difference') or public.has_perm('cogs.daily_so.edit'));
