@@ -127,10 +127,38 @@ alter table public.cogs_daily_so_lines enable row level security;
 
 create or replace function public.cogs_ops_can_access_division(p_division_id uuid)
 returns boolean language sql stable security definer set search_path=public,auth
-as $$
- select auth.uid() is not null and exists(select 1 from public.divisions d where d.id=p_division_id and d.has_cogs=true
- and (coalesce(public.app_role(),'') in ('dev','hr','legacy_admin') or (coalesce(public.app_role(),'')='div_admin' and public.can_access_scope(d.outlet_id,d.id))));
-$$;
+as $
+ select auth.uid() is not null
+   and exists (
+    select 1
+    from public.divisions d
+    where d.id=p_division_id and d.has_cogs=true
+      and (
+       coalesce(public.app_role(),'')='dev'
+       or (
+        (
+          public.has_perm('cogs.daily_so.system')
+          or public.has_perm('cogs.daily_so.difference')
+          or public.has_perm('cogs.daily_so.edit')
+          or public.has_perm('cogs.production.view')
+          or public.has_perm('cogs.production.manage')
+          or public.has_perm('cogs.wip.view')
+          or public.has_perm('cogs.wip.manage')
+          or public.has_perm('cogs.menu.view')
+          or public.has_perm('cogs.menu.manage')
+          or public.has_perm('cogs.sales.view')
+          or public.has_perm('cogs.sales.manage')
+          or (public.division_module_enabled(d.id,'cogs_production')
+             and (public.has_perm('inventory.inbound.manage') or public.has_perm('inventory.manage')))
+        )
+        and (
+          coalesce(public.app_role(),'') in ('hr','legacy_admin')
+          or (coalesce(public.app_role(),'')='div_admin' and public.can_access_scope(d.outlet_id,d.id))
+        )
+       )
+      )
+   );
+$;
 revoke all on function public.cogs_ops_can_access_division(uuid) from public,anon;
 grant execute on function public.cogs_ops_can_access_division(uuid) to authenticated;
 
@@ -784,7 +812,7 @@ begin
   or public.has_perm('cogs.sales.manage')
  ) then raise exception 'COGS_FEATURE_PERMISSION_DENIED' using errcode='42501'; end if;
  return query select i.id,i.name,i.base_unit,i.conversions,i.reference_price_per_base,i.reference_price_amount,i.reference_price_unit,i.last_purchase_price_per_base,i.active,i.division_id
- from public.barapp_items i join public.divisions d on d.id=i.division_id where d.has_cogs=true and coalesce(i.is_supply,false)=false and public.cogs_ops_can_access_division(i.division_id) order by i.name;
+ from public.barapp_items i join public.divisions d on d.id=i.division_id where d.has_cogs=true and coalesce(i.is_supply,false)=false and public.barapp_can_access_division(i.division_id) order by i.name;
 end; $$;
 revoke all on function public.cogs_list_materials() from public,anon;
 grant execute on function public.cogs_list_materials() to authenticated;
