@@ -3266,7 +3266,7 @@ async function opsLoadApprovedReport(div,date){
 function opsApprovedReportHtml(div,date){
  const key=String(div)+'|'+String(date);
  if(OPS.approvedReportKey!==key){opsLoadApprovedReport(div,date);return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Memeriksa status approval…</p></div>'}
- if(OPS.approvedReportStatus==='loading')return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Memeriksa status approval…</p></div>';
+ if(OPS.approvedReportStatus==='loading')return '';
  if(OPS.approvedReportStatus==='hidden')return '';
  if(OPS.approvedReportStatus==='error')return '<div class="card ops-approved-report"><h3>Laporan Daily SO</h3><p class="mu">Status approval tidak dapat diverifikasi. Laporan disembunyikan demi keamanan.</p><button class="btn s" onclick="OPS.approvedReportKey=\'\';R()">Coba lagi</button></div>';
  const so=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
