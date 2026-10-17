@@ -25,6 +25,22 @@ create unique index if not exists cogs_menus_division_name_lower_uq on public.co
 create index if not exists cogs_wip_division_idx on public.cogs_wip(division_id);
 create index if not exists cogs_menus_division_idx on public.cogs_menus(division_id);
 
+-- Avoid silently invalidating legacy COGS recipes when SUPPLIES is excluded from COGS.
+do $barapp_supply_recipe_check$
+begin
+ if exists (
+  select 1 from public.cogs_wip_recipe_lines l
+  join public.barapp_items i on i.id=l.item_id
+  where l.component_type='material' and coalesce(i.is_supply,false)=true
+ ) or exists (
+  select 1 from public.cogs_menu_recipe_lines l
+  join public.barapp_items i on i.id=l.item_id
+  where l.component_type='material' and coalesce(i.is_supply,false)=true
+ ) then
+  raise exception 'COGS_SUPPLIES_IN_RECIPE: remove or replace SUPPLIES components in COGS recipes before applying this migration';
+ end if;
+end; $barapp_supply_recipe_check$;
+
 create table if not exists public.cogs_production_batches (
  id uuid primary key default gen_random_uuid(),
  division_id uuid not null references public.divisions(id) on delete restrict,
