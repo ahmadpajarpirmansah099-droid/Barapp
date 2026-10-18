@@ -43,8 +43,10 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 
 ## Free validation path (no paid Supabase branch)
 - [ ] Run `barapp_closing_reopen_preflight_v1.sql` in the SQL Editor as a read-only prerequisite check; it must not change schema or data.
-- [ ] Use GitHub Actions static QA/preview builds for free code-level checks; retain the passed run URL and commit SHA.
-- [ ] For end-to-end transaction tests, use a disposable local PostgreSQL/Supabase CLI environment only after the relevant schema and prerequisite functions are available locally. Do not substitute the live database for staging.
+- [x] GitHub Actions runs the static QA, preview build, and `closing-reopen-postgres-test` against a disposable PostgreSQL service; this test path does not connect to Supabase or touch operational data.
+- [x] The isolated PostgreSQL smoke test covers cancel, prior snapshot/audit preservation, invalid reason and unauthorized-role guards, resetting module confirmations, and calling the repository's approval RPC again after the required modules are reconfirmed.
+- [ ] Scope limitation: the PostgreSQL fixture deliberately disables optional COGS/Daily SO modules. It verifies the closing lifecycle but does not prove current-day stock-position arithmetic or the live database's trigger interactions.
+- [ ] For full stock-calculation regression, use a disposable local PostgreSQL/Supabase CLI environment after the complete schema and prerequisites are available locally. Do not substitute the live database for staging.
 - [ ] Do not create a billed Supabase development branch or apply the cancellation migration to production as a workaround.
 
 ## Closing approval cancel/reopen regression
