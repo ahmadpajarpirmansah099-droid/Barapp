@@ -295,14 +295,14 @@ DECLARE
 BEGIN
   SELECT count(*),
          count(*) FILTER (
-           WHERE substring(cfg from length('search_path=') + 1) LIKE 'pg_catalog,%'
-             AND right(rtrim(substring(cfg from length('search_path=') + 1)),7)='pg_temp'
+           WHERE substring(settings.setting from length('search_path=') + 1) LIKE 'pg_catalog,%'
+             AND right(rtrim(substring(settings.setting from length('search_path=') + 1)),7)='pg_temp'
          )
     INTO v_total, v_hardened
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid=p.pronamespace
-  CROSS JOIN LATERAL unnest(coalesce(p.proconfig,array[]::text[])) cfg
-  WHERE n.nspname='public' AND p.prosecdef AND cfg LIKE 'search_path=%';
+  CROSS JOIN LATERAL unnest(coalesce(p.proconfig,array[]::text[])) AS settings(setting)
+  WHERE n.nspname='public' AND p.prosecdef AND settings.setting LIKE 'search_path=%';
 
   IF v_total = 0 OR v_total <> v_hardened THEN
     RAISE EXCEPTION 'TEST_FAILURE: security hardening left % of % SECURITY DEFINER routines unhardened',
