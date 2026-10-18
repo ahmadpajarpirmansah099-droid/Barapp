@@ -317,13 +317,13 @@ DECLARE
 BEGIN
   SELECT status INTO STRICT v_status
     FROM public.barapp_closing_periods
-   WHERE id=:'test_period_id'::uuid;
+   WHERE id='44444444-4444-4444-4444-444444444444'::uuid;
   SELECT count(*) INTO v_confirmed_count
     FROM public.barapp_closing_modules
-   WHERE closing_id=:'test_period_id'::uuid
+   WHERE closing_id='44444444-4444-4444-4444-444444444444'::uuid
      AND module_key IN ('pengeluaran','barang_masuk')
      AND status='confirmed_empty'
-     AND confirmed_by=:'test_actor_id'::uuid
+     AND confirmed_by='55555555-5555-5555-5555-555555555555'::uuid
      AND confirmed_at IS NOT NULL
      AND snapshot->>'fingerprint'='ci-test-snapshot';
   IF v_status <> 'ready' OR v_confirmed_count <> 2 THEN
