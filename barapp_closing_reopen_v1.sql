@@ -36,6 +36,10 @@ begin
     raise exception 'CLOSING_REASON_REQUIRED';
   end if;
 
+  if char_length(v_reason) > 500 then
+    raise exception 'CLOSING_REASON_TOO_LONG';
+  end if;
+
   select *
     into v_period
     from public.barapp_closing_periods
@@ -65,7 +69,10 @@ begin
   );
 
   update public.barapp_closing_periods
-     set status = 'needs_reconciliation'
+     set status = 'needs_reconciliation',
+         approved_by = null,
+         approved_at = null,
+         summary = '{}'::jsonb
    where id = v_period.id
    returning * into v_period;
 
