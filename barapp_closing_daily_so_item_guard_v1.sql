@@ -1,9 +1,8 @@
--- BarApp Closing Daily SO item-set guard V1
+-- BarApp Closing Daily SO snapshot guard V1
 -- Apply to a VERIFIED staging database first. This migration does not alter or delete
--- operational transaction rows. It validates that a Daily SO's saved component set still
--- validates the submitted SO snapshot's component references and internal consistency.
--- Historical/backdated SO remains valid when catalog rows were registered later; the guard
--- checks the saved snapshot, not today's active catalog set.
+-- operational transaction rows. Backdated SO is validated against its saved snapshot and
+-- is not re-derived from today's active catalog. Today's SO must still match the active
+-- non-SUPPLIES materials and enabled WIP set; approval refreshes live quantities only for today.
 --
 -- The internal helper is not executable by client roles. Closing access remains separate
 -- from COGS edit permissions: the helper uses the closing role/scope guard and does not call
