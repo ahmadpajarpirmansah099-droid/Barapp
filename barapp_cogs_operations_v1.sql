@@ -1,6 +1,9 @@
 -- Barapp COGS Operations V1 (consolidated reference migration)
 -- Apply order on a fresh database: barapp_cogs_v1.sql, barapp_cogs_access_fix.sql,
--- barapp_cogs_privileges_fix.sql, then this file LAST in Supabase SQL Editor.
+-- barapp_cogs_privileges_fix.sql, then this file LAST among COGS migrations.
+-- After ALL migrations that create/replace SECURITY DEFINER routines, run
+-- barapp_security_hardening_v1.sql as the final function-configuration step, then
+-- barapp_security_verify_v1.sql. Do not run this file after security hardening.
 -- This final script replaces unscoped V1 RPCs with division-scoped RPCs, then adds
 -- WIP production, menu-sale HPP snapshots, and Daily SO with stock roll-forward.
 -- Production project has already received these schema changes; do not rerun needlessly.
