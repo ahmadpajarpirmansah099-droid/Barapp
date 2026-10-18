@@ -384,15 +384,15 @@ begin
  and l.component_type='material' and l.item_id=p_item_id order by s.so_date desc limit 1;
  if found then
   return coalesce(v_base,0)
-   +coalesce((select sum(i.qty_base) from public.barapp_stock_in i where i.item_id=p_item_id and i.status='posted' and i.received_at>v_cut and i.received_at<=p_as_of),0)
-   -coalesce((select sum(r.qty_base) from public.barapp_stock_returns r where r.item_id=p_item_id and r.status='posted' and r.returned_at>v_cut and r.returned_at<=p_as_of),0)
+   +coalesce((select sum(i.qty_base) from public.barapp_stock_in i where i.item_id=p_item_id and i.status='posted' and (i.received_at at time zone 'Asia/Jakarta')::date>v_cut and i.received_at<(p_as_of+1)::timestamp at time zone 'Asia/Jakarta'),0)
+   -coalesce((select sum(r.qty_base) from public.barapp_stock_returns r where r.item_id=p_item_id and r.status='posted' and (r.returned_at at time zone 'Asia/Jakarta')::date>v_cut and r.returned_at<(p_as_of+1)::timestamp at time zone 'Asia/Jakarta'),0)
    -coalesce((select sum(l.qty_base) from public.cogs_production_inputs l join public.cogs_production_batches b on b.id=l.batch_id where l.component_type='material' and l.item_id=p_item_id and b.division_id=v_div and b.status='posted' and b.produced_at>v_cut and b.produced_at<=p_as_of),0)
    -coalesce((select sum(l.qty_base) from public.cogs_menu_sales_lines l join public.cogs_menu_sales s on s.id=l.sale_id where l.component_type='material' and l.item_id=p_item_id and s.division_id=v_div and s.status='posted' and s.sold_at>v_cut and s.sold_at<=p_as_of),0)
    -coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='material' and o.item_id=p_item_id and o.from_division_id=v_div and o.status='posted' and o.out_date>v_cut and o.out_date<=p_as_of),0)
    +coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='material' and o.target_item_id=p_item_id and o.to_division_id=v_div and o.category='Move' and o.status='posted' and o.out_date>v_cut and o.out_date<=p_as_of),0);
  end if;
- return coalesce((select sum(i.qty_base) from public.barapp_stock_in i where i.item_id=p_item_id and i.status='posted' and i.received_at<=p_as_of),0)
-  -coalesce((select sum(r.qty_base) from public.barapp_stock_returns r where r.item_id=p_item_id and r.status='posted' and r.returned_at<=p_as_of),0)
+ return coalesce((select sum(i.qty_base) from public.barapp_stock_in i where i.item_id=p_item_id and i.status='posted' and i.received_at<(p_as_of+1)::timestamp at time zone 'Asia/Jakarta'),0)
+  -coalesce((select sum(r.qty_base) from public.barapp_stock_returns r where r.item_id=p_item_id and r.status='posted' and r.returned_at<(p_as_of+1)::timestamp at time zone 'Asia/Jakarta'),0)
   -coalesce((select sum(l.qty_base) from public.cogs_production_inputs l join public.cogs_production_batches b on b.id=l.batch_id where l.component_type='material' and l.item_id=p_item_id and b.division_id=v_div and b.status='posted' and b.produced_at<=p_as_of),0)
   -coalesce((select sum(l.qty_base) from public.cogs_menu_sales_lines l join public.cogs_menu_sales s on s.id=l.sale_id where l.component_type='material' and l.item_id=p_item_id and s.division_id=v_div and s.status='posted' and s.sold_at<=p_as_of),0)
   -coalesce((select sum(o.qty_base) from public.barapp_stock_out o where o.item_type='material' and o.item_id=p_item_id and o.from_division_id=v_div and o.status='posted' and o.out_date<=p_as_of),0)
