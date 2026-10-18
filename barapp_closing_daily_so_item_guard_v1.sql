@@ -1,14 +1,13 @@
 -- BarApp Closing Daily SO item-set guard V1
--- This migration prevents confirming a Daily SO whose component list no longer matches
--- the stock-position item set valid for that date. It does not alter or delete transactions.
--- Apply to a verified staging database first, then test all closing roles and modules.
+-- Apply to a VERIFIED staging database first. This migration does not alter or delete
+-- operational transaction rows. It validates that a Daily SO's saved component set still
+-- matches active non-SUPPLIES material and enabled WIP items valid on the closing date.
+-- This catches legacy/backdated SO snapshots at confirmation time, rather than letting the
+-- closing workflow proceed until final approval fails.
 --
--- Why this is needed:
--- Older submitted SO snapshots can exist for dates before their current master items'
--- created_at dates. Closing approval has a final guard, but confirming the SO module early
--- should detect this inconsistency so the workflow fails with a clear error sooner.
--- The helper checks the expected set directly and does not rely on cogs_get_stock_position,
--- which is permission-gated for COGS users and must remain decoupled from closing roles.
+-- The internal helper is not executable by client roles. Closing access remains separate
+-- from COGS edit permissions: the helper uses the closing role/scope guard and does not call
+-- permission-gated cogs_get_stock_position.
 
 create or replace function public.barapp_closing_daily_so_item_set_matches(
   p_division_id uuid,
@@ -74,7 +73,6 @@ begin
     return false;
   end if;
 
-  -- Every eligible material must appear exactly once in the saved SO.
   if exists (
     select 1
     from public.barapp_items i
@@ -93,7 +91,6 @@ begin
     return false;
   end if;
 
-  -- Every eligible WIP must appear exactly once when the WIP module was enabled.
   if public.division_module_enabled(p_division_id, 'cogs_wip') and exists (
     select 1
     from public.cogs_wip w
@@ -160,12 +157,20 @@ begin
     raise exception 'CLOSING_MODULE_DISABLED';
   end if;
 
-  -- Fail early for historical/stale SO snapshots before they can be marked confirmed.
-  -- This guard checks the current date-scoped item set without requiring COGS edit grants.
-  if p_module_key = 'daily_so'
-     and not public.barapp_closing_daily_so_item_set_matches(p_division_id,p_closing_date) then
-    raise exception 'CLOSING_SO_ITEM_SET_CHANGED'
-      using detail = 'Daily SO item set does not match active materials/WIP valid on the closing date. Reconcile the SO before confirming.';
+  if p_module_key = 'daily_so' then
+    if not exists (
+      select 1 from public.cogs_daily_so s
+      where s.division_id = p_division_id
+        and s.so_date = p_closing_date
+        and s.status = 'submitted'
+    ) then
+      raise exception 'CLOSING_DAILY_SO_REQUIRED';
+    end if;
+
+    if not public.barapp_closing_daily_so_item_set_matches(p_division_id,p_closing_date) then
+      raise exception 'CLOSING_SO_ITEM_SET_CHANGED'
+        using detail = 'Daily SO item set does not match active materials/WIP valid on the closing date. Reconcile the SO before confirming.';
+    end if;
   end if;
 
   select outlet_id
@@ -212,7 +217,7 @@ begin
   v_status := case when p_confirmed_empty then 'confirmed_empty' else 'confirmed' end;
 
   insert into public.barapp_closing_modules(closing_id,module_key,status,snapshot,confirmed_by,confirmed_at,note)
-  values(v_period,p_module_key,v_status,v_snap,auth.uid(),now(),nullif(trim(coalesce(p_note,'')),''))
+  values(v_period,p_module_key,v_status,v_snap,auth.uid(),now(),nullif(trim(coalesce(p_note,'')), ''))
   on conflict(closing_id,module_key) do update
     set status=excluded.status,
         snapshot=excluded.snapshot,
@@ -253,7 +258,7 @@ begin
     v_period::text||':'||p_module_key,v_old,
     jsonb_build_object('status',v_status,'snapshot',v_snap,'closing_date',p_closing_date,
       'division_id',p_division_id),
-    nullif(trim(coalesce(p_note,''),''));
+    nullif(trim(coalesce(p_note,'')), ''));
 
   return jsonb_build_object('closing_id',v_period,'module_key',p_module_key,'status',v_status,
     'snapshot',v_snap,'closing_status',case when v_all then 'ready' else 'draft' end);
