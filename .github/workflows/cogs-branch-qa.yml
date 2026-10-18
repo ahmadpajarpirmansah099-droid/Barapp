@@ -185,6 +185,11 @@ jobs:
             "information_schema.columns",
             "to_regprocedure('public.barapp_closing_reopen(uuid,date,text)')",
             "approval_marker_consistency",
+            "trigger_requirements(table_name, trigger_name)",
+            "trg_closing_dirty_stock_in",
+            "trg_closing_dirty_stock_out",
+            "trg_closing_dirty_sales_lines",
+            "trg_closing_dirty_production_inputs",
             "migration:barapp_closing_reopen"
           ];
           const missing = required.filter(marker => !executable.includes(marker));
