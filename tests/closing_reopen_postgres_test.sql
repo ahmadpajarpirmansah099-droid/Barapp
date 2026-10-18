@@ -92,25 +92,27 @@ GRANT EXECUTE ON FUNCTION public.barapp_closing_can_access_division(uuid) TO ano
 
 CREATE FUNCTION public.barapp_can_access_division(p_division_id uuid) RETURNS boolean
 LANGUAGE sql STABLE
-AS $ SELECT p_division_id IS NOT NULL AND auth.uid() IS NOT NULL
-          AND coalesce(public.app_role(), '') IN ('dev', 'div_admin') $;
+AS $can_access$
+  SELECT p_division_id IS NOT NULL AND auth.uid() IS NOT NULL
+     AND coalesce(public.app_role(), '') IN ('dev', 'div_admin')
+$can_access$;
 
 CREATE FUNCTION public.division_module_enabled(p_division_id uuid, p_module_key text) RETURNS boolean
 LANGUAGE sql STABLE
-AS $ SELECT false $;
+AS $module_enabled$ SELECT false $module_enabled$;
 
 CREATE FUNCTION public.barapp_closing_module_snapshot(
   p_division_id uuid, p_closing_date date, p_module_key text
 ) RETURNS jsonb
 LANGUAGE sql STABLE
-AS $
+AS $module_snapshot$
   SELECT jsonb_build_object(
     'module_key', p_module_key,
     'date', p_closing_date::text,
     'fingerprint', 'ci-test-snapshot',
     'count', 0
   )
-$;
+$module_snapshot$;
 
 -- Approval summary references these columns even when COGS/Daily SO is disabled
 -- in this isolated fixture. The production stock movement logic is not exercised.
