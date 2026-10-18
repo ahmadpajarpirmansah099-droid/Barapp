@@ -43,6 +43,40 @@ jobs:
           });
           NODE
 
+      - name: Check Daily SO closing snapshot and backdate guards
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const sql = fs.readFileSync('barapp_closing_daily_so_item_guard_v1.sql', 'utf8');
+          const helperStart = sql.indexOf('create or replace function public.barapp_closing_daily_so_item_set_matches');
+          const confirmStart = sql.indexOf('create or replace function public.barapp_closing_confirm_module');
+          const approveStart = sql.indexOf('create or replace function public.barapp_closing_approve');
+          if ([helperStart, confirmStart, approveStart].some(index => index < 0)) {
+            throw new Error('Missing closing guard function definition');
+          }
+          const helper = sql.slice(helperStart, confirmStart);
+          const approval = sql.slice(approveStart);
+          const required = [
+            [helper, 'component_type', 'snapshot component-type validation'],
+            [helper, 'having count(*) > 1', 'duplicate component guard'],
+            [helper, 'division_id = p_division_id', 'division ownership guard'],
+            [helper, 'p_closing_date = (now() at time zone \'Asia/Jakarta\')::date', 'current-day strict catalog guard'],
+            [approval, 'if p_closing_date = v_today then', 'current-day-only refresh'],
+            [approval, 'Historical/backdated closing deliberately keeps its submitted expected', 'backdate snapshot preservation'],
+            [approval, 'Require a two-way exact match', 'exact current-day component-set comparison'],
+            [approval, 'to authenticated', 'authenticated approval grant']
+          ];
+          const missing = required.filter(([source, marker]) => !source.includes(marker));
+          if (missing.length) {
+            console.error('Missing closing SQL invariants:', missing.map(([_, marker, label]) => label).join(', '));
+            process.exit(1);
+          }
+          if (helper.includes("created_at at time zone 'Asia/Jakarta'")) {
+            throw new Error('Historical guard must not reject items based on current master created_at');
+          }
+          console.log('Daily SO closing/backdate SQL invariants: OK');
+          NODE
+
       - name: Check expected COGS UI and RPC wiring
         run: |
           node <<'NODE'
