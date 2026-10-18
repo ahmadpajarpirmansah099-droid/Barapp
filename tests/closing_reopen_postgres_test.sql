@@ -128,6 +128,67 @@ CREATE TABLE public.cogs_daily_so_lines (
   variance_value_snapshot numeric DEFAULT 0
 );
 
+-- Minimal transaction table fixtures for the checked-in reconciliation-trigger migration.
+CREATE TABLE public.barapp_stock_in (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  received_at date NOT NULL,
+  status text NOT NULL DEFAULT 'posted'
+);
+CREATE TABLE public.barapp_stock_out (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_division_id uuid,
+  to_division_id uuid,
+  out_date date,
+  category text,
+  status text NOT NULL DEFAULT 'posted'
+);
+CREATE TABLE public.barapp_stock_returns (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  returned_at date NOT NULL,
+  status text NOT NULL DEFAULT 'posted'
+);
+CREATE TABLE public.barapp_supplies_so (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  so_date date NOT NULL,
+  status text NOT NULL DEFAULT 'submitted'
+);
+CREATE TABLE public.barapp_supplies_so_lines (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  so_id uuid
+);
+CREATE TABLE public.cogs_daily_so (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  so_date date NOT NULL,
+  status text NOT NULL DEFAULT 'submitted'
+);
+CREATE TABLE public.cogs_menu_sales (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  sold_at date NOT NULL,
+  status text NOT NULL DEFAULT 'posted'
+);
+CREATE TABLE public.cogs_menu_sales_lines (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  sale_id uuid
+);
+CREATE TABLE public.cogs_production_batches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  division_id uuid NOT NULL,
+  produced_at date NOT NULL,
+  status text NOT NULL DEFAULT 'posted'
+);
+CREATE TABLE public.cogs_production_inputs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  batch_id uuid
+);
+
+-- Install repository-owned triggers in the disposable CI database only.
+\ir ../barapp_closing_reconciliation_triggers_v1.sql
+
 -- Resolve a Jakarta-local date and seed one approved period, four module snapshots,
 -- plus an unrelated operational sentinel row.
 SELECT (now() AT TIME ZONE 'Asia/Jakarta')::date::text AS test_closing_date \gset
@@ -136,6 +197,64 @@ SELECT (now() AT TIME ZONE 'Asia/Jakarta')::date::text AS test_closing_date \gse
 \set test_period_id 44444444-4444-4444-4444-444444444444
 \set test_actor_id 55555555-5555-5555-5555-555555555555
 \set prior_approver_id 66666666-6666-6666-6666-666666666666
+
+-- UPDATE regression: changing a transaction date must dirty BOTH the old and new
+-- approved closing periods. Seed the transaction before periods so INSERT does not
+-- pre-dirty the test periods.
+INSERT INTO public.divisions (id,outlet_id,active)
+VALUES ('77777777-7777-7777-7777-777777777777','88888888-8888-8888-8888-888888888888',true);
+
+INSERT INTO public.barapp_stock_in(id,division_id,received_at,status)
+VALUES (
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '77777777-7777-7777-7777-777777777777',
+  (now() AT TIME ZONE 'Asia/Jakarta')::date - 1,
+  'posted'
+);
+
+INSERT INTO public.barapp_closing_periods
+  (id,outlet_id,division_id,closing_date,status,approved_by,approved_at)
+VALUES
+  ('99999999-9999-9999-9999-999999999991','88888888-8888-8888-8888-888888888888',
+   '77777777-7777-7777-7777-777777777777',(now() AT TIME ZONE 'Asia/Jakarta')::date - 1,
+   'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+  ('99999999-9999-9999-9999-999999999992','88888888-8888-8888-8888-888888888888',
+   '77777777-7777-7777-7777-777777777777',(now() AT TIME ZONE 'Asia/Jakarta')::date,
+   'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour');
+
+UPDATE public.barapp_stock_in
+SET received_at=(now() AT TIME ZONE 'Asia/Jakarta')::date
+WHERE id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
+DO $trigger_update_test$
+DECLARE
+  v_old_status text;
+  v_new_status text;
+  v_audit_count integer;
+BEGIN
+  SELECT status INTO STRICT v_old_status
+  FROM public.barapp_closing_periods
+  WHERE id='99999999-9999-9999-9999-999999999991';
+  SELECT status INTO STRICT v_new_status
+  FROM public.barapp_closing_periods
+  WHERE id='99999999-9999-9999-9999-999999999992';
+  SELECT count(*) INTO v_audit_count
+  FROM public.audit_log
+  WHERE action='closing_marked_needs_reconciliation'
+    AND record_id IN (
+      '99999999-9999-9999-9999-999999999991',
+      '99999999-9999-9999-9999-999999999992'
+    )
+    AND reason LIKE '%barapp_stock_in%';
+
+  IF v_old_status <> 'needs_reconciliation'
+     OR v_new_status <> 'needs_reconciliation'
+     OR v_audit_count <> 2 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: UPDATE must reconcile old and new dates (old %, new %, audit %)',
+      v_old_status,v_new_status,v_audit_count;
+  END IF;
+END
+$trigger_update_test$;
 
 INSERT INTO public.divisions (id,outlet_id,active)
 VALUES (:'test_division_id'::uuid, :'test_outlet_id'::uuid, true);
