@@ -190,3 +190,41 @@ from (
   having sum(r.qty_base) > max(i.qty_base) + 0.000001
 ) q
 order by check_name;
+
+
+-- 6) Historical SO components created after the SO effective date need manual review.
+-- Nonzero results can indicate backdated test data or legitimate late master-data imports;
+-- do not automatically delete/void history. Resolve/approve the interpretation before rollout.
+with line_dates as (
+  select
+    s.id as so_id,
+    s.division_id,
+    s.so_date,
+    l.component_type,
+    l.item_id,
+    l.component_wip_id,
+    case
+      when l.component_type = 'material' then (
+        select (i.created_at at time zone 'Asia/Jakarta')::date
+        from public.barapp_items i where i.id = l.item_id
+      )
+      when l.component_type = 'wip' then (
+        select (w.created_at at time zone 'Asia/Jakarta')::date
+        from public.cogs_wip w where w.id = l.component_wip_id
+      )
+    end as component_created_date
+  from public.cogs_daily_so s
+  join public.cogs_daily_so_lines l on l.so_id = s.id
+  where s.status = 'submitted'
+)
+select
+  so_date,
+  division_id,
+  count(*) as snapshot_lines,
+  count(*) filter (where component_created_date is null) as missing_component_reference,
+  count(*) filter (where component_created_date > so_date) as components_created_after_so_date
+from line_dates
+group by so_id, so_date, division_id
+having count(*) filter (where component_created_date > so_date) > 0
+    or count(*) filter (where component_created_date is null) > 0
+order by so_date, division_id;
