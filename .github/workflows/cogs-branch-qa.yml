@@ -113,11 +113,29 @@ jobs:
             console.error('Missing closing cancellation markers:', [...missingUi, ...missingSql].join(', '));
             process.exit(1);
           }
-          if (/delete\s+from\s+public\.(cogs_daily_so|cogs_daily_so_lines|barapp_closing_periods|barapp_closing_modules|cogs_menu_sales|cogs_production_batches)/i.test(sql)) {
+          const executableSql = sql.replace(/^\s*--.*$/gm, '');
+          const mutations = executableSql.match(/\b(?:insert\s+into|update|delete\s+from|truncate(?:\s+table)?)\s+public\.([a-z_]+)/gi) || [];
+          const allowedTargets = new Set(['barapp_closing_periods', 'barapp_closing_modules', 'audit_log']);
+          const unsafeTargets = mutations.filter(statement => {
+            const match = statement.match(/public\.([a-z_]+)/i);
+            return !match || !allowedTargets.has(match[1].toLowerCase());
+          });
+          if (unsafeTargets.length) {
+            throw new Error('Cancellation migration mutates non-closing operational tables: ' + unsafeTargets.join('; '));
+          }
+          if (/delete\s+from\s+public\.(cogs_daily_so|cogs_daily_so_lines|barapp_closing_periods|barapp_closing_modules|cogs_menu_sales|cogs_production_batches)/i.test(executableSql)) {
             throw new Error('Cancellation SQL must not delete operational/closing records');
           }
-          if (!sql.includes("set status = 'pending'") || !sql.includes("snapshot = '{}'::jsonb")) {
+          if (!executableSql.includes("approved_by = null") || !executableSql.includes("approved_at = null") || !executableSql.includes("summary = '{}'::jsonb")) {
+            throw new Error('Re-opening must clear active approval markers and summary');
+          }
+          if (!executableSql.includes("set status = 'pending'") || !executableSql.includes("snapshot = '{}'::jsonb")) {
             throw new Error('Re-opening must invalidate confirmation snapshots to require fresh confirmations');
+          }
+          const archivedAt = executableSql.indexOf("'period', to_jsonb(v_period)");
+          const resetAt = executableSql.indexOf("approved_by = null");
+          if (archivedAt < 0 || resetAt < 0 || archivedAt > resetAt) {
+            throw new Error('Prior approval must be archived before active approval markers are cleared');
           }
           console.log('Closing cancellation RPC/UI invariants: OK');
           NODE
