@@ -90,7 +90,37 @@ GRANT EXECUTE ON FUNCTION public.app_role() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.barapp_closing_assert_access() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.barapp_closing_can_access_division(uuid) TO anon, authenticated;
 
--- Resolve a Jakarta-local date and seed one approved period, two module snapshots,
+CREATE FUNCTION public.barapp_can_access_division(p_division_id uuid) RETURNS boolean
+LANGUAGE sql STABLE
+AS $ SELECT p_division_id IS NOT NULL AND auth.uid() IS NOT NULL
+          AND coalesce(public.app_role(), '') IN ('dev', 'div_admin') $;
+
+CREATE FUNCTION public.division_module_enabled(p_division_id uuid, p_module_key text) RETURNS boolean
+LANGUAGE sql STABLE
+AS $ SELECT false $;
+
+CREATE FUNCTION public.barapp_closing_module_snapshot(
+  p_division_id uuid, p_closing_date date, p_module_key text
+) RETURNS jsonb
+LANGUAGE sql STABLE
+AS $
+  SELECT jsonb_build_object(
+    'module_key', p_module_key,
+    'date', p_closing_date::text,
+    'fingerprint', 'ci-test-snapshot',
+    'count', 0
+  )
+$;
+
+-- Approval summary references these columns even when COGS/Daily SO is disabled
+-- in this isolated fixture. The production stock movement logic is not exercised.
+CREATE TABLE public.cogs_daily_so_lines (
+  so_id uuid,
+  variance_qty_base numeric DEFAULT 0,
+  variance_value_snapshot numeric DEFAULT 0
+);
+
+-- Resolve a Jakarta-local date and seed one approved period, four module snapshots,
 -- plus an unrelated operational sentinel row.
 SELECT (now() AT TIME ZONE 'Asia/Jakarta')::date::text AS test_closing_date \gset
 \set test_division_id 22222222-2222-2222-2222-222222222222
@@ -114,10 +144,16 @@ VALUES
   (:'test_period_id'::uuid, 'daily_so', 'confirmed',
    '{"fingerprint":"daily-before","count":3}', :'test_actor_id'::uuid, now(), 'Daily SO snapshot'),
   (:'test_period_id'::uuid, 'sales', 'confirmed',
-   '{"fingerprint":"sales-before","count":2}', :'test_actor_id'::uuid, now(), 'Sales snapshot');
+   '{"fingerprint":"sales-before","count":2}', :'test_actor_id'::uuid, now(), 'Sales snapshot'),
+  (:'test_period_id'::uuid, 'pengeluaran', 'confirmed',
+   '{"fingerprint":"expense-before","count":1}', :'test_actor_id'::uuid, now(), 'Expense snapshot'),
+  (:'test_period_id'::uuid, 'barang_masuk', 'confirmed',
+   '{"fingerprint":"stockin-before","count":1}', :'test_actor_id'::uuid, now(), 'Stock-in snapshot');
 
 INSERT INTO public.test_operational_sentinel(id, quantity) VALUES ('keep-me', 17);
 
+-- Load the actual approval/confirmation RPC definitions from this repository.
+\ir ../barapp_closing_daily_so_item_guard_v1.sql
 \ir ../barapp_closing_reopen_v1.sql
 
 SELECT set_config('request.jwt.claim.sub', :'test_actor_id', false);
@@ -159,7 +195,7 @@ BEGIN
      AND confirmed_by IS NULL
      AND confirmed_at IS NULL
      AND note IS NULL;
-  IF v_module_count <> 2 THEN
+  IF v_module_count <> 4 THEN
     RAISE EXCEPTION 'TEST_FAILURE: expected both module snapshots to reset, got %', v_module_count;
   END IF;
 
@@ -172,7 +208,7 @@ BEGIN
      OR v_audit.old_data->'period'->>'status' <> 'approved'
      OR v_audit.old_data->'period'->>'approved_by' IS NULL
      OR v_audit.old_data->'period'->>'approved_at' IS NULL
-     OR jsonb_array_length(v_audit.old_data->'module_snapshots') <> 2
+     OR jsonb_array_length(v_audit.old_data->'module_snapshots') <> 4
      OR v_audit.new_data->>'status' <> 'needs_reconciliation' THEN
     RAISE EXCEPTION 'TEST_FAILURE: audit log did not preserve the previous approved state and module snapshots';
   END IF;
@@ -249,11 +285,68 @@ BEGIN
 END
 $test$;
 
+-- Reconfirm the modules required for this test fixture and run the actual
+-- repository approval function after cancellation. Optional COGS modules are disabled
+-- in this fixture, so this tests lifecycle/metadata re-approval but not stock calculation.
+UPDATE public.barapp_closing_modules
+   SET status='confirmed',
+       snapshot=public.barapp_closing_module_snapshot(
+         :'test_division_id'::uuid, :'test_closing_date'::date, module_key),
+       confirmed_by=:'test_actor_id'::uuid,
+       confirmed_at=now(),
+       note='CI reconfirmation'
+ WHERE closing_id=:'test_period_id'::uuid
+   AND module_key IN ('pengeluaran','barang_masuk');
+
+UPDATE public.barapp_closing_periods
+   SET status='ready', summary='{}'::jsonb
+ WHERE id=:'test_period_id'::uuid;
+
+SET ROLE authenticated;
+SELECT public.barapp_closing_approve(
+  :'test_division_id'::uuid,
+  :'test_closing_date'::date,
+  'CI test: re-approval after reconfirmation'
+);
+RESET ROLE;
+
 DO $test$
+DECLARE
+  v_period public.barapp_closing_periods%ROWTYPE;
+  v_approval_audit public.audit_log%ROWTYPE;
+  v_operational_quantity integer;
 BEGIN
-  IF (SELECT count(*) FROM public.audit_log WHERE action='closing_approval_cancelled') <> 1 THEN
-    RAISE EXCEPTION 'TEST_FAILURE: invalid attempts unexpectedly added cancellation audit rows';
+  SELECT * INTO STRICT v_period
+    FROM public.barapp_closing_periods
+   WHERE id='44444444-4444-4444-4444-444444444444'::uuid;
+
+  IF v_period.status <> 'approved'
+     OR v_period.approved_by <> '55555555-5555-5555-5555-555555555555'::uuid
+     OR v_period.approved_at IS NULL
+     OR v_period.summary = '{}'::jsonb THEN
+    RAISE EXCEPTION 'TEST_FAILURE: re-approval did not restore approved status and metadata';
   END IF;
-  RAISE NOTICE 'PASS: closing reopen PostgreSQL integration smoke test';
+
+  SELECT * INTO STRICT v_approval_audit
+    FROM public.audit_log
+   WHERE action='closing_approved'
+     AND record_id=v_period.id::text;
+  IF v_approval_audit.new_data->>'status' <> 'approved'
+     OR v_approval_audit.reason <> 'CI test: re-approval after reconfirmation' THEN
+    RAISE EXCEPTION 'TEST_FAILURE: re-approval audit record missing or incorrect';
+  END IF;
+
+  IF (SELECT count(*) FROM public.audit_log WHERE action='closing_approval_cancelled') <> 1 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: cancellation audit count changed unexpectedly';
+  END IF;
+
+  SELECT quantity INTO STRICT v_operational_quantity
+    FROM public.test_operational_sentinel WHERE id='keep-me';
+  IF v_operational_quantity <> 17
+     OR (SELECT count(*) FROM public.cogs_daily_so_lines) <> 0 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: re-approval unexpectedly created or changed operational movement data';
+  END IF;
+
+  RAISE NOTICE 'PASS: closing reopen, invalid-input guards, re-approval lifecycle, and no extra movement';
 END
 $test$;
