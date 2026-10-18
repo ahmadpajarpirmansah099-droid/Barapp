@@ -95,6 +95,7 @@ async function reopenApproval(){
  if(rawReason===null)return;
  const reason=String(rawReason).trim();
  if(!reason)return toast('Alasan pembatalan approval wajib diisi.','warn');
+ if(reason.length>500)return toast('Alasan pembatalan maksimal 500 karakter.','warn');
  if(!confirm('Batalkan approval closing '+CL.date+' untuk divisi ini? Data transaksi tetap disimpan, tetapi semua modul harus dikonfirmasi ulang sebelum approval berikutnya.'))return;
  CL.busy='reopen';R();
  try{
