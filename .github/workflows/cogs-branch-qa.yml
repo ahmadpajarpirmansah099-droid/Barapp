@@ -12,6 +12,36 @@ permissions:
   contents: read
 
 jobs:
+  closing-reopen-postgres-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: barapp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d barapp_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run isolated PostgreSQL closing-reopen integration test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/barapp_test
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 --file tests/closing_reopen_postgres_test.sql
+
   static-qa:
     runs-on: ubuntu-latest
     steps:
