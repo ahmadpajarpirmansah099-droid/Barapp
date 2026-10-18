@@ -47,9 +47,8 @@ begin
     return false;
   end if;
 
-  -- Historical/backdated SO is validated against its own saved snapshot.
-  -- Do not compare it with today's active catalog or created_at dates: items may be
-  -- registered after the operational date without making a legitimate backdate invalid.
+  -- Historical/backdated SO is validated against its saved snapshot. Current-day
+  -- SO must also match today's active component set before it can be confirmed.
   select count(*)
   into v_actual_count
   from public.cogs_daily_so_lines l
@@ -88,8 +87,8 @@ begin
     return false;
   end if;
 
-  -- Verify that referenced catalog rows still exist and belong to this division.
-  -- Do not require current active status or a created_at <= closing_date cutoff.
+  -- Verify references and division ownership. A later active/inactive or supply
+  -- reclassification must not retroactively invalidate a backdated snapshot.
   if exists (
     select 1
     from public.cogs_daily_so_lines l
@@ -98,7 +97,11 @@ begin
      and i.division_id = p_division_id
     where l.so_id = v_so_id
       and l.component_type = 'material'
-      and (i.id is null or coalesce(i.is_supply, false) = true)
+      and (
+        i.id is null
+        or (p_closing_date = (now() at time zone 'Asia/Jakarta')::date
+            and (i.active is not true or coalesce(i.is_supply, false) = true))
+      )
   ) then
     return false;
   end if;
@@ -111,9 +114,68 @@ begin
      and w.division_id = p_division_id
     where l.so_id = v_so_id
       and l.component_type = 'wip'
-      and (w.id is null or not public.division_module_enabled(p_division_id, 'cogs_wip'))
+      and (
+        w.id is null
+        or (p_closing_date = (now() at time zone 'Asia/Jakarta')::date
+            and (w.active is not true
+                 or not public.division_module_enabled(p_division_id, 'cogs_wip')))
+      )
   ) then
     return false;
+  end if;
+
+  if p_closing_date = (now() at time zone 'Asia/Jakarta')::date then
+    select
+      (select count(*)
+       from public.barapp_items i
+       where i.division_id = p_division_id
+         and i.active = true
+         and coalesce(i.is_supply, false) = false)
+      +
+      (case when public.division_module_enabled(p_division_id, 'cogs_wip')
+        then (select count(*)
+              from public.cogs_wip w
+              where w.division_id = p_division_id
+                and w.active = true)
+        else 0 end)
+    into v_expected_count;
+
+    if v_expected_count <> v_actual_count then
+      return false;
+    end if;
+
+    if exists (
+      select 1
+      from public.barapp_items i
+      where i.division_id = p_division_id
+        and i.active = true
+        and coalesce(i.is_supply, false) = false
+        and not exists (
+          select 1
+          from public.cogs_daily_so_lines l
+          where l.so_id = v_so_id
+            and l.component_type = 'material'
+            and l.item_id = i.id
+        )
+    ) then
+      return false;
+    end if;
+
+    if public.division_module_enabled(p_division_id, 'cogs_wip') and exists (
+      select 1
+      from public.cogs_wip w
+      where w.division_id = p_division_id
+        and w.active = true
+        and not exists (
+          select 1
+          from public.cogs_daily_so_lines l
+          where l.so_id = v_so_id
+            and l.component_type = 'wip'
+            and l.component_wip_id = w.id
+        )
+    ) then
+      return false;
+    end if;
   end if;
 
   return true;
@@ -272,6 +334,203 @@ begin
     'snapshot',v_snap,'closing_status',case when v_all then 'ready' else 'draft' end);
 end;
 $barapp_closing_confirm_module$;
+
+-- Approval must not re-derive a historical SO from today's active catalog. For
+-- backdated closing, retain the submitted expected/count/cost snapshot. Today's closing
+-- still requires exact component-set equality and refreshes expected quantities as before.
+create or replace function public.barapp_closing_approve(
+  p_division_id uuid,
+  p_closing_date date,
+  p_note text default null
+) returns jsonb
+language plpgsql
+security definer
+set search_path to 'pg_catalog', 'public', 'auth', 'pg_temp'
+as $barapp_closing_approve$
+declare
+  v_period uuid;
+  v_missing text[];
+  v_changed text[];
+  m record;
+  v_expected_count integer;
+  v_so_id uuid;
+  v_summary jsonb;
+  v_old jsonb;
+  v_modules text[];
+  v_today date := (now() at time zone 'Asia/Jakarta')::date;
+begin
+  perform public.barapp_closing_assert_access();
+
+  if not public.barapp_can_access_division(p_division_id) then
+    raise exception 'CLOSING_DIVISION_FORBIDDEN' using errcode='42501';
+  end if;
+
+  if p_closing_date is null or p_closing_date > v_today then
+    raise exception 'CLOSING_INVALID_DATE';
+  end if;
+
+  select id into v_period
+  from public.barapp_closing_periods
+  where division_id=p_division_id and closing_date=p_closing_date
+  for update;
+
+  if v_period is null then
+    raise exception 'CLOSING_NOT_STARTED';
+  end if;
+
+  select to_jsonb(p) into v_old
+  from public.barapp_closing_periods p
+  where p.id=v_period;
+
+  if (select status from public.barapp_closing_periods where id=v_period)='approved' then
+    raise exception 'CLOSING_ALREADY_APPROVED';
+  end if;
+
+  select array_agg(x.module_key) into v_modules
+  from (
+    select 'pengeluaran'::text as module_key
+    union all select 'barang_masuk'
+    union all select 'daily_so' where public.division_module_enabled(p_division_id,'cogs_daily_so')
+    union all select 'sales' where public.division_module_enabled(p_division_id,'cogs_sales')
+    union all select 'produksi_wip' where public.division_module_enabled(p_division_id,'cogs_production')
+    union all select 'suplies' where public.division_module_enabled(p_division_id,'supplies')
+  ) x;
+
+  select array_agg(x.module_key) into v_missing
+  from unnest(v_modules) x(module_key)
+  where not exists (
+    select 1 from public.barapp_closing_modules cm
+    where cm.closing_id=v_period and cm.module_key=x.module_key
+      and cm.status in ('confirmed','confirmed_empty')
+  );
+
+  if coalesce(array_length(v_missing,1),0)>0 then
+    raise exception 'CLOSING_MODULES_INCOMPLETE: %',array_to_string(v_missing,',');
+  end if;
+
+  for m in
+    select module_key,snapshot
+    from public.barapp_closing_modules
+    where closing_id=v_period and module_key=any(v_modules)
+  loop
+    if public.barapp_closing_module_snapshot(p_division_id,p_closing_date,m.module_key)
+       is distinct from m.snapshot then
+      v_changed:=array_append(coalesce(v_changed,array[]::text[]),m.module_key);
+    end if;
+  end loop;
+
+  if coalesce(array_length(v_changed,1),0)>0 then
+    update public.barapp_closing_periods
+    set status='needs_reconciliation'
+    where id=v_period;
+
+    insert into public.audit_log(at,actor,actor_email,action,table_name,record_id,old_data,new_data,reason)
+    values(now(),auth.uid(),auth.jwt()->>'email','closing_reconciliation_required',
+      'barapp_closing_periods',v_period::text,v_old,
+      jsonb_build_object('status','needs_reconciliation','changed_modules',to_jsonb(v_changed)),
+      'Data berubah saat proses approval');
+
+    return jsonb_build_object('closing_id',v_period,'status','needs_reconciliation',
+      'changed_modules',to_jsonb(v_changed));
+  end if;
+
+  if public.division_module_enabled(p_division_id,'cogs_daily_so') then
+    select id into v_so_id
+    from public.cogs_daily_so
+    where division_id=p_division_id and so_date=p_closing_date and status='submitted'
+    order by created_at desc limit 1;
+
+    if v_so_id is null then
+      raise exception 'CLOSING_DAILY_SO_REQUIRED';
+    end if;
+
+    if not public.barapp_closing_daily_so_item_set_matches(p_division_id,p_closing_date) then
+      raise exception 'CLOSING_SO_ITEM_SET_CHANGED'
+        using detail='Daily SO snapshot has invalid, duplicate, or cross-division component references.';
+    end if;
+
+    if p_closing_date = v_today then
+      select count(*) into v_expected_count
+      from public.cogs_get_stock_position(p_division_id,p_closing_date);
+
+      if v_expected_count<>(select count(*) from public.cogs_daily_so_lines where so_id=v_so_id) then
+        raise exception 'CLOSING_SO_ITEM_SET_CHANGED';
+      end if;
+
+      -- Count equality alone can miss a different component set with the same number
+      -- of rows. Require a two-way exact match before refreshing today's expected values.
+      if exists (
+        select 1
+        from public.cogs_get_stock_position(p_division_id,p_closing_date) p
+        where not exists (
+          select 1
+          from public.cogs_daily_so_lines l
+          where l.so_id=v_so_id
+            and l.component_type=p.component_type
+            and (case when p.component_type='material' then l.item_id else l.component_wip_id end)=p.component_id
+        )
+      ) or exists (
+        select 1
+        from public.cogs_daily_so_lines l
+        where l.so_id=v_so_id
+          and not exists (
+            select 1
+            from public.cogs_get_stock_position(p_division_id,p_closing_date) p
+            where p.component_type=l.component_type
+              and p.component_id=(case when l.component_type='material' then l.item_id else l.component_wip_id end)
+          )
+      ) then
+        raise exception 'CLOSING_SO_ITEM_SET_CHANGED';
+      end if;
+
+      update public.cogs_daily_so_lines l
+      set expected_qty_base=p.expected_qty_base,
+          variance_qty_base=l.counted_qty_base-p.expected_qty_base,
+          unit_cost_snapshot=p.unit_cost,
+          variance_value_snapshot=case when p.unit_cost is null then null else (l.counted_qty_base-p.expected_qty_base)*p.unit_cost end
+      from public.cogs_get_stock_position(p_division_id,p_closing_date) p
+      where l.so_id=v_so_id
+        and l.component_type=p.component_type
+        and (case when p.component_type='material' then l.item_id else l.component_wip_id end)=p.component_id;
+
+      if (select count(*) from public.cogs_daily_so_lines where so_id=v_so_id)
+         < > v_expected_count then
+        raise exception 'CLOSING_SO_ITEM_SET_CHANGED';
+      end if;
+    end if;
+    -- Historical/backdated closing deliberately keeps its submitted expected, variance,
+    -- and cost snapshot. The current catalog and live stock position are not historical facts.
+  end if;
+
+  update public.barapp_closing_modules cm
+  set snapshot=public.barapp_closing_module_snapshot(p_division_id,p_closing_date,cm.module_key)
+  where cm.closing_id=v_period and cm.module_key=any(v_modules);
+
+  select jsonb_build_object(
+    'daily_so_items',(select count(*) from public.cogs_daily_so_lines where so_id=v_so_id),
+    'variance_items',(select count(*) from public.cogs_daily_so_lines where so_id=v_so_id and abs(variance_qty_base)>0.000001),
+    'variance_value',(select coalesce(sum(abs(variance_value_snapshot)),0) from public.cogs_daily_so_lines where so_id=v_so_id),
+    'approved_at',now(),'approved_by',auth.uid()
+  ) into v_summary;
+
+  update public.barapp_closing_periods
+  set status='approved',approved_by=auth.uid(),approved_at=now(),summary=v_summary,
+      notes=coalesce(nullif(trim(coalesce(p_note,'')),''),notes)
+  where id=v_period;
+
+  insert into public.audit_log(at,actor,actor_email,action,table_name,record_id,old_data,new_data,reason)
+  values(now(),auth.uid(),auth.jwt()->>'email','closing_approved','barapp_closing_periods',
+    v_period::text,v_old,
+    jsonb_build_object('status','approved','summary',v_summary,'division_id',p_division_id,
+      'closing_date',p_closing_date),
+    nullif(trim(coalesce(p_note,'')),''));
+
+  return jsonb_build_object('closing_id',v_period,'status','approved','summary',v_summary);
+end;
+$barapp_closing_approve$;
+
+revoke all on function public.barapp_closing_approve(uuid,date,text) from public, anon;
+grant execute on function public.barapp_closing_approve(uuid,date,text) to authenticated;
 
 -- Preserve the existing authenticated calling surface for the public closing RPC,
 -- but keep the internal boolean helper private to client roles.
