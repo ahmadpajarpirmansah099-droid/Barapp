@@ -50,6 +50,8 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Confirm all modules return to pending confirmation and the UI requires them to be confirmed again before approval; no transaction re-entry is needed.
 - [ ] Confirm blank reason, reason over 500 characters, and non-authorized/out-of-scope user are rejected without changing the period or module rows.
 - [ ] Reconfirm the active modules, approve the closing again, and verify period status returns to `approved`, a new approval timestamp is recorded, and stock does not get consumed/applied twice.
+- [ ] Verify `barapp_closing_approve` only refreshes closing metadata and Daily SO snapshot/variance fields; compare stock-movement rows and computed stock positions before/after cancel + reapproval to prove no duplicate movement is created.
+- [ ] Verify the `cogs_daily_so_lines` update trigger does not leave the closing in `needs_reconciliation` after a successful reapproval; it should only flag a period that was already approved when the transaction changed.
 - [ ] Confirm audit history retains both cancellation and subsequent approval; download the closing/Daily SO Excel before and after to verify only expected report values change.
 
 ## UI and device checks
