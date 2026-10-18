@@ -149,7 +149,7 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const sql = fs.readFileSync('barapp_closing_reopen_preflight_v1.sql', 'utf8');
-          const executable = sql.replace(/^\\s*--.*$/gm, '');
+          const executable = sql.replace(/^\s*--.*$/gm, '');
           const required = [
             "with table_requirements",
             "information_schema.columns",
@@ -162,7 +162,7 @@ jobs:
             console.error('Missing read-only preflight checks:', missing.join(', '));
             process.exit(1);
           }
-          if (/^\\s*(create|alter|drop|insert|update|delete|truncate|grant|revoke)\\b/im.test(executable)) {
+          if (/^\s*(create|alter|drop|insert|update|delete|truncate|grant|revoke)\b/im.test(executable)) {
             throw new Error('Closing reopen preflight must remain read-only');
           }
           console.log('Closing reopen preflight is present and read-only.');
