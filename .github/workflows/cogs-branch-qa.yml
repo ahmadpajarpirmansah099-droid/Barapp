@@ -42,6 +42,48 @@ jobs:
           fi
           psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 --file tests/closing_reopen_postgres_test.sql
 
+      - name: Check closing reconciliation serializes with concurrent approval
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/barapp_test
+        run: |
+          set -euo pipefail
+          today="$(psql "$TEST_DATABASE_URL" -Atqc "select (now() at time zone 'Asia/Jakarta')::date")"
+          division="aaaaaaaa-1111-1111-1111-111111111111"
+          outlet="bbbbbbbb-1111-1111-1111-111111111111"
+          period="cccccccc-1111-1111-1111-111111111111"
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 <<SQL
+          insert into public.divisions(id,outlet_id,active)
+          values ('$division','$outlet',true);
+          insert into public.barapp_closing_periods(id,outlet_id,division_id,closing_date,status)
+          values ('$period','$outlet','$division','$today','ready');
+          SQL
+
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 > /tmp/barapp-approval-lock.log 2>&1 <<SQL &
+          begin;
+          update public.barapp_closing_periods
+             set status='approved', approved_at=now(),
+                 approved_by='dddddddd-1111-1111-1111-111111111111'
+           where id='$period';
+          select pg_sleep(3);
+          commit;
+          SQL
+          approval_pid=$!
+          sleep 0.5
+
+          # This insert's AFTER trigger must wait on the period row, then observe the
+          # just-committed approved state and mark it for reconciliation.
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 -c \
+            "insert into public.barapp_stock_in(division_id,received_at,status) values ('$division','$today','posted')"
+          wait "$approval_pid"
+
+          status="$(psql "$TEST_DATABASE_URL" -Atqc "select status from public.barapp_closing_periods where id='$period'")"
+          if [[ "$status" != "needs_reconciliation" ]]; then
+            cat /tmp/barapp-approval-lock.log
+            echo "Expected needs_reconciliation after concurrent operation, got: $status"
+            exit 1
+          fi
+          echo "PASS: concurrent stock-in cannot leave the just-approved closing clean."
+
   static-qa:
     runs-on: ubuntu-latest
     steps:
