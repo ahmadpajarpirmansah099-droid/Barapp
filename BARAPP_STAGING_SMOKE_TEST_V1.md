@@ -46,7 +46,7 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [x] The same preflight found all 11 closing-reconciliation triggers installed for stock-in, stock-out, returns, supplies, Daily SO, menu sales, production batches, and their line/input tables. Each was present for INSERT, UPDATE, and DELETE.
 - [x] GitHub Actions runs the static QA, preview build, and `closing-reopen-postgres-test` against a disposable PostgreSQL service; this test path does not connect to Supabase or touch operational data.
 - [x] The isolated PostgreSQL smoke test covers cancel, prior snapshot/audit preservation, invalid reason and unauthorized-role guards, resetting module confirmations, and calling the repository's approval RPC again after the required modules are reconfirmed.
-- [ ] Scope limitation: the PostgreSQL fixture deliberately disables optional COGS/Daily SO modules. It verifies the closing lifecycle but does not prove current-day stock-position arithmetic or execute the live database's reconciliation trigger implementation.
+- [ ] Scope limitation: the PostgreSQL fixture deliberately disables optional COGS/Daily SO modules. CI now executes the checked-in reconciliation-trigger migration and tests stock-in UPDATE across old/new dates plus a concurrent stock-in during approval, but it does not prove full stock-position arithmetic or every table-specific/Move path against the active database.
 - [ ] For full stock-calculation regression, use a disposable local PostgreSQL/Supabase CLI environment after the complete schema and prerequisites are available locally. Do not substitute the live database for staging.
 - [ ] Do not create a billed Supabase development branch or apply the cancellation migration to production as a workaround.
 
@@ -72,8 +72,10 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Browser console has no uncaught errors; network failures do not create duplicate writes after retry.
 
 ## Repository audit blockers (resolve before merge)
-- [ ] The repo preflight names 11 closing-dirty triggers, but no checked-in SQL file currently creates those triggers or defines their trigger functions. Export the live definitions with trigger metadata and pg_get_functiondef, review them, and commit a reproducible migration before treating this behavior as audited.
-- [ ] Test a concurrent stock/sales/production write while closing approval is in progress. Verify the final approved snapshot cannot miss a transaction committed during the approval window.
+- [x] Added `barapp_closing_reconciliation_triggers_v1.sql` to define all 11 closing-dirty triggers and helper functions. Disposable PostgreSQL CI passes a stock-in date-change test that requires both old and new approved closings to become `needs_reconciliation`.
+- [ ] Compare this migration to active database behavior and run it on verified staging only after a backup. CI does not equal staging sign-off.
+- [x] Added a PostgreSQL concurrency test: a stock-in trigger waits behind an in-progress approval, then marks the just-approved period `needs_reconciliation`. CI passes this regression.
+- [ ] Extend staging regression to cross-division Move and all parent/line transaction paths, then verify no operation leaves the wrong date/division closing approved.
 - [ ] Verify whether the active database has a shared audit trigger for COGS tables. The checked-in COGS write/cancel RPCs contain no explicit audit_log inserts; without a separately installed and version-controlled audit trigger, operational changes will not appear in the Audit Log. Add a staging assertion for create/edit/cancel events.
 - [ ] Apply barapp_cogs_operations_v1.sql last among COGS migrations, then run barapp_security_hardening_v1.sql after all SECURITY DEFINER function definitions; run barapp_security_verify_v1.sql afterward and review all nonzero findings.
 
