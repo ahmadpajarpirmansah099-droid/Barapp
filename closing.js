@@ -36,6 +36,7 @@ function count(key,div,date){
 function clError(e){
  const m=String(e?.message||e||'');
  if(/CLOSING_ACCESS_DENIED|CLOSING_ROLE_FORBIDDEN/.test(m))return 'Approval Closing hanya tersedia untuk Developer dan Admin Divisi.';
+ if(/CLOSING_DIVISION_FORBIDDEN/.test(m))return 'Akun ini tidak memiliki akses ke divisi untuk closing tersebut.';
  if(/CLOSING_INVALID_DATE/.test(m))return 'Tanggal closing tidak valid.';
  if(/CLOSING_MODULE_HAS_DATA/.test(m))return 'Modul memiliki transaksi. Pilih konfirmasi data, bukan konfirmasi kosong.';
  if(/CLOSING_CONFIRM_EMPTY_REQUIRED/.test(m))return 'Ada data pada modul ini. Konfirmasi sebagai data terisi.';
