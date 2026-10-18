@@ -10,7 +10,7 @@ create or replace function public.barapp_closing_reopen(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path to 'pg_catalog', 'public', 'auth', 'pg_temp'
+set search_path to 'pg_catalog', 'pg_temp'
 as $function$
 declare
   v_period public.barapp_closing_periods%rowtype;
