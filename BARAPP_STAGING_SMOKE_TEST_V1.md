@@ -1,0 +1,70 @@
+# BarApp Staging + Browser Smoke Test V1
+
+Status: prepared for the draft PR; not yet executed against a verified staging project.
+
+## Safety gate before testing
+- [ ] Confirm the Supabase project ID is the intended staging/test project with a maintainer.
+- [ ] Confirm a restorable backup exists and record the backup timestamp.
+- [ ] Use test outlet/division and test accounts only; do not use production transactions.
+- [ ] Record the deployed Git commit, SQL migration version, test date, browser/device, and tester.
+- [ ] Stop immediately if the target is the active production project or cannot be positively identified.
+
+## Roles and access boundaries
+- [ ] Admin: can access only the intended outlet/division and permitted closing approvals.
+- [ ] Inventory manager: can use inventory and opening-WIP workflows permitted by role.
+- [ ] Daily SO-only role: can use Daily SO but cannot open WIP, production, menu-sales, or other COGS pages through direct navigation.
+- [ ] User scoped to another division: cannot read or mutate records in the first division.
+- [ ] Anonymous role: cannot execute closing/COGS write RPCs or directly mutate operational tables.
+- [ ] Staff PIN/token attendance flow still works; validate rate limits and token boundaries without exposing secrets.
+
+## Daily SO and backdate regression
+- [ ] Submit a current-day SO with every eligible active non-SUPPLIES material and enabled WIP exactly once.
+- [ ] Confirm duplicate component rows are rejected with a clear Indonesian error.
+- [ ] Confirm a missing component, cross-division component, wrong component type, and invalid reference are rejected.
+- [ ] Confirm SUPPLIES items are excluded from the COGS/Daily SO material set.
+- [ ] Confirm current-day closing fails if the active component set changes after SO submission; reconcile and resubmit as appropriate.
+- [ ] Create a test material/WIP after a historical test date, then create/inspect a legitimate backdated SO snapshot referencing valid rows. Confirm the later master `created_at` alone does not invalidate the historical snapshot.
+- [ ] Confirm backdated approval retains submitted expected quantity, variance, and unit-cost snapshots instead of refreshing them from today's catalog/stock.
+- [ ] Confirm future dates and null dates are rejected where required; test midnight boundary using Asia/Jakarta local date.
+- [ ] Confirm closing confirmation and approval enforce the same saved-snapshot integrity rules.
+- [ ] Verify audit log records actor, division, date, status transitions, and reconciliation reason.
+
+## Stock, production, sales, and inventory roll-forward
+- [ ] Record a batch WIP production and verify raw-material consumption and WIP output exactly once.
+- [ ] Record a multi-row menu sale and verify recipe consumption exactly once.
+- [ ] Cancel a posted operation and verify its effect is reversed once, with cancellation metadata/audit trail.
+- [ ] Record stock-out categories and confirm only posted rows affect stock.
+- [ ] Test inter-division Move: source decreases and destination increases once, with correct item type and outlet.
+- [ ] Test inbound stock and return quantities; returns cannot exceed posted inbound quantities.
+- [ ] Create/edit/cancel an opening-WIP balance before any production/consumption activity; verify duplicate opening balance and conflicting-date attempts fail clearly.
+- [ ] Compare inventory WIP position and COGS/Daily SO position for the same division/date, including a user without COGS permissions.
+- [ ] Verify next day's opening position uses the approved previous-day close according to the configured closing workflow.
+- [ ] Verify no operation changes a different division's stock.
+
+## UI and device checks
+- [ ] Desktop: sidebar/page permissions, outlet/division selectors, date filters, refresh/search, notification/account controls.
+- [ ] Mobile: no horizontal overflow in forms/tables; input controls remain reachable; dialogs and dropdowns are usable.
+- [ ] Batch forms: add/remove rows, duplicate handling, 200-row cap, loading state, retry/error feedback.
+- [ ] Daily SO: opening, edit/count, save, submit, confirm, approval/reconciliation detail, and Excel export.
+- [ ] Indonesian error messages are actionable and do not expose tokens, SQL, or sensitive data.
+- [ ] Browser console has no uncaught errors; network failures do not create duplicate writes after retry.
+
+## Evidence and exit criteria
+- [ ] Capture sanitized screenshots for each failed/passed critical flow.
+- [ ] Record expected vs actual quantities and reconciliation output for test division.
+- [ ] Verify direct DML remains denied and RLS is enabled on operational tables.
+- [ ] Run the read-only `barapp_security_verify_v1.sql` suite after migration and review every nonzero finding.
+- [ ] Restore/reset test data only using an approved staging cleanup plan.
+- [ ] Do not merge the draft PR until all critical checks pass and a reviewer signs off.
+
+## Result log
+| Field | Value |
+|---|---|
+| Staging project ID (confirm with maintainer) | |
+| Backup timestamp | |
+| Git commit / migration | |
+| Tester / date | |
+| Browser / device | |
+| Passed / failed / blocked | |
+| Findings and evidence links | |
+| Reviewer sign-off | |
