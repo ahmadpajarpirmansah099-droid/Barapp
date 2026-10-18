@@ -46,6 +46,7 @@ function clError(e){
  if(/CLOSING_ALREADY_APPROVED/.test(m))return 'Closing sudah disetujui. Gunakan proses rekonsiliasi untuk perubahan.';
  if(/CLOSING_NOT_STARTED/.test(m))return 'Belum ada proses closing untuk tanggal dan divisi ini.';
  if(/CLOSING_REASON_REQUIRED/.test(m))return 'Alasan pembatalan approval wajib diisi.';
+ if(/CLOSING_REASON_TOO_LONG/.test(m))return 'Alasan pembatalan maksimal 500 karakter.';
  if(/CLOSING_NOT_APPROVED/.test(m))return 'Closing ini tidak sedang berstatus Approved.';
  if(/CLOSING_INVALID_MODULE/.test(m))return 'Modul closing tidak dikenali.';
  return opsErr(e);
