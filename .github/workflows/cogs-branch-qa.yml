@@ -96,6 +96,7 @@ jobs:
           const missingUi = requiredUi.filter(marker => !closing.toLowerCase().includes(marker.toLowerCase()));
           const requiredSql = [
             "create or replace function public.barapp_closing_reopen",
+            "set search_path to 'pg_catalog', 'pg_temp'",
             "barapp_closing_assert_access",
             "barapp_closing_can_access_division",
             "CLOSING_REASON_REQUIRED",
@@ -128,6 +129,9 @@ jobs:
           }
           if (!executableSql.includes("approved_by = null") || !executableSql.includes("approved_at = null") || !executableSql.includes("summary = '{}'::jsonb")) {
             throw new Error('Re-opening must clear active approval markers and summary');
+          }
+          if (executableSql.includes("set search_path to 'pg_catalog', 'public'")) {
+            throw new Error('Security-definer reopen RPC must not expose public in its search_path');
           }
           if (!executableSql.includes("set status = 'pending'") || !executableSql.includes("snapshot = '{}'::jsonb")) {
             throw new Error('Re-opening must invalidate confirmation snapshots to require fresh confirmations');
