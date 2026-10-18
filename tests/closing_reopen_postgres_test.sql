@@ -55,6 +55,12 @@ CREATE TABLE public.audit_log (
   reason text
 );
 
+CREATE TABLE public.divisions (
+  id uuid PRIMARY KEY,
+  outlet_id uuid NOT NULL,
+  active boolean NOT NULL DEFAULT true
+);
+
 -- A sentinel table demonstrates that the reopen RPC does not mutate unrelated
 -- operational records. It is a test fixture, not part of the production schema.
 CREATE TABLE public.test_operational_sentinel (
@@ -130,6 +136,9 @@ SELECT (now() AT TIME ZONE 'Asia/Jakarta')::date::text AS test_closing_date \gse
 \set test_period_id 44444444-4444-4444-4444-444444444444
 \set test_actor_id 55555555-5555-5555-5555-555555555555
 \set prior_approver_id 66666666-6666-6666-6666-666666666666
+
+INSERT INTO public.divisions (id,outlet_id,active)
+VALUES (:'test_division_id'::uuid, :'test_outlet_id'::uuid, true);
 
 INSERT INTO public.barapp_closing_periods
   (id, outlet_id, division_id, closing_date, status, created_by, approved_by, approved_at, summary, notes)
@@ -287,22 +296,41 @@ BEGIN
 END
 $test$;
 
--- Reconfirm the modules required for this test fixture and run the actual
--- repository approval function after cancellation. Optional COGS modules are disabled
--- in this fixture, so this tests lifecycle/metadata re-approval but not stock calculation.
-UPDATE public.barapp_closing_modules
-   SET status='confirmed',
-       snapshot=public.barapp_closing_module_snapshot(
-         :'test_division_id'::uuid, :'test_closing_date'::date, module_key),
-       confirmed_by=:'test_actor_id'::uuid,
-       confirmed_at=now(),
-       note='CI reconfirmation'
- WHERE closing_id=:'test_period_id'::uuid
-   AND module_key IN ('pengeluaran','barang_masuk');
+-- Reconfirm the two required modules through the actual repository RPC.
+-- Empty confirmation is explicit because this isolated fixture has no operational
+-- rows; optional COGS/Daily SO modules stay disabled for this lifecycle test.
+SET ROLE authenticated;
+SELECT public.barapp_closing_confirm_module(
+  :'test_division_id'::uuid, :'test_closing_date'::date,
+  'pengeluaran', true, 'CI empty confirmation'
+);
+SELECT public.barapp_closing_confirm_module(
+  :'test_division_id'::uuid, :'test_closing_date'::date,
+  'barang_masuk', true, 'CI empty confirmation'
+);
+RESET ROLE;
 
-UPDATE public.barapp_closing_periods
-   SET status='ready', summary='{}'::jsonb
- WHERE id=:'test_period_id'::uuid;
+DO $test$
+DECLARE
+  v_status text;
+  v_confirmed_count integer;
+BEGIN
+  SELECT status INTO STRICT v_status
+    FROM public.barapp_closing_periods
+   WHERE id=:'test_period_id'::uuid;
+  SELECT count(*) INTO v_confirmed_count
+    FROM public.barapp_closing_modules
+   WHERE closing_id=:'test_period_id'::uuid
+     AND module_key IN ('pengeluaran','barang_masuk')
+     AND status='confirmed_empty'
+     AND confirmed_by=:'test_actor_id'::uuid
+     AND confirmed_at IS NOT NULL
+     AND snapshot->>'fingerprint'='ci-test-snapshot';
+  IF v_status <> 'ready' OR v_confirmed_count <> 2 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: actual confirmation RPC did not re-confirm required modules (status %, confirmed %)',v_status,v_confirmed_count;
+  END IF;
+END
+$test$;
 
 SET ROLE authenticated;
 SELECT public.barapp_closing_approve(
