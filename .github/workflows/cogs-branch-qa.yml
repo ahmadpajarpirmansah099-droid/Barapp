@@ -171,7 +171,37 @@ jobs:
           if (archivedAt < 0 || resetAt < 0 || archivedAt > resetAt) {
             throw new Error('Prior approval must be archived before active approval markers are cleared');
           }
-          console.log('Closing cancellation RPC/UI invariants: OK');
+
+          // Closing lifecycle RPCs may update closing metadata and Daily SO snapshots,
+          // but must never create/cancel stock, production, or menu-sale ledger rows.
+          const guardSql = fs.readFileSync('barapp_closing_daily_so_item_guard_v1.sql', 'utf8');
+          const allowedLifecycleTargets = new Set([
+            'barapp_closing_periods',
+            'barapp_closing_modules',
+            'audit_log',
+            'cogs_daily_so_lines'
+          ]);
+          const lifecycleFunctions = [
+            ['barapp_closing_confirm_module', '$barapp_closing_confirm_module$;'],
+            ['barapp_closing_approve', '$barapp_closing_approve$;']
+          ];
+          for (const [name, ending] of lifecycleFunctions) {
+            const start = guardSql.toLowerCase().indexOf('create or replace function public.' + name + '(');
+            const end = start < 0 ? -1 : guardSql.indexOf(ending, start);
+            if (start < 0 || end < 0) {
+              throw new Error('Missing lifecycle function body: ' + name);
+            }
+            const body = guardSql.slice(start, end + ending.length).replace(/^\s*--.*$/gm, '');
+            const writes = body.match(/\b(?:insert\s+into|update|delete\s+from|truncate(?:\s+table)?)\s+public\.([a-z_]+)/gi) || [];
+            const unsafeWrites = writes.filter(write => {
+              const match = write.match(/public\.([a-z_]+)/i);
+              return !match || !allowedLifecycleTargets.has(match[1].toLowerCase());
+            });
+            if (unsafeWrites.length) {
+              throw new Error(name + ' mutates operational ledgers directly: ' + unsafeWrites.join('; '));
+            }
+          }
+          console.log('Closing cancellation + confirmation/approval stock-ledger invariants: OK');
           NODE
 
       - name: Check read-only Closing Reopen preflight
