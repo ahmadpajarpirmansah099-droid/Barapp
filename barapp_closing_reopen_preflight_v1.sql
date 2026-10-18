@@ -43,6 +43,20 @@ function_requirements(function_signature) as (
     ('public.barapp_closing_approve(uuid,date,text)'),
     ('public.barapp_closing_confirm_module(uuid,date,text,boolean,text)')
 ),
+trigger_requirements(table_name, trigger_name) as (
+  values
+    ('barapp_stock_in','trg_closing_dirty_stock_in'),
+    ('barapp_stock_out','trg_closing_dirty_stock_out'),
+    ('barapp_stock_returns','trg_closing_dirty_stock_returns'),
+    ('barapp_supplies_so','trg_closing_dirty_supplies_so'),
+    ('barapp_supplies_so_lines','trg_closing_dirty_supplies_lines'),
+    ('cogs_daily_so','trg_closing_dirty_daily_so'),
+    ('cogs_daily_so_lines','trg_closing_dirty_daily_so_lines'),
+    ('cogs_menu_sales','trg_closing_dirty_sales'),
+    ('cogs_menu_sales_lines','trg_closing_dirty_sales_lines'),
+    ('cogs_production_batches','trg_closing_dirty_production'),
+    ('cogs_production_inputs','trg_closing_dirty_production_inputs')
+),
 checks as (
   select 'table:' || t.table_name as check_name,
          case when to_regclass('public.' || t.table_name) is not null then 'PASS' else 'FAIL' end as result,
@@ -79,34 +93,39 @@ checks as (
 
   union all
 
-  select 'trigger:trg_closing_dirty_daily_so_lines_update',
-         case when exists (
-           select 1 from information_schema.triggers t
-           where t.event_object_schema='public'
-             and t.event_object_table='cogs_daily_so_lines'
-             and t.trigger_name='trg_closing_dirty_daily_so_lines'
-             and t.event_manipulation='UPDATE'
-         ) then 'PASS' else 'WARN' end,
-         case when exists (
-           select 1 from information_schema.triggers t
-           where t.event_object_schema='public'
-             and t.event_object_table='cogs_daily_so_lines'
-             and t.trigger_name='trg_closing_dirty_daily_so_lines'
-             and t.event_manipulation='UPDATE'
-         ) then 'Daily SO line update reconciliation trigger found'
-         else 'Review whether the Daily SO line reconciliation trigger is installed' end
+  select 'trigger:' || t.trigger_name,
+         case when count(distinct i.event_manipulation)=3 then 'PASS' else 'WARN' end,
+         'found_operations=' || coalesce(string_agg(distinct i.event_manipulation, ',' order by i.event_manipulation), 'none')
+           || '; expected=INSERT,UPDATE,DELETE'
+  from trigger_requirements t
+  left join information_schema.triggers i
+    on i.event_object_schema='public'
+   and i.event_object_table=t.table_name
+   and i.trigger_name=t.trigger_name
+  group by t.table_name,t.trigger_name
 
   union all
 
   select 'data:approval_marker_consistency',
          case when
            count(*) filter (where status='approved' and (approved_at is null or approved_by is null))=0
-           and count(*) filter (where status<>'approved' and (approved_at is not null or approved_by is not null))=0
+           and count(*) filter (
+             where status not in ('approved','needs_reconciliation')
+               and (approved_at is not null or approved_by is not null)
+           )=0
            then 'PASS' else 'WARN' end,
          'approved_missing_marker=' ||
            count(*) filter (where status='approved' and (approved_at is null or approved_by is null)) ||
-         '; nonapproved_has_marker=' ||
-           count(*) filter (where status<>'approved' and (approved_at is not null or approved_by is not null))
+         '; unexpected_nonapproved_has_marker=' ||
+           count(*) filter (
+             where status not in ('approved','needs_reconciliation')
+               and (approved_at is not null or approved_by is not null)
+           ) ||
+         '; needs_reconciliation_with_prior_approval_marker=' ||
+           count(*) filter (
+             where status='needs_reconciliation'
+               and (approved_at is not null or approved_by is not null)
+           )
   from public.barapp_closing_periods
 
   union all
