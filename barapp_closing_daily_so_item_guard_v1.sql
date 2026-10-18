@@ -493,10 +493,6 @@ begin
         and l.component_type=p.component_type
         and (case when p.component_type='material' then l.item_id else l.component_wip_id end)=p.component_id;
 
-      if (select count(*) from public.cogs_daily_so_lines where so_id=v_so_id)
-         < > v_expected_count then
-        raise exception 'CLOSING_SO_ITEM_SET_CHANGED';
-      end if;
     end if;
     -- Historical/backdated closing deliberately keeps its submitted expected, variance,
     -- and cost snapshot. The current catalog and live stock position are not historical facts.
