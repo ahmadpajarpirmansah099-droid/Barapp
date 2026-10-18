@@ -77,6 +77,46 @@ jobs:
           console.log('Daily SO closing/backdate SQL invariants: OK');
           NODE
 
+      - name: Check safe Closing cancellation and re-approval
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const closing = fs.readFileSync('closing.js', 'utf8');
+          const sql = fs.readFileSync('barapp_closing_reopen_v1.sql', 'utf8');
+          new Function(closing); // syntax-only compile; does not execute browser code
+
+          const requiredUi = [
+            "window.__clReopen",
+            "barapp_closing_reopen",
+            "window.prompt",
+            "CLOSING_REASON_REQUIRED",
+            "modul harus dikonfirmasi ulang"
+          ];
+          const missingUi = requiredUi.filter(marker => !closing.toLowerCase().includes(marker.toLowerCase()));
+          const requiredSql = [
+            "create or replace function public.barapp_closing_reopen",
+            "barapp_closing_assert_access",
+            "barapp_closing_can_access_division",
+            "CLOSING_REASON_REQUIRED",
+            "status = 'needs_reconciliation'",
+            "'module_snapshots'",
+            "'closing_approval_cancelled'",
+            "to authenticated"
+          ];
+          const missingSql = requiredSql.filter(marker => !sql.toLowerCase().includes(marker.toLowerCase()));
+          if (missingUi.length || missingSql.length) {
+            console.error('Missing closing cancellation markers:', [...missingUi, ...missingSql].join(', '));
+            process.exit(1);
+          }
+          if (/delete\s+from\s+public\.(cogs_daily_so|cogs_daily_so_lines|barapp_closing_periods|barapp_closing_modules|cogs_menu_sales|cogs_production_batches)/i.test(sql)) {
+            throw new Error('Cancellation SQL must not delete operational/closing records');
+          }
+          if (!sql.includes("set status = 'pending'") || !sql.includes("snapshot = '{}'::jsonb")) {
+            throw new Error('Re-opening must invalidate confirmation snapshots to require fresh confirmations');
+          }
+          console.log('Closing cancellation RPC/UI invariants: OK');
+          NODE
+
       - name: Check expected COGS UI and RPC wiring
         run: |
           node <<'NODE'
