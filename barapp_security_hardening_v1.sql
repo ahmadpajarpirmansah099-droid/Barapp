@@ -1,7 +1,9 @@
 -- BarApp Security Hardening V1
 -- Purpose: harden SECURITY DEFINER routines against temporary-object shadowing.
 -- This migration changes function configuration only; it does not alter operational rows.
--- Apply only to a verified staging database first. Preserve existing function grants:
+-- Apply only to a verified staging database, AFTER all schema/function migrations that
+-- create or replace SECURITY DEFINER routines. If any such migration runs afterward,
+-- rerun this hardening migration and the verification script. Preserve existing grants:
 -- staff_login/staff_attendance/staff_me/staff_logout intentionally support the staff
 -- token/PIN flow and are NOT revoked from anon by this migration.
 --
