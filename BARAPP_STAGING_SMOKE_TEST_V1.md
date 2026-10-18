@@ -41,6 +41,12 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Verify next day's opening position uses the approved previous-day close according to the configured closing workflow.
 - [ ] Verify no operation changes a different division's stock.
 
+## Free validation path (no paid Supabase branch)
+- [ ] Run `barapp_closing_reopen_preflight_v1.sql` in the SQL Editor as a read-only prerequisite check; it must not change schema or data.
+- [ ] Use GitHub Actions static QA/preview builds for free code-level checks; retain the passed run URL and commit SHA.
+- [ ] For end-to-end transaction tests, use a disposable local PostgreSQL/Supabase CLI environment only after the relevant schema and prerequisite functions are available locally. Do not substitute the live database for staging.
+- [ ] Do not create a billed Supabase development branch or apply the cancellation migration to production as a workaround.
+
 ## Closing approval cancel/reopen regression
 - [ ] Use a verified staging-only division and date with a complete, approved closing; capture period row, module snapshots, SO/sales/WIP row counts, and stock positions before cancel.
 - [ ] As Developer/Admin Divisi with access to that division, use "Batalkan Approval" and provide a non-empty reason.
