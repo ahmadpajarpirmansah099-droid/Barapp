@@ -20,7 +20,7 @@ CREATE TABLE public.barapp_closing_periods (
   outlet_id uuid NOT NULL,
   division_id uuid NOT NULL,
   closing_date date NOT NULL,
-  status text NOT NULL,
+  status text NOT NULL DEFAULT 'draft',
   created_by uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
   approved_by uuid,
