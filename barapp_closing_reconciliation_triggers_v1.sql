@@ -13,6 +13,8 @@ declare
   v_table text;
 begin
   foreach v_table in array array[
+    'barapp_closing_periods',
+    'audit_log',
     'barapp_stock_in',
     'barapp_stock_out',
     'barapp_stock_returns',
@@ -30,6 +32,46 @@ begin
       raise exception 'CLOSING_RECONCILIATION_TRIGGER_TABLE_MISSING: public.%', v_table;
     end if;
   end loop;
+
+  if exists (
+    select 1
+    from (values
+      ('barapp_closing_periods','id'),
+      ('barapp_closing_periods','division_id'),
+      ('barapp_closing_periods','closing_date'),
+      ('barapp_closing_periods','status'),
+      ('audit_log','at'),
+      ('audit_log','actor'),
+      ('audit_log','actor_email'),
+      ('audit_log','action'),
+      ('audit_log','table_name'),
+      ('audit_log','record_id'),
+      ('audit_log','old_data'),
+      ('audit_log','new_data'),
+      ('audit_log','reason'),
+      ('barapp_stock_in','division_id'),('barapp_stock_in','received_at'),
+      ('barapp_stock_out','from_division_id'),('barapp_stock_out','to_division_id'),
+      ('barapp_stock_out','out_date'),('barapp_stock_out','category'),
+      ('barapp_stock_returns','division_id'),('barapp_stock_returns','returned_at'),
+      ('barapp_supplies_so','division_id'),('barapp_supplies_so','so_date'),
+      ('barapp_supplies_so_lines','so_id'),
+      ('cogs_daily_so','division_id'),('cogs_daily_so','so_date'),
+      ('cogs_daily_so_lines','so_id'),
+      ('cogs_menu_sales','division_id'),('cogs_menu_sales','sold_at'),
+      ('cogs_menu_sales_lines','sale_id'),
+      ('cogs_production_batches','division_id'),('cogs_production_batches','produced_at'),
+      ('cogs_production_inputs','batch_id')
+    ) as required(table_name,column_name)
+    where not exists (
+      select 1
+      from information_schema.columns c
+      where c.table_schema='public'
+        and c.table_name=required.table_name
+        and c.column_name=required.column_name
+    )
+  ) then
+    raise exception 'CLOSING_RECONCILIATION_TRIGGER_COLUMN_MISSING: inspect required columns before applying';
+  end if;
 end;
 $preflight$;
 
