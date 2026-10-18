@@ -71,6 +71,11 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Indonesian error messages are actionable and do not expose tokens, SQL, or sensitive data.
 - [ ] Browser console has no uncaught errors; network failures do not create duplicate writes after retry.
 
+## Repository audit blockers (resolve before merge)
+- [ ] The repo preflight names 11 closing-dirty triggers, but no checked-in SQL file currently creates those triggers or defines their trigger functions. Export the live definitions with trigger metadata and pg_get_functiondef, review them, and commit a reproducible migration before treating this behavior as audited.
+- [ ] Test a concurrent stock/sales/production write while closing approval is in progress. Verify the final approved snapshot cannot miss a transaction committed during the approval window.
+- [ ] Apply barapp_cogs_operations_v1.sql last among COGS migrations, then run barapp_security_hardening_v1.sql after all SECURITY DEFINER function definitions; run barapp_security_verify_v1.sql afterward and review all nonzero findings.
+
 ## Evidence and exit criteria
 - [ ] Capture sanitized screenshots for each failed/passed critical flow.
 - [ ] Record expected vs actual quantities and reconciliation output for test division.
