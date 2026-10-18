@@ -16,7 +16,7 @@ LANGUAGE sql STABLE
 AS $$ SELECT jsonb_build_object('email', nullif(current_setting('request.jwt.claim.email', true), '')) $$;
 
 CREATE TABLE public.barapp_closing_periods (
-  id uuid PRIMARY KEY,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   outlet_id uuid NOT NULL,
   division_id uuid NOT NULL,
   closing_date date NOT NULL,
