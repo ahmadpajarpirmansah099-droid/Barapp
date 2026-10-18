@@ -90,6 +90,7 @@ jobs:
             "barapp_closing_reopen",
             "window.prompt",
             "CLOSING_REASON_REQUIRED",
+            "CLOSING_REASON_TOO_LONG",
             "modul harus dikonfirmasi ulang"
           ];
           const missingUi = requiredUi.filter(marker => !closing.toLowerCase().includes(marker.toLowerCase()));
