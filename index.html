@@ -1187,7 +1187,7 @@ async function outSwitch(id){
   CG.items=[];CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];CG.ready=false;CG.err='';CG.filter='';CG.tab='active';
   OPS.division='';OPS.date=today();OPS.prodHistoryDate=today();OPS.soHistoryDate=today();OPS.position=[];OPS.positionLoadedFor='';OPS.positionLoading=false;OPS.positionError='';OPS.counts={};
   toast('Outlet diganti · memuat data outlet baru…');R();
-  try{await sbLoad();await Promise.all([payLoad(),invLoad(true),cgLoad(true)]);if(pg==='cogs_daily_so'||pg==='cogs_production')await opsLoadPosition(true);R();toast('Data outlet baru sudah dimuat.','ok')}
+  try{await sbLoad();await Promise.all([payLoad(),perLoad(),invLoad(true),cgLoad(true)]);if(pg==='cogs_daily_so'||pg==='cogs_production')await opsLoadPosition(true);R();toast('Data outlet baru sudah dimuat.','ok')}
   catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
 }
 function outMenuHtml(){
