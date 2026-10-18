@@ -44,10 +44,11 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 ## Closing approval cancel/reopen regression
 - [ ] Use a verified staging-only division and date with a complete, approved closing; capture period row, module snapshots, SO/sales/WIP row counts, and stock positions before cancel.
 - [ ] As Developer/Admin Divisi with access to that division, use "Batalkan Approval" and provide a non-empty reason.
-- [ ] Confirm period status becomes `needs_reconciliation`, while Daily SO, sales, production, stock-in/out, and their detail rows are not deleted or rewritten.
+- [ ] Confirm period status becomes `needs_reconciliation`, active `approved_by`/`approved_at` are cleared and `summary` is reset, while the prior values remain in audit `old_data`.
+- [ ] Confirm Daily SO, sales, production, stock-in/out, and their detail rows are not deleted or rewritten.
 - [ ] Confirm `audit_log` contains action `closing_approval_cancelled`, the supplied reason, prior period row, and all prior module snapshots in `old_data`.
 - [ ] Confirm all modules return to pending confirmation and the UI requires them to be confirmed again before approval; no transaction re-entry is needed.
-- [ ] Confirm blank reason and non-authorized/out-of-scope user are rejected without changing the period or module rows.
+- [ ] Confirm blank reason, reason over 500 characters, and non-authorized/out-of-scope user are rejected without changing the period or module rows.
 - [ ] Reconfirm the active modules, approve the closing again, and verify period status returns to `approved`, a new approval timestamp is recorded, and stock does not get consumed/applied twice.
 - [ ] Confirm audit history retains both cancellation and subsequent approval; download the closing/Daily SO Excel before and after to verify only expected report values change.
 
