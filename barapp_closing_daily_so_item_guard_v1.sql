@@ -1,9 +1,9 @@
 -- BarApp Closing Daily SO item-set guard V1
 -- Apply to a VERIFIED staging database first. This migration does not alter or delete
 -- operational transaction rows. It validates that a Daily SO's saved component set still
--- matches active non-SUPPLIES material and enabled WIP items valid on the closing date.
--- This catches legacy/backdated SO snapshots at confirmation time, rather than letting the
--- closing workflow proceed until final approval fails.
+-- validates the submitted SO snapshot's component references and internal consistency.
+-- Historical/backdated SO remains valid when catalog rows were registered later; the guard
+-- checks the saved snapshot, not today's active catalog set.
 --
 -- The internal helper is not executable by client roles. Closing access remains separate
 -- from COGS edit permissions: the helper uses the closing role/scope guard and does not call
@@ -47,63 +47,71 @@ begin
     return false;
   end if;
 
-  select
-    (select count(*)
-     from public.barapp_items i
-     where i.division_id = p_division_id
-       and i.active = true
-       and coalesce(i.is_supply, false) = false
-       and (i.created_at at time zone 'Asia/Jakarta')::date <= p_closing_date)
-    +
-    (case when public.division_module_enabled(p_division_id, 'cogs_wip')
-      then (select count(*)
-            from public.cogs_wip w
-            where w.division_id = p_division_id
-              and w.active = true
-              and (w.created_at at time zone 'Asia/Jakarta')::date <= p_closing_date)
-      else 0 end)
-  into v_expected_count;
-
+  -- Historical/backdated SO is validated against its own saved snapshot.
+  -- Do not compare it with today's active catalog or created_at dates: items may be
+  -- registered after the operational date without making a legitimate backdate invalid.
   select count(*)
   into v_actual_count
   from public.cogs_daily_so_lines l
   where l.so_id = v_so_id;
 
-  if v_expected_count <> v_actual_count then
+  if v_actual_count = 0 then
     return false;
   end if;
 
+  -- Each line must identify exactly one supported component type, with no duplicate
+  -- component keys in the submitted snapshot.
   if exists (
     select 1
-    from public.barapp_items i
-    where i.division_id = p_division_id
-      and i.active = true
-      and coalesce(i.is_supply, false) = false
-      and (i.created_at at time zone 'Asia/Jakarta')::date <= p_closing_date
-      and not exists (
-        select 1
-        from public.cogs_daily_so_lines l
-        where l.so_id = v_so_id
-          and l.component_type = 'material'
-          and l.item_id = i.id
+    from public.cogs_daily_so_lines l
+    where l.so_id = v_so_id
+      and (
+        (l.component_type = 'material'
+          and (l.item_id is null or l.component_wip_id is not null))
+        or
+        (l.component_type = 'wip'
+          and (l.component_wip_id is null or l.item_id is not null))
+        or l.component_type not in ('material','wip')
+        or l.component_type is null
       )
   ) then
     return false;
   end if;
 
-  if public.division_module_enabled(p_division_id, 'cogs_wip') and exists (
+  if exists (
     select 1
-    from public.cogs_wip w
-    where w.division_id = p_division_id
-      and w.active = true
-      and (w.created_at at time zone 'Asia/Jakarta')::date <= p_closing_date
-      and not exists (
-        select 1
-        from public.cogs_daily_so_lines l
-        where l.so_id = v_so_id
-          and l.component_type = 'wip'
-          and l.component_wip_id = w.id
-      )
+    from public.cogs_daily_so_lines l
+    where l.so_id = v_so_id
+    group by l.component_type, l.item_id, l.component_wip_id
+    having count(*) > 1
+  ) then
+    return false;
+  end if;
+
+  -- Verify that referenced catalog rows still exist and belong to this division.
+  -- Do not require current active status or a created_at <= closing_date cutoff.
+  if exists (
+    select 1
+    from public.cogs_daily_so_lines l
+    left join public.barapp_items i
+      on i.id = l.item_id
+     and i.division_id = p_division_id
+    where l.so_id = v_so_id
+      and l.component_type = 'material'
+      and (i.id is null or coalesce(i.is_supply, false) = true)
+  ) then
+    return false;
+  end if;
+
+  if exists (
+    select 1
+    from public.cogs_daily_so_lines l
+    left join public.cogs_wip w
+      on w.id = l.component_wip_id
+     and w.division_id = p_division_id
+    where l.so_id = v_so_id
+      and l.component_type = 'wip'
+      and (w.id is null or not public.division_module_enabled(p_division_id, 'cogs_wip'))
   ) then
     return false;
   end if;
