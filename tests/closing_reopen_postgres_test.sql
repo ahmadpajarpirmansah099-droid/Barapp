@@ -285,6 +285,31 @@ INSERT INTO public.test_operational_sentinel(id, quantity) VALUES ('keep-me', 17
 -- Load the actual approval/confirmation RPC definitions from this repository.
 \ir ../barapp_closing_daily_so_item_guard_v1.sql
 \ir ../barapp_closing_reopen_v1.sql
+\ir ../barapp_security_hardening_v1.sql
+
+-- All public SECURITY DEFINER routines installed by this fixture must be hardened.
+DO $security_path_smoke$
+DECLARE
+  v_total integer;
+  v_hardened integer;
+BEGIN
+  SELECT count(*),
+         count(*) FILTER (
+           WHERE substring(cfg from length('search_path=') + 1) LIKE 'pg_catalog,%'
+             AND right(rtrim(substring(cfg from length('search_path=') + 1)),7)='pg_temp'
+         )
+    INTO v_total, v_hardened
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid=p.pronamespace
+  CROSS JOIN LATERAL unnest(coalesce(p.proconfig,array[]::text[])) cfg
+  WHERE n.nspname='public' AND p.prosecdef AND cfg LIKE 'search_path=%';
+
+  IF v_total = 0 OR v_total <> v_hardened THEN
+    RAISE EXCEPTION 'TEST_FAILURE: security hardening left % of % SECURITY DEFINER routines unhardened',
+      v_total-v_hardened,v_total;
+  END IF;
+END
+$security_path_smoke$;
 
 SELECT set_config('request.jwt.claim.sub', :'test_actor_id', false);
 SELECT set_config('request.jwt.claim.email', 'closing-test@example.invalid', false);
