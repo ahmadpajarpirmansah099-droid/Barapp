@@ -1319,6 +1319,7 @@ if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
+if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;return}
 T.perms=[];if(session&&['hr','div_admin'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
