@@ -2708,10 +2708,11 @@ const odDateLabel=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('id-
 const odInRange=(d)=>String(d||'')>=OD.from&&String(d||'')<=OD.to;
 const odDivisionRows=()=>OD.division?CG.divs.filter(d=>String(d.id)===String(OD.division)):CG.divs.slice();
 const odFilter=(rows,field)=>{const ids=new Set(odDivisionRows().map(d=>String(d.id)));return (rows||[]).filter(x=>ids.has(String(x.division_id))&&odInRange(x[field])&&(!x.status||!['cancelled','void','voided','rejected'].includes(String(x.status).toLowerCase())))};
+const odStockOutFilter=(rows)=>{const ids=new Set(odDivisionRows().map(d=>String(d.id)));return (rows||[]).filter(x=>{const category=String(x.category||'').toLowerCase(),isMove=['move','transfer'].includes(category),from=String(x.from_division_id||''),to=String(x.to_division_id||'');const divisionMatch=isMove?(ids.has(from)||ids.has(to)):ids.has(from);return divisionMatch&&odInRange(x.out_date)&&(!x.status||!['cancelled','void','voided','rejected'].includes(String(x.status).toLowerCase()))})};
 const odStat=(label,value,sub,icon,key)=>'<button type="button" class="card od-stat" onclick="odOpenCard(\''+key+'\')" style="text-align:left;cursor:pointer;margin:0;min-width:0;width:100%;padding:14px;color:inherit;font:inherit;display:block"><div style="display:flex;align-items:center;gap:8px;color:var(--muted,#777);font-size:12px">'+IC(icon||'chart-no-axes-combined',17)+'<span>'+label+'</span></div><div style="font-size:clamp(20px,3.5vw,27px);font-weight:800;line-height:1.2;margin:9px 0;overflow-wrap:anywhere">'+value+'</div><div style="font-size:11px;color:var(--muted,#777)">'+sub+'</div><div style="font-size:10px;color:var(--accent,#7c9866);margin-top:8px">Lihat detail →</div></button>';
 function odOpenCard(key){
  if(!OD.ready)return toast('Data dashboard belum siap.','warn');
- const sales=odFilter(CG.sales,'sold_at'),prod=odFilter(CG.productions,'produced_at'),ins=odFilter(INV.ins,'received_at'),outs=odFilter(INV.stockOut,'out_date'),sos=odFilter(CG.dailySO,'so_date'),sup=odFilter(INV.suppliesSO,'so_date');
+ const sales=odFilter(CG.sales,'sold_at'),prod=odFilter(CG.productions,'produced_at'),ins=odFilter(INV.ins,'received_at'),outs=odStockOutFilter(INV.stockOut),sos=odFilter(CG.dailySO,'so_date'),sup=odFilter(INV.suppliesSO,'so_date');
  const move=outs.filter(x=>['move','transfer'].includes(String(x.category||'').toLowerCase()));
  const expense=outs.filter(x=>!['move','transfer'].includes(String(x.category||'').toLowerCase()));
  const soLines=CG.dailySOLines.filter(l=>sos.some(s=>String(s.id)===String(l.so_id)));
@@ -2759,7 +2760,7 @@ function odView(){
  if(!OD.ready&&!OD.loading){setTimeout(()=>odLoad(),0);return '<div class="card"><h3>Dashboard Operasional</h3><p class="mu">Memuat data transaksi dari Supabase…</p></div>'}
  if(OD.loading)return '<div class="card"><h3>Dashboard Operasional</h3><p class="mu">Memuat data operasional…</p></div>';
  if(OD.error)return '<div class="card"><h3>Dashboard Operasional</h3><p>'+esc(OD.error)+'</p><button class="btn" onclick="odRefresh()">Coba lagi</button></div>';
- const divs=odDivisionRows(),sales=odFilter(CG.sales,'sold_at'),prod=odFilter(CG.productions,'produced_at'),ins=odFilter(INV.ins,'received_at'),outs=odFilter(INV.stockOut,'out_date'),sos=odFilter(CG.dailySO,'so_date'),sup=odFilter(INV.suppliesSO,'so_date');
+ const divs=odDivisionRows(),sales=odFilter(CG.sales,'sold_at'),prod=odFilter(CG.productions,'produced_at'),ins=odFilter(INV.ins,'received_at'),outs=odStockOutFilter(INV.stockOut),sos=odFilter(CG.dailySO,'so_date'),sup=odFilter(INV.suppliesSO,'so_date');
  const stockInValue=ins.reduce((s,x)=>s+Number(x.invoice_total??x.estimated_total??0),0);
  const salesQty=sales.reduce((s,x)=>s+Number(x.qty||0),0),gross=sales.reduce((s,x)=>s+Number(x.gross_sales_snapshot||0),0),hpp=sales.reduce((s,x)=>s+Number(x.total_hpp_snapshot||0),0);
  const prodQty=prod.reduce((s,x)=>s+Number(x.produced_qty||0),0),prodCost=prod.reduce((s,x)=>s+Number(x.total_cost_snapshot||0),0);
