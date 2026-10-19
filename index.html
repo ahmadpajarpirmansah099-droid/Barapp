@@ -686,6 +686,19 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .hd-sidebar-actions{display:none!important}
 }
 
+/* Smooth entrance for the desktop settings dropdown portal. */
+@keyframes barappSettingsEnter{
+  from{opacity:0;transform:translateY(12px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.settings-dd.portal-open{
+  transform-origin:bottom left;
+  animation:barappSettingsEnter .28s cubic-bezier(.16,1,.3,1) both;
+}
+@media(prefers-reduced-motion:reduce){
+  .settings-dd.portal-open{animation:none!important}
+}
+
 /* Global persistent app header: keep outlet, current date, refresh, settings and logout visible while scrolling on every feature. */
 html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .app-top{
