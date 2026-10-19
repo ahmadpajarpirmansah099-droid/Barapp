@@ -76,8 +76,9 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Compare this migration to active database behavior and run it on verified staging only after a backup. CI does not equal staging sign-off.
 - [x] Added a PostgreSQL concurrency test: a stock-in trigger waits behind an in-progress approval, then marks the just-approved period `needs_reconciliation`. CI passes this regression.
 - [ ] Extend staging regression to cross-division Move and all parent/line transaction paths, then verify no operation leaves the wrong date/division closing approved.
-- [ ] Verify whether the active database has a shared audit trigger for COGS tables. The checked-in COGS write/cancel RPCs contain no explicit audit_log inserts; without a separately installed and version-controlled audit trigger, operational changes will not appear in the Audit Log. Add a staging assertion for create/edit/cancel events.
-- [ ] Apply barapp_cogs_operations_v1.sql last among COGS migrations, then run barapp_security_hardening_v1.sql after all SECURITY DEFINER function definitions; run barapp_security_verify_v1.sql afterward and review all nonzero findings.
+- [x] Added `barapp_cogs_audit_triggers_v1.sql` to install audited row triggers for COGS WIP/menu recipes, production/input rows, menu-sales/line rows, and Daily SO/line rows. Events capture actor/email, table, record ID, old/new row snapshots, and notes on status-based cancellations. The disposable PostgreSQL CI fixture now exercises create/update/cancel/delete event coverage.
+- [ ] Apply the COGS audit-trigger migration on verified staging only after backup and migration-order review; confirm triggers are installed in the intended project and verify create/edit/cancel events through the real Audit Log UI.
+- [ ] Apply `barapp_cogs_operations_v1.sql` last among the existing COGS schema/RPC migrations. Then apply `barapp_cogs_audit_triggers_v1.sql`, run `barapp_security_hardening_v1.sql` after all `SECURITY DEFINER` function definitions, and run `barapp_security_verify_v1.sql`; review every nonzero finding. Staging/browser verification remains mandatory.
 
 ## Evidence and exit criteria
 - [ ] Capture sanitized screenshots for each failed/passed critical flow.
