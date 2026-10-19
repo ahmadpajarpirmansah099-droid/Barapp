@@ -557,7 +557,7 @@ CREATE TABLE public.cogs_menu_recipe_lines (
 );
 
 -- Install the repository migration in the isolated fixture; never run this test on Supabase.
-\\ir ../barapp_cogs_audit_triggers_v1.sql
+\ir ../barapp_cogs_audit_triggers_v1.sql
 
 SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
 SELECT set_config('request.jwt.claim.email', 'cogs-audit-ci@example.invalid', false);
