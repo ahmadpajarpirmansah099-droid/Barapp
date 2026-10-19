@@ -589,7 +589,7 @@ INSERT INTO public.cogs_production_inputs(id, batch_id)
 VALUES ('77777777-7777-4777-8777-777777777777',
         '66666666-6666-4666-8666-666666666666');
 UPDATE public.cogs_production_batches
-SET status='cancelled', notes='operator cancellation reason'
+SET status='cancelled', notes=concat_ws(E'\\n',notes,'operator cancellation reason')
 WHERE id='66666666-6666-4666-8666-666666666666';
 
 INSERT INTO public.cogs_menu_sales(id, division_id, sold_at, status, notes)
@@ -600,7 +600,7 @@ INSERT INTO public.cogs_menu_sales_lines(id, sale_id)
 VALUES ('99999999-9999-4999-8999-999999999999',
         '88888888-8888-4888-8888-888888888888');
 UPDATE public.cogs_menu_sales
-SET status='cancelled', notes='sale cancellation reason'
+SET status='cancelled', notes=concat_ws(E'\\n',notes,'sale cancellation reason')
 WHERE id='88888888-8888-4888-8888-888888888888';
 
 INSERT INTO public.cogs_daily_so(id, division_id, so_date, status, notes)
@@ -610,7 +610,7 @@ VALUES ('abababab-abab-4bab-8bab-abababababab',
 INSERT INTO public.cogs_daily_so_lines(id, so_id)
 VALUES ('bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc',
         'abababab-abab-4bab-8bab-abababababab');
-UPDATE public.cogs_daily_so SET status='void', notes='SO cancellation reason'
+UPDATE public.cogs_daily_so SET status='void', notes=concat_ws(E'\\n',notes,'SO cancellation reason')
 WHERE id='abababab-abab-4bab-8bab-abababababab';
 
 DO $cogs_audit_assertions$
