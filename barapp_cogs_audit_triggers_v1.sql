@@ -58,6 +58,8 @@ declare
   v_action text;
   v_record_id text;
   v_reason text;
+  v_old_notes text;
+  v_new_notes text;
 begin
   if TG_OP = 'INSERT' then
     v_old := null;
@@ -73,9 +75,18 @@ begin
     if coalesce(v_new->>'status', '') in ('cancelled', 'void')
        and coalesce(v_old->>'status', '') not in ('cancelled', 'void') then
       v_action := 'cogs_record_cancelled';
-      -- Cancellation RPCs append the operator's reason to notes. Keep the complete
-      -- notes field in the snapshots as well as in reason so the record is auditable.
-      v_reason := nullif(btrim(v_new->>'notes'), '');
+      -- Cancellation RPCs append a supplied reason to notes. Store only the appended
+      -- suffix as reason; opening-WIP cancellation may leave notes unchanged and has no reason.
+      v_old_notes := v_old->>'notes';
+      v_new_notes := v_new->>'notes';
+      v_reason := null;
+      if coalesce(v_new_notes, '') <> coalesce(v_old_notes, '') then
+        if v_old_notes is null or v_old_notes = '' then
+          v_reason := nullif(btrim(v_new_notes), '');
+        elsif left(coalesce(v_new_notes, ''), length(v_old_notes) + 1) = v_old_notes || E'\\n' then
+          v_reason := nullif(btrim(substr(v_new_notes, length(v_old_notes) + 2)), '');
+        end if;
+      end if;
     else
       v_action := 'cogs_record_updated';
     end if;
