@@ -679,12 +679,18 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .daily-so-back{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 @media(max-width:600px){.daily-so-back{font-size:12px;padding:8px 10px;min-height:36px}}
 
-/* BARAPP BRAND: harmonized green sidebar and sticky header */
+/* BARAPP BRAND: solid green surfaces for sidebar and header */
 :root{
   --barapp-green:#176B45;
   --barapp-green-deep:#145638;
   --barapp-green-soft:#E7F2EA;
   --barapp-green-line:#B9D5C2;
+}
+:root[data-theme="dark"]{
+  --barapp-green:#80C99B;
+  --barapp-green-deep:#244A35;
+  --barapp-green-soft:#20372A;
+  --barapp-green-line:#3F6650;
 }
 @media(prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -694,59 +700,51 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
     --barapp-green-line:#3F6650;
   }
 }
-:root[data-theme="dark"]{
-  --barapp-green:#80C99B;
-  --barapp-green-deep:#244A35;
-  --barapp-green-soft:#20372A;
-  --barapp-green-line:#3F6650;
-}
+/* Solid, uniform background across the entire sidebar */
 .side{
-  background:linear-gradient(180deg,var(--barapp-green-soft),var(--cd) 38%);
-  border-right:1px solid var(--barapp-green-line);
+  background:var(--barapp-green-soft)!important;
+  border-right:1px solid var(--barapp-green-line)!important;
 }
 .side .brand{
-  background:var(--barapp-green-soft);
-  border-bottom:1px solid var(--barapp-green-line);
+  background:var(--barapp-green-soft)!important;
+  border-bottom:1px solid var(--barapp-green-line)!important;
 }
-.side .brand b{color:var(--barapp-green-deep)}
-.side .brand small,.side .sw-r .ic{color:var(--barapp-green)}
+.side .brand b{color:var(--barapp-green-deep)!important}
+.side .brand small,.side .sw-r .ic{color:var(--barapp-green)!important}
+.side .nvb{border-color:transparent}
 .side .nvb.on{
-  background:var(--barapp-green-soft);
-  border-color:var(--barapp-green-line);
-  color:var(--barapp-green-deep);
-  box-shadow:inset 3px 0 0 var(--barapp-green);
+  background:#D0E6D7!important;
+  border-color:var(--barapp-green-line)!important;
+  color:var(--barapp-green-deep)!important;
+  box-shadow:inset 3px 0 0 var(--barapp-green)!important;
 }
-.side .nvb:hover{background:var(--barapp-green-soft)}
+.side .nvb:hover{background:#DCEDE1!important}
 .side .sidew{
-  background:color-mix(in srgb,var(--barapp-green-soft) 78%,var(--cd));
-  border-color:var(--barapp-green-line);
+  background:#DCEDE1!important;
+  border-color:var(--barapp-green-line)!important;
 }
+/* Solid, uniform background across the entire top header */
 .app-top{
-  background:color-mix(in srgb,var(--barapp-green-soft) 92%,var(--cd));
-  border-bottom:1px solid var(--barapp-green-line);
+  background:var(--barapp-green-soft)!important;
+  border-bottom:1px solid var(--barapp-green-line)!important;
 }
 .app-top .brand-m,.app-top .ibtn{
-  background:var(--barapp-green-soft);
-  border-color:var(--barapp-green-line);
+  background:#DCEDE1!important;
+  border-color:var(--barapp-green-line)!important;
 }
 .app-top .ibtn:hover,.app-top .brand-m:hover{
-  background:var(--barapp-green);
-  border-color:var(--barapp-green);
-  color:#fff;
+  background:var(--barapp-green)!important;
+  border-color:var(--barapp-green)!important;
+  color:#fff!important;
 }
 .app-top .hd-date{
-  background:var(--cd);
-  border-color:var(--barapp-green-line);
+  background:var(--barapp-green-soft)!important;
+  border-color:var(--barapp-green-line)!important;
 }
 .app-top .hd-outlet select{
-  background:var(--cd);
-  border-color:var(--barapp-green-line);
+  background:var(--barapp-green-soft)!important;
+  border-color:var(--barapp-green-line)!important;
 }
-@media(max-width:899px){
-  .side{background:var(--cd)}
-  .side .brand{background:var(--barapp-green-soft)}
-}
-
 </style>
 
 <style id="cogs-ui">
