@@ -228,3 +228,40 @@ group by so_id, so_date, division_id
 having count(*) filter (where component_created_date > so_date) > 0
     or count(*) filter (where component_created_date is null) > 0
 order by so_date, division_id;
+
+
+-- 7) COGS audit-trigger installation check (read-only).
+-- Every row should report trigger_present=true and after_row_insert_update_delete=true.
+with expected(table_name, trigger_name) as (
+  values
+    ('cogs_wip','trg_cogs_audit_wip'),
+    ('cogs_wip_recipe_lines','trg_cogs_audit_wip_recipe_lines'),
+    ('cogs_menus','trg_cogs_audit_menus'),
+    ('cogs_menu_recipe_lines','trg_cogs_audit_menu_recipe_lines'),
+    ('cogs_production_batches','trg_cogs_audit_production_batches'),
+    ('cogs_production_inputs','trg_cogs_audit_production_inputs'),
+    ('cogs_menu_sales','trg_cogs_audit_menu_sales'),
+    ('cogs_menu_sales_lines','trg_cogs_audit_menu_sales_lines'),
+    ('cogs_daily_so','trg_cogs_audit_daily_so'),
+    ('cogs_daily_so_lines','trg_cogs_audit_daily_so_lines')
+)
+select
+  e.table_name,
+  e.trigger_name,
+  (t.oid is not null) as trigger_present,
+  coalesce(
+    (t.tgtype & 1) = 1
+    and (t.tgtype & 4) = 4
+    and (t.tgtype & 8) = 8
+    and (t.tgtype & 16) = 16
+    and (t.tgtype & 2) = 0
+    and (t.tgtype & 64) = 0,
+    false
+  ) as after_row_insert_update_delete,
+  pg_catalog.pg_get_triggerdef(t.oid) as trigger_definition
+from expected e
+left join pg_catalog.pg_namespace n on n.nspname='public'
+left join pg_catalog.pg_class c on c.relnamespace=n.oid and c.relname=e.table_name
+left join pg_catalog.pg_trigger t
+  on t.tgrelid=c.oid and t.tgname=e.trigger_name and not t.tgisinternal
+order by e.table_name;
