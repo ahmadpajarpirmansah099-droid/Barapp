@@ -1622,8 +1622,41 @@ const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open
 function openMods(){modal(`<h3 class="mods-title">Fitur</h3><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${MODS.filter(m=>!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole=='hr'||hasDivMgr())&&(!m.cogs||adm())).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${IC(lk?'lock':m.ic,32)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
-const cmn=()=>document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
-function omn(b,e){e.stopPropagation();const m=b.parentElement,o=m.classList.contains('open');cmn();if(!o)m.classList.add('open')}
+const cmn=()=>{
+ document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));
+ const d=document.querySelector('.settings-dd.portal-open');
+ if(d){
+  d.classList.remove('portal-open');
+  d.removeAttribute('style');
+  const holder=document.querySelector('.side .hd-sidebar-actions .settings-mn');
+  if(holder)holder.appendChild(d);
+ }
+};
+function omn(b,e){
+ e.stopPropagation();
+ const m=b.parentElement;
+ const portal=document.querySelector('.settings-dd.portal-open');
+ const isOpen=m.classList.contains('open')||!!portal;
+ cmn();
+ if(isOpen)return;
+ if(window.matchMedia&&window.matchMedia('(min-width:900px)').matches&&m.classList.contains('settings-mn')&&m.closest('.side')){
+  const d=m.querySelector('.settings-dd');
+  if(d){
+   const r=b.getBoundingClientRect();
+   const left=Math.max(8,Math.min(r.left,window.innerWidth-180));
+   const bottom=Math.max(8,window.innerHeight-r.top);
+   d.classList.add('portal-open');
+   document.body.appendChild(d);
+   const set=(k,v)=>d.style.setProperty(k,v,'important');
+   set('position','fixed');set('left',left+'px');set('right','auto');set('top','auto');set('bottom',bottom+'px');
+   set('width',Math.min(310,Math.max(180,window.innerWidth-left-8))+'px');
+   set('min-width','0');set('max-width',Math.max(180,window.innerWidth-left-8)+'px');
+   set('max-height',Math.max(160,r.top-16)+'px');set('overflow','auto');set('z-index','10000');set('display','block');
+   return;
+  }
+ }
+ m.classList.add('open');
+}
 /* Card tertutup: di semua menu, card pertama terbuka; card berikutnya tertutup dan dibuka dengan ketuk */
 
 function accToggle(b,open){if(!b)return;b.style.transition='grid-template-rows .5s cubic-bezier(.34,1.4,.64,1),opacity .35s ease';requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.gridTemplateRows=open?'1fr':'0fr';b.style.opacity=open?'1':'0'}))}
