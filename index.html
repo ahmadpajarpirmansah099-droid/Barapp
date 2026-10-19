@@ -1983,12 +1983,16 @@ async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)retu
  if(ok){toast('Admin divisi diatur');divLoad()}}
 
 /* ===== AUDIT LOG (dev, baca saja) ===== */
-async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
+async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,record_id,reason,old_data,new_data').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
 V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa melihat audit log.</div>';
  if(!T.audInit){T.audInit=1;setTimeout(audLoad,0)}
  const rows=T.aud||[];
- return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Riwayat perubahan (100 terakhir)</b><button class="btn s x" onclick="audLoad()">Muat ulang</button></div></div>`+
- `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
+ const rowsHtml=rows.map(r=>{
+  const snap=(r.old_data||r.new_data)?'<details><summary style="cursor:pointer">Lihat snapshot</summary><pre style="white-space:pre-wrap;word-break:break-word;max-width:600px;font-size:11px;line-height:1.4">'+esc(JSON.stringify({sebelum:r.old_data||null,sesudah:r.new_data||null},null,2))+'</pre></details>':'';
+  return '<tr><td style="white-space:nowrap">'+String(r.at).slice(0,16).replace('T',' ')+'</td><td>'+esc(r.actor_email||'-')+'</td><td>'+esc(r.action)+'</td><td>'+esc(r.table_name||'-')+'</td><td style="word-break:break-all">'+esc(r.record_id||'-')+'</td><td>'+esc(r.reason||'-')+(snap?'<div style="margin-top:4px">'+snap+'</div>':'')+'</td></tr>';
+ }).join('');
+ return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Riwayat perubahan (100 terakhir)</b><button class="btn s x" onclick="audLoad()">Muat ulang</button></div></div>'+
+ '<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>ID record</th><th>Keterangan / data</th></tr>'+(rowsHtml||'<tr><td colspan="6">Belum ada data.</td></tr>')+'</table></div></div>'};
 
 /* ===== MANAJEMEN AKUN (dev) ===== */
 function accsCard(){
