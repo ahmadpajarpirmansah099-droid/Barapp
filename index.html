@@ -704,6 +704,22 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   }
 }
 
+/* Mobile: keep the date label visible but remove its card/box styling. */
+@media(max-width:600px){
+  .hd-r>.hd-date{
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    outline:0!important;
+    border-radius:0!important;
+  }
+  .app-top .hd-date{
+    background:transparent!important;
+    border-color:transparent!important;
+    box-shadow:none!important;
+  }
+}
+
 /* Smooth entrance for the desktop settings dropdown portal. */
 @keyframes barappSettingsEnter{
   from{opacity:0;transform:translateY(12px) scale(.96)}
