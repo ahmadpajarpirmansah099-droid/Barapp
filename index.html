@@ -947,8 +947,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 <style id="barapp-desktop-controls-only">
 /* Desktop utility row and status card stay out of the mobile drawer. */
 @media (max-width: 899px) {
-  aside.side > .hd-sidebar-actions,
-  aside.side .hd-sidebar-actions,
+  /* Keep the empty desktop-header group hidden; restore the three controls inside the mobile drawer. */
   .app-top .hd-desktop-actions {
     display:none !important;
     visibility:hidden !important;
