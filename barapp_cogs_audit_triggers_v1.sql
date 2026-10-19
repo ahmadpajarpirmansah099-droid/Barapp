@@ -83,7 +83,7 @@ begin
       if coalesce(v_new_notes, '') <> coalesce(v_old_notes, '') then
         if v_old_notes is null or v_old_notes = '' then
           v_reason := nullif(btrim(v_new_notes), '');
-        elsif left(coalesce(v_new_notes, ''), length(v_old_notes) + 1) = v_old_notes || E'\\n' then
+        elsif left(coalesce(v_new_notes, ''), length(v_old_notes) + 1) = v_old_notes || E'\n' then
           v_reason := nullif(btrim(substr(v_new_notes, length(v_old_notes) + 2)), '');
         end if;
       end if;
