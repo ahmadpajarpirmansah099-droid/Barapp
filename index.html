@@ -907,11 +907,11 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 </style>
 
 <style id="barapp-settings-leaf-motion">
-/* Utility controls belong at the very bottom, below connection status. */
+/* The three controls sit directly above the connection/role status card. */
 .side { display:flex; flex-direction:column; }
 .side > .hd-sidebar-actions {
-  order:99 !important;
-  margin:8px 10px 12px !important;
+  order:98 !important;
+  margin:0 10px 8px !important;
   padding:0 !important;
   display:flex !important;
   gap:5px;
@@ -919,7 +919,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   position:relative;
   z-index:40;
 }
-.side > .sidew { order:98 !important; margin-top:auto !important; }
+.side > .sidew { order:99 !important; margin-top:auto !important; }
 .side > .hd-sidebar-actions .settings-mn { position:static !important; }
 .settings-dd.portal-open {
   position:fixed !important;
@@ -933,32 +933,32 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   max-height:min(72dvh,620px) !important;
   overflow:auto !important;
   border-radius:18px !important;
-  animation:barappSettingsPop .28s cubic-bezier(.2,.85,.25,1.15) forwards;
+  animation:barappSettingsPop .34s cubic-bezier(.2,.85,.25,1.15) forwards;
 }
 .settings-dd.portal-open::before,
 .settings-dd.portal-open::after {
   content:"";
   position:fixed;
-  width:15px;height:24px;
-  background:linear-gradient(145deg,#b8d9a4,#6f9566);
+  width:13px;height:21px;
+  background:linear-gradient(145deg,#d5e9b8,#759c6b);
   border-radius:100% 0 100% 0;
   opacity:0;
   pointer-events:none;
-  z-index:-1;
-  animation:barappLeafFloat 1.15s ease-out both;
+  z-index:10051;
+  animation:barappLeafFloat 1.25s ease-out both;
 }
-.settings-dd.portal-open::before { left:-15px;top:18px; transform:rotate(-28deg); }
-.settings-dd.portal-open::after { right:-13px;bottom:26px; transform:rotate(38deg); animation-delay:.1s; }
-.settings-dd.portal-open > * { position:relative; }
+.settings-dd.portal-open::before { left:8px;top:24px; transform:rotate(-28deg); }
+.settings-dd.portal-open::after { right:8px;bottom:28px; transform:rotate(38deg); animation-delay:.12s; }
 @keyframes barappSettingsPop {
-  0% { opacity:0; transform:translate(-50%,-47%) scale(.92); }
-  72% { opacity:1; transform:translate(-50%,-51%) scale(1.015); }
+  0% { opacity:0; transform:translate(-50%,-46%) scale(.9); }
+  62% { opacity:1; transform:translate(-50%,-52%) scale(1.018); }
+  82% { transform:translate(-50%,-49%) scale(.995); }
   100% { opacity:1; transform:translate(-50%,-50%) scale(1); }
 }
 @keyframes barappLeafFloat {
-  0% { opacity:0; translate:0 8px; rotate:-18deg; }
-  25% { opacity:.85; }
-  100% { opacity:0; translate:8px -25px; rotate:35deg; }
+  0% { opacity:0; translate:0 10px; rotate:-24deg; scale:.55; }
+  22% { opacity:.9; }
+  100% { opacity:0; translate:10px -28px; rotate:42deg; scale:1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .settings-dd.portal-open,.settings-dd.portal-open::before,.settings-dd.portal-open::after {
@@ -966,7 +966,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   }
 }
 @media (max-width:600px) {
-  .side > .hd-sidebar-actions { margin:8px 8px 12px !important; }
+  .side > .hd-sidebar-actions { margin:0 8px 8px !important; }
 }
 </style>
 
@@ -1729,7 +1729,7 @@ const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic
 const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
-<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div><div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></aside>
+<div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></aside>
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span><div class="hd-desktop-actions"></div></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
