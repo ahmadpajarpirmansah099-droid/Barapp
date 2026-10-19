@@ -12,6 +12,78 @@ permissions:
   contents: read
 
 jobs:
+  closing-reopen-postgres-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: barapp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d barapp_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run isolated PostgreSQL closing-reopen integration test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/barapp_test
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 --file tests/closing_reopen_postgres_test.sql
+
+      - name: Check closing reconciliation serializes with concurrent approval
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/barapp_test
+        run: |
+          set -euo pipefail
+          today="$(psql "$TEST_DATABASE_URL" -Atqc "select (now() at time zone 'Asia/Jakarta')::date")"
+          division="aaaaaaaa-1111-1111-1111-111111111111"
+          outlet="bbbbbbbb-1111-1111-1111-111111111111"
+          period="cccccccc-1111-1111-1111-111111111111"
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 <<SQL
+          insert into public.divisions(id,outlet_id,active)
+          values ('$division','$outlet',true);
+          insert into public.barapp_closing_periods(id,outlet_id,division_id,closing_date,status)
+          values ('$period','$outlet','$division','$today','ready');
+          SQL
+
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 > /tmp/barapp-approval-lock.log 2>&1 <<SQL &
+          begin;
+          update public.barapp_closing_periods
+             set status='approved', approved_at=now(),
+                 approved_by='dddddddd-1111-1111-1111-111111111111'
+           where id='$period';
+          select pg_sleep(3);
+          commit;
+          SQL
+          approval_pid=$!
+          sleep 0.5
+
+          # This insert's AFTER trigger must wait on the period row, then observe the
+          # just-committed approved state and mark it for reconciliation.
+          psql "$TEST_DATABASE_URL" --set ON_ERROR_STOP=1 -c \
+            "insert into public.barapp_stock_in(division_id,received_at,status) values ('$division','$today','posted')"
+          wait "$approval_pid"
+
+          status="$(psql "$TEST_DATABASE_URL" -Atqc "select status from public.barapp_closing_periods where id='$period'")"
+          if [[ "$status" != "needs_reconciliation" ]]; then
+            cat /tmp/barapp-approval-lock.log
+            echo "Expected needs_reconciliation after concurrent operation, got: $status"
+            exit 1
+          fi
+          echo "PASS: concurrent stock-in cannot leave the just-approved closing clean."
+
   static-qa:
     runs-on: ubuntu-latest
     steps:
@@ -41,6 +113,166 @@ jobs:
               throw error;
             }
           });
+          NODE
+
+      - name: Check Daily SO closing snapshot and backdate guards
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const sql = fs.readFileSync('barapp_closing_daily_so_item_guard_v1.sql', 'utf8');
+          const helperStart = sql.indexOf('create or replace function public.barapp_closing_daily_so_item_set_matches');
+          const confirmStart = sql.indexOf('create or replace function public.barapp_closing_confirm_module');
+          const approveStart = sql.indexOf('create or replace function public.barapp_closing_approve');
+          if ([helperStart, confirmStart, approveStart].some(index => index < 0)) {
+            throw new Error('Missing closing guard function definition');
+          }
+          const helper = sql.slice(helperStart, confirmStart);
+          const approval = sql.slice(approveStart);
+          const required = [
+            [helper, 'component_type', 'snapshot component-type validation'],
+            [helper, 'having count(*) > 1', 'duplicate component guard'],
+            [helper, 'division_id = p_division_id', 'division ownership guard'],
+            [helper, 'p_closing_date = (now() at time zone \'Asia/Jakarta\')::date', 'current-day strict catalog guard'],
+            [approval, 'if p_closing_date = v_today then', 'current-day-only refresh'],
+            [approval, 'Historical/backdated closing deliberately keeps its submitted expected', 'backdate snapshot preservation'],
+            [approval, 'Require a two-way exact match', 'exact current-day component-set comparison'],
+            [approval, 'to authenticated', 'authenticated approval grant']
+          ];
+          const missing = required.filter(([source, marker]) => !source.includes(marker));
+          if (missing.length) {
+            console.error('Missing closing SQL invariants:', missing.map(([_, marker, label]) => label).join(', '));
+            process.exit(1);
+          }
+          if (helper.includes("created_at at time zone 'Asia/Jakarta'")) {
+            throw new Error('Historical guard must not reject items based on current master created_at');
+          }
+          console.log('Daily SO closing/backdate SQL invariants: OK');
+          NODE
+
+      - name: Check safe Closing cancellation and re-approval
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const closing = fs.readFileSync('closing.js', 'utf8');
+          const sql = fs.readFileSync('barapp_closing_reopen_v1.sql', 'utf8');
+          new Function(closing); // syntax-only compile; does not execute browser code
+
+          const requiredUi = [
+            "window.__clReopen",
+            "barapp_closing_reopen",
+            "window.prompt",
+            "CLOSING_REASON_REQUIRED",
+            "CLOSING_REASON_TOO_LONG",
+            "modul harus dikonfirmasi ulang"
+          ];
+          const missingUi = requiredUi.filter(marker => !closing.toLowerCase().includes(marker.toLowerCase()));
+          const requiredSql = [
+            "create or replace function public.barapp_closing_reopen",
+            "set search_path to 'pg_catalog', 'pg_temp'",
+            "barapp_closing_assert_access",
+            "barapp_closing_can_access_division",
+            "CLOSING_REASON_REQUIRED",
+            "CLOSING_REASON_TOO_LONG",
+            "approved_by = null",
+            "approved_at = null",
+            "summary = '{}'::jsonb",
+            "status = 'needs_reconciliation'",
+            "'module_snapshots'",
+            "'closing_approval_cancelled'",
+            "to authenticated"
+          ];
+          const missingSql = requiredSql.filter(marker => !sql.toLowerCase().includes(marker.toLowerCase()));
+          if (missingUi.length || missingSql.length) {
+            console.error('Missing closing cancellation markers:', [...missingUi, ...missingSql].join(', '));
+            process.exit(1);
+          }
+          const executableSql = sql.replace(/^\s*--.*$/gm, '');
+          const mutations = executableSql.match(/\b(?:insert\s+into|update|delete\s+from|truncate(?:\s+table)?)\s+public\.([a-z_]+)/gi) || [];
+          const allowedTargets = new Set(['barapp_closing_periods', 'barapp_closing_modules', 'audit_log']);
+          const unsafeTargets = mutations.filter(statement => {
+            const match = statement.match(/public\.([a-z_]+)/i);
+            return !match || !allowedTargets.has(match[1].toLowerCase());
+          });
+          if (unsafeTargets.length) {
+            throw new Error('Cancellation migration mutates non-closing operational tables: ' + unsafeTargets.join('; '));
+          }
+          if (/delete\s+from\s+public\.(cogs_daily_so|cogs_daily_so_lines|barapp_closing_periods|barapp_closing_modules|cogs_menu_sales|cogs_production_batches)/i.test(executableSql)) {
+            throw new Error('Cancellation SQL must not delete operational/closing records');
+          }
+          if (!executableSql.includes("approved_by = null") || !executableSql.includes("approved_at = null") || !executableSql.includes("summary = '{}'::jsonb")) {
+            throw new Error('Re-opening must clear active approval markers and summary');
+          }
+          if (executableSql.includes("set search_path to 'pg_catalog', 'public'")) {
+            throw new Error('Security-definer reopen RPC must not expose public in its search_path');
+          }
+          if (!executableSql.includes("set status = 'pending'") || !executableSql.includes("snapshot = '{}'::jsonb")) {
+            throw new Error('Re-opening must invalidate confirmation snapshots to require fresh confirmations');
+          }
+          const archivedAt = executableSql.indexOf("'period', to_jsonb(v_period)");
+          const resetAt = executableSql.indexOf("approved_by = null");
+          if (archivedAt < 0 || resetAt < 0 || archivedAt > resetAt) {
+            throw new Error('Prior approval must be archived before active approval markers are cleared');
+          }
+
+          // Closing lifecycle RPCs may update closing metadata and Daily SO snapshots,
+          // but must never create/cancel stock, production, or menu-sale ledger rows.
+          const guardSql = fs.readFileSync('barapp_closing_daily_so_item_guard_v1.sql', 'utf8');
+          const allowedLifecycleTargets = new Set([
+            'barapp_closing_periods',
+            'barapp_closing_modules',
+            'audit_log',
+            'cogs_daily_so_lines'
+          ]);
+          const lifecycleFunctions = [
+            ['barapp_closing_confirm_module', '$barapp_closing_confirm_module$;'],
+            ['barapp_closing_approve', '$barapp_closing_approve$;']
+          ];
+          for (const [name, ending] of lifecycleFunctions) {
+            const start = guardSql.toLowerCase().indexOf('create or replace function public.' + name + '(');
+            const end = start < 0 ? -1 : guardSql.indexOf(ending, start);
+            if (start < 0 || end < 0) {
+              throw new Error('Missing lifecycle function body: ' + name);
+            }
+            const body = guardSql.slice(start, end + ending.length).replace(/^\s*--.*$/gm, '');
+            const writes = body.match(/\b(?:insert\s+into|update|delete\s+from|truncate(?:\s+table)?)\s+public\.([a-z_]+)/gi) || [];
+            const unsafeWrites = writes.filter(write => {
+              const match = write.match(/public\.([a-z_]+)/i);
+              return !match || !allowedLifecycleTargets.has(match[1].toLowerCase());
+            });
+            if (unsafeWrites.length) {
+              throw new Error(name + ' mutates operational ledgers directly: ' + unsafeWrites.join('; '));
+            }
+          }
+          console.log('Closing cancellation + confirmation/approval stock-ledger invariants: OK');
+          NODE
+
+      - name: Check read-only Closing Reopen preflight
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const sql = fs.readFileSync('barapp_closing_reopen_preflight_v1.sql', 'utf8');
+          const executable = sql.replace(/^\s*--.*$/gm, '');
+          const required = [
+            "with table_requirements",
+            "information_schema.columns",
+            "to_regprocedure('public.barapp_closing_reopen(uuid,date,text)')",
+            "approval_marker_consistency",
+            "trigger_requirements(table_name, trigger_name)",
+            "trg_closing_dirty_stock_in",
+            "trg_closing_dirty_stock_out",
+            "trg_closing_dirty_sales_lines",
+            "trg_closing_dirty_production_inputs",
+            "migration:barapp_closing_reopen"
+          ];
+          const missing = required.filter(marker => !executable.includes(marker));
+          if (missing.length) {
+            console.error('Missing read-only preflight checks:', missing.join(', '));
+            process.exit(1);
+          }
+          if (/^\s*(create|alter|drop|insert|update|delete|truncate|grant|revoke)\b/im.test(executable)) {
+            throw new Error('Closing reopen preflight must remain read-only');
+          }
+          console.log('Closing reopen preflight is present and read-only.');
           NODE
 
       - name: Check expected COGS UI and RPC wiring
