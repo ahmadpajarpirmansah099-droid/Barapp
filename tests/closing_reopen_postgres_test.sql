@@ -524,3 +524,164 @@ BEGIN
   RAISE NOTICE 'PASS: closing reopen, invalid-input guards, re-approval lifecycle, and no extra movement';
 END
 $test$;
+
+
+-- COGS audit-trigger regression: same disposable PostgreSQL database, separate test actor.
+-- These are minimal fixtures only; this test does not connect to Supabase or operational data.
+ALTER TABLE public.cogs_daily_so_lines ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
+ALTER TABLE public.cogs_daily_so ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE public.cogs_menu_sales ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE public.cogs_production_batches ADD COLUMN IF NOT EXISTS notes text;
+
+CREATE TABLE public.cogs_wip (
+  id uuid PRIMARY KEY,
+  division_id uuid NOT NULL,
+  name text NOT NULL,
+  active boolean NOT NULL DEFAULT true
+);
+CREATE TABLE public.cogs_wip_recipe_lines (
+  id uuid PRIMARY KEY,
+  wip_id uuid NOT NULL REFERENCES public.cogs_wip(id) ON DELETE CASCADE,
+  component_type text NOT NULL
+);
+CREATE TABLE public.cogs_menus (
+  id uuid PRIMARY KEY,
+  division_id uuid NOT NULL,
+  name text NOT NULL,
+  active boolean NOT NULL DEFAULT true
+);
+CREATE TABLE public.cogs_menu_recipe_lines (
+  id uuid PRIMARY KEY,
+  menu_id uuid NOT NULL REFERENCES public.cogs_menus(id) ON DELETE CASCADE,
+  component_type text NOT NULL
+);
+
+-- Install the repository migration in the isolated fixture; never run this test on Supabase.
+\\ir ../barapp_cogs_audit_triggers_v1.sql
+
+SELECT set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+SELECT set_config('request.jwt.claim.email', 'cogs-audit-ci@example.invalid', false);
+
+INSERT INTO public.cogs_wip(id, division_id, name, active)
+VALUES ('22222222-2222-4222-8222-222222222222',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Test WIP', true);
+UPDATE public.cogs_wip SET name='Updated Test WIP'
+WHERE id='22222222-2222-4222-8222-222222222222';
+
+INSERT INTO public.cogs_wip_recipe_lines(id, wip_id, component_type)
+VALUES ('33333333-3333-4333-8333-333333333333',
+        '22222222-2222-4222-8222-222222222222', 'material');
+DELETE FROM public.cogs_wip_recipe_lines
+WHERE id='33333333-3333-4333-8333-333333333333';
+
+INSERT INTO public.cogs_menus(id, division_id, name, active)
+VALUES ('44444444-4444-4444-8444-444444444444',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Test Menu', true);
+INSERT INTO public.cogs_menu_recipe_lines(id, menu_id, component_type)
+VALUES ('55555555-5555-4555-8555-555555555555',
+        '44444444-4444-4444-8444-444444444444', 'material');
+
+INSERT INTO public.cogs_production_batches(id, division_id, produced_at, status, notes)
+VALUES ('66666666-6666-4666-8666-666666666666',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        (now() AT TIME ZONE 'Asia/Jakarta')::date, 'posted', 'production note');
+INSERT INTO public.cogs_production_inputs(id, batch_id)
+VALUES ('77777777-7777-4777-8777-777777777777',
+        '66666666-6666-4666-8666-666666666666');
+UPDATE public.cogs_production_batches
+SET status='cancelled', notes='operator cancellation reason'
+WHERE id='66666666-6666-4666-8666-666666666666';
+
+INSERT INTO public.cogs_menu_sales(id, division_id, sold_at, status, notes)
+VALUES ('88888888-8888-4888-8888-888888888888',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        (now() AT TIME ZONE 'Asia/Jakarta')::date, 'posted', 'sale note');
+INSERT INTO public.cogs_menu_sales_lines(id, sale_id)
+VALUES ('99999999-9999-4999-8999-999999999999',
+        '88888888-8888-4888-8888-888888888888');
+UPDATE public.cogs_menu_sales
+SET status='cancelled', notes='sale cancellation reason'
+WHERE id='88888888-8888-4888-8888-888888888888';
+
+INSERT INTO public.cogs_daily_so(id, division_id, so_date, status, notes)
+VALUES ('abababab-abab-4bab-8bab-abababababab',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        (now() AT TIME ZONE 'Asia/Jakarta')::date, 'submitted', 'SO note');
+INSERT INTO public.cogs_daily_so_lines(id, so_id)
+VALUES ('bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc',
+        'abababab-abab-4bab-8bab-abababababab');
+UPDATE public.cogs_daily_so SET status='void', notes='SO cancellation reason'
+WHERE id='abababab-abab-4bab-8bab-abababababab';
+
+DO $cogs_audit_assertions$
+DECLARE
+  v_count integer;
+BEGIN
+  SELECT count(*) INTO v_count
+  FROM public.audit_log
+  WHERE actor='11111111-1111-4111-8111-111111111111'
+    AND actor_email='cogs-audit-ci@example.invalid';
+  IF v_count < 15 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: expected at least 15 COGS audit events with actor/email, got %', v_count;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_wip' AND action='cogs_record_created'
+      AND record_id='22222222-2222-4222-8222-222222222222'
+      AND new_data->>'name'='Test WIP'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: WIP creation snapshot missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_wip' AND action='cogs_record_updated'
+      AND record_id='22222222-2222-4222-8222-222222222222'
+      AND old_data->>'name'='Test WIP'
+      AND new_data->>'name'='Updated Test WIP'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: WIP old/new update snapshots missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_wip_recipe_lines' AND action='cogs_record_deleted'
+      AND record_id='33333333-3333-4333-8333-333333333333'
+      AND old_data->>'wip_id'='22222222-2222-4222-8222-222222222222'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: deleted recipe line snapshot missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_production_batches' AND action='cogs_record_cancelled'
+      AND record_id='66666666-6666-4666-8666-666666666666'
+      AND old_data->>'status'='posted'
+      AND new_data->>'status'='cancelled'
+      AND reason='operator cancellation reason'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: production cancellation + reason not recorded';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_menu_sales' AND action='cogs_record_cancelled'
+      AND new_data->>'status'='cancelled'
+      AND reason='sale cancellation reason'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: menu sale cancellation not recorded';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.audit_log
+    WHERE table_name='cogs_daily_so' AND action='cogs_record_cancelled'
+      AND new_data->>'status'='void'
+      AND reason='SO cancellation reason'
+  ) THEN
+    RAISE EXCEPTION 'TEST_FAILURE: Daily SO void not recorded';
+  END IF;
+END;
+$cogs_audit_assertions$;
+
+RAISE NOTICE 'PASS: COGS audit triggers record create/update/cancel/delete with actor, table, record ID and snapshots.';
