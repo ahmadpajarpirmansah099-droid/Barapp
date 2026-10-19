@@ -671,11 +671,11 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   /* Settings menu must escape the narrow sidebar instead of being clipped by it. */
   .side .hd-sidebar-actions .settings-mn{position:static!important}
   .side .hd-sidebar-actions .settings-dd{
-    position:fixed!important;left:calc(var(--side) + 8px)!important;right:auto!important;
-    bottom:110px!important;top:auto!important;
-    width:min(310px,calc(100vw - var(--side) - 24px))!important;
-    min-width:0!important;max-width:calc(100vw - var(--side) - 24px)!important;
-    max-height:calc(100vh - 140px)!important;overflow:auto!important;
+    position:fixed!important;left:8px!important;right:auto!important;
+    bottom:104px!important;top:auto!important;
+    width:min(310px,calc(var(--side) - 16px),calc(100vw - 16px))!important;
+    min-width:0!important;max-width:min(310px,calc(var(--side) - 16px),calc(100vw - 16px))!important;
+    max-height:calc(100vh - 124px)!important;overflow:auto!important;
   }
   .side .hd-sidebar-actions + .sidew{margin-top:10px!important}
 }
