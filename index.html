@@ -862,6 +862,12 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .btn[disabled],.btn:disabled { box-shadow:none!important; }
 </style>
 
+<style id="barapp-sidebar-actions-position">
+/* Keep utility controls only in the app header, not duplicated above the connection status. */
+.side > .hd-sidebar-actions { display:none !important; }
+.side > .sidew { margin-top:auto !important; }
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -1622,7 +1628,7 @@ const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic
 const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
-<div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
+<div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span><div class="hd-desktop-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
