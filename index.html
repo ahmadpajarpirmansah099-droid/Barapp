@@ -668,7 +668,15 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
     border-color:var(--barapp-green-line)!important;
   }
   .side .hd-sidebar-actions .settings-mn{position:relative!important;flex:0 0 38px!important;width:38px!important;min-width:38px!important}
-  .side .hd-sidebar-actions .settings-dd{left:0!important;right:auto!important;bottom:calc(100% + 8px)!important;top:auto!important}
+  /* Settings menu must escape the narrow sidebar instead of being clipped by it. */
+  .side .hd-sidebar-actions .settings-mn{position:static!important}
+  .side .hd-sidebar-actions .settings-dd{
+    position:fixed!important;left:calc(var(--side) + 8px)!important;right:auto!important;
+    bottom:110px!important;top:auto!important;
+    width:min(310px,calc(100vw - var(--side) - 24px))!important;
+    min-width:0!important;max-width:calc(100vw - var(--side) - 24px)!important;
+    max-height:calc(100vh - 140px)!important;overflow:auto!important;
+  }
   .side .hd-sidebar-actions + .sidew{margin-top:10px!important}
 }
 @media(max-width:899px){
