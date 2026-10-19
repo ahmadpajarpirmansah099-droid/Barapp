@@ -862,77 +862,32 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .btn[disabled],.btn:disabled { box-shadow:none!important; }
 </style>
 
-<style id="barapp-sidebar-actions-position">
-/* Keep utility controls only in the app header, not duplicated above the connection status. */
-.side > .hd-sidebar-actions { display:none !important; }
-.side > .sidew { margin-top:auto !important; }
-</style>
-
-<style id="barapp-settings-overlay">
-/* Place the sole utility-control group immediately above the Supabase status. */
+<style id="barapp-settings-leaf-motion">
+/* Desktop sidebar: one control row immediately above the Supabase status card. */
+.side { display:flex; flex-direction:column; }
+.side > .nv { flex:1 1 auto; min-height:0; overflow-y:auto; }
 .side > .hd-sidebar-actions {
+  order:98 !important;
+  flex:0 0 auto;
   display:flex !important;
   align-items:center;
   justify-content:flex-start;
-  gap:4px;
-  margin:0 10px 8px;
-  padding:0;
-  position:relative;
-  z-index:40;
-}
-.side > .hd-sidebar-actions .settings-mn { position:relative; }
-.side > .hd-sidebar-actions .settings-dd {
-  position:fixed !important;
-  z-index:10050 !important;
-  left:10px !important;
-  right:auto !important;
-  bottom:76px !important;
-  top:auto !important;
-  width:min(310px,calc(100vw - 20px)) !important;
-  max-width:calc(100vw - 20px) !important;
-  max-height:calc(100dvh - 100px) !important;
-  overflow:auto !important;
-  box-shadow:0 8px 0 var(--dk,var(--line)) !important;
-}
-.side > .sidew { margin-top:0 !important; }
-@media (max-width: 600px) {
-  .side > .hd-sidebar-actions { margin:0 8px 8px; gap:3px; }
-  .side > .hd-sidebar-actions .settings-dd {
-    left:8px !important;
-    bottom:76px !important;
-    width:min(300px,calc(100vw - 16px)) !important;
-    max-width:calc(100vw - 16px) !important;
-  }
-}
-</style>
-
-<style id="barapp-settings-leaf-motion">
-/* The three controls sit directly above the connection/role status card. */
-.side { display:flex; flex-direction:column; }
-.side > .hd-sidebar-actions {
-  order:98 !important;
+  gap:5px;
   margin:0 10px 8px !important;
   padding:0 !important;
-  display:flex !important;
-  gap:5px;
-  align-items:center;
   position:relative;
   z-index:40;
 }
-.side > .sidew { order:99 !important; margin-top:auto !important; }
+.side > .sidew { order:99 !important; flex:0 0 auto; margin-top:0 !important; }
 .side > .hd-sidebar-actions .settings-mn { position:static !important; }
 .settings-dd.portal-open {
   position:fixed !important;
-  left:50% !important; right:auto !important;
-  top:50% !important; bottom:auto !important;
-  transform:translate(-50%,-50%) scale(.96);
-  transform-origin:center;
+  transform:translateY(8px) scale(.96);
+  transform-origin:bottom left;
   z-index:10050 !important;
-  width:min(330px,calc(100vw - 28px)) !important;
-  min-width:0 !important; max-width:calc(100vw - 28px) !important;
-  max-height:min(72dvh,620px) !important;
+  border-radius:16px !important;
+  max-height:min(70dvh,620px) !important;
   overflow:auto !important;
-  border-radius:18px !important;
   animation:barappSettingsPop .34s cubic-bezier(.2,.85,.25,1.15) forwards;
 }
 .settings-dd.portal-open::before,
@@ -961,9 +916,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   100% { opacity:0; translate:10px -28px; rotate:42deg; scale:1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .settings-dd.portal-open,.settings-dd.portal-open::before,.settings-dd.portal-open::after {
-    animation:none !important; transform:translate(-50%,-50%) !important;
-  }
+  .settings-dd.portal-open,.settings-dd.portal-open::before,.settings-dd.portal-open::after { animation:none !important; }
 }
 @media (max-width:600px) {
   .side > .hd-sidebar-actions { margin:0 8px 8px !important; }
@@ -1682,24 +1635,27 @@ function omn(b,e){
  if(m.classList.contains('settings-mn')&&m.closest('.side')){
   const d=m.querySelector('.settings-dd');
   if(d){
+   const group=b.closest('.hd-sidebar-actions');
+   const side=b.closest('.side');
+   const gr=group.getBoundingClientRect();
+   const sr=side.getBoundingClientRect();
+   const margin=8, width=Math.min(330,window.innerWidth-margin*2);
+   const left=Math.max(margin,Math.min(sr.left+8,window.innerWidth-width-margin));
+   const bottom=Math.max(8,window.innerHeight-gr.top+8);
    d.classList.add('portal-open');
    document.body.appendChild(d);
    const set=(k,v)=>d.style.setProperty(k,v,'important');
-   const r=b.getBoundingClientRect();
-   const gap=8, margin=10, width=Math.min(330,window.innerWidth-margin*2);
-   const left=Math.max(margin,Math.min(r.left,window.innerWidth-width-margin));
-   const bottom=Math.max(8,window.innerHeight-r.top+gap);
    set('position','fixed');set('left',left+'px');set('right','auto');set('top','auto');set('bottom',bottom+'px');
-   set('transform','translateY(8px) scale(.96)');
-   set('width',width+'px');
-   set('min-width','0');set('max-width',width+'px');
-   set('max-height',Math.max(140,Math.min(window.innerHeight*.72,r.top-16))+'px');
+   set('transform','translateY(8px) scale(.96)');set('transform-origin','bottom left');
+   set('width',width+'px');set('min-width','0');set('max-width',width+'px');
+   set('max-height',Math.max(120,Math.min(window.innerHeight*.70,gr.top-16))+'px');
    set('overflow','auto');set('z-index','10050');set('display','block');
    return;
   }
  }
  m.classList.add('open');
 }
+
 /* Card tertutup: di semua menu, card pertama terbuka; card berikutnya tertutup dan dibuka dengan ketuk */
 
 function accToggle(b,open){if(!b)return;b.style.transition='grid-template-rows .5s cubic-bezier(.34,1.4,.64,1),opacity .35s ease';requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.gridTemplateRows=open?'1fr':'0fr';b.style.opacity=open?'1':'0'}))}
@@ -1733,7 +1689,7 @@ const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic
 const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
-<div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></aside>
+<div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
 <div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span><div class="hd-desktop-actions"></div></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
