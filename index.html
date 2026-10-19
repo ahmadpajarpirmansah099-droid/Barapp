@@ -950,10 +950,10 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .settings-dd.portal-open::before { left:8px;top:24px; transform:rotate(-28deg); }
 .settings-dd.portal-open::after { right:8px;bottom:28px; transform:rotate(38deg); animation-delay:.12s; }
 @keyframes barappSettingsPop {
-  0% { opacity:0; transform:translate(-50%,-46%) scale(.9); }
-  62% { opacity:1; transform:translate(-50%,-52%) scale(1.018); }
-  82% { transform:translate(-50%,-49%) scale(.995); }
-  100% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  0% { opacity:0; transform:translateY(10px) scale(.92); }
+  62% { opacity:1; transform:translateY(-3px) scale(1.015); }
+  82% { transform:translateY(1px) scale(.995); }
+  100% { opacity:1; transform:translateY(0) scale(1); }
 }
 @keyframes barappLeafFloat {
   0% { opacity:0; translate:0 10px; rotate:-24deg; scale:.55; }
@@ -1685,11 +1685,15 @@ function omn(b,e){
    d.classList.add('portal-open');
    document.body.appendChild(d);
    const set=(k,v)=>d.style.setProperty(k,v,'important');
-   set('position','fixed');set('left','50%');set('right','auto');set('top','50%');set('bottom','auto');
-   set('transform','translate(-50%,-50%)');
-   set('width',Math.min(330,window.innerWidth-28)+'px');
-   set('min-width','0');set('max-width',(window.innerWidth-28)+'px');
-   set('max-height',Math.min(window.innerHeight*.72,620)+'px');
+   const r=b.getBoundingClientRect();
+   const gap=8, margin=10, width=Math.min(330,window.innerWidth-margin*2);
+   const left=Math.max(margin,Math.min(r.left,window.innerWidth-width-margin));
+   const bottom=Math.max(8,window.innerHeight-r.top+gap);
+   set('position','fixed');set('left',left+'px');set('right','auto');set('top','auto');set('bottom',bottom+'px');
+   set('transform','translateY(8px) scale(.96)');
+   set('width',width+'px');
+   set('min-width','0');set('max-width',width+'px');
+   set('max-height',Math.max(140,Math.min(window.innerHeight*.72,r.top-16))+'px');
    set('overflow','auto');set('z-index','10050');set('display','block');
    return;
   }
