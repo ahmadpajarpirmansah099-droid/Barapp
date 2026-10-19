@@ -943,7 +943,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 </style>
 
 <style id="barapp-desktop-controls-only">
-/* Utility icon row is desktop-only; keep connection/role status visible on mobile. */
+/* Desktop utility row and status card stay out of the mobile drawer. */
 @media (max-width: 899px) {
   aside.side > .hd-sidebar-actions,
   aside.side .hd-sidebar-actions,
@@ -953,8 +953,9 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
     pointer-events:none !important;
   }
   aside.side > .sidew {
-    display:flex !important;
-    visibility:visible !important;
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
   }
 }
 @media (min-width: 900px) {
