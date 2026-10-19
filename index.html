@@ -627,7 +627,7 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .hd-date{display:inline-flex!important;box-sizing:border-box!important;flex:0 0 78px!important;width:78px!important;min-width:78px!important;max-width:78px!important;align-items:center!important;justify-content:center!important;gap:3px!important;height:34px!important;min-height:34px!important;padding:0 1px!important;font-size:9px!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important}
   .hd-date .ic{width:12px!important;height:12px!important;flex:0 0 12px!important}
   .hd-date>span{min-width:0!important;white-space:nowrap!important;overflow:hidden!important}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;height:34px!important;padding:0!important;border-radius:9px!important}
+  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn,.hd-r .hd-desktop-actions>.ibtn,.hd-r .hd-desktop-actions .settings-mn>.ibtn{box-sizing:border-box!important;display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;height:34px!important;min-height:34px!important;padding:0!important;border-radius:9px!important}
   .hd-refresh{order:2!important}
   .settings-mn{order:3!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important}
   .hd-r>button[aria-label="Keluar"],.hd-r>button[aria-label="Exit"]{order:4!important}
@@ -640,7 +640,7 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
   .hd-r{gap:3px!important}
   .hd-date{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important;font-size:8px!important}
   .hd-outlet select{font-size:9px!important;padding-left:5px!important;padding-right:11px!important}
-  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn{flex-basis:27px!important;width:27px!important;min-width:27px!important}
+  .hd-r>.ibtn,.hd-r .settings-mn>.ibtn,.hd-r .hd-desktop-actions>.ibtn,.hd-r .hd-desktop-actions .settings-mn>.ibtn{flex:0 0 27px!important;width:27px!important;min-width:27px!important;height:34px!important;min-height:34px!important}
   .settings-mn{flex-basis:27px!important;width:27px!important;min-width:27px!important}
 }
 
@@ -684,6 +684,24 @@ table tr:hover td{background:color-mix(in srgb,var(--ac2) 60%,var(--cd))}
 }
 @media(max-width:899px){
   .hd-sidebar-actions{display:none!important}
+}
+
+/* Keep all three utility controls equal-sized on mobile, including controls inside the display:contents wrapper. */
+@media(max-width:600px){
+  .hd-r .hd-desktop-actions{display:contents!important}
+  .hd-r .hd-desktop-actions>.ibtn,
+  .hd-r .hd-desktop-actions .settings-mn>.ibtn{
+    box-sizing:border-box!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;
+    height:34px!important;min-height:34px!important;padding:0!important;
+    display:grid!important;place-items:center!important;
+  }
+}
+@media(max-width:380px){
+  .hd-r .hd-desktop-actions>.ibtn,
+  .hd-r .hd-desktop-actions .settings-mn>.ibtn{
+    flex:0 0 27px!important;width:27px!important;min-width:27px!important;
+    height:34px!important;min-height:34px!important;
+  }
 }
 
 /* Smooth entrance for the desktop settings dropdown portal. */
