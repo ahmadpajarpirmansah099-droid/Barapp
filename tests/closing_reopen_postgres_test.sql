@@ -681,7 +681,6 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'TEST_FAILURE: Daily SO void not recorded';
   END IF;
+  RAISE NOTICE 'PASS: COGS audit triggers record create/update/cancel/delete with actor, table, record ID and snapshots.';
 END;
 $cogs_audit_assertions$;
-
-RAISE NOTICE 'PASS: COGS audit triggers record create/update/cancel/delete with actor, table, record ID and snapshots.';
