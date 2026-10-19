@@ -679,72 +679,110 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .daily-so-back{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 @media(max-width:600px){.daily-so-back{font-size:12px;padding:8px 10px;min-height:36px}}
 
-/* BARAPP BRAND: solid green surfaces for sidebar and header */
+/* BARAPP BRAND: strong solid green sidebar and header */
 :root{
   --barapp-green:#176B45;
-  --barapp-green-deep:#145638;
-  --barapp-green-soft:#E7F2EA;
-  --barapp-green-line:#B9D5C2;
+  --barapp-green-deep:#0D4E32;
+  --barapp-green-soft:#238253;
+  --barapp-green-line:#3C966B;
+  --barapp-green-active:#D9F2E2;
 }
 :root[data-theme="dark"]{
-  --barapp-green:#80C99B;
-  --barapp-green-deep:#244A35;
-  --barapp-green-soft:#20372A;
-  --barapp-green-line:#3F6650;
+  --barapp-green:#155C3D;
+  --barapp-green-deep:#103D2B;
+  --barapp-green-soft:#1F704A;
+  --barapp-green-line:#37855D;
+  --barapp-green-active:#244C37;
 }
 @media(prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --barapp-green:#80C99B;
-    --barapp-green-deep:#244A35;
-    --barapp-green-soft:#20372A;
-    --barapp-green-line:#3F6650;
+    --barapp-green:#155C3D;
+    --barapp-green-deep:#103D2B;
+    --barapp-green-soft:#1F704A;
+    --barapp-green-line:#37855D;
+    --barapp-green-active:#244C37;
   }
 }
-/* Solid, uniform background across the entire sidebar */
+/* Sidebar background: solid, saturated BarApp green from top to bottom */
 .side{
-  background:var(--barapp-green-soft)!important;
+  background:var(--barapp-green)!important;
   border-right:1px solid var(--barapp-green-line)!important;
 }
 .side .brand{
-  background:var(--barapp-green-soft)!important;
-  border-bottom:1px solid var(--barapp-green-line)!important;
-}
-.side .brand b{color:var(--barapp-green-deep)!important}
-.side .brand small,.side .sw-r .ic{color:var(--barapp-green)!important}
-.side .nvb{border-color:transparent}
-.side .nvb.on{
-  background:#D0E6D7!important;
-  border-color:var(--barapp-green-line)!important;
-  color:var(--barapp-green-deep)!important;
-  box-shadow:inset 3px 0 0 var(--barapp-green)!important;
-}
-.side .nvb:hover{background:#DCEDE1!important}
-.side .sidew{
-  background:#DCEDE1!important;
-  border-color:var(--barapp-green-line)!important;
-}
-/* Solid, uniform background across the entire top header */
-.app-top{
-  background:var(--barapp-green-soft)!important;
-  border-bottom:1px solid var(--barapp-green-line)!important;
-}
-.app-top .brand-m,.app-top .ibtn{
-  background:#DCEDE1!important;
-  border-color:var(--barapp-green-line)!important;
-}
-.app-top .ibtn:hover,.app-top .brand-m:hover{
   background:var(--barapp-green)!important;
-  border-color:var(--barapp-green)!important;
-  color:#fff!important;
+  border-bottom:1px solid var(--barapp-green-line)!important;
+}
+.side .brand b,
+.side .nvb,
+.side .nvl,
+.side .sidew,
+.side .sidew span{
+  color:#F5FFF8!important;
+}
+.side .brand .tile{
+  background:rgba(255,255,255,.12)!important;
+  color:#FFFFFF!important;
+  border-color:rgba(255,255,255,.25)!important;
+}
+.side .brand small,
+.side .sw-r .ic{color:#C9F0D8!important}
+.side .nvl{opacity:.8}
+.side .nvb{border-color:transparent!important;background:transparent!important}
+.side .nvb .ic{color:#D8F4E3!important}
+.side .nvb:hover{
+  background:rgba(255,255,255,.12)!important;
+  border-color:rgba(255,255,255,.16)!important;
+  color:#FFFFFF!important;
+}
+.side .nvb.on{
+  background:var(--barapp-green-active)!important;
+  border-color:rgba(255,255,255,.16)!important;
+  color:var(--barapp-green-deep)!important;
+  box-shadow:inset 3px 0 0 #B2E8C7!important;
+}
+.side .nvb.on .ic{color:var(--barapp-green-deep)!important}
+.side .sidew{
+  background:rgba(5,58,35,.34)!important;
+  border-color:rgba(255,255,255,.2)!important;
+}
+.side .sidew .ic{color:#C9F0D8!important}
+/* Header background: same solid green, not a tint or gradient */
+.app-top{
+  background:var(--barapp-green)!important;
+  border-bottom:1px solid var(--barapp-green-line)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.app-top .hd-t h1,
+.app-top .hd-t small,
+.app-top .hd-t small b,
+.app-top .hd-outlet>small{color:#F5FFF8!important}
+.app-top .brand-m,
+.app-top .ibtn{
+  background:var(--barapp-green-deep)!important;
+  border-color:rgba(255,255,255,.3)!important;
+  color:#FFFFFF!important;
+}
+.app-top .brand-m .ic,
+.app-top .ibtn .ic{color:#FFFFFF!important}
+.app-top .ibtn:hover,
+.app-top .brand-m:hover{
+  background:var(--barapp-green-soft)!important;
+  border-color:rgba(255,255,255,.45)!important;
+  color:#FFFFFF!important;
 }
 .app-top .hd-date{
-  background:var(--barapp-green-soft)!important;
-  border-color:var(--barapp-green-line)!important;
+  background:var(--barapp-green-deep)!important;
+  border-color:rgba(255,255,255,.28)!important;
+  color:#F5FFF8!important;
 }
+.app-top .hd-date .ic{color:#C9F0D8!important}
 .app-top .hd-outlet select{
-  background:var(--barapp-green-soft)!important;
-  border-color:var(--barapp-green-line)!important;
+  background:var(--barapp-green-deep)!important;
+  border-color:rgba(255,255,255,.28)!important;
+  color:#FFFFFF!important;
 }
+.app-top .hd-outlet select option{background:#FFFFFF;color:#163D2B}
 </style>
 
 <style id="cogs-ui">
