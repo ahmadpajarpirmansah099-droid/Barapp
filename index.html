@@ -1040,6 +1040,34 @@ html{background:var(--bg)!important}
 }
 </style>
 
+
+<style id="barapp-flat-surfaces">
+/* Flat card pass from the approved visual demo; keep all app logic untouched. */
+.card,.lgc,.tile,.md,.dd,#t .w,.statusbar,.taskbar,.sdi,
+.app-top,.inv-toolbar,.inv-table,.account-table-wrap,.inv-detail-table,
+.card:hover,.lgc:hover,.tile:hover,.md:hover,.dd:hover,#t .w:hover,
+.statusbar:hover,.taskbar:hover,.sdi:hover {
+  box-shadow:none!important;
+  filter:none;
+}
+.card { transition:border-color .25s ease,background-color .25s ease; }
+
+/* Softer button depth: keep a small pressed-card feel without the thick shadow. */
+.btn {
+  box-shadow:0 2px 0 color-mix(in srgb,var(--dk,var(--line)) 72%,transparent)!important;
+}
+.btn:hover {
+  box-shadow:0 3px 0 color-mix(in srgb,var(--dk,var(--line)) 72%,transparent)!important;
+  transform:translateY(-1px);
+  filter:none;
+}
+.btn:active {
+  box-shadow:0 1px 0 color-mix(in srgb,var(--dk,var(--line)) 72%,transparent)!important;
+  transform:translateY(1px);
+}
+.btn[disabled],.btn:disabled { box-shadow:none!important; }
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
