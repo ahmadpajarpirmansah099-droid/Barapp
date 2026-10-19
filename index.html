@@ -780,6 +780,13 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .app-top .hd-outlet select option{background:#F8FBF8;color:#285640}
 body{background:var(--bg)!important}
 html{background:var(--bg)!important}
+
+/* Desktop only: remove the sidebar hamburger tile; mobile header hamburger remains */
+@media(min-width:900px){
+  .side .brand>.tile{display:none!important}
+  .side .brand{gap:0!important}
+}
+
 </style>
 
 <style id="cogs-ui">
