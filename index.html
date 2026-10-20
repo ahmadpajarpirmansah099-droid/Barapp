@@ -965,12 +965,11 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 <style id="barapp-desktop-controls-only">
 /* Desktop utility row and status card stay out of the mobile drawer. */
 @media (max-width: 899px) {
-  /* Show utility actions in the top header on compact/tablet layouts. */
+  /* Utility actions are available in the desktop sidebar, not the top header. */
   .app-top .hd-desktop-actions {
-    display:flex !important;
-    visibility:visible !important;
-    pointer-events:auto !important;
-    align-items:center !important;
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
   }
   aside.side > .sidew {
     display:none !important;
