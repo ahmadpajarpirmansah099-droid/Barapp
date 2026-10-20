@@ -1274,12 +1274,14 @@ ICP.folder=ICP.trees;
 ICP['chart-no-axes-combined']=ICP.dashboard;
 ICP.utensils=ICP.soup;
 ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
-/* Desktop-only playful letter repel effect for the built-in Barapp wordmark. */
+/* Desktop cursor repel + mobile touch scatter for the built-in Barapp wordmark. */
 const barappLogoRepel=(()=>{
   let raf=0,lastX=0,lastY=0;
   const desktop=()=>window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches;
+  const reducedMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const reset=()=>document.querySelectorAll('.barapp-letter').forEach(el=>{el.style.transform='translate(0px, 0px)';});
   const move=(e)=>{
+    if(e.pointerType==='touch')return;
     if(!desktop()){reset();return;}
     lastX=e.clientX;lastY=e.clientY;
     if(raf)return;
@@ -1295,7 +1297,25 @@ const barappLogoRepel=(()=>{
       });
     });
   };
+  const touchScatter=(e)=>{
+    if(e.pointerType!=='touch'||desktop()||reducedMotion())return;
+    const svg=e.target.closest?.('.barapp-leaf-logo');
+    if(!svg)return;
+    const box=svg.getBoundingClientRect();
+    const centerX=box.left+box.width/2,centerY=box.top+box.height/2;
+    svg.querySelectorAll('.barapp-letter').forEach(el=>{
+      const b=el.getBoundingClientRect();
+      const dx=b.left+b.width/2-centerX,dy=b.top+b.height/2-centerY;
+      const x=Math.max(-9,Math.min(9,dx/box.width*18));
+      const y=Math.max(-3,Math.min(3,dy/box.height*6));
+      el.style.transform='translate('+x.toFixed(2)+'px, '+y.toFixed(2)+'px)';
+    });
+  };
+  const touchRelease=(e)=>{if(e.pointerType==='touch')reset();};
   document.addEventListener('pointermove',move,{passive:true});
+  document.addEventListener('pointerdown',touchScatter,{passive:true});
+  document.addEventListener('pointerup',touchRelease,{passive:true});
+  document.addEventListener('pointercancel',touchRelease,{passive:true});
   document.addEventListener('pointerleave',reset);
   window.addEventListener('blur',reset);
   window.addEventListener('resize',reset,{passive:true});
