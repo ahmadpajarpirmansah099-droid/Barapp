@@ -820,12 +820,19 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 
 
 <style id="mobile-header-actions-right">
-/* Header utility buttons are replaced by the sidebar controls on every viewport. */
+/* Keep refresh, settings, and logout in the mobile header. */
 @media (max-width: 600px) {
   .app-top .hd-r > .hd-desktop-actions {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+    margin-left: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
   }
   .app-top .hd-r > .hd-desktop-actions > .hd-refresh,
   .app-top .hd-r > .hd-desktop-actions > .settings-mn,
@@ -957,23 +964,13 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 
 </style>
 
-<style id="barapp-hide-header-utility-actions">
-/* Always hide duplicate utility buttons in the top header; sidebar controls remain available. */
-.app-top .hd-desktop-actions {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-</style>
-
 <style id="barapp-desktop-controls-only">
-/* Desktop utility row and status card stay out of the mobile drawer. */
+/* Mobile/tablet keep utility buttons in the top header; desktop uses the sidebar row. */
 @media (max-width: 899px) {
-  /* Utility actions are available in the desktop sidebar, not the top header. */
   .app-top .hd-desktop-actions {
-    display:none !important;
-    visibility:hidden !important;
-    pointer-events:none !important;
+    display:flex !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
   }
   aside.side > .sidew {
     display:none !important;
@@ -981,7 +978,13 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
     pointer-events:none !important;
   }
 }
+/* Desktop only: remove duplicate actions from the top header. */
 @media (min-width: 900px) {
+  .app-top .hd-desktop-actions {
+    display:none !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
   aside.side > .hd-sidebar-actions {
     display:flex !important;
     visibility:visible !important;
