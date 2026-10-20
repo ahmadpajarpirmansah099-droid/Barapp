@@ -251,10 +251,16 @@ details[open]>summary::after{transform:rotate(180deg)}
 .md .grid .btn{flex-direction:column;min-height:92px;gap:6px}
 .md .grid .btn .ic{color:inherit}
 
-/* ---------- toast ---------- */
-#t{position:fixed;top:calc(10px + var(--st));left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:8px;width:min(94vw,400px)}
-#t .w{background:var(--cd);border:2px solid var(--line);border-radius:20px;box-shadow:var(--cozy-lg);padding:8px 10px;animation:komEnter .24s ease backwards}
-#t .mbx{display:flex;gap:12px;align-items:center;padding:4px}#t .mt{flex:1;font-weight:500;line-height:1.35}
+/* ---------- centered toast notifications with playful motion ---------- */
+#t{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1200;display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(92vw,430px);max-height:76vh;overflow:visible;pointer-events:none}
+#t .w{box-sizing:border-box;width:100%;max-width:100%;background:var(--cd);border:2px solid var(--line);border-radius:20px;box-shadow:var(--cozy-lg);padding:10px 12px;pointer-events:auto;transform-origin:center center;animation:toastPopIn .42s cubic-bezier(.18,.9,.28,1.25) both;will-change:transform,opacity}
+#t .mbx{display:flex;gap:12px;align-items:center;padding:4px}#t .mt{flex:1;min-width:0;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
+#t .w.is-leaving{pointer-events:none;animation:toastFlyOutRight .42s cubic-bezier(.55,.05,.8,.35) both}
+#t .w.is-leaving.fly-left{animation-name:toastFlyOutLeft}
+@keyframes toastPopIn{0%{opacity:0;transform:scale(.62) translateY(18px)}68%{opacity:1;transform:scale(1.045) translateY(-2px)}86%{transform:scale(.985) translateY(1px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes toastFlyOutRight{0%{opacity:1;transform:translateX(0) rotate(0) scale(1)}35%{opacity:1;transform:translateX(10px) rotate(3deg) scale(1.02)}100%{opacity:0;transform:translateX(125%) rotate(13deg) scale(.78)}}
+@keyframes toastFlyOutLeft{0%{opacity:1;transform:translateX(0) rotate(0) scale(1)}35%{opacity:1;transform:translateX(-10px) rotate(-3deg) scale(1.02)}100%{opacity:0;transform:translateX(-125%) rotate(-13deg) scale(.78)}}
+@media(prefers-reduced-motion:reduce){#t .w{animation:none;will-change:auto}#t .w.is-leaving{animation:none;opacity:0;transition:opacity .12s ease}}
 
 /* ---------- status bar & dock (mengambang) ---------- */
 .statusbar.status-hidden{display:none!important}.statusbar.status-home{display:flex!important}.statusbar{position:fixed;left:12px;right:12px;bottom:calc(76px + var(--sf));z-index:8;display:flex;gap:6px;padding:6px 12px;background:var(--cd);border:2px solid var(--line);border-radius:16px;box-shadow:var(--cozy)}
@@ -1423,7 +1429,23 @@ const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Dat
 const days=(a,b)=>{const r=[];for(let t=U(a);t<=U(b);t+=864e5)r.push(iso(t));return r};
 const fd=d=>d?new Date(U(d)).toLocaleDateString(LANG=='en'?'en-GB':'id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):'-';
 const age=b=>{if(!b)return'-';const n=today();let a=+n.slice(0,4)-+b.slice(0,4);if(n.slice(5)<b.slice(5))a--;return a};
-function toast(m,k){const e=document.createElement('div');e.className='w';e.innerHTML=`<div class="mbx">${IC(k=='err'?'err':k=='warn'?'warn':'check',22)}<span class="mt"></span><button class="cb" aria-label="Tutup" onclick="this.closest('.w').remove()">${IC('x',16)}</button></div>`;e.querySelector('.mt').textContent=m;$('#t').append(e);setTimeout(()=>e.remove(),3500)}
+let toastFlySide=0;
+function dismissToast(e){
+ if(!e||!e.isConnected||e.classList.contains('is-leaving'))return;
+ if(e._toastTimer)clearTimeout(e._toastTimer);
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){e.remove();return}
+ e.classList.add('is-leaving');
+ e.classList.toggle('fly-left',toastFlySide++%2===1);
+ setTimeout(()=>e.remove(),440);
+}
+function toast(m,k){
+ const host=$('#t');if(!host)return;
+ const e=document.createElement('div');e.className='w';
+ e.innerHTML=`<div class="mbx">${IC(k=='err'?'err':k=='warn'?'warn':'check',22)}<span class="mt"></span><button class="cb" type="button" aria-label="Tutup" onclick="dismissToast(this.closest('.w'))">${IC('x',16)}</button></div>`;
+ e.querySelector('.mt').textContent=m;
+ host.append(e);
+ e._toastTimer=setTimeout(()=>dismissToast(e),3500);
+}
 const isDeveloper=()=>!!(D.me&&D.me.r=='D'),adm=()=>!!(D.me&&(D.me.r=='A'||D.me.r=='D')),guard=()=>adm()||(toast('Akses ditolak: hanya ADMIN','err'),false),developerGuard=()=>isDeveloper()||(toast('Akses ini khusus DEVELOPER','err'),false);
 const P=id=>D.per.find(p=>p.id==(id||D.cur)),pl=p=>p?fd(p.s)+' – '+fd(p.e):'',perOf=d=>D.per.find(p=>d>=p.s&&d<=p.e);
 const vis=()=>adm()?D.emp:D.emp.filter(e=>e.id==D.me.id),rec=(e,d)=>D.att.find(a=>a.e==e&&a.d==d);
