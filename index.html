@@ -61,13 +61,26 @@ main{animation:komEnter .45s cubic-bezier(.16,1,.3,1) backwards}
 .brand{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:20px 20px 16px;text-align:left;border-bottom:1px solid var(--br)}
 .brand-wordmark{display:flex;align-items:center;justify-content:center;width:100%;min-width:0}
 .brand-wordmark .barapp-leaf-logo{display:block;width:min(100%,200px);height:auto;max-height:56px}
-.barapp-letter{transition:transform .28s cubic-bezier(.2,.8,.2,1);transform-box:fill-box;transform-origin:center}
+.barapp-letter{transition:transform .42s cubic-bezier(.22,1.35,.4,1);transform-box:fill-box;transform-origin:center}
+.barapp-leaf{transform-box:fill-box;transform-origin:center;animation:barappLeafSway 4.6s ease-in-out infinite}
+.barapp-leaf-b{animation-delay:-1.8s}
+.barapp-leaf-c{animation-delay:-.9s}
+.barapp-leaf-d{animation-delay:-2.7s}
+.barapp-leaf-sparkle{transform-box:fill-box;transform-origin:center;animation:barappLeafSparkle 3.2s ease-in-out infinite}
+.barapp-leaf-sparkle-b{animation-delay:-1.6s}
+.barapp-logo-excited .barapp-leaf-a{animation:barappLeafDance .78s cubic-bezier(.2,.9,.3,1.2) 1}
+.barapp-logo-excited .barapp-leaf-b{animation:barappLeafDance .78s cubic-bezier(.2,.9,.3,1.2) 1;animation-delay:.07s}
+.barapp-logo-excited .barapp-leaf-c{animation:barappLeafDance .78s cubic-bezier(.2,.9,.3,1.2) 1;animation-delay:.12s}
+.barapp-logo-excited .barapp-leaf-d{animation:barappLeafDance .78s cubic-bezier(.2,.9,.3,1.2) 1;animation-delay:.18s}
+@keyframes barappLeafSway{0%,100%{transform:rotate(-3deg) translateY(0)}50%{transform:rotate(4deg) translateY(-1px)}}
+@keyframes barappLeafDance{0%{transform:rotate(0) scale(1)}24%{transform:rotate(-13deg) scale(1.09)}52%{transform:rotate(12deg) scale(.97)}78%{transform:rotate(-7deg) scale(1.05)}100%{transform:rotate(0) scale(1)}}
+@keyframes barappLeafSparkle{0%,100%{opacity:.52;transform:scale(.88) rotate(-8deg)}50%{opacity:1;transform:scale(1.1) rotate(8deg)}}
 @media (hover:hover) and (pointer:fine) and (min-width:900px){
   .barapp-leaf-logo{overflow:visible}
   .barapp-letter{will-change:transform}
 }
 @media (prefers-reduced-motion:reduce){
-  .barapp-letter{transition:none!important}
+  .barapp-letter,.barapp-leaf,.barapp-leaf-sparkle{transition:none!important;animation:none!important}
 }
 .brand-wordmark .lgimg{display:block;max-width:100%;max-height:56px;object-fit:contain}
 .logo:has(.barapp-leaf-logo){width:min(100%,310px);height:auto;aspect-ratio:360/112;margin:2px auto 12px;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0;animation:komFloat 6s ease-in-out infinite}
@@ -1274,12 +1287,25 @@ ICP.folder=ICP.trees;
 ICP['chart-no-axes-combined']=ICP.dashboard;
 ICP.utensils=ICP.soup;
 ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
-/* Desktop cursor repel + mobile touch scatter for the built-in Barapp wordmark. */
+/* Playful Barapp wordmark: desktop cursor repel and mobile tap reaction. */
 const barappLogoRepel=(()=>{
   let raf=0,lastX=0,lastY=0;
+  const excitementTimers=new WeakMap();
   const desktop=()=>window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches;
   const reducedMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const reset=()=>document.querySelectorAll('.barapp-letter').forEach(el=>{el.style.transform='translate(0px, 0px)';});
+  const excite=(svg,duration=840)=>{
+    if(!svg||reducedMotion())return;
+    const previous=excitementTimers.get(svg);
+    if(previous)clearTimeout(previous);
+    svg.classList.remove('barapp-logo-excited');
+    void svg.getBoundingClientRect();
+    svg.classList.add('barapp-logo-excited');
+    excitementTimers.set(svg,setTimeout(()=>{
+      svg.classList.remove('barapp-logo-excited');
+      excitementTimers.delete(svg);
+    },duration));
+  };
   const move=(e)=>{
     if(e.pointerType==='touch')return;
     if(!desktop()){reset();return;}
@@ -1301,18 +1327,26 @@ const barappLogoRepel=(()=>{
     if(e.pointerType!=='touch'||desktop()||reducedMotion())return;
     const svg=e.target.closest?.('.barapp-leaf-logo');
     if(!svg)return;
+    excite(svg,900);
     const box=svg.getBoundingClientRect();
     const centerX=box.left+box.width/2,centerY=box.top+box.height/2;
-    svg.querySelectorAll('.barapp-letter').forEach(el=>{
+    svg.querySelectorAll('.barapp-letter').forEach((el,i)=>{
       const b=el.getBoundingClientRect();
-      const dx=b.left+b.width/2-centerX,dy=b.top+b.height/2-centerY;
-      const x=Math.max(-9,Math.min(9,dx/box.width*18));
-      const y=Math.max(-3,Math.min(3,dy/box.height*6));
+      const dx=b.left+b.width/2-centerX;
+      const x=Math.max(-10,Math.min(10,dx/box.width*23));
+      const y=(i%2===0?1:-1)*(2.5+(i%3)*.8);
       el.style.transform='translate('+x.toFixed(2)+'px, '+y.toFixed(2)+'px)';
     });
   };
+  const desktopLogoEnter=(e)=>{
+    if(e.pointerType==='touch'||!desktop())return;
+    const svg=e.target.closest?.('.barapp-leaf-logo');
+    const previous=e.relatedTarget?.closest?.('.barapp-leaf-logo');
+    if(svg&&svg!==previous)excite(svg,760);
+  };
   const touchRelease=(e)=>{if(e.pointerType==='touch')reset();};
   document.addEventListener('pointermove',move,{passive:true});
+  document.addEventListener('pointerover',desktopLogoEnter,{passive:true});
   document.addEventListener('pointerdown',touchScatter,{passive:true});
   document.addEventListener('pointerup',touchRelease,{passive:true});
   document.addEventListener('pointercancel',touchRelease,{passive:true});
@@ -1321,7 +1355,14 @@ const barappLogoRepel=(()=>{
   window.addEventListener('resize',reset,{passive:true});
   return {reset};
 })();
-const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:`<svg class="barapp-leaf-logo" width="${Math.max(160,z*5)}" height="${Math.max(58,z*1.8)}" viewBox="0 0 360 112" role="img" aria-label="Barapp"><g stroke="#263C2D" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"><g class="barapp-letter-group" text-anchor="middle" font-family="Fredoka, 'Trebuchet MS', sans-serif" font-size="76" font-weight="700" fill="#FAF6EE"><text class="barapp-letter" x="73" y="79" data-home-x="73">B</text><text class="barapp-letter" x="123" y="79" data-home-x="123">a</text><text class="barapp-letter" x="170" y="79" data-home-x="170">r</text><text class="barapp-letter" x="211" y="79" data-home-x="211">a</text><text class="barapp-letter" x="254" y="79" data-home-x="254">p</text><text class="barapp-letter" x="302" y="79" data-home-x="302">p</text></g></g><g stroke="#263C2D" stroke-width="3" stroke-linejoin="round"><path d="M45 25C28 7 15 20 22 38C31 45 42 37 45 25Z" fill="#A8C98C"/><path d="M43 27L25 39" fill="none"/><path d="M308 27C321 9 337 16 332 34C324 44 313 39 308 27Z" fill="#8EBA76"/><path d="M311 29L328 35" fill="none"/><path d="M82 98C72 86 61 91 66 102C73 108 79 103 82 98Z" fill="#B7D59A"/><path d="M280 95C291 81 303 87 298 100C291 106 284 101 280 95Z" fill="#B7D59A"/></g><path d="M54 12l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M322 70l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#FAF6EE"/></svg>`;
+const logoHtml=(z)=>TH.logo?'<img class="lgimg" src="'+TH.logo+'" alt="Logo">':`<svg class="barapp-leaf-logo" width="${Math.max(160,z*5)}" height="${Math.max(58,z*1.8)}" viewBox="0 0 360 112" role="img" aria-label="Barapp"><g stroke="#263C2D" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"><g class="barapp-letter-group" text-anchor="middle" font-family="Fredoka, 'Trebuchet MS', sans-serif" font-size="76" font-weight="700" fill="#FAF6EE"><text class="barapp-letter" x="73" y="79">B</text><text class="barapp-letter" x="123" y="79">a</text><text class="barapp-letter" x="170" y="79">r</text><text class="barapp-letter" x="211" y="79">a</text><text class="barapp-letter" x="254" y="79">p</text><text class="barapp-letter" x="302" y="79">p</text></g></g>
+<g class="barapp-leaf-clusters" stroke="#263C2D" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+  <g class="barapp-leaf barapp-leaf-a"><path class="barapp-leaf-shape" d="M42 34C34 37 25 32 20 25C15 18 16 10 17 9C25 10 34 14 40 21C44 26 45 31 42 34Z" fill="#A8C98C"/><path class="barapp-leaf-vein" d="M18.5 11.5C25 19 33 27 42 33" fill="none" stroke="#53734A" stroke-width="1.6"/><path d="M24 19L22 26M30 25L28 30M31 25L38 22" fill="none" stroke="#DCEACD" stroke-width="1.15"/></g>
+  <g class="barapp-leaf barapp-leaf-b"><path class="barapp-leaf-shape" d="M317 34C325 34 333 29 337 22C341 15 337 9 336 8C328 10 320 15 316 22C313 27 314 31 317 34Z" fill="#8EBA76"/><path class="barapp-leaf-vein" d="M335 11C329 19 322 27 316 33" fill="none" stroke="#53734A" stroke-width="1.6"/><path d="M329 19L331 26M323 25L325 30M323 25L317 22" fill="none" stroke="#DCEACD" stroke-width="1.15"/></g>
+  <g class="barapp-leaf barapp-leaf-c"><path class="barapp-leaf-shape" d="M82 100C76 101 69 97 67 91C65 86 69 81 71 80C77 83 82 87 84 93C85 96 84 99 82 100Z" fill="#B7D59A"/><path d="M70 82C74 88 78 94 82 100M73 88L70 93M77 94L81 92" fill="none" stroke="#648758" stroke-width="1.25"/></g>
+  <g class="barapp-leaf barapp-leaf-d"><path class="barapp-leaf-shape" d="M280 98C286 99 293 95 296 89C299 84 295 79 293 78C287 81 282 86 280 92C279 95 279 97 280 98Z" fill="#A8C98C"/><path d="M294 80C289 86 284 92 280 98M290 86L294 91M285 92L281 90" fill="none" stroke="#648758" stroke-width="1.25"/></g>
+</g>
+<g fill="#FAF6EE"><path class="barapp-leaf-sparkle barapp-leaf-sparkle-a" d="M54 12l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/><path class="barapp-leaf-sparkle barapp-leaf-sparkle-b" d="M322 70l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/></g></svg>`;
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 /* Automatic, context-aware icons for card and modal headings across every feature. */
 const cardHeadingIcon=(raw)=>{
