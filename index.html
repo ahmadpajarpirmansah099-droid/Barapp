@@ -928,6 +928,13 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   .side > .hd-sidebar-actions { margin:0 8px 8px !important; }
 }
 
+/* Desktop: align the utility buttons with the inner content of the Supabase status card. */
+@media (min-width: 900px) {
+  .side > .hd-sidebar-actions {
+    margin: 0 28px 8px !important;
+  }
+}
+
 /* Five real leaf elements burst around the settings card when it opens. */
 .barapp-leaf-burst {
   position:fixed;
