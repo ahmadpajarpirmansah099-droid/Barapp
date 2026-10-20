@@ -820,17 +820,12 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 
 
 <style id="mobile-header-actions-right">
-/* Keep the three utility buttons grouped at the far right on phones. */
+/* Header utility buttons are replaced by the sidebar controls on every viewport. */
 @media (max-width: 600px) {
   .app-top .hd-r > .hd-desktop-actions {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    flex: 0 0 auto !important;
-    gap: 5px !important;
-    margin-left: auto !important;
-    width: auto !important;
-    min-width: 0 !important;
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
   .app-top .hd-r > .hd-desktop-actions > .hd-refresh,
   .app-top .hd-r > .hd-desktop-actions > .settings-mn,
