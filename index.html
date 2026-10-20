@@ -59,6 +59,12 @@ main{animation:komEnter .45s cubic-bezier(.16,1,.3,1) backwards}
 /* ---------- sidebar (desktop) ---------- */
 .side{display:none}
 .brand{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:20px 20px 16px;text-align:left;border-bottom:1px solid var(--br)}
+.brand-wordmark{display:flex;align-items:center;justify-content:center;width:100%;min-width:0}
+.brand-wordmark .barapp-leaf-logo{display:block;width:min(100%,166px);height:auto;max-height:46px}
+.brand-wordmark .lgimg{display:block;max-width:100%;max-height:46px;object-fit:contain}
+.logo:has(.barapp-leaf-logo){width:min(100%,270px);height:auto;aspect-ratio:360/112;margin:0 auto 18px;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0;animation:komFloat 6s ease-in-out infinite}
+.logo:has(.barapp-leaf-logo) .barapp-leaf-logo{display:block;width:100%;height:auto;overflow:visible}
+
 .tile{flex:none;width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:var(--tint);color:var(--ac);border:2px solid var(--line)}
 .brand .bt{display:flex;flex-direction:column;min-width:0}
 .brand b{font:700 18px/1.15 var(--fh);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1260,7 +1266,7 @@ ICP.folder=ICP.trees;
 ICP['chart-no-axes-combined']=ICP.dashboard;
 ICP.utensils=ICP.soup;
 ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
-const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:IC('trees',z);
+const logoHtml=(z)=>TH.logo?`<img class="lgimg" src="${TH.logo}" alt="Logo">`:`<svg class="barapp-leaf-logo" width="${Math.max(160,z*5)}" height="${Math.max(58,z*1.8)}" viewBox="0 0 360 112" role="img" aria-label="Barapp"><g stroke="#263C2D" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"><text x="180" y="79" text-anchor="middle" font-family="Fredoka, 'Trebuchet MS', sans-serif" font-size="76" font-weight="700" fill="#FAF6EE">Barapp</text></g><g stroke="#263C2D" stroke-width="3" stroke-linejoin="round"><path d="M45 25C28 7 15 20 22 38C31 45 42 37 45 25Z" fill="#A8C98C"/><path d="M43 27L25 39" fill="none"/><path d="M308 27C321 9 337 16 332 34C324 44 313 39 308 27Z" fill="#8EBA76"/><path d="M311 29L328 35" fill="none"/><path d="M82 98C72 86 61 91 66 102C73 108 79 103 82 98Z" fill="#B7D59A"/><path d="M280 95C291 81 303 87 298 100C291 106 284 101 280 95Z" fill="#B7D59A"/></g><path d="M54 12l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M322 70l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#FAF6EE"/></svg>`;
 const IC=(n,z=16)=>`<svg class="ic i-${n}" width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[n]||ICP.pc}</svg>`;
 /* Automatic, context-aware icons for card and modal headings across every feature. */
 const cardHeadingIcon=(raw)=>{
@@ -1791,7 +1797,7 @@ const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':ad
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
-const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="tile">${IC('menu',22)}</span><span class="bt"><b>${px?'GAJI':esc(TH.name)}</b><small>${esc(TH.sub)}</small></span></button>
+const nh=`<aside class="side"><button class="brand" onclick="go('${home}')"><span class="brand-wordmark">${px?'<b>GAJI</b>':logoHtml(16)}</span></button>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
 <div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
