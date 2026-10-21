@@ -47,6 +47,9 @@ jobs:
       - name: Check employee session token storage
         run: node scripts/security-session-storage.test.cjs
 
+      - name: Check employee PIN column privileges
+        run: node scripts/employee-pin-column-privileges.test.cjs
+
       - name: Check Approval Closing Excel importer
         run: node scripts/closing-template-import.test.cjs
 
