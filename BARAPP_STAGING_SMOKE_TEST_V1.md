@@ -85,6 +85,7 @@ Status: prepared for the draft PR; not yet executed against a verified staging p
 - [ ] Record expected vs actual quantities and reconciliation output for test division.
 - [ ] Verify direct DML remains denied and RLS is enabled on operational tables.
 - [ ] Run the read-only `barapp_security_verify_v1.sql` suite after migration and review every nonzero finding.
+- [ ] Verify isolated PostgreSQL tests for `barapp_security_hardening_v1.sql` pass on the exact PR head (trusted-path preservation, temporary-object shadowing, fail-closed behavior, and idempotence). A wired CI step alone is not a pass.
 - [ ] Restore/reset test data only using an approved staging cleanup plan.
 - [ ] Do not merge the draft PR until all critical checks pass and a reviewer signs off.
 
