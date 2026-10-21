@@ -822,6 +822,13 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .cg-line>input[id*='_unit_']{grid-area:unit}
 .cg-line>button{grid-area:remove;justify-self:start;width:100%;max-width:120px}
 .cg-line>input[type='hidden']{display:none!important}
+.cg-line{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;gap:7px!important}
+.cg-line>select[id*='_kind_']{grid-column:1!important;grid-row:1!important}
+.cg-line>.cg-component-picker{grid-column:1 / 3!important;grid-row:2!important}
+.cg-line>input[type='number']{grid-column:2!important;grid-row:1!important}
+.cg-line>input[id*='_unit_']{grid-column:1!important;grid-row:3!important}
+.cg-line>button{grid-column:2!important;grid-row:3!important;justify-self:start!important;width:100%!important;max-width:120px!important}
+.cg-line>input[type='hidden']{display:none!important}
 }
 @media(max-width:380px){
   .cogs-table{min-width:620px}
