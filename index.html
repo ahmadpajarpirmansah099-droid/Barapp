@@ -3344,7 +3344,7 @@ function odView(){
 }
 V.ops_dashboard=()=>odView();
 
-V.abs=()=>{if(adm()&&!T.absInputOpened){T.absInputOpened=true;setTimeout(()=>openAtt(-1),0)}const {f,t}=rng(),bad=f>t,ds=bad?[]:days(f,t),big=ds.length>93,l=bad||big?[]:flt(f,t),lk=D.per.filter(p=>p.lock&&p.s<=t&&p.e>=f);
+V.abs=()=>{const {f,t}=rng(),bad=f>t,ds=bad?[]:days(f,t),big=ds.length>93,l=bad||big?[]:flt(f,t),lk=D.per.filter(p=>p.lock&&p.s<=t&&p.e>=f);
 const msg=bad?'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':big?'<div class="card empty">Rentang lebih dari 93 hari terlalu panjang untuk tabel harian. Persempit rentang, atau lihat di Rekap / Export.</div>':'';
 const tb=l.length?`<div class="tw"><table><tr><th>Nama</th>${ds.map(d=>`<th>${+d.slice(8)}<br><small class="mu">${(LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'])[new Date(U(d)).getUTCDay()]}</small></th>`).join('')}<th>Hari Kerja (M)</th><th>L</th><th>I</th><th>S</th><th>PH</th><th>Belum</th></tr>${l.map(e=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0};return`<tr><td title="${esc(e.nama)}">${esc(e.nama)}</td>${ds.map(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++;return`<td class="c" ${adm()?`onclick="cell('${esc(e.id)}','${d}')"`:''} title="${a?ST[a.s]:'BELUM ADA DATA'}">${a?badge(a.s)+(a.ph?IC('cam',12):''):'<span class="mu">—</span>'}</td>`}).join('')}<td>${c.M}</td><td>${c.L}</td><td>${c.I}</td><td>${c.S}</td><td>${c.PH}</td><td><b>${c.B}</b></td></tr>`}).join('')}</table></div><p class="mu"><span>M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk).</span> ${adm()?'<span>Ketuk sel untuk isi/ubah.</span>':''}</p>`:(msg?'':'<div class="card empty">'+(D.emp.length?'Tidak ada hasil.':'Belum ada karyawan. Tambahkan karyawan terlebih dahulu.')+'</div>');
 const any=!bad&&D.att.some(a=>a.d>=f&&a.d<=t);
@@ -4161,5 +4161,5 @@ if(typeof window.__barappRegisterViews==='function')window.__barappRegisterViews
 if(window.__barappRefreshUI)window.__barappRefreshUI();
 
 </script>
-<script src="./closing.js?v=20261021-detail-fix-1"></script>
+<script src="./closing.js?v=20261021-detail-fix-2"></script>
 </body></html>
