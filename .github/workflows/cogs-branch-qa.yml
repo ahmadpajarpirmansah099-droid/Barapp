@@ -84,6 +84,48 @@ jobs:
           fi
           echo "PASS: concurrent stock-in cannot leave the just-approved closing clean."
 
+
+      - name: Test SECURITY DEFINER search_path hardening
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+
+          # Success path: trusted schemas stay available, pg_temp moves last,
+          # and a malicious temporary relation cannot shadow a trusted relation.
+          createdb barapp_security_path_test
+          safe_url="postgresql://postgres:postgres@localhost:5432/barapp_security_path_test"
+          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_setup.sql
+          psql "$safe_url" --set ON_ERROR_STOP=1 --file barapp_security_hardening_v1.sql
+          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_assert.sql
+          # The hardening migration must also be idempotent.
+          psql "$safe_url" --set ON_ERROR_STOP=1 --file barapp_security_hardening_v1.sql
+          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_assert.sql
+
+          # Fail-closed path: a SECURITY DEFINER routine without a fixed path must
+          # abort atomically and leave the other functions untouched.
+          createdb barapp_security_missing_path_test
+          missing_url="postgresql://postgres:postgres@localhost:5432/barapp_security_missing_path_test"
+          psql "$missing_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_missing_path_setup.sql
+          if psql "$missing_url" --set ON_ERROR_STOP=1 --file barapp_security_hardening_v1.sql > /tmp/barapp-missing-path.log 2>&1; then
+            cat /tmp/barapp-missing-path.log
+            echo "Expected security hardening to reject a function without a fixed search_path."
+            exit 1
+          fi
+          if ! grep -q "BARAPP_SECURITY_DEFINER_MISSING_SEARCH_PATH" /tmp/barapp-missing-path.log; then
+            cat /tmp/barapp-missing-path.log
+            echo "Migration failed for an unexpected reason."
+            exit 1
+          fi
+          psql "$missing_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_missing_path_assert.sql
+
   static-qa:
     runs-on: ubuntu-latest
     steps:
