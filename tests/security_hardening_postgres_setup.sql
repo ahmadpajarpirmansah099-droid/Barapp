@@ -32,3 +32,13 @@ SET search_path = extensions, public, auth
 AS $function$
   SELECT 'extensions-path-preserved'::text
 $function$;
+
+-- Mirrors the live rls_auto_enable() path pattern; this function needs catalog only.
+CREATE OR REPLACE FUNCTION public.path_probe_catalog_only()
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+  SELECT current_schema()::text
+$function$;
