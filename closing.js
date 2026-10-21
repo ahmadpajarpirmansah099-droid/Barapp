@@ -391,14 +391,30 @@ function view(){
 window.__clShowHistoryDetail=async(date)=>{
  if(!clCanAccess())return toast('Akses ditolak.','warn');
  const h=CL.history.find(x=>String(x.closing_date)===String(date));if(!h)return toast('Riwayat closing tidak ditemukan.','warn');
- modal('<h3>Detail closing — '+esc(date)+'</h3><p class="mu">Status: <b>'+esc(h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status)+'</b> · Waktu approval: '+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</p><div class="card"><p class="mu">Detail per modul. Untuk workbook lengkap yang bisa disimpan, gunakan tombol Unduh Excel.</p><div id="cl-history-detail-body"><p class="mu">Memuat detail tiap modul…</p></div></div><div class="btns"><button class="btn s" onclick="window.__clDownloadClosingExcelForDate(' + "'"+esc(date)+"'" + ')">Unduh Excel</button><button class="btn" onclick="closeModal()">Tutup</button></div>');
+ const status=h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status;
+ modal('<div class="cl-history-detail-head"><h3 style="margin:0">Detail Closing Divisi</h3><p class="mu" style="margin:6px 0 14px">Tanggal: <b>'+esc(date)+'</b> · Status: <b>'+esc(status)+'</b></p><p class="mu" style="margin:0 0 14px">Waktu approval: '+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</p></div><div class="card"><div id="cl-history-detail-body"><p class="mu">Memuat ringkasan closing…</p></div></div><div class="btns"><button class="btn s" onclick="window.__clDownloadClosingExcelForDate(' + "'"+esc(date)+"'" + ')">Unduh Excel lengkap</button><button class="btn" onclick="closeModal()">Tutup</button></div>');
  const host=document.getElementById('cl-history-detail-body');if(!host)return;
  try{
   const active=clModulesForDivision(CL.division);
   const snaps=await Promise.all(active.map(async m=>{const {data,error}=await sb().rpc('barapp_closing_module_snapshot',{p_division_id:CL.division,p_closing_date:date,p_module_key:m.key});if(error)throw error;return {m,data}}));
-  const html=snaps.map(({m,data})=>'<section style="padding:10px 0;border-bottom:1px solid var(--line)"><h4 style="margin:0 0 8px">'+esc(m.name)+'</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;background:var(--in);padding:10px;border-radius:10px;font:12px/1.5 inherit">'+esc(JSON.stringify(data??{},null,2))+'</pre></section>').join('');
-  if(host.isConnected)host.innerHTML=html||'<p class="mu">Tidak ada modul aktif pada tanggal ini.</p>';
- }catch(e){if(host.isConnected)host.innerHTML='<p class="mu">Detail tidak berhasil dimuat: '+esc(clError(e))+'</p>'}
+  const summary=(value)=>{
+   if(value==null)return {label:'Status data',value:'Tidak ada data'};
+   if(Array.isArray(value))return {label:'Jumlah rekaman',value:value.length.toLocaleString('id-ID')};
+   if(typeof value!=='object')return {label:'Nilai',value:String(value)};
+   const count=Number(value.count),quantity=Number(value.quantity);
+   if(Number.isFinite(count)||Number.isFinite(quantity))return {count:Number.isFinite(count)?count:null,quantity:Number.isFinite(quantity)?quantity:null};
+   const keys=Object.keys(value).filter(k=>!['fingerprint','hash','checksum','id'].includes(k.toLowerCase()));
+   return {label:'Ringkasan',value:keys.length?keys.map(k=>k.replace(/_/g,' ')+': '+(typeof value[k]==='object'?'tersedia':String(value[k]))).join(' · '):'Data tersedia'};
+  };
+  const html=snaps.map(({m,data})=>{
+   const s=summary(data??{});
+   const metrics=[];
+   if(s.count!==undefined){if(s.count!==null)metrics.push('<div class="cl-history-metric"><small>Jumlah rekaman</small><b>'+esc(s.count.toLocaleString('id-ID'))+'</b></div>');if(s.quantity!==null)metrics.push('<div class="cl-history-metric"><small>Total kuantitas</small><b>'+esc(s.quantity.toLocaleString('id-ID'))+'</b></div>')}
+   else metrics.push('<div class="cl-history-metric wide"><small>'+esc(s.label||'Ringkasan')+'</small><b>'+esc(s.value||'Data tersedia')+'</b></div>');
+   return '<section class="cl-history-module"><h4>'+esc(m.name)+'</h4><div class="cl-history-metrics">'+metrics.join('')+'</div></section>';
+  }).join('');
+  if(host.isConnected)host.innerHTML='<style>.cl-history-module{padding:12px 0;border-bottom:1px solid var(--line)}.cl-history-module:last-child{border-bottom:0}.cl-history-module h4{margin:0 0 10px;font-size:15px}.cl-history-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cl-history-metric{min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--in)}.cl-history-metric.wide{grid-column:1/-1}.cl-history-metric small{display:block;color:var(--mu);font-size:12px}.cl-history-metric b{display:block;margin-top:5px;overflow-wrap:anywhere;font-size:17px}@media(max-width:480px){.cl-history-metrics{grid-template-columns:1fr 1fr}}</style>'+(html||'<p class="mu">Tidak ada modul aktif pada tanggal ini.</p>');
+ }catch(e){if(host.isConnected)host.innerHTML='<p class="mu">Ringkasan tidak berhasil dimuat: '+esc(clError(e))+'</p>'}
 };
 window.__clOpen=()=>{if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');go('cogs_closing')};
 window.__clDownloadClosingExcelForDate=async(date)=>{
