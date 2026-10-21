@@ -103,8 +103,8 @@ function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()==='
 function clTemplateNumber(v){if(typeof v==='number')return Number.isFinite(v)?v:NaN;if(clTemplateBlank(v))return null;const n=Number(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN}
 function clTemplateSameSet(actual,expected){if(actual.length!==expected.length)return false;const a=new Set(actual),e=new Set(expected);return a.size===actual.length&&e.size===expected.length&&actual.every(x=>e.has(x))}
 function clTemplateCatalog(){
- const div=String(CL.division),date=String(CL.date),ii=(INV.items||[]).filter(x=>String(x.division_id)===div&&x.active===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date).sort((a,b)=>invAlpha(a.name,b.name));
- const materials=ii.filter(x=>!x.is_supply),supplies=ii.filter(x=>x.is_supply===true),wips=(CG.wips||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name)),menus=(CG.menus||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const div=String(CL.division),date=String(CL.date),ii=(INV.items||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const materials=ii.filter(x=>!x.is_supply),supplies=ii.filter(x=>x.is_supply===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date),wips=(CG.wips||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name)),menus=(CG.menus||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
  const wd=clModuleOn(div,'cogs_wip'),sales=clModuleOn(div,'cogs_sales'),production=clModuleOn(div,'cogs_production'),supply=clModuleOn(div,'supplies'),daily=clModuleOn(div,'cogs_daily_so'),row=(id,type,name,unit)=>({id:String(id),type:type,name:String(name||''),unit:String(unit||'UNIT')});
  return {
   daily:daily?materials.map(x=>row(x.id,'material',x.name,x.base_unit)).concat(wd?wips.map(x=>row(x.id,'wip',x.name,x.yield_unit)):[]):[],
@@ -144,7 +144,7 @@ function clDownloadTemplate(){
  clTemplateWorksheet(wb,'Pengeluaran',['ITEM','SATUAN','QTY_KELUAR','KATEGORI','DIVISI_TUJUAN','CATATAN','__ITEM_ID','__ITEM_TYPE'],c.expenses.map(x=>[x.name,x.unit,'','','','',x.id,x.type]),[32,14,16,18,25,36,38,16],[6,7]);
  clTemplateWorksheet(wb,'Produksi WIP',['WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],c.production.map(x=>[x.name,Number((CG.wips||[]).find(w=>String(w.id)===x.id)?.yield_qty||1),x.unit,'',x.id]),[32,18,18,18,38],[4]);
  clTemplateWorksheet(wb,'Supplies',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],c.supplies.map(x=>[x.name,x.unit,'',x.id]),[32,14,18,38],[3]);
- if(wb.Workbook&&wb.Workbook.Sheets){const mi=wb.SheetNames.indexOf('_META');if(mi>=0)wb.Workbook.Sheets[mi].Hidden=1}
+ wb.Workbook=wb.Workbook||{};wb.Workbook.Sheets=wb.SheetNames.map(n=>({name:n,Hidden:n==='_META'?1:0}));const expWs=wb.Sheets['Pengeluaran'];if(expWs&&c.expenses.length)expWs['!dataValidation']=[{type:'list',allowBlank:true,formula1:'\"Waste,QC,R&D,Kalibrasi,Lainnya,Move\"',sqref:'D2:D'+(c.expenses.length+1)}]
  const safe=String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'Divisi';
  XLSX.writeFile(wb,'Template-Operasional-'+safe+'-'+CL.date+'.xlsx',{compression:true});CL.templateDraft=null;toast('Template enam sheet berhasil diunduh. Isi kuantitas/kategori, lalu upload kembali.','ok');
 }
