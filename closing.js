@@ -116,7 +116,7 @@ function clTemplateCatalog(){
   divisions:(()=>{const current=clDivision(div),outlet=current&&current.outlet_id,all=[...(INV.divs||[]),...(CG.divs||[])],map=new Map();all.forEach(d=>{if(d&&d.id&&d.active!==false&&String(d.id)!==div&&(!outlet||String(d.outlet_id)===String(outlet)))map.set(String(d.id),d)});return[...map.values()].sort((a,b)=>invAlpha(a.name,b.name))})()
  };
 }
-function clTemplatePermissions(){if(isDeveloper())return[];const out=[],req=(cond,key,label)=>{if(cond&&!hasFeature(key))out.push('Akun belum memiliki izin '+label+'.')};req(clModuleOn(CL.division,'cogs_daily_so'),'cogs.daily_so.edit','edit Daily SO');req(clModuleOn(CL.division,'cogs_sales'),'cogs.sales.manage','input Penjualan');req(clModuleOn(CL.division,'cogs_production'),'cogs.production.manage','input Produksi WIP');req(true,'inventory.view','lihat Inventory');req(true,'inventory.manage','mengelola Inventory');return[...new Set(out)]}
+function clTemplatePermissions(payload){if(isDeveloper()||!payload)return[];const out=[],req=(cond,key,label)=>{if(cond&&!hasFeature(key))out.push('Akun belum memiliki izin '+label+'.')};req(payload.daily_so?.length,'cogs.daily_so.edit','edit Daily SO');req(payload.sales?.length,'cogs.sales.manage','input Penjualan');req(payload.production?.length,'cogs.production.manage','input Produksi WIP');const invWrite=!!(payload.stock_in?.length||payload.stock_out?.length||payload.supplies?.length);req(invWrite,'inventory.view','lihat Inventory');req(invWrite,'inventory.manage','mengelola Inventory');if(payload.opening_wip?.length&&!hasFeature('inventory.inbound.manage')&&!hasFeature('cogs.production.manage'))out.push('Akun belum memiliki izin stok awal WIP.');return[...new Set(out)]}
 function clTemplateWorksheet(wb,name,headers,rows,widths,hiddenCols){
  const ws=XLSX.utils.aoa_to_sheet([headers].concat(rows));
  ws['!cols']=headers.map((h,i)=>({wch:widths[i]||18,hidden:(hiddenCols||[]).includes(i)}));
@@ -135,7 +135,6 @@ function clDownloadTemplate(){
  if(!clCanAccess())return toast('Akses ditolak.','warn');if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
  if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Tanggal closing terkunci.','warn');
- const perm=clTemplatePermissions();if(perm.length)return toast(perm[0],'warn');
  const c=clTemplateCatalog(),wb=XLSX.utils.book_new(),tid=clTemplateId(),meta=[['FIELD','VALUE'],['VERSION','BARAPP_CLOSING_TEMPLATE_V1'],['TEMPLATE_ID',tid],['DIVISION_ID',String(CL.division)],['DIVISION_NAME',String(clDivision(CL.division)?.name||'')],['OUTLET_ID',String(clDivision(CL.division)?.outlet_id||'')],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()],['INSTRUCTIONS','Jangan ubah kolom ID tersembunyi, nama sheet, outlet/divisi, atau tanggal. Kuantitas kosong berarti dilewati. Daily SO dan Supplies harus lengkap jika digunakan.']];
  const mw=XLSX.utils.aoa_to_sheet(meta);mw['!cols']=[{wch:24},{wch:100}];XLSX.utils.book_append_sheet(wb,mw,'_META');
  clTemplateWorksheet(wb,'Daily SO',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],c.daily.map(x=>[x.name,x.unit,'',x.id,x.type]),[32,14,18,38,16],[3,4]);
@@ -186,7 +185,8 @@ async function clPreviewTemplateImport(input){
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda. Sesuaikan pilihan divisi atau unduh ulang.');
   if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal pada template berbeda dari tanggal closing terpilih. Pilih tanggal yang benar atau unduh ulang template.');
   if(meta.OUTLET_ID&&String(meta.OUTLET_ID)!==String(clDivision(CL.division)?.outlet_id||''))errors.push('Template berasal dari outlet berbeda.');
-  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))errors.push('Closing tanggal ini sudah final atau memerlukan rekonsiliasi. Impor ditolak.');errors.push(...clTemplatePermissions());
+  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))errors.push('Closing tanggal ini sudah final atau memerlukan rekonsiliasi. Impor ditolak.');
+  if(!CG.ready)throw new Error(CG.err||'Data master COGS belum berhasil dimuat.');if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   const c=clTemplateCatalog(),p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
   const dso=clTemplateRows(wb,'Daily SO',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Daily SO',dso.rows,c.daily,'__ITEM_ID','__ITEM_TYPE',errors);
   const dsoRows=[];let dsoTouched=false;dso.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))dsoTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Daily SO baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else dsoRows.push({item_id:id,item_type:type,qty:q})}});
@@ -210,6 +210,7 @@ async function clPreviewTemplateImport(input){
   sup.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))supTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Supplies baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else supRows.push({item_id:id,qty:q,actual_qty_base:q})}});
   if(supTouched){if(supRows.length!==c.supplies.length)errors.push('Supplies: jika sheet ini dipakai, isi kuantitas aktual semua item, termasuk 0.');else p.supplies=supRows}
   if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length)errors.push('Tidak ada kuantitas untuk diimpor. Isi minimal satu sheet.');
+  errors.push(...clTemplatePermissions(p));
   errors.push(...clTemplateDateConflict(p));
   const counts=[['Daily SO',p.daily_so.length,'semua item yang dihitung'],['Penjualan',p.sales.length,'menu dengan kuantitas lebih dari 0'],['Barang Masuk',p.stock_in.length+p.opening_wip.length,'barang dan stok awal WIP'],['Pengeluaran',p.stock_out.length,'baris pengeluaran valid'],['Produksi WIP',p.production.length,'WIP dengan batch lebih dari 0'],['Supplies',p.supplies.length,'semua item jika sheet digunakan']];
   CL.templateDraft={templateId:meta.TEMPLATE_ID||'',payload:p,errors:[...new Set(errors)],warnings:warnings,counts:counts,fileName:file.name,serverError:'',busy:false};clRenderTemplatePreview();
