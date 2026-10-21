@@ -159,6 +159,18 @@ function clTemplateCompareCatalog(sheet,rows,expected,idKey,typeKey,errors){
  const actual=[];rows.forEach(r=>{const id=String(clTemplateCell(r.row,r.hi,idKey)||'').trim(),type=typeKey?String(clTemplateCell(r.row,r.hi,typeKey)||'').trim():'';if(!id){if(!r.row.every(clTemplateBlank))errors.push(sheet+' baris '+r.line+': ID tersembunyi hilang. Gunakan file template asli.');return}actual.push(typeKey?(type+':'+id):id)});
  const wanted=expected.map(x=>typeKey?(x.type+':'+x.id):x.id);if(!clTemplateSameSet(actual,wanted))errors.push(sheet+': daftar item/menu berubah atau kolom ID rusak. Unduh template baru agar semua item aktif tetap lengkap.');
 }
+function clTemplateCompareMasterValues(sheet,rows,getMaster,fields,errors){
+ rows.forEach(r=>{
+  const master=getMaster(r);if(!master)return;
+  fields.forEach(field=>{
+   const actual=clTemplateCell(r.row,r.hi,field.header),expected=field.get(master);
+   let matches;
+   if(field.number){const n=clTemplateNumber(actual);matches=n!==null&&Number.isFinite(n)&&Number(n)===Number(expected)}
+   else matches=String(actual??'').trim().toLocaleLowerCase()===String(expected??'').trim().toLocaleLowerCase();
+   if(!matches)errors.push(sheet+' baris '+r.line+': '+field.label+' berubah atau tidak sesuai Master terbaru. Unduh ulang template sebelum impor.');
+  });
+ });
+}
 function clTemplateDateConflict(p){
  const e=[],d=String(CL.division),date=String(CL.date);
  if(p.daily_so.length&&CG.dailySO.some(x=>String(x.division_id)===d&&String(x.so_date)===date&&x.status==='submitted'))e.push('Daily SO sudah tersimpan pada tanggal ini. Sheet Daily SO tidak dapat diimpor lagi.');
@@ -189,6 +201,7 @@ async function clPreviewTemplateImport(input){
   if(!CG.ready)throw new Error(CG.err||'Data master COGS belum berhasil dimuat.');if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   const c=clTemplateCatalog(),p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
   const dso=clTemplateRows(wb,'Daily SO',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Daily SO',dso.rows,c.daily,'__ITEM_ID','__ITEM_TYPE',errors);
+  const dailyByKey=new Map(c.daily.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Daily SO',dso.rows,r=>dailyByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);
   const dsoRows=[];let dsoTouched=false;dso.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))dsoTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Daily SO baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else dsoRows.push({item_id:id,item_type:type,qty:q})}});
   if(dsoTouched){if(dsoRows.length!==c.daily.length)errors.push('Daily SO: jika sheet ini dipakai, isi kuantitas aktual untuk semua item dan WIP, termasuk 0.');else p.daily_so=dsoRows}
   const sale=clTemplateRows(wb,'Penjualan',['MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],errors);clTemplateCompareCatalog('Penjualan',sale.rows,c.sales,'__MENU_ID',null,errors);const saleSeen=new Set();
@@ -204,9 +217,9 @@ async function clPreviewTemplateImport(input){
    if(type==='material'){const item=(INV.items||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!item||!Array.isArray(item.conversions)||!item.conversions.some(c=>String(c.unit||'').toLowerCase()===unit.toLowerCase()&&Number(c.factor)>0)){errors.push('Pengeluaran baris '+r.line+': satuan tidak valid.');return}p.stock_out.push({item_type:'material',item_id:id,wip_id:null,qty:q,unit:unit,category:cat,target_division_id:target,notes:notes})}
    else if(type==='wip'){const w=(CG.wips||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!w||unit.toLowerCase()!==String(w.yield_unit||'').toLowerCase()){errors.push('Pengeluaran baris '+r.line+': WIP atau satuannya tidak sesuai master.');return}p.stock_out.push({item_type:'wip',item_id:null,wip_id:id,qty:q,unit:unit,category:cat,target_division_id:target,notes:notes})}else errors.push('Pengeluaran baris '+r.line+': jenis item tidak dikenal.');
   });
-  const prod=clTemplateRows(wb,'Produksi WIP',['WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],errors);clTemplateCompareCatalog('Produksi WIP',prod.rows,c.production,'__WIP_ID',null,errors);const prodSeen=new Set();
+  const prod=clTemplateRows(wb,'Produksi WIP',['WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],errors);clTemplateCompareCatalog('Produksi WIP',prod.rows,c.production,'__WIP_ID',null,errors);clTemplateCompareMasterValues('Produksi WIP',prod.rows,r=>(CG.wips||[]).find(w=>String(w.id)===String(clTemplateCell(r.row,r.hi,'__WIP_ID')||'').trim()&&String(w.division_id)===String(CL.division)&&w.active===true),[{header:'HASIL_PER_BATCH',label:'Hasil per batch',number:true,get:w=>Number(w.yield_qty||1)},{header:'SATUAN_HASIL',label:'Satuan hasil',get:w=>w.yield_unit}],errors);const prodSeen=new Set();
   prod.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'JUMLAH_BATCH');if(clTemplateBlank(raw))return;const n=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__WIP_ID')||'').trim();if(n===null||!Number.isFinite(n)||n<0||Math.floor(n)!==n){errors.push('Produksi WIP baris '+r.line+': JUMLAH_BATCH harus bilangan bulat 0 atau lebih.');return}if(!n)return;if(prodSeen.has(id)){errors.push('Produksi WIP: WIP yang sama muncul lebih dari sekali.');return}prodSeen.add(id);p.production.push({wip_id:id,batches:n})});
-  const sup=clTemplateRows(wb,'Supplies',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],errors);clTemplateCompareCatalog('Supplies',sup.rows,c.supplies,'__ITEM_ID',null,errors);const supRows=[];let supTouched=false;
+  const sup=clTemplateRows(wb,'Supplies',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],errors);clTemplateCompareCatalog('Supplies',sup.rows,c.supplies,'__ITEM_ID',null,errors);const supplyById=new Map(c.supplies.map(x=>[x.id,x]));clTemplateCompareMasterValues('Supplies',sup.rows,r=>supplyById.get(String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);const supRows=[];let supTouched=false;
   sup.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))supTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Supplies baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else supRows.push({item_id:id,qty:q,actual_qty_base:q})}});
   if(supTouched){if(supRows.length!==c.supplies.length)errors.push('Supplies: jika sheet ini dipakai, isi kuantitas aktual semua item, termasuk 0.');else p.supplies=supRows}
   if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length)errors.push('Tidak ada kuantitas untuk diimpor. Isi minimal satu sheet.');
