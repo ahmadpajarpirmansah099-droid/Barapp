@@ -131,21 +131,107 @@ function clOpenTemplateDialog(){
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Closing sudah final atau memerlukan rekonsiliasi. Impor template dikunci untuk tanggal ini.','warn');
  modal('<h3>Template Daily SO & Operasional</h3><p class="mu">Outlet/divisi: <b>'+esc(clDivision(CL.division)?.name||'Divisi')+'</b><br>Tanggal target: <b>'+esc(CL.date)+'</b></p><p class="mu">Satu workbook berisi enam sheet dengan daftar master yang sudah terisi. Isi hanya kuantitas dan kategori yang diperlukan. Upload tidak menimpa transaksi yang sudah ada.</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadTemplate()">Unduh template Excel</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Pilih file untuk upload<input id="cl_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewTemplateImport(this)"></label></div><p class="mu" style="font-size:12px">Gunakan file template asli agar ID item dan metadata tanggal tetap terbawa. Sheet yang tidak diisi dilewati; sheet yang sudah punya transaksi pada tanggal target tidak bisa diimpor ulang.</p>');
 }
-function clDownloadTemplate(){
- if(!clCanAccess())return toast('Akses ditolak.','warn');if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
+function clEnsureExcelJS(){
+ if(window.ExcelJS&&typeof window.ExcelJS.Workbook==='function')return Promise.resolve(window.ExcelJS);
+ if(window.__clExcelJSLoading)return window.__clExcelJSLoading;
+ window.__clExcelJSLoading=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+  script.async=true;
+  script.onload=()=>window.ExcelJS&&typeof window.ExcelJS.Workbook==='function'?resolve(window.ExcelJS):reject(new Error('Library dropdown Excel tidak berhasil dimuat.'));
+  script.onerror=()=>reject(new Error('Gagal memuat library dropdown Excel. Periksa koneksi internet lalu coba lagi.'));
+  document.head.appendChild(script);
+ });
+ return window.__clExcelJSLoading.finally(()=>{window.__clExcelJSLoading=null});
+}
+function clExcelColumnName(n){
+ let out='';while(n>0){const r=(n-1)%26;out=String.fromCharCode(65+r)+out;n=Math.floor((n-1)/26)}return out;
+}
+async function clDownloadTemplate(){
+ if(!clCanAccess())return toast('Akses ditolak.','warn');
+ if(!window.XLSX)return toast('Modul Excel belum siap. Tunggu sebentar lalu coba lagi.','warn');
  if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Tanggal closing terkunci.','warn');
- const c=clTemplateCatalog(),wb=XLSX.utils.book_new(),tid=clTemplateId(),meta=[['FIELD','VALUE'],['VERSION','BARAPP_CLOSING_TEMPLATE_V1'],['TEMPLATE_ID',tid],['DIVISION_ID',String(CL.division)],['DIVISION_NAME',String(clDivision(CL.division)?.name||'')],['OUTLET_ID',String(clDivision(CL.division)?.outlet_id||'')],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()],['INSTRUCTIONS','Jangan ubah kolom ID tersembunyi, nama sheet, outlet/divisi, atau tanggal. Kuantitas kosong berarti dilewati. Daily SO dan Supplies harus lengkap jika digunakan.']];
- const mw=XLSX.utils.aoa_to_sheet(meta);mw['!cols']=[{wch:24},{wch:100}];XLSX.utils.book_append_sheet(wb,mw,'_META');
- clTemplateWorksheet(wb,'Daily SO',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],c.daily.map(x=>[x.name,x.unit,'',x.id,x.type]),[32,14,18,38,16],[3,4]);
- clTemplateWorksheet(wb,'Penjualan',['MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],c.sales.map(x=>[x.name,'','',x.id]),[34,18,24,38],[3]);
- clTemplateWorksheet(wb,'Barang Masuk',['ITEM','SATUAN','QTY_MASUK','TOTAL_INVOICE_OPSIONAL','CATATAN','__ITEM_ID','__ITEM_TYPE'],c.incoming.map(x=>[x.name,x.unit,'','','',x.id,x.type]),[32,14,16,24,36,38,16],[5,6]);
- clTemplateWorksheet(wb,'Pengeluaran',['ITEM','SATUAN','QTY_KELUAR','KATEGORI','DIVISI_TUJUAN','CATATAN','__ITEM_ID','__ITEM_TYPE'],c.expenses.map(x=>[x.name,x.unit,'','','','',x.id,x.type]),[32,14,16,18,25,36,38,16],[6,7]);
- clTemplateWorksheet(wb,'Produksi WIP',['WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],c.production.map(x=>[x.name,Number((CG.wips||[]).find(w=>String(w.id)===x.id)?.yield_qty||1),x.unit,'',x.id]),[32,18,18,18,38],[4]);
- clTemplateWorksheet(wb,'Supplies',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],c.supplies.map(x=>[x.name,x.unit,'',x.id]),[32,14,18,38],[3]);
- wb.Workbook=wb.Workbook||{};wb.Workbook.Sheets=wb.SheetNames.map(n=>({name:n,Hidden:n==='_META'?1:0}));const expWs=wb.Sheets['Pengeluaran'];if(expWs&&c.expenses.length)expWs['!dataValidation']=[{type:'list',allowBlank:true,formula1:'\"Waste,QC,R&D,Kalibrasi,Lainnya,Move\"',sqref:'D2:D'+(c.expenses.length+1)}]
- const safe=String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'Divisi';
- XLSX.writeFile(wb,'Template-Operasional-'+safe+'-'+CL.date+'.xlsx',{compression:true});CL.templateDraft=null;toast('Template enam sheet berhasil diunduh. Isi kuantitas/kategori, lalu upload kembali.','ok');
+ try{
+  const ExcelJS=await clEnsureExcelJS(),c=clTemplateCatalog(),wb=new ExcelJS.Workbook();
+  wb.creator='Barapp';wb.subject='Template Approval Closing';wb.title='Template Operasional Barapp';
+  const meta=wb.addWorksheet('_META');
+  [
+   ['FIELD','VALUE'],
+   ['VERSION','BARAPP_CLOSING_TEMPLATE_V1'],
+   ['TEMPLATE_ID',clTemplateId()],
+   ['DIVISION_ID',String(CL.division)],
+   ['DIVISION_NAME',String(clDivision(CL.division)?.name||'')],
+   ['OUTLET_ID',String(clDivision(CL.division)?.outlet_id||'')],
+   ['TARGET_DATE',String(CL.date)],
+   ['GENERATED_AT',new Date().toISOString()],
+   ['INSTRUCTIONS','Tanggal target ditampilkan pada kolom TANGGAL_TARGET di setiap sheet. Jangan ubah tanggal, nama sheet, atau kolom ID tersembunyi. Kosongkan kuantitas pada sheet yang tidak ingin diimpor. Daily SO dan Supplies harus lengkap jika digunakan.']
+  ].forEach(r=>meta.addRow(r));
+  meta.state='hidden';
+  const makeSheet=(name,headers,rows,widths,hiddenCols=[])=>{
+   const ws=wb.addWorksheet(name);
+   ws.addRow(headers);rows.forEach(row=>ws.addRow(row));
+   ws.views=[{state:'frozen',ySplit:1}];
+   ws.autoFilter={from:'A1',to:clExcelColumnName(headers.length)+Math.max(1,rows.length+1)};
+   ws.getRow(1).height=32;
+   ws.getRow(1).eachCell(cell=>{
+    cell.font={bold:true,color:{argb:'FFFFFFFF'}};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF42594A'}};
+    cell.alignment={vertical:'middle',wrapText:true};
+   });
+   headers.forEach((_,i)=>{
+    const col=ws.getColumn(i+1);col.width=widths[i]||18;col.hidden=hiddenCols.includes(i+1);
+   });
+   for(let r=2;r<=rows.length+1;r++)ws.getCell(r,1).numFmt='@';
+   return ws;
+  };
+  makeSheet('Daily SO',['TANGGAL_TARGET','ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],
+   c.daily.map(x=>[String(CL.date),x.name,x.unit,'',x.id,x.type]),[17,32,14,18,38,16],[5,6]);
+  makeSheet('Penjualan',['TANGGAL_TARGET','MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],
+   c.sales.map(x=>[String(CL.date),x.name,'','',x.id]),[17,34,18,24,38],[5]);
+  makeSheet('Barang Masuk',['TANGGAL_TARGET','ITEM','SATUAN','QTY_MASUK','TOTAL_INVOICE_OPSIONAL','CATATAN','__ITEM_ID','__ITEM_TYPE'],
+   c.incoming.map(x=>[String(CL.date),x.name,x.unit,'','','',x.id,x.type]),[17,32,14,16,24,36,38,16],[7,8]);
+  const expenseRows=c.expenses.map(x=>[String(CL.date),x.name,x.unit,'','','','',x.id,x.type]);
+  const expenseSheet=makeSheet('Pengeluaran',['TANGGAL_TARGET','ITEM','SATUAN','QTY_KELUAR','KATEGORI','DIVISI_TUJUAN','CATATAN','__ITEM_ID','__ITEM_TYPE'],
+   expenseRows,[17,32,14,16,20,28,36,38,16],[8,9]);
+  makeSheet('Produksi WIP',['TANGGAL_TARGET','WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],
+   c.production.map(x=>[String(CL.date),x.name,Number((CG.wips||[]).find(w=>String(w.id)===x.id)?.yield_qty||1),x.unit,'',x.id]),[17,32,18,18,18,38],[6]);
+  makeSheet('Supplies',['TANGGAL_TARGET','ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],
+   c.supplies.map(x=>[String(CL.date),x.name,x.unit,'',x.id]),[17,32,14,18,38],[5]);
+
+  const lists=wb.addWorksheet('_LISTS');
+  lists.addRow(['DIVISI_TUJUAN']);c.divisions.forEach(d=>lists.addRow([String(d.name||'').trim()]));
+  lists.state='hidden';
+  const destinationNames=c.divisions.map(d=>String(d.name||'').trim());
+  if(destinationNames.length&&wb.definedNames&&typeof wb.definedNames.add==='function'){
+   wb.definedNames.add('_LISTS!$A$2:$A$'+(destinationNames.length+1),'DivisionList');
+  }
+  const categories=destinationNames.length?['Waste','QC','R&D','Kalibrasi','Lainnya','Move']:['Waste','QC','R&D','Kalibrasi','Lainnya'];
+  const categoryFormula='"'+categories.join(',')+'"';
+  const canUseInline=destinationNames.length>0&&destinationNames.every(n=>n&&!n.includes(',')&&!n.includes('"'))&&('"'+destinationNames.join(',')+'"').length<=250;
+  const divisionFormula=canUseInline?'"'+destinationNames.join(',')+'"':'=DivisionList';
+  for(let row=2;row<=expenseRows.length+1;row++){
+   expenseSheet.getCell(row,5).dataValidation={
+    type:'list',allowBlank:true,formulae:[categoryFormula],
+    showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',
+    error:'Pilih kategori dari dropdown yang tersedia.'
+   };
+   if(destinationNames.length)expenseSheet.getCell(row,6).dataValidation={
+    type:'list',allowBlank:true,formulae:[divisionFormula],
+    showErrorMessage:true,errorStyle:'stop',errorTitle:'Tujuan divisi tidak valid',
+    error:'Pilih nama divisi tujuan dari dropdown. Tujuan hanya dipakai untuk kategori Move.'
+   };
+  }
+  const buffer=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Template-Operasional-'+(String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'Divisi')+'-'+CL.date+'.xlsx';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  CL.templateDraft=null;
+  toast('Template diunduh: kategori dan tujuan divisi punya dropdown, tanggal target tampak di kolom pertama.','ok');
+ }catch(e){
+  toast('Gagal membuat template Excel: '+String(e&&e.message||e),'err');
+ }
 }
 function clTemplateHeaderIndex(headers){const o={};(headers||[]).forEach((h,i)=>{const k=String(h??'').trim().toUpperCase();if(k)o[k]=i});return o}
 function clTemplateCell(row,hi,key){return hi[key]===undefined?'':row[hi[key]]}
@@ -153,7 +239,7 @@ function clTemplateRows(wb,sheet,required,errors){
  const ws=wb.Sheets[sheet];if(!ws){errors.push(sheet+': sheet wajib tidak ditemukan.');return{headers:[],rows:[]}}
  const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});if(!matrix.length){errors.push(sheet+': sheet kosong atau header hilang.');return{headers:[],rows:[]}}
  const headers=matrix[0].map(h=>String(h??'').trim().toUpperCase()),hi=clTemplateHeaderIndex(headers);required.forEach(k=>{if(hi[k]===undefined)errors.push(sheet+': kolom '+k+' tidak ditemukan.')});
- const rows=[];for(let i=1;i<matrix.length;i++){const row=matrix[i]||[];if(row.every(clTemplateBlank))continue;rows.push({line:i+1,row:row,hi:hi})}return{headers:headers,rows:rows};
+ const rows=[];for(let i=1;i<matrix.length;i++){const row=matrix[i]||[];if(row.every(clTemplateBlank))continue;rows.push({line:i+1,row:row,hi:hi})}if(required.includes('TANGGAL_TARGET'))rows.forEach(r=>{const target=String(clTemplateCell(r.row,r.hi,'TANGGAL_TARGET')||'').trim();if(target!==String(CL.date))errors.push(sheet+' baris '+r.line+': TANGGAL_TARGET harus '+String(CL.date)+'. Unduh ulang template jika tanggal target berubah.')});return{headers:headers,rows:rows};
 }
 function clTemplateCompareCatalog(sheet,rows,expected,idKey,typeKey,errors){
  const actual=[];rows.forEach(r=>{const id=String(clTemplateCell(r.row,r.hi,idKey)||'').trim(),type=typeKey?String(clTemplateCell(r.row,r.hi,typeKey)||'').trim():'';if(!id){if(!r.row.every(clTemplateBlank))errors.push(sheet+' baris '+r.line+': ID tersembunyi hilang. Gunakan file template asli.');return}actual.push(typeKey?(type+':'+id):id)});
@@ -200,26 +286,26 @@ async function clPreviewTemplateImport(input){
   if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))errors.push('Closing tanggal ini sudah final atau memerlukan rekonsiliasi. Impor ditolak.');
   if(!CG.ready)throw new Error(CG.err||'Data master COGS belum berhasil dimuat.');if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   const c=clTemplateCatalog(),p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
-  const dso=clTemplateRows(wb,'Daily SO',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Daily SO',dso.rows,c.daily,'__ITEM_ID','__ITEM_TYPE',errors);
+  const dso=clTemplateRows(wb,'Daily SO',['TANGGAL_TARGET','ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Daily SO',dso.rows,c.daily,'__ITEM_ID','__ITEM_TYPE',errors);
   const dailyByKey=new Map(c.daily.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Daily SO',dso.rows,r=>dailyByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name},{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);
   const dsoRows=[];let dsoTouched=false;dso.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))dsoTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Daily SO baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else dsoRows.push({item_id:id,item_type:type,qty:q})}});
   if(dsoTouched){if(dsoRows.length!==c.daily.length)errors.push('Daily SO: jika sheet ini dipakai, isi kuantitas aktual untuk semua item dan WIP, termasuk 0.');else p.daily_so=dsoRows}
-  const sale=clTemplateRows(wb,'Penjualan',['MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],errors);clTemplateCompareCatalog('Penjualan',sale.rows,c.sales,'__MENU_ID',null,errors);const salesById=new Map(c.sales.map(x=>[x.id,x]));clTemplateCompareMasterValues('Penjualan',sale.rows,r=>salesById.get(String(clTemplateCell(r.row,r.hi,'__MENU_ID')||'').trim()),[{header:'MENU',label:'Nama menu',get:x=>x.name}],errors);const saleSeen=new Set();
+  const sale=clTemplateRows(wb,'Penjualan',['TANGGAL_TARGET','MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],errors);clTemplateCompareCatalog('Penjualan',sale.rows,c.sales,'__MENU_ID',null,errors);const salesById=new Map(c.sales.map(x=>[x.id,x]));clTemplateCompareMasterValues('Penjualan',sale.rows,r=>salesById.get(String(clTemplateCell(r.row,r.hi,'__MENU_ID')||'').trim()),[{header:'MENU',label:'Nama menu',get:x=>x.name}],errors);const saleSeen=new Set();
   sale.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_TERJUAL');if(clTemplateBlank(raw))return;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__MENU_ID')||'').trim(),pr=clTemplateCell(r.row,r.hi,'HARGA_JUAL_OPSIONAL'),price=clTemplateNumber(pr);if(q===null||!Number.isFinite(q)||q<0){errors.push('Penjualan baris '+r.line+': QTY_TERJUAL harus angka 0 atau lebih.');return}if(!q)return;if(!id){errors.push('Penjualan baris '+r.line+': ID menu hilang.');return}if(saleSeen.has(id)){errors.push('Penjualan: menu yang sama muncul lebih dari sekali.');return}saleSeen.add(id);if(!clTemplateBlank(pr)&&(price===null||!Number.isFinite(price)||price<0)){errors.push('Penjualan baris '+r.line+': harga jual opsional harus 0 atau lebih.');return}p.sales.push({menu_id:id,qty:q,selling_price:clTemplateBlank(pr)?null:price})});
-  const inc=clTemplateRows(wb,'Barang Masuk',['ITEM','SATUAN','QTY_MASUK','TOTAL_INVOICE_OPSIONAL','CATATAN','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Barang Masuk',inc.rows,c.incoming,'__ITEM_ID','__ITEM_TYPE',errors);const incomingByKey=new Map(c.incoming.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Barang Masuk',inc.rows,r=>incomingByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name}],errors);const incSeen=new Set();
+  const inc=clTemplateRows(wb,'Barang Masuk',['TANGGAL_TARGET','ITEM','SATUAN','QTY_MASUK','TOTAL_INVOICE_OPSIONAL','CATATAN','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Barang Masuk',inc.rows,c.incoming,'__ITEM_ID','__ITEM_TYPE',errors);const incomingByKey=new Map(c.incoming.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Barang Masuk',inc.rows,r=>incomingByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name}],errors);const incSeen=new Set();
   inc.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_MASUK');if(clTemplateBlank(raw))return;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim(),unit=String(clTemplateCell(r.row,r.hi,'SATUAN')||'').trim(),ir=clTemplateCell(r.row,r.hi,'TOTAL_INVOICE_OPSIONAL'),invoice=clTemplateNumber(ir),note=String(clTemplateCell(r.row,r.hi,'CATATAN')||'').trim();if(q===null||!Number.isFinite(q)||q<0){errors.push('Barang Masuk baris '+r.line+': QTY_MASUK harus angka 0 atau lebih.');return}if(!q)return;const key=type+':'+id;if(incSeen.has(key)){errors.push('Barang Masuk: item yang sama muncul lebih dari sekali.');return}incSeen.add(key);
    if(type==='material'){const item=(INV.items||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!item||!Array.isArray(item.conversions)||!item.conversions.some(c=>String(c.unit||'').toLowerCase()===unit.toLowerCase()&&Number(c.factor)>0)){errors.push('Barang Masuk baris '+r.line+': satuan tidak valid.');return}if(!clTemplateBlank(ir)&&(invoice===null||!Number.isFinite(invoice)||invoice<0)){errors.push('Barang Masuk baris '+r.line+': total invoice opsional harus 0 atau lebih.');return}p.stock_in.push({item_id:id,qty:q,unit:unit,invoice_total:clTemplateBlank(ir)?null:invoice,notes:note})}
    else if(type==='wip'){const w=(CG.wips||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!w||unit.toLowerCase()!==String(w.yield_unit||'').toLowerCase()){errors.push('Barang Masuk baris '+r.line+': WIP atau satuannya tidak sesuai master.');return}p.opening_wip.push({wip_id:id,qty:q,notes:note})}else errors.push('Barang Masuk baris '+r.line+': jenis item tidak dikenal.');
   });
-  const exp=clTemplateRows(wb,'Pengeluaran',['ITEM','SATUAN','QTY_KELUAR','KATEGORI','DIVISI_TUJUAN','CATATAN','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Pengeluaran',exp.rows,c.expenses,'__ITEM_ID','__ITEM_TYPE',errors);const expenseByKey=new Map(c.expenses.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Pengeluaran',exp.rows,r=>expenseByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name}],errors);const cats=['Waste','QC','R&D','Kalibrasi','Lainnya','Move'],expSeen=new Set();
+  const exp=clTemplateRows(wb,'Pengeluaran',['TANGGAL_TARGET','ITEM','SATUAN','QTY_KELUAR','KATEGORI','DIVISI_TUJUAN','CATATAN','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Pengeluaran',exp.rows,c.expenses,'__ITEM_ID','__ITEM_TYPE',errors);const expenseByKey=new Map(c.expenses.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Pengeluaran',exp.rows,r=>expenseByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name}],errors);const cats=['Waste','QC','R&D','Kalibrasi','Lainnya','Move'],expSeen=new Set();
   exp.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_KELUAR');if(clTemplateBlank(raw))return;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim(),unit=String(clTemplateCell(r.row,r.hi,'SATUAN')||'').trim(),cat=String(clTemplateCell(r.row,r.hi,'KATEGORI')||'').trim(),targetName=String(clTemplateCell(r.row,r.hi,'DIVISI_TUJUAN')||'').trim(),notes=String(clTemplateCell(r.row,r.hi,'CATATAN')||'').trim();if(q===null||!Number.isFinite(q)||q<0){errors.push('Pengeluaran baris '+r.line+': QTY_KELUAR harus angka 0 atau lebih.');return}if(!q)return;const key=type+':'+id;if(expSeen.has(key)){errors.push('Pengeluaran: item yang sama muncul lebih dari sekali.');return}expSeen.add(key);if(!cats.includes(cat)){errors.push('Pengeluaran baris '+r.line+': pilih kategori Waste, QC, R&D, Kalibrasi, Lainnya, atau Move.');return}
    let target=null;if(cat==='Move'){const matches=c.divisions.filter(d=>String(d.id)===targetName||String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());if(matches.length!==1){errors.push('Pengeluaran baris '+r.line+': DIVISI_TUJUAN harus nama divisi lain yang unik untuk Move.');return}target=matches[0].id}else if(targetName){errors.push('Pengeluaran baris '+r.line+': DIVISI_TUJUAN hanya boleh diisi untuk Move.');return}
    if(type==='material'){const item=(INV.items||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!item||!Array.isArray(item.conversions)||!item.conversions.some(c=>String(c.unit||'').toLowerCase()===unit.toLowerCase()&&Number(c.factor)>0)){errors.push('Pengeluaran baris '+r.line+': satuan tidak valid.');return}p.stock_out.push({item_type:'material',item_id:id,wip_id:null,qty:q,unit:unit,category:cat,target_division_id:target,notes:notes})}
    else if(type==='wip'){const w=(CG.wips||[]).find(x=>String(x.id)===id&&String(x.division_id)===String(CL.division)&&x.active===true);if(!w||unit.toLowerCase()!==String(w.yield_unit||'').toLowerCase()){errors.push('Pengeluaran baris '+r.line+': WIP atau satuannya tidak sesuai master.');return}p.stock_out.push({item_type:'wip',item_id:null,wip_id:id,qty:q,unit:unit,category:cat,target_division_id:target,notes:notes})}else errors.push('Pengeluaran baris '+r.line+': jenis item tidak dikenal.');
   });
-  const prod=clTemplateRows(wb,'Produksi WIP',['WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],errors);clTemplateCompareCatalog('Produksi WIP',prod.rows,c.production,'__WIP_ID',null,errors);clTemplateCompareMasterValues('Produksi WIP',prod.rows,r=>(CG.wips||[]).find(w=>String(w.id)===String(clTemplateCell(r.row,r.hi,'__WIP_ID')||'').trim()&&String(w.division_id)===String(CL.division)&&w.active===true),[{header:'WIP',label:'Nama WIP',get:w=>w.name},{header:'HASIL_PER_BATCH',label:'Hasil per batch',number:true,get:w=>Number(w.yield_qty||1)},{header:'SATUAN_HASIL',label:'Satuan hasil',get:w=>w.yield_unit}],errors);const prodSeen=new Set();
+  const prod=clTemplateRows(wb,'Produksi WIP',['TANGGAL_TARGET','WIP','HASIL_PER_BATCH','SATUAN_HASIL','JUMLAH_BATCH','__WIP_ID'],errors);clTemplateCompareCatalog('Produksi WIP',prod.rows,c.production,'__WIP_ID',null,errors);clTemplateCompareMasterValues('Produksi WIP',prod.rows,r=>(CG.wips||[]).find(w=>String(w.id)===String(clTemplateCell(r.row,r.hi,'__WIP_ID')||'').trim()&&String(w.division_id)===String(CL.division)&&w.active===true),[{header:'WIP',label:'Nama WIP',get:w=>w.name},{header:'HASIL_PER_BATCH',label:'Hasil per batch',number:true,get:w=>Number(w.yield_qty||1)},{header:'SATUAN_HASIL',label:'Satuan hasil',get:w=>w.yield_unit}],errors);const prodSeen=new Set();
   prod.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'JUMLAH_BATCH');if(clTemplateBlank(raw))return;const n=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__WIP_ID')||'').trim();if(n===null||!Number.isFinite(n)||n<0||Math.floor(n)!==n){errors.push('Produksi WIP baris '+r.line+': JUMLAH_BATCH harus bilangan bulat 0 atau lebih.');return}if(!n)return;if(prodSeen.has(id)){errors.push('Produksi WIP: WIP yang sama muncul lebih dari sekali.');return}prodSeen.add(id);p.production.push({wip_id:id,batches:n})});
-  const sup=clTemplateRows(wb,'Supplies',['ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],errors);clTemplateCompareCatalog('Supplies',sup.rows,c.supplies,'__ITEM_ID',null,errors);const supplyById=new Map(c.supplies.map(x=>[x.id,x]));clTemplateCompareMasterValues('Supplies',sup.rows,r=>supplyById.get(String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name},{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);const supRows=[];let supTouched=false;
+  const sup=clTemplateRows(wb,'Supplies',['TANGGAL_TARGET','ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID'],errors);clTemplateCompareCatalog('Supplies',sup.rows,c.supplies,'__ITEM_ID',null,errors);const supplyById=new Map(c.supplies.map(x=>[x.id,x]));clTemplateCompareMasterValues('Supplies',sup.rows,r=>supplyById.get(String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name},{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);const supRows=[];let supTouched=false;
   sup.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))supTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Supplies baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else supRows.push({item_id:id,qty:q,actual_qty_base:q})}});
   if(supTouched){if(supRows.length!==c.supplies.length)errors.push('Supplies: jika sheet ini dipakai, isi kuantitas aktual semua item, termasuk 0.');else p.supplies=supRows}
   if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length)errors.push('Tidak ada kuantitas untuk diimpor. Isi minimal satu sheet.');
