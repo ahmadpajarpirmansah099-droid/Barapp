@@ -1975,10 +1975,11 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
  })}
 
 window.__barappRefreshUI=()=>{if(D.me)R()};
-function R(){if(D.me&&!T.pgInit){T.pgInit=1;try{const sp=sessionStorage.getItem('bar_pg');if(sp)pg=sp}catch(e){}}if(D.me){try{sessionStorage.setItem('bar_pg',pg)}catch(e){}}const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
+function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
+if(!T.pgInit){T.pgInit=1;let restored=false;try{const sp=sessionStorage.getItem('bar_pg');if(sp){pg=sp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='div'}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
-if(isDeveloper()&&!T.devInit){T.devInit=1;pg='div'}
 if(!allowed().includes(pg))pg='dash';
+try{sessionStorage.setItem('bar_pg',pg)}catch(e){}
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
 const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>allowed().includes(k)&&k!='divdet'&&!HIDE_NAV.includes(k)&&(!MOVED.includes(k)||k==='pay_data')&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())).sort((a,b)=>{const order=['cogs_daily_so','cogs_closing','dash','ops_dashboard','barang','pay_data','div','audit'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?order.length:ai)-(bi<0?order.length:bi)}),pic=k=>({dash:'dashboard',ops_dashboard:'chart-no-axes-combined',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid',barang:'box',masuk:'truck',pengeluaran:'refresh',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar',cogs_closing:'approval'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
