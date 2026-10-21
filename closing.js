@@ -100,6 +100,7 @@ async function approve(){
 
 function clTemplateId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()===''}
+function clTemplateDateValue(v){if(v instanceof Date&&!Number.isNaN(v.getTime()))return v.toISOString().slice(0,10);if(typeof v==='number'&&Number.isFinite(v)&&v>=1&&v<100000){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10)}const s=String(v??'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;return s}
 function clTemplateNumber(v){if(typeof v==='number')return Number.isFinite(v)?v:NaN;if(clTemplateBlank(v))return null;const n=Number(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN}
 function clTemplateSameSet(actual,expected){if(actual.length!==expected.length)return false;const a=new Set(actual),e=new Set(expected);return a.size===actual.length&&e.size===expected.length&&actual.every(x=>e.has(x))}
 function clTemplateCatalog(){
@@ -239,7 +240,7 @@ function clTemplateRows(wb,sheet,required,errors){
  const ws=wb.Sheets[sheet];if(!ws){errors.push(sheet+': sheet wajib tidak ditemukan.');return{headers:[],rows:[]}}
  const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});if(!matrix.length){errors.push(sheet+': sheet kosong atau header hilang.');return{headers:[],rows:[]}}
  const headers=matrix[0].map(h=>String(h??'').trim().toUpperCase()),hi=clTemplateHeaderIndex(headers);required.forEach(k=>{if(hi[k]===undefined)errors.push(sheet+': kolom '+k+' tidak ditemukan.')});
- const rows=[];for(let i=1;i<matrix.length;i++){const row=matrix[i]||[];if(row.every(clTemplateBlank))continue;rows.push({line:i+1,row:row,hi:hi})}if(required.includes('TANGGAL_TARGET'))rows.forEach(r=>{const target=String(clTemplateCell(r.row,r.hi,'TANGGAL_TARGET')||'').trim();if(target!==String(CL.date))errors.push(sheet+' baris '+r.line+': TANGGAL_TARGET harus '+String(CL.date)+'. Unduh ulang template jika tanggal target berubah.')});return{headers:headers,rows:rows};
+ const rows=[];for(let i=1;i<matrix.length;i++){const row=matrix[i]||[];if(row.every(clTemplateBlank))continue;rows.push({line:i+1,row:row,hi:hi})}if(required.includes('TANGGAL_TARGET'))rows.forEach(r=>{const target=String(clTemplateCell(r.row,r.hi,'TANGGAL_TARGET')||'').trim();if(clTemplateDateValue(clTemplateCell(r.row,r.hi,'TANGGAL_TARGET'))!==String(CL.date))errors.push(sheet+' baris '+r.line+': TANGGAL_TARGET harus '+String(CL.date)+'. Unduh ulang template jika tanggal target berubah.')});return{headers:headers,rows:rows};
 }
 function clTemplateCompareCatalog(sheet,rows,expected,idKey,typeKey,errors){
  const actual=[];rows.forEach(r=>{const id=String(clTemplateCell(r.row,r.hi,idKey)||'').trim(),type=typeKey?String(clTemplateCell(r.row,r.hi,typeKey)||'').trim():'';if(!id){if(!r.row.every(clTemplateBlank))errors.push(sheet+' baris '+r.line+': ID tersembunyi hilang. Gunakan file template asli.');return}actual.push(typeKey?(type+':'+id):id)});
@@ -277,7 +278,7 @@ async function clPreviewTemplateImport(input){
   const {data:period,error:pe}=await sb().from('barapp_closing_periods').select('id,status').eq('division_id',CL.division).eq('closing_date',CL.date).maybeSingle();if(pe)throw pe;CL.period=period?Object.assign({},CL.period||{},period):null;
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false}),must=['Daily SO','Penjualan','Barang Masuk','Pengeluaran','Produksi WIP','Supplies'];
   must.forEach(n=>{if(!wb.Sheets[n])errors.push('Sheet '+n+' wajib tersedia. Jangan menghapus atau mengganti nama sheet.')});if(!wb.Sheets._META)errors.push('Metadata template tidak ditemukan. Unduh template baru dari Approval Closing.');
-  let meta={};if(wb.Sheets._META){const a=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});a.slice(1).forEach(r=>{const k=String(r[0]||'').trim().toUpperCase();if(k)meta[k]=String(r[1]??'').trim()})}
+  let meta={};if(wb.Sheets._META){const a=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});a.slice(1).forEach(r=>{const k=String(r[0]||'').trim().toUpperCase();if(k)meta[k]=k==='TARGET_DATE'?clTemplateDateValue(r[1]):String(r[1]??'').trim()})}
   if(meta.VERSION!=='BARAPP_CLOSING_TEMPLATE_V1')errors.push('Versi template tidak dikenal. Unduh template terbaru.');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh template terbaru.');
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda. Sesuaikan pilihan divisi atau unduh ulang.');
