@@ -43,6 +43,9 @@ jobs:
           });
           NODE
 
+      - name: Check employee session token storage
+        run: node scripts/security-session-storage.test.cjs
+
       - name: Check expected COGS UI and RPC wiring
         run: |
           node <<'NODE'

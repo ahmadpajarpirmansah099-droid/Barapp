@@ -1085,12 +1085,14 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 })();
 </script>
 <script>
-const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
+const K='absensi_bar_v1',STAFF_SESSION_KEY='barapp_staff_session_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
 const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return r=='dev'?'D':(r=='div_admin'||r=='hr'||r=='legacy_admin')?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
+try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');if(persisted&&persisted.me&&persisted.me.r==='K'){delete persisted.me;localStorage.setItem(K,JSON.stringify(persisted))}}catch(e){}
+try{const staffSession=JSON.parse(sessionStorage.getItem(STAFF_SESSION_KEY)||'null');if(staffSession&&staffSession.r==='K'&&staffSession.tok)D.me=staffSession;else if(D.me&&D.me.r==='K')D.me=null}catch(e){if(D.me&&D.me.r==='K')D.me=null}
 /* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
@@ -1459,7 +1461,7 @@ const decorateAllCardHeadings=(root=document)=>{if(root.matches&&root.matches('.
 (()=>{const css=document.createElement('style');css.id='context-card-heading-icons';css.textContent='.card>h3.has-card-head-icon::before,.md>h3.has-card-head-icon::before{display:none!important}.card-head-icon{flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:var(--ac2,var(--tint));border:1.5px solid var(--dk,var(--line));color:var(--ac,var(--tx))}.card-head-icon .ic{width:20px;height:20px;display:block;stroke:currentColor}';document.head.appendChild(css);decorateAllCardHeadings();if(typeof MutationObserver!=='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)decorateAllCardHeadings(n)}))).observe(document.body,{childList:true,subtree:true})})();
 
 
-const sv=()=>{try{const {emp,att,...rest}=D;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const sv=()=>{try{const {emp,att,...rest}=D;if(rest.me&&rest.me.r==='K'&&rest.me.tok){try{sessionStorage.setItem(STAFF_SESSION_KEY,JSON.stringify(rest.me))}catch(e){}}else{try{sessionStorage.removeItem(STAFF_SESSION_KEY)}catch(e){}}delete rest.me;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
