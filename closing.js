@@ -210,6 +210,8 @@ async function clPreviewTemplateImport(input){
   sup.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))supTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Supplies baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else supRows.push({item_id:id,qty:q,actual_qty_base:q})}});
   if(supTouched){if(supRows.length!==c.supplies.length)errors.push('Supplies: jika sheet ini dipakai, isi kuantitas aktual semua item, termasuk 0.');else p.supplies=supRows}
   if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length)errors.push('Tidak ada kuantitas untuk diimpor. Isi minimal satu sheet.');
+  const importLimits=[['Daily SO',p.daily_so.length,1000],['Penjualan',p.sales.length,200],['Barang Masuk',p.stock_in.length,1000],['Stok Awal WIP',p.opening_wip.length,500],['Pengeluaran',p.stock_out.length,1000],['Produksi WIP',p.production.length,200],['Supplies',p.supplies.length,1000]];
+  importLimits.forEach(([label,count,max])=>{if(count>max)errors.push(label+': maksimal '+max+' baris transaksi per impor. Kurangi jumlah baris atau bagi menjadi beberapa impor yang tidak bertabrakan.');});
   errors.push(...clTemplatePermissions(p));
   errors.push(...clTemplateDateConflict(p));
   const counts=[['Daily SO',p.daily_so.length,'semua item yang dihitung'],['Penjualan',p.sales.length,'menu dengan kuantitas lebih dari 0'],['Barang Masuk',p.stock_in.length+p.opening_wip.length,'barang dan stok awal WIP'],['Pengeluaran',p.stock_out.length,'baris pengeluaran valid'],['Produksi WIP',p.production.length,'WIP dengan batch lebih dari 0'],['Supplies',p.supplies.length,'semua item jika sheet digunakan']];
@@ -243,6 +245,7 @@ function clTemplateFriendlyError(e){
  ['BARAPP_TEMPLATE_STOCK_IN_FORBIDDEN','Akun tidak memiliki izin Barang Masuk.'],
  ['BARAPP_TEMPLATE_EXPENSES_FORBIDDEN','Akun tidak memiliki izin Pengeluaran.'],
  ['BARAPP_TEMPLATE_EMPTY_IMPORT','Tidak ada data transaksi untuk diimpor.'],
+ ['BARAPP_TEMPLATE_TOO_MANY_ROWS','Jumlah baris melebihi batas impor salah satu sheet. Kurangi jumlah baris lalu coba lagi.'],
  ['BARAPP_TEMPLATE_INVALID_DATE','Tanggal target tidak valid atau berada di masa depan.'],
  ['BARAPP_TEMPLATE_INVALID_PAYLOAD','Payload template tidak valid. Unduh ulang file template.'],
  ['BARAPP_TEMPLATE_INVALID_SUPPLIES_ROW','Jumlah Supplies atau daftar item tidak valid. Periksa semua kuantitas Supplies.'],
