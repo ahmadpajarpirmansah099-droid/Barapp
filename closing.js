@@ -159,7 +159,7 @@ async function clDownloadTemplate(){
   const meta=wb.addWorksheet('_META');
   [
    ['FIELD','VALUE'],
-   ['VERSION','BARAPP_CLOSING_TEMPLATE_V1'],
+   ['VERSION','BARAPP_CLOSING_TEMPLATE_V2'],
    ['TEMPLATE_ID',clTemplateId()],
    ['DIVISION_ID',String(CL.division)],
    ['DIVISION_NAME',String(clDivision(CL.division)?.name||'')],
@@ -279,7 +279,7 @@ async function clPreviewTemplateImport(input){
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false}),must=['Daily SO','Penjualan','Barang Masuk','Pengeluaran','Produksi WIP','Supplies'];
   must.forEach(n=>{if(!wb.Sheets[n])errors.push('Sheet '+n+' wajib tersedia. Jangan menghapus atau mengganti nama sheet.')});if(!wb.Sheets._META)errors.push('Metadata template tidak ditemukan. Unduh template baru dari Approval Closing.');
   let meta={};if(wb.Sheets._META){const a=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});a.slice(1).forEach(r=>{const k=String(r[0]||'').trim().toUpperCase();if(k)meta[k]=k==='TARGET_DATE'?clTemplateDateValue(r[1]):String(r[1]??'').trim()})}
-  if(meta.VERSION!=='BARAPP_CLOSING_TEMPLATE_V1')errors.push('Versi template tidak dikenal. Unduh template terbaru.');
+  if(meta.VERSION!=='BARAPP_CLOSING_TEMPLATE_V2')errors.push('Versi template tidak dikenal. Unduh template terbaru.');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh template terbaru.');
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda. Sesuaikan pilihan divisi atau unduh ulang.');
   if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal pada template berbeda dari tanggal closing terpilih. Pilih tanggal yang benar atau unduh ulang template.');
