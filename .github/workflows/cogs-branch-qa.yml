@@ -105,13 +105,13 @@ jobs:
           # Keep a single session so the temporary table survives each stage:
           # baseline shadowing must reproduce, then the migration must stop it.
           psql "$safe_url" --set ON_ERROR_STOP=1 <<'SQL'
-          \\i tests/security_hardening_postgres_setup.sql
-          \\i tests/security_hardening_pre_migration_assert.sql
-          \\i barapp_security_hardening_v1.sql
-          \\i tests/security_hardening_postgres_assert.sql
+          \i tests/security_hardening_postgres_setup.sql
+          \i tests/security_hardening_pre_migration_assert.sql
+          \i barapp_security_hardening_v1.sql
+          \i tests/security_hardening_postgres_assert.sql
           # The hardening migration must also be idempotent.
-          \\i barapp_security_hardening_v1.sql
-          \\i tests/security_hardening_postgres_assert.sql
+          \i barapp_security_hardening_v1.sql
+          \i tests/security_hardening_postgres_assert.sql
           SQL
 
           # Fail-closed path: a SECURITY DEFINER routine without a fixed path must
