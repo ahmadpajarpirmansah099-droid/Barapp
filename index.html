@@ -1778,14 +1778,7 @@ function login(){
         <div class="fld"><label for="lp">Password</label><div class="iw">${IC('key',16)}<input id="lp" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key=='Enter')lgA()"></div></div>
         <div class="btns">
           <button class="btn" onclick="lgA()">${IC('sparkles',16)}Login Admin</button>
-          <button class="btn s" onclick="T.kl=1;R()">${IC('ucheck',16)}${L('Karyawan','Employee')}</button>
         </div>
-        ${T.kl?`<div class="lg-emp">
-          <div class="fld"><label for="li">${L('Nama:','Name:')}</label><div class="iw">${IC('user',16)}<input id="li" placeholder="${L('Nama karyawan','Employee name')}" onkeydown="if(event.key=='Enter')lgK()"></div></div>
-          <div class="btns">
-            <button class="btn" onclick="lgK()">${IC('out',16)}${L('Masuk sebagai Karyawan','Sign in as Employee')}</button>
-            <button class="btn s" onclick="T.kl=0;R()">${L('Batal','Cancel')}</button>
-          </div></div>`:''}
       </div>
       <div class="lg-ft">${esc(TH.name)} · ${esc(TH.sub)}</div>
     </div>
