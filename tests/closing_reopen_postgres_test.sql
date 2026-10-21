@@ -256,6 +256,129 @@ BEGIN
 END
 $trigger_update_test$;
 
+-- Move UPDATE regression: source/destination divisions and date all change.
+-- All transaction rows are seeded before approved periods to avoid triggering the fixture early.
+INSERT INTO public.divisions(id,outlet_id,active) VALUES
+ ('b1000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001',true),
+ ('b1000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001',true),
+ ('b1000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001',true),
+ ('b1000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001',true);
+
+INSERT INTO public.barapp_stock_out(id,from_division_id,to_division_id,out_date,category,status)
+VALUES ('c1000000-0000-4000-8000-000000000001',
+        'b1000000-0000-4000-8000-000000000001',
+        'b1000000-0000-4000-8000-000000000002',
+        (now() AT TIME ZONE 'Asia/Jakarta')::date - 10, 'Move', 'posted');
+
+INSERT INTO public.barapp_closing_periods
+  (id,outlet_id,division_id,closing_date,status,approved_by,approved_at)
+VALUES
+ ('a1000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 10,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a1000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 10,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a1000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000003',(now() AT TIME ZONE 'Asia/Jakarta')::date - 9,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a1000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000004',(now() AT TIME ZONE 'Asia/Jakarta')::date - 9,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour');
+
+UPDATE public.barapp_stock_out
+SET from_division_id='b1000000-0000-4000-8000-000000000003',
+    to_division_id='b1000000-0000-4000-8000-000000000004',
+    out_date=(now() AT TIME ZONE 'Asia/Jakarta')::date - 9
+WHERE id='c1000000-0000-4000-8000-000000000001';
+
+DO $move_update_test$
+DECLARE
+  v_dirty integer;
+  v_audit integer;
+BEGIN
+  SELECT count(*) INTO v_dirty
+  FROM public.barapp_closing_periods
+  WHERE id IN (
+   'a1000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002',
+   'a1000000-0000-4000-8000-000000000003','a1000000-0000-4000-8000-000000000004'
+  ) AND status='needs_reconciliation';
+  SELECT count(*) INTO v_audit
+  FROM public.audit_log
+  WHERE action='closing_marked_needs_reconciliation'
+    AND record_id IN (
+     'a1000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002',
+     'a1000000-0000-4000-8000-000000000003','a1000000-0000-4000-8000-000000000004'
+    );
+  IF v_dirty <> 4 OR v_audit <> 4 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: Move UPDATE must dirty/audit old source, old destination, new source, and new destination (dirty %, audit %)', v_dirty, v_audit;
+  END IF;
+END;
+$move_update_test$;
+
+-- Parent/line UPDATE regression: changing a line's parent must reconcile both the
+-- old and new parent date/division for Supplies, Daily SO, sales, and production inputs.
+INSERT INTO public.barapp_supplies_so(id,division_id,so_date,status) VALUES
+ ('e1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 12,'submitted'),
+ ('e1000000-0000-4000-8000-000000000002','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 11,'submitted');
+INSERT INTO public.barapp_supplies_so_lines(id,so_id) VALUES
+ ('f1000000-0000-4000-8000-000000000001','e1000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.cogs_daily_so(id,division_id,so_date,status) VALUES
+ ('e2000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 14,'submitted'),
+ ('e2000000-0000-4000-8000-000000000002','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 13,'submitted');
+INSERT INTO public.cogs_daily_so_lines(id,so_id) VALUES
+ ('f2000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.cogs_menu_sales(id,division_id,sold_at,status) VALUES
+ ('e3000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 16,'posted'),
+ ('e3000000-0000-4000-8000-000000000002','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 15,'posted');
+INSERT INTO public.cogs_menu_sales_lines(id,sale_id) VALUES
+ ('f3000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.cogs_production_batches(id,division_id,produced_at,status) VALUES
+ ('e4000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 18,'posted'),
+ ('e4000000-0000-4000-8000-000000000002','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 17,'posted');
+INSERT INTO public.cogs_production_inputs(id,batch_id) VALUES
+ ('f4000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001');
+
+INSERT INTO public.barapp_closing_periods
+  (id,outlet_id,division_id,closing_date,status,approved_by,approved_at)
+VALUES
+ ('a2000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 12,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 11,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 14,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 13,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000005','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 16,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000006','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 15,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000007','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001',(now() AT TIME ZONE 'Asia/Jakarta')::date - 18,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour'),
+ ('a2000000-0000-4000-8000-000000000008','d1000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000002',(now() AT TIME ZONE 'Asia/Jakarta')::date - 17,'approved','66666666-6666-6666-6666-666666666666',now()-interval '1 hour');
+
+UPDATE public.barapp_supplies_so_lines SET so_id='e1000000-0000-4000-8000-000000000002' WHERE id='f1000000-0000-4000-8000-000000000001';
+UPDATE public.cogs_daily_so_lines SET so_id='e2000000-0000-4000-8000-000000000002' WHERE id='f2000000-0000-4000-8000-000000000001';
+UPDATE public.cogs_menu_sales_lines SET sale_id='e3000000-0000-4000-8000-000000000002' WHERE id='f3000000-0000-4000-8000-000000000001';
+UPDATE public.cogs_production_inputs SET batch_id='e4000000-0000-4000-8000-000000000002' WHERE id='f4000000-0000-4000-8000-000000000001';
+
+DO $line_parent_update_test$
+DECLARE
+  v_dirty integer;
+  v_audit integer;
+BEGIN
+  SELECT count(*) INTO v_dirty
+  FROM public.barapp_closing_periods
+  WHERE id IN (
+   'a2000000-0000-4000-8000-000000000001','a2000000-0000-4000-8000-000000000002',
+   'a2000000-0000-4000-8000-000000000003','a2000000-0000-4000-8000-000000000004',
+   'a2000000-0000-4000-8000-000000000005','a2000000-0000-4000-8000-000000000006',
+   'a2000000-0000-4000-8000-000000000007','a2000000-0000-4000-8000-000000000008'
+  ) AND status='needs_reconciliation';
+  SELECT count(*) INTO v_audit
+  FROM public.audit_log
+  WHERE action='closing_marked_needs_reconciliation'
+    AND record_id IN (
+     'a2000000-0000-4000-8000-000000000001','a2000000-0000-4000-8000-000000000002',
+     'a2000000-0000-4000-8000-000000000003','a2000000-0000-4000-8000-000000000004',
+     'a2000000-0000-4000-8000-000000000005','a2000000-0000-4000-8000-000000000006',
+     'a2000000-0000-4000-8000-000000000007','a2000000-0000-4000-8000-000000000008'
+    );
+  IF v_dirty <> 8 OR v_audit <> 8 THEN
+    RAISE EXCEPTION 'TEST_FAILURE: parent-line updates must dirty/audit both parent periods for all four line types (dirty %, audit %)', v_dirty, v_audit;
+  END IF;
+END;
+$line_parent_update_test$;
+
 INSERT INTO public.divisions (id,outlet_id,active)
 VALUES (:'test_division_id'::uuid, :'test_outlet_id'::uuid, true);
 
