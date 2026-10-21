@@ -184,6 +184,11 @@ main{padding:18px 14px;max-width:1180px;margin:0 auto}
 .dlg>.i-warn,.mbx>.i-warn{background:color-mix(in srgb,var(--gd) 18%,transparent);color:var(--gd);border-color:color-mix(in srgb,var(--gd) 40%,transparent)}
 .dlg>.i-err,.mbx>.i-err{background:color-mix(in srgb,var(--terra) 16%,transparent);color:var(--terra);border-color:color-mix(in srgb,var(--terra) 40%,transparent)}
 
+
+/* ---------- GLOBAL FLAT UI: hapus bayangan di seluruh fitur ---------- */
+*,*::before,*::after{box-shadow:none!important;text-shadow:none!important;filter:none!important}
+.btn,.btn:hover,.btn:active,.btn:focus,.btn.s,.btn.o,.btn.d,.btn.x,.ibtn,.ibtn:hover,.ibtn:active,.fab,.fab:hover,.fab:active,.card,.card:hover,.dd,.md,#cdpop,#t .w,.statusbar,.taskbar,.sdi,.modal,.popup,.toast,input:focus,select:focus,textarea:focus,.sb button.on{box-shadow:none!important;text-shadow:none!important}
+.btn:hover,.btn:active,.btn.s:hover,.btn.o:hover,.btn.d:hover,.btn.x:hover,.fab:hover{transform:none!important}
 /* ---------- tombol ---------- */
 .btn{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:84px;min-height:44px;padding:9px 18px;margin:2px 4px 6px 2px;border-radius:14px;font-family:var(--fh),'Fredoka',sans-serif;font-weight:600;font-size:15px;letter-spacing:.2px;background:var(--ac);color:var(--onac);border:2px solid var(--dk);box-shadow:0 5px 0 0 var(--dk);transition:transform .15s cubic-bezier(.2,0,0,1),box-shadow .15s,background .2s,border-color .2s,filter .2s}
 .btn:hover{filter:none;background:var(--tt2);transform:translateY(-2px);box-shadow:0 7px 0 0 var(--dk)}
