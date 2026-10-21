@@ -8,11 +8,17 @@ INSERT INTO public.path_probe(value) VALUES ('trusted-public-object');
 
 CREATE OR REPLACE FUNCTION public.path_probe_value()
 RETURNS text
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $function$
-  SELECT value FROM path_probe ORDER BY value LIMIT 1
+DECLARE
+  v_value text;
+BEGIN
+  -- Dynamic SQL forces relation lookup at invocation time and reproduces pg_temp shadowing.
+  EXECUTE 'SELECT value FROM path_probe ORDER BY value LIMIT 1' INTO v_value;
+  RETURN v_value;
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.path_probe_with_auth()
