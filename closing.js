@@ -395,9 +395,9 @@ window.__clShowHistoryDetail=async(date)=>{
  modal('<div class="cl-history-modal"><div class="cl-history-modal-head"><h3 style="margin:0">LAPORAN DAILY SO</h3><p class="mu" style="margin:6px 0 14px">Tanggal: <b>'+esc(date)+'</b> · Divisi: <b id="cl-history-division">—</b></p><p class="mu">Status closing: <b>'+esc(status)+'</b> · Waktu approval: '+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</p></div><div class="cl-history-modal-table"><div id="cl-history-detail-body"><p class="mu">Memuat laporan Daily SO…</p></div></div><div class="btns cl-history-modal-actions"><button class="btn s" onclick="window.__clDownloadClosingExcelForDate(' + "'"+esc(date)+"'" + ')">Unduh Excel</button><button class="btn" onclick="closeM()">Tutup</button></div></div>');
  const host=document.getElementById('cl-history-detail-body');if(!host)return;
  try{
-  if(typeof cgLoad==='function'&&!CG.ready)await cgLoad(true);
-  if(typeof invLoad==='function'&&!INV.ready)await invLoad(true);
-  const division=CL.division;
+  if(typeof cgLoad==='function')await cgLoad(true);
+  if(typeof invLoad==='function')await invLoad(true);
+  const division=h.division_id||CL.division;
   const divName=(typeof opsDivName==='function'?opsDivName(division):(CL.divisions||[]).find(x=>String(x.id)===String(division))?.name)||'—';
   const dh=document.getElementById('cl-history-division');if(dh)dh.textContent=divName;
   const so=(CG.dailySO||[]).find(x=>String(x.division_id)===String(division)&&String(x.so_date)===String(date)&&x.status==='submitted');
