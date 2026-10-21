@@ -30,7 +30,8 @@ function cloneWorkbook(wb) {
 }
 
 function setCell(wb, sheet, row, column, value) {
-  wb.Sheets[sheet].rows[row][column] = value;
+  // Existing test column indexes refer to the pre-date-column worksheet layout.
+  wb.Sheets[sheet].rows[row][column + (sheet === '_META' ? 0 : 1)] = value;
 }
 
 function createHarness(options = {}) {
@@ -64,14 +65,6 @@ function createHarness(options = {}) {
   };
   const XLSX = {
     utils: {
-      book_new: () => ({ SheetNames: [], Sheets: {} }),
-      aoa_to_sheet: rows => ({ rows: rows.map(row => row.slice()) }),
-      book_append_sheet: (wb, sheet, name) => {
-        wb.SheetNames.push(name);
-        wb.Sheets[name] = sheet;
-      },
-      encode_range: () => 'A1:A1',
-      encode_cell: ({ r, c }) => String.fromCharCode(65 + c) + String(r + 1),
       sheet_to_json: (sheet, options = {}) => {
         if (options.header === 1) return sheet.rows;
         const headers = sheet.rows[0] || [];
@@ -80,16 +73,89 @@ function createHarness(options = {}) {
         ));
       }
     },
-    writeFile: (wb, filename) => {
-      Object.assign(generated, wb);
-      generated.filename = filename;
-    },
     read: () => generated
   };
+  class MockWorksheet {
+    constructor(name) {
+      this.name = name;
+      this.rows = [];
+      this.cellMeta = {};
+      this.columns = {};
+      this.state = 'visible';
+      this.views = [];
+    }
+    addRow(values) {
+      this.rows.push(values.slice());
+      return this.getRow(this.rows.length);
+    }
+    getRow(number) {
+      const ws = this;
+      return {
+        set height(value) { ws.rowHeights = ws.rowHeights || {}; ws.rowHeights[number] = value; },
+        eachCell(callback) {
+          (ws.rows[number - 1] || []).forEach((_, index) => callback(ws.getCell(number, index + 1), index + 1));
+        }
+      };
+    }
+    getCell(row, column) {
+      const key = row + ':' + column;
+      if (!this.cellMeta[key]) this.cellMeta[key] = {};
+      return this.cellMeta[key];
+    }
+    getColumn(number) {
+      if (!this.columns[number]) this.columns[number] = { width: 18, hidden: false };
+      return this.columns[number];
+    }
+  }
+  class MockWorkbook {
+    constructor() {
+      this.worksheets = [];
+      this.definedNames = { ranges: [], add: (reference, name) => this.definedNames.ranges.push({ reference, name }) };
+      this.xlsx = {
+        writeBuffer: async () => {
+          generated.SheetNames = this.worksheets.map(ws => ws.name);
+          generated.Sheets = Object.fromEntries(this.worksheets.map(ws => {
+            const validations = {};
+            Object.entries(ws.cellMeta).forEach(([key, cell]) => {
+              if (cell.dataValidation) validations[key] = JSON.parse(JSON.stringify(cell.dataValidation));
+            });
+            return [ws.name, {
+              rows: ws.rows.map(row => row.slice()),
+              validations,
+              '!cols': Object.entries(ws.columns).map(([index, column]) => ({ index: Number(index), width: column.width, hidden: column.hidden }))
+            }];
+          }));
+          generated.Workbook = { Sheets: this.worksheets.map(ws => ({ name: ws.name, Hidden: ws.state === 'hidden' ? 1 : 0 })) };
+          generated.definedNames = this.definedNames.ranges.slice();
+          return new Uint8Array([80, 75, 3, 4]).buffer;
+        }
+      };
+    }
+    addWorksheet(name) {
+      const worksheet = new MockWorksheet(name);
+      this.worksheets.push(worksheet);
+      return worksheet;
+    }
+  }
+  const ExcelJS = { Workbook: MockWorkbook };
   const window = {
     XLSX,
+    ExcelJS,
     crypto: { randomUUID: () => '99999999-9999-4999-8999-999999999999' }
   };
+  const fakeDocument = {
+    head: { appendChild() { throw new Error('ExcelJS should already be loaded by the test harness.'); } },
+    body: { appendChild() {} },
+    createElement() {
+      return {
+        href: '',
+        download: '',
+        click() { generated.downloadName = this.download; },
+        remove() {}
+      };
+    }
+  };
+  const fakeURL = { createObjectURL: () => 'blob:barapp-test', revokeObjectURL: () => {} };
   const toastMessages = [];
   const modalMessages = [];
   const sb = () => ({
@@ -108,6 +174,7 @@ function createHarness(options = {}) {
     'clModuleOn', 'clToday', 'count', 'toast', 'esc', 'modal', 'closeM',
     'confirm', 'sb', 'opsErr', 'R', 'pg', 'isDeveloper', 'hasFeature',
     'cgLoad', 'invLoad', 'invAlpha', 'IC', 'T', 'adm', 'guard', 'go', 'load',
+    'document', 'Blob', 'URL',
     importerSource + '\nreturn { clDownloadTemplate, clPreviewTemplateImport, clConfirmTemplateImport };'
   )(
     CL, INV, CG, window, XLSX,
@@ -135,7 +202,10 @@ function createHarness(options = {}) {
     () => true,
     () => {},
     () => {},
-    async () => { counters.loads++; }
+    async () => { counters.loads++; },
+    fakeDocument,
+    Blob,
+    fakeURL
   );
   return { api, CL, INV, CG, generated, toastMessages, modalMessages, rpcCalls, counters, options };
 }
@@ -180,6 +250,14 @@ async function main() {
   assert.deepEqual(visible, ['Daily SO', 'Penjualan', 'Barang Masuk', 'Pengeluaran', 'Produksi WIP', 'Supplies']);
   assert.equal((base.Workbook.Sheets || []).find(sheet => sheet.name === '_META')?.Hidden, 1);
   assert(base.Sheets._META.rows.some(row => row[0] === 'TARGET_DATE' && row[1] === '2026-10-20'));
+  for (const sheet of visible) {
+    assert.equal(base.Sheets[sheet].rows[0][0], 'TANGGAL_TARGET');
+    assert(base.Sheets[sheet].rows.slice(1).every(row => row[0] === '2026-10-20'));
+  }
+  assert.equal(base.Sheets.Pengeluaran.validations['2:5']?.type, 'list');
+  assert(base.Sheets.Pengeluaran.validations['2:5']?.formulae?.[0].includes('Waste'));
+  assert.equal(base.Sheets.Pengeluaran.validations['2:6']?.type, 'list');
+  assert(base.Sheets.Pengeluaran.validations['2:6']?.formulae?.[0].includes('Kitchen'));
 
   // Complete mixed workbook passes and correctly maps zero-valued stock counts to the RPC payload.
   const valid = cloneWorkbook(base);
@@ -268,10 +346,16 @@ async function main() {
   const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
   assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
 
+  const wrongRowDateHarness = createHarness();
+  const wrongRowDateBook = await makeTemplate(wrongRowDateHarness);
+  wrongRowDateBook.Sheets['Pengeluaran'].rows[1][0] = '2026-10-19';
+  const wrongRowDate = await preview(wrongRowDateHarness, wrongRowDateBook, 'wrong-row-date.xlsx');
+  assert(wrongRowDate.errors.some(error => error.includes('TANGGAL_TARGET harus 2026-10-20')));
+
   const duplicateHarness = createHarness();
   const duplicateBook = await makeTemplate(duplicateHarness);
   for (let row = 1; row < duplicateBook.Sheets['Daily SO'].rows.length; row++) setCell(duplicateBook, 'Daily SO', row, 2, 0);
-  duplicateBook.Sheets['Daily SO'].rows[2][3] = duplicateBook.Sheets['Daily SO'].rows[1][3];
+  duplicateBook.Sheets['Daily SO'].rows[2][4] = duplicateBook.Sheets['Daily SO'].rows[1][4];
   const duplicate = await preview(duplicateHarness, duplicateBook, 'duplicate.xlsx');
   assert(duplicate.errors.some(error => error.includes('daftar item/menu berubah')));
 
