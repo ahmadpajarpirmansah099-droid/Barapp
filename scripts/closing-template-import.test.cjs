@@ -35,6 +35,8 @@ function setCell(wb, sheet, row, column, value) {
 
 function createHarness(options = {}) {
   const generated = {};
+  const rpcCalls = [];
+  const counters = { loads: 0 };
   const div = { id: DIVISION_ID, name: 'Outlet Test', outlet_id: OUTLET_ID, active: true };
   const target = { id: TARGET_DIVISION_ID, name: 'Kitchen', outlet_id: OUTLET_ID, active: true };
   const items = options.items || [
@@ -95,14 +97,18 @@ function createHarness(options = {}) {
     select() { return this; },
     eq() { return this; },
     maybeSingle: async () => ({ data: null, error: null }),
-    rpc: async () => { throw new Error('Import parser test must not call a write RPC.'); }
+    rpc: async (name, args) => {
+      if (!options.allowRpc) throw new Error('Unexpected RPC call in parser-only test.');
+      rpcCalls.push({ name, args });
+      return options.rpcResult || { data: { summary: {} }, error: null };
+    }
   });
   const api = new Function(
     'CL', 'INV', 'CG', 'window', 'XLSX', 'clDivision', 'clCanAccess',
     'clModuleOn', 'clToday', 'count', 'toast', 'esc', 'modal', 'closeM',
     'confirm', 'sb', 'opsErr', 'R', 'pg', 'isDeveloper', 'hasFeature',
-    'cgLoad', 'invLoad', 'invAlpha', 'IC', 'T', 'adm', 'guard', 'go',
-    importerSource + '\nreturn { clDownloadTemplate, clPreviewTemplateImport };'
+    'cgLoad', 'invLoad', 'invAlpha', 'IC', 'T', 'adm', 'guard', 'go', 'load',
+    importerSource + '\nreturn { clDownloadTemplate, clPreviewTemplateImport, clConfirmTemplateImport };'
   )(
     CL, INV, CG, window, XLSX,
     value => String(value) === DIVISION_ID ? div : String(value) === TARGET_DIVISION_ID ? target : null,
@@ -128,9 +134,10 @@ function createHarness(options = {}) {
     {},
     () => true,
     () => {},
-    () => {}
+    () => {},
+    async () => { counters.loads++; }
   );
-  return { api, CL, INV, CG, generated, toastMessages, modalMessages };
+  return { api, CL, INV, CG, generated, toastMessages, modalMessages, rpcCalls, counters, options };
 }
 
 async function makeTemplate(harness) {
@@ -297,6 +304,36 @@ async function main() {
   const oversized = await preview(rowCapHarness, oversizedBook, 'too-many-daily-rows.xlsx');
   assert.equal(oversized.payload.daily_so.length, 1001);
   assert(oversized.errors.some(error => error.includes('Daily SO: maksimal 1000')));
+
+  // Confirmation reaches only the atomic RPC, carries the verified payload, and refreshes caches.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, sales: 1, stock_in: 1, opening_wip: 0, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (let row = 1; row < submitBook.Sheets['Daily SO'].rows.length; row++) setCell(submitBook, 'Daily SO', row, 2, 0);
+  setCell(submitBook, 'Penjualan', 1, 1, 2);
+  setCell(submitBook, 'Barang Masuk', 1, 2, 2);
+  setCell(submitBook, 'Pengeluaran', 1, 2, 1);
+  setCell(submitBook, 'Pengeluaran', 1, 3, 'Waste');
+  setCell(submitBook, 'Produksi WIP', 1, 3, 1);
+  for (let row = 1; row < submitBook.Sheets.Supplies.rows.length; row++) setCell(submitBook, 'Supplies', row, 2, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit-mock.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.supplies[0].actual_qty_base, 0);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  // A plan with preview errors cannot reach the RPC even when the user confirms.
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setCell(blockedBook, 'Daily SO', 1, 2, 0);
+  await preview(blockedHarness, blockedBook, 'blocked-submit.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
 
   console.log('Approval Closing Excel importer: all tests passed.');
 }
