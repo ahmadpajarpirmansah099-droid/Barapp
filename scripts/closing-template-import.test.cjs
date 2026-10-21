@@ -352,6 +352,21 @@ async function main() {
   const wrongRowDate = await preview(wrongRowDateHarness, wrongRowDateBook, 'wrong-row-date.xlsx');
   assert(wrongRowDate.errors.some(error => error.includes('TANGGAL_TARGET harus 2026-10-20')));
 
+  // Spreadsheet apps may normalize ISO dates into Excel serial numbers when saving XLSX.
+  const serialDateHarness = createHarness();
+  const serialDateBook = await makeTemplate(serialDateHarness);
+  const excelDateSerial = (Date.UTC(2026, 9, 20) - Date.UTC(1899, 11, 30)) / 86400000;
+  for (const sheetName of visible) {
+    for (let row = 1; row < serialDateBook.Sheets[sheetName].rows.length; row++) {
+      serialDateBook.Sheets[sheetName].rows[row][0] = excelDateSerial;
+    }
+  }
+  serialDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = excelDateSerial;
+  setCell(serialDateBook, 'Penjualan', 1, 1, 1);
+  const serialDate = await preview(serialDateHarness, serialDateBook, 'serial-date.xlsx');
+  assert.deepEqual(serialDate.errors, []);
+  assert.equal(serialDate.payload.sales.length, 1);
+
   const duplicateHarness = createHarness();
   const duplicateBook = await makeTemplate(duplicateHarness);
   for (let row = 1; row < duplicateBook.Sheets['Daily SO'].rows.length; row++) setCell(duplicateBook, 'Daily SO', row, 2, 0);
