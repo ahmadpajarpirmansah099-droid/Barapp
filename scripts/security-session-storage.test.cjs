@@ -3,9 +3,9 @@ const fs = require('node:fs');
 
 const html = fs.readFileSync('index.html', 'utf8');
 const svStart = html.indexOf('const sv=()=>{try{const {emp,att,...rest}=D;');
-const svEnd = html.indexOf('; const $=', svStart);
+const svEnd = html.indexOf('const $=', svStart);
 assert.ok(svStart >= 0 && svEnd > svStart, 'Could not locate Barapp sv() persistence function');
-const svSource = html.slice(svStart, svEnd + 1);
+const svSource = html.slice(svStart, html.lastIndexOf(';', svEnd) + 1);
 const makeStorage = (seed = {}) => {
   const map = new Map(Object.entries(seed).map(([k, v]) => [k, String(v)]));
   return {
