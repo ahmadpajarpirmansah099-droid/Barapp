@@ -1110,7 +1110,7 @@ const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public H
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
 const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return r=='dev'?'D':(r=='div_admin'||r=='hr'||r=='legacy_admin')?'A':null};
-let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
+let D={emp:[],per:[],att:[],ot:[],cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');if(persisted&&persisted.me&&persisted.me.r==='K'){delete persisted.me;localStorage.setItem(K,JSON.stringify(persisted))}}catch(e){}
 try{sessionStorage.removeItem('barapp_staff_session_v1')}catch(e){}
