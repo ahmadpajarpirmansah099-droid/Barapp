@@ -138,7 +138,7 @@ function clExcelMakeTemplate(){
   const wb=XLSX.utils.book_new();
   clExcelAddSheet(wb,'Daily SO',['ID Item','Jenis Item','Nama Item','Satuan Dasar','Jumlah Fisik','Catatan'],
    m.materials.map(x=>[x.id,'material',x.name,x.base_unit||'UNIT','','']).concat(m.wips.map(x=>[x.id,'wip',x.name,x.yield_unit||'UNIT','',''])));
-  clExcelAddSheet(wb,'Sales',['ID Menu','Nama Menu','Qty Terjual','Harga Jual','Catatan'],m.menus.map(x=>[x.id,x.name,'',x.selling_price??x.price??'','']));
+  clExcelAddSheet(wb,'Sales',['ID Menu','Nama Menu','Qty Terjual','Harga Jual','Catatan'],m.menus.map(x=>[x.id,x.name,'','','']));
   clExcelAddSheet(wb,'Barang Masuk',['ID Item','Nama Item','Qty Masuk','Satuan','Total Faktur','Catatan'],m.items.map(x=>[x.id,x.name,'',x.base_unit||'UNIT','','']));
   clExcelAddSheet(wb,'Pengeluaran',['Jenis Item','ID Item/WIP','Nama Item','Qty','Satuan','Kategori','ID Divisi Tujuan','Nama Divisi Tujuan','Catatan'],
    m.items.map(x=>['material',x.id,x.name,'',x.base_unit||'UNIT','Waste','','','']).concat(m.wips.map(x=>['wip',x.id,x.name,'',x.yield_unit||'UNIT','Waste','','',''])));
@@ -168,6 +168,8 @@ function clExcelParseWorkbook(wb,fileName){
  const metaRows=wb.Sheets.Meta?XLSX.utils.sheet_to_json(wb.Sheets.Meta,{header:1,defval:'',raw:true}):[];
  const vr=metaRows.find(r=>clNormExcel(r[0])==='version');
  if(!vr||String(vr[1])!=='1')errors.push('Versi template tidak didukung. Unduh template terbaru dari Approval Closing.');
+ const metaDiv=metaRows.find(r=>clNormExcel(r[0])==='divisionid');
+ if(!metaDiv||String(metaDiv[1]||'')!==division)errors.push('Template dibuat untuk divisi lain atau metadata divisi hilang. Unduh template dari divisi yang dipilih saat ini.');
  if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>clToday())errors.push('Tanggal closing tidak valid atau berada di masa depan.');
  if(!division||!clDivision(division))errors.push('Divisi tidak valid. Muat ulang Approval Closing dan pilih divisi yang benar.');
  const rd=clExcelReadSheet(wb,'Daily SO'),rs=clExcelReadSheet(wb,'Sales'),ri=clExcelReadSheet(wb,'Barang Masuk'),ro=clExcelReadSheet(wb,'Pengeluaran'),rp=clExcelReadSheet(wb,'Produksi WIP'),ru=clExcelReadSheet(wb,'Suplies');
@@ -224,6 +226,7 @@ function clExcelParseWorkbook(wb,fileName){
  if(dailyOn&&!m.materials.length&&!m.wips.length)errors.push('Tidak ada item aktif untuk Daily SO di divisi ini.');
  if(supplyOn&&!m.supplies.length)errors.push('Tidak ada item aktif yang ditandai sebagai Suplies di divisi ini.');
  const total=payload.daily_so.length+payload.sales.length+payload.stock_in.length+payload.opening_wip.length+payload.stock_out.length+payload.production.length+payload.supplies.length;
+ [['Daily SO',payload.daily_so.length,1000],['Sales',payload.sales.length,200],['Barang Masuk',payload.stock_in.length,1000],['Saldo Awal WIP',payload.opening_wip.length,500],['Pengeluaran',payload.stock_out.length,1000],['Produksi WIP',payload.production.length,200],['Suplies',payload.supplies.length,1000]].forEach(x=>{if(x[1]>x[2])errors.push(x[0]+' melebihi batas '+x[2]+' baris per impor.');});
  if(!total)errors.push('Tidak ada data transaksi. Isi minimal satu sheet; Daily SO dan Suplies harus lengkap jika diisi.');
  if(payload.daily_so.length&&count('daily_so',division,date)>0)errors.push('Daily SO sudah tersimpan pada tanggal ini. Batalkan rekaman lama melalui alur resmi sebelum impor.');
  if(payload.sales.length&&CG.sales.some(x=>String(x.division_id)===division&&String(x.sold_at)===date&&x.status==='posted'))errors.push('Sudah ada transaksi Sales pada tanggal ini; sheet Sales tidak bisa diimpor ulang.');
