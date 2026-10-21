@@ -230,6 +230,24 @@ async function main() {
   const staleYield = await preview(staleYieldHarness, staleYieldBook, 'stale-yield.xlsx');
   assert(staleYield.errors.some(error => error.includes('Hasil per batch berubah')));
 
+  const staleItemNameHarness = createHarness();
+  const staleItemNameBook = await makeTemplate(staleItemNameHarness);
+  setCell(staleItemNameBook, 'Daily SO', 1, 0, 'Old Coffee Label');
+  const staleItemName = await preview(staleItemNameHarness, staleItemNameBook, 'stale-item-name.xlsx');
+  assert(staleItemName.errors.some(error => error.includes('Nama item berubah')));
+
+  const staleMenuNameHarness = createHarness();
+  const staleMenuNameBook = await makeTemplate(staleMenuNameHarness);
+  setCell(staleMenuNameBook, 'Penjualan', 1, 0, 'Old Menu Label');
+  const staleMenuName = await preview(staleMenuNameHarness, staleMenuNameBook, 'stale-menu-name.xlsx');
+  assert(staleMenuName.errors.some(error => error.includes('Nama menu berubah')));
+
+  const staleIncomingNameHarness = createHarness();
+  const staleIncomingNameBook = await makeTemplate(staleIncomingNameHarness);
+  setCell(staleIncomingNameBook, 'Barang Masuk', 1, 0, 'Old Material Label');
+  const staleIncomingName = await preview(staleIncomingNameHarness, staleIncomingNameBook, 'stale-incoming-name.xlsx');
+  assert(staleIncomingName.errors.some(error => error.includes('Nama item berubah')));
+
   // Metadata, hidden catalogue IDs, and duplicate master references must not silently pass.
   const wrongDivisionHarness = createHarness();
   const wrongDivisionBook = await makeTemplate(wrongDivisionHarness);
