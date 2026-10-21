@@ -335,6 +335,13 @@ details[open]>summary::after{transform:rotate(180deg)}
 .lg-top{display:flex;justify-content:flex-end;margin:-14px -10px 0 0}
 .logo{width:68px;height:68px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;background:var(--ac2);color:var(--tt);border:2.5px solid var(--dk);box-shadow:0 5px 0 0 var(--dk);border-radius:22px;animation:komFloat 6s ease-in-out infinite}
 .brand-wave{position:relative;display:flex;align-items:center;justify-content:center;gap:.015em;min-height:78px;margin:6px auto 14px;color:var(--tx);font-size:clamp(46px,12vw,76px);font-weight:900;letter-spacing:-.075em;line-height:1.05;user-select:none;-webkit-user-select:none;touch-action:pan-y;isolation:isolate}
+.brand-wave-art{display:grid;place-items:center;width:100%;max-width:380px;min-height:0;margin:4px auto 14px;line-height:1;letter-spacing:normal;touch-action:pan-y;overflow:visible}
+.brand-wave-art .barapp-leaf-logo{display:block;width:100%;max-width:360px;height:auto;max-height:none;overflow:visible}
+.brand-wave-art .barapp-letter{transform-box:fill-box;transform-origin:center;animation:barappLoginWave 3.2s ease-in-out infinite;animation-delay:calc(var(--i,0)*-.19s);will-change:transform}
+.brand-wave-art .lgimg{display:block;width:auto;max-width:100%;height:auto;max-height:112px;object-fit:contain;animation:barappLogoBob 4.8s ease-in-out infinite}
+@keyframes barappLoginWave{0%,100%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(0deg)}20%{transform:translate(var(--repel-x,0px),calc(var(--repel-y,0px) - 8px)) rotate(-4deg)}40%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(2deg)}60%{transform:translate(var(--repel-x,0px),calc(var(--repel-y,0px) - 5px)) rotate(4deg)}80%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(-1deg)}}
+@keyframes barappLogoBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-.5deg)}}
+@media(max-width:480px){.brand-wave-art{max-width:100%;margin-top:2px}.brand-wave-art .barapp-leaf-logo{width:100%}}
 .bw-letter{position:relative;display:inline-block;animation:barappWave 3.2s ease-in-out infinite;animation-delay:calc(var(--i)*-.19s);will-change:transform}
 .bw-letter>span{display:inline-block;transform-origin:50% 65%;transition:transform .13s cubic-bezier(.2,.8,.2,1);will-change:transform}
 @keyframes barappWave{0%,100%{transform:translateY(0) rotate(0deg)}20%{transform:translateY(-10px) rotate(-4deg)}40%{transform:translateY(1px) rotate(2deg)}60%{transform:translateY(-5px) rotate(4deg)}80%{transform:translateY(0) rotate(-1deg)}}
@@ -1322,11 +1329,11 @@ ICP.utensils=ICP.soup;
 ICP['arrow-left-right']='<path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/>';
 /* Playful Barapp wordmark: desktop cursor repel and mobile tap reaction. */
 const barappLogoRepel=(()=>{
-  let raf=0,lastX=0,lastY=0;
+  let raf=0,lastX=0,lastY=0,touchResetTimer=0,activeTouchSvg=null;
   const excitementTimers=new WeakMap();
   const desktop=()=>window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches;
   const reducedMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const reset=()=>document.querySelectorAll('.barapp-letter').forEach(el=>{el.style.transform='translate(0px, 0px)';});
+  const reset=()=>document.querySelectorAll('.barapp-letter').forEach(el=>{el.style.setProperty('--repel-x','0px');el.style.setProperty('--repel-y','0px');});
   const excite=(svg,duration=840)=>{
     if(!svg||reducedMotion())return;
     const previous=excitementTimers.get(svg);
@@ -1351,8 +1358,9 @@ const barappLogoRepel=(()=>{
         const dx=cx-lastX,dy=cy-lastY,d=Math.hypot(dx,dy),radius=132;
         if(d<radius&&d>0){
           const power=(1-d/radius)*11;
-          el.style.transform='translate('+((dx/d)*power).toFixed(2)+'px, '+((dy/d)*power).toFixed(2)+'px)';
-        }else el.style.transform='translate(0px, 0px)';
+          el.style.setProperty('--repel-x',((dx/d)*power).toFixed(2)+'px');
+          el.style.setProperty('--repel-y',((dy/d)*power).toFixed(2)+'px');
+        }else {el.style.setProperty('--repel-x','0px');el.style.setProperty('--repel-y','0px');}
       });
     });
   };
@@ -1360,6 +1368,8 @@ const barappLogoRepel=(()=>{
     if(e.pointerType!=='touch'||desktop()||reducedMotion())return;
     const svg=e.target.closest?.('.barapp-leaf-logo');
     if(!svg)return;
+    if(touchResetTimer)clearTimeout(touchResetTimer);
+    activeTouchSvg=svg;
     excite(svg,900);
     const box=svg.getBoundingClientRect();
     const centerX=box.left+box.width/2,centerY=box.top+box.height/2;
@@ -1368,7 +1378,8 @@ const barappLogoRepel=(()=>{
       const dx=b.left+b.width/2-centerX;
       const x=Math.max(-10,Math.min(10,dx/box.width*23));
       const y=(i%2===0?1:-1)*(2.5+(i%3)*.8);
-      el.style.transform='translate('+x.toFixed(2)+'px, '+y.toFixed(2)+'px)';
+      el.style.setProperty('--repel-x',x.toFixed(2)+'px');
+      el.style.setProperty('--repel-y',y.toFixed(2)+'px');
     });
   };
   const desktopLogoEnter=(e)=>{
@@ -1377,7 +1388,15 @@ const barappLogoRepel=(()=>{
     const previous=e.relatedTarget?.closest?.('.barapp-leaf-logo');
     if(svg&&svg!==previous)excite(svg,760);
   };
-  const touchRelease=(e)=>{if(e.pointerType==='touch')reset();};
+  const touchRelease=(e)=>{
+    if(e.pointerType!=='touch'||!activeTouchSvg)return;
+    const svg=activeTouchSvg;activeTouchSvg=null;
+    if(touchResetTimer)clearTimeout(touchResetTimer);
+    touchResetTimer=setTimeout(()=>{
+      svg.querySelectorAll('.barapp-letter').forEach(el=>{el.style.setProperty('--repel-x','0px');el.style.setProperty('--repel-y','0px');});
+      touchResetTimer=0;
+    },560);
+  };
   document.addEventListener('pointermove',move,{passive:true});
   document.addEventListener('pointerover',desktopLogoEnter,{passive:true});
   document.addEventListener('pointerdown',touchScatter,{passive:true});
@@ -1388,7 +1407,7 @@ const barappLogoRepel=(()=>{
   window.addEventListener('resize',reset,{passive:true});
   return {reset};
 })();
-const logoHtml=(z)=>TH.logo?'<img class="lgimg" src="'+TH.logo+'" alt="Logo">':`<svg class="barapp-leaf-logo" width="${Math.max(160,z*5)}" height="${Math.max(58,z*1.8)}" viewBox="0 0 360 112" role="img" aria-label="Barapp"><g stroke="var(--dk)" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"><g class="barapp-letter-group" text-anchor="middle" font-family="Fredoka, 'Trebuchet MS', sans-serif" font-size="76" font-weight="700" fill="#FAF6EE"><text class="barapp-letter" x="73" y="79">B</text><text class="barapp-letter" x="123" y="79">a</text><text class="barapp-letter" x="170" y="79">r</text><text class="barapp-letter" x="211" y="79">a</text><text class="barapp-letter" x="254" y="79">p</text><text class="barapp-letter" x="302" y="79">p</text></g></g>
+const logoHtml=(z)=>TH.logo?'<img class="lgimg" src="'+TH.logo+'" alt="Logo">':`<svg class="barapp-leaf-logo" width="${Math.max(160,z*5)}" height="${Math.max(58,z*1.8)}" viewBox="0 0 360 112" role="img" aria-label="Barapp"><g stroke="var(--dk)" stroke-width="8" stroke-linejoin="round" paint-order="stroke fill"><g class="barapp-letter-group" text-anchor="middle" font-family="Fredoka, 'Trebuchet MS', sans-serif" font-size="76" font-weight="700" fill="#FAF6EE"><text class="barapp-letter" style="--i:0" x="73" y="79">B</text><text class="barapp-letter" style="--i:1" x="123" y="79">a</text><text class="barapp-letter" style="--i:2" x="170" y="79">r</text><text class="barapp-letter" style="--i:3" x="211" y="79">a</text><text class="barapp-letter" style="--i:4" x="254" y="79">p</text><text class="barapp-letter" style="--i:5" x="302" y="79">p</text></g></g>
 <g class="barapp-leaf-clusters" stroke="var(--dk)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
   <g class="barapp-leaf barapp-leaf-a"><path class="barapp-leaf-shape" d="M42 34C34 37 25 32 20 25C15 18 16 10 17 9C25 10 34 14 40 21C44 26 45 31 42 34Z" fill="var(--leaf-a)"/><path class="barapp-leaf-vein" d="M18.5 11.5C25 19 33 27 42 33" fill="none" stroke="var(--leaf-vein)" stroke-width="1.6"/><path d="M24 19L22 26M30 25L28 30M31 25L38 22" fill="none" stroke="var(--leaf-light)" stroke-width="1.15"/></g>
   <g class="barapp-leaf barapp-leaf-b"><path class="barapp-leaf-shape" d="M317 34C325 34 333 29 337 22C341 15 337 9 336 8C328 10 320 15 316 22C313 27 314 31 317 34Z" fill="var(--leaf-b)"/><path class="barapp-leaf-vein" d="M335 11C329 19 322 27 316 33" fill="none" stroke="var(--leaf-vein)" stroke-width="1.6"/><path d="M329 19L331 26M323 25L325 30M323 25L317 22" fill="none" stroke="var(--leaf-light)" stroke-width="1.15"/></g>
@@ -1727,7 +1746,7 @@ function login(){
   return `<section class="lgs">${scene}
     <div class="lgc">
       ${lg}
-      <div class="brand-wave" role="img" aria-label="BARAPP" onpointerdown="logoWaveMove(event,this)" onpointermove="logoWaveMove(event,this)" onpointerleave="logoWaveReset(this)" onpointerup="logoWaveReset(this)" onpointercancel="logoWaveReset(this)"><span class="bw-letter" style="--i:0"><span aria-hidden="true">B</span></span><span class="bw-letter" style="--i:1"><span aria-hidden="true">A</span></span><span class="bw-letter" style="--i:2"><span aria-hidden="true">R</span></span><span class="bw-letter" style="--i:3"><span aria-hidden="true">A</span></span><span class="bw-letter" style="--i:4"><span aria-hidden="true">P</span></span><span class="bw-letter" style="--i:5"><span aria-hidden="true">P</span></span></div>
+      <div class="brand-wave brand-wave-art" role="img" aria-label="BARAPP">${logoHtml(42)}</div>
       <p class="sub">${esc(TH.sub)} · ${L('Pilih cara masuk ke aplikasi.','Choose how to enter the application.')}</p>
       ${st}
       <div class="lgf">
@@ -3464,7 +3483,7 @@ if(x1>x0&&y1>y0){const cw=x1-x0+1,ch=y1-y0+1,c2=document.createElement('canvas')
 TH.logo=c.toDataURL('image/png');logoDone()};im.src=T.lgsrc}
 function logoDone(){applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
 function logoDel(){TH.logo='';T.lgsrc=null;applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
-function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Simbol tampil di sidebar dan header; login memakai BARAPP animasi.','Symbol appears in sidebar and header; login uses the animated BARAPP wordmark.')}</small></div>`}
+function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Logo ilustrasi dan tulisan tampil di sidebar, header, dan login; logo kustom tetap didukung.','Symbol and illustrated wordmark appear in sidebar, header, and login; custom logos stay enabled.')}</small></div>`}
 
 function quickHtml(){const m=TH.mode=='dark'?'dark':'light';return [['bg','Warna latar'],['tx','Warna teks'],['ac','Warna utama (tombol)']].map(([k,l])=>`<label class="cr"><span><b>${l}</b></span><input type="color" value="${TH[m][k]}" oninput="TH.${m}['${k}']=this.value;applyTheme()"></label>`).join('')}
 function thTab(k,btn){document.getElementById('th_lg').style.display=k=='lg'?'':'none';document.getElementById('th_in').style.display=k=='in'?'':'none';btn.parentElement.querySelectorAll('.mb').forEach(b=>b.classList.toggle('on',b===btn))}
