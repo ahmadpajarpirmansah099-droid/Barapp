@@ -19,9 +19,9 @@ BEGIN
     INTO v_total, v_missing, v_unhardened
   FROM (
     SELECT p.oid,
-      (SELECT substring(cfg FROM length('search_path=') + 1)
-         FROM unnest(coalesce(p.proconfig, ARRAY[]::text[])) cfg
-        WHERE cfg LIKE 'search_path=%'
+      (SELECT substring(settings.setting FROM length('search_path=') + 1)
+         FROM unnest(coalesce(p.proconfig, ARRAY[]::text[])) AS settings(setting)
+        WHERE settings.setting LIKE 'search_path=%'
         LIMIT 1) AS function_path
     FROM pg_catalog.pg_proc p
     JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
@@ -33,7 +33,7 @@ BEGIN
       v_total, v_missing, v_unhardened;
   END IF;
 
-  SELECT substring(cfg FROM length('search_path=') + 1) INTO v_path
+  SELECT substring(settings.setting FROM length('search_path=') + 1) INTO v_path
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
   CROSS JOIN LATERAL unnest(coalesce(p.proconfig, ARRAY[]::text[])) cfg
@@ -43,7 +43,7 @@ BEGIN
     RAISE EXCEPTION 'TEST_FAILURE: expected auth schema retained in fixed path, got %', v_path;
   END IF;
 
-  SELECT substring(cfg FROM length('search_path=') + 1) INTO v_path
+  SELECT substring(settings.setting FROM length('search_path=') + 1) INTO v_path
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
   CROSS JOIN LATERAL unnest(coalesce(p.proconfig, ARRAY[]::text[])) cfg
