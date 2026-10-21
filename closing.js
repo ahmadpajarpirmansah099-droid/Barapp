@@ -171,7 +171,8 @@ function clExcelParseWorkbook(wb,fileName){
  if(!vr||String(vr[1])!=='1')errors.push('Versi template tidak didukung. Unduh template terbaru dari Approval Closing.');
  const metaDiv=metaRows.find(r=>clNormExcel(r[0])==='divisionid');
  if(!metaDiv||String(metaDiv[1]||'')!==division)errors.push('Template dibuat untuk divisi lain atau metadata divisi hilang. Unduh template dari divisi yang dipilih saat ini.');
- if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>clToday())errors.push('Tanggal closing tidak valid atau berada di masa depan.');
+ const dateObj=new Date(date+'T00:00:00Z');
+ if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(dateObj.getTime())||dateObj.toISOString().slice(0,10)!==date||date>clToday())errors.push('Tanggal closing tidak valid atau berada di masa depan.');
  if(!division||!clDivision(division))errors.push('Divisi tidak valid. Muat ulang Approval Closing dan pilih divisi yang benar.');
  const rd=clExcelReadSheet(wb,'Daily SO'),rs=clExcelReadSheet(wb,'Sales'),ri=clExcelReadSheet(wb,'Barang Masuk'),ro=clExcelReadSheet(wb,'Pengeluaran'),rp=clExcelReadSheet(wb,'Produksi WIP'),ru=clExcelReadSheet(wb,'Suplies');
  const kd=['Jumlah Fisik','qty','qty_base'],ks=['Qty Terjual','qty'],ki=['Qty Masuk','qty'],ko=['Qty','qty'],kp=['Qty (unit atau batch)','Qty','qty'],ku=['Jumlah Akhir Aktual','qty'];
@@ -214,7 +215,7 @@ function clExcelParseWorkbook(wb,fileName){
   if(kind==='saldoawal'){if(sopen.has(id)){errors.push('Produksi WIP: WIP Saldo Awal ganda ('+id+').');return}sopen.add(id);payload.opening_wip.push({wip_id:id,qty:qty.value,notes:n||null})}
   else{if(!Number.isInteger(qty.value)){errors.push('Produksi WIP baris '+(i+2)+': jumlah batch harus bilangan bulat.');return}if(sprod.has(id)){errors.push('Produksi WIP: WIP Produksi ganda ('+id+').');return}sprod.add(id);payload.production.push({wip_id:id,batches:qty.value})}
  });
- payload.production_notes=note(rp);
+ payload.production_notes=note(rp.filter(r=>clNormExcel(clExcelGet(r,['Jenis Transaksi','Jenis','type']))==='produksi'));
  if((payload.opening_wip.length||payload.production.length)&&!clModuleOn(division,'cogs_production'))errors.push('Sheet Produksi WIP berisi data, tetapi modul Produksi WIP tidak aktif.');
  if(supplyOn){
   if(!ru.length)errors.push('Suplies tidak memiliki baris master. Muat ulang template setelah Master Suplies diisi.');
@@ -295,7 +296,7 @@ async function clApplyExcelImport(){
   const {data,error}=await sb().rpc('barapp_closing_import_template',{p_division_id:p.divisionId,p_target_date:p.targetDate,p_template_id:p.templateId,p_payload:p.payload});
   if(error)throw error;
   const s=data&&data.summary||{},n=['daily_so','sales','stock_in','opening_wip','stock_out','production','supplies'].reduce((a,k)=>a+(Number(s[k])||0),0);
-  CL.importPlan=null;closeM();CL.ready=false;CL.period=null;await load(false);
+  CL.importPlan=null;closeM();CL.ready=false;CL.period=null;CG.ready=false;INV.ready=false;await load(false);
   toast('Impor berhasil: '+n+' baris diproses. Periksa setiap modul dan konfirmasi ulang sebelum approval.','ok');
  }catch(e){toast(clImportErr(e),'err')}
  finally{CL.importing=false;if(CL.importPlan)clRenderExcelPreview();if(pg==='cogs_closing')R()}
