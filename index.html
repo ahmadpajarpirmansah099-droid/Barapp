@@ -335,13 +335,13 @@ details[open]>summary::after{transform:rotate(180deg)}
 .lg-top{display:flex;justify-content:flex-end;margin:-14px -10px 0 0}
 .logo{width:68px;height:68px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;background:var(--ac2);color:var(--tt);border:2.5px solid var(--dk);box-shadow:0 5px 0 0 var(--dk);border-radius:22px;animation:komFloat 6s ease-in-out infinite}
 .brand-wave{position:relative;display:flex;align-items:center;justify-content:center;gap:.015em;min-height:78px;margin:6px auto 14px;color:var(--tx);font-size:clamp(46px,12vw,76px);font-weight:900;letter-spacing:-.075em;line-height:1.05;user-select:none;-webkit-user-select:none;touch-action:pan-y;isolation:isolate}
-.brand-wave-art{display:grid;place-items:center;width:100%;max-width:380px;min-height:0;margin:4px auto 14px;line-height:1;letter-spacing:normal;touch-action:pan-y;overflow:visible}
-.brand-wave-art .barapp-leaf-logo{display:block;width:100%;max-width:360px;height:auto;max-height:none;overflow:visible}
+.brand-wave-art{display:grid;place-items:center;width:100%;max-width:520px;min-height:0;margin:0 auto 10px;line-height:1;letter-spacing:normal;touch-action:pan-y;overflow:visible}
+.brand-wave-art .barapp-leaf-logo{display:block;width:100%;max-width:520px;height:auto;max-height:none;overflow:visible}
 .brand-wave-art .barapp-letter{transform-box:fill-box;transform-origin:center;animation:barappLoginWave 3.2s ease-in-out infinite;animation-delay:calc(var(--i,0)*-.19s);will-change:transform}
 .brand-wave-art .lgimg{display:block;width:auto;max-width:100%;height:auto;max-height:112px;object-fit:contain;animation:barappLogoBob 4.8s ease-in-out infinite}
 @keyframes barappLoginWave{0%,100%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(0deg)}20%{transform:translate(var(--repel-x,0px),calc(var(--repel-y,0px) - 8px)) rotate(-4deg)}40%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(2deg)}60%{transform:translate(var(--repel-x,0px),calc(var(--repel-y,0px) - 5px)) rotate(4deg)}80%{transform:translate(var(--repel-x,0px),var(--repel-y,0px)) rotate(-1deg)}}
 @keyframes barappLogoBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-.5deg)}}
-@media(max-width:480px){.brand-wave-art{max-width:100%;margin-top:2px}.brand-wave-art .barapp-leaf-logo{width:100%}}
+@media(max-width:480px){.brand-wave-art{width:calc(100% + 18px);max-width:calc(100% + 18px);margin:-2px auto 8px;transform:scale(1.08);transform-origin:center}.brand-wave-art .barapp-leaf-logo{width:100%;max-width:100%}}
 .bw-letter{position:relative;display:inline-block;animation:barappWave 3.2s ease-in-out infinite;animation-delay:calc(var(--i)*-.19s);will-change:transform}
 .bw-letter>span{display:inline-block;transform-origin:50% 65%;transition:transform .13s cubic-bezier(.2,.8,.2,1);will-change:transform}
 @keyframes barappWave{0%,100%{transform:translateY(0) rotate(0deg)}20%{transform:translateY(-10px) rotate(-4deg)}40%{transform:translateY(1px) rotate(2deg)}60%{transform:translateY(-5px) rotate(4deg)}80%{transform:translateY(0) rotate(-1deg)}}
@@ -1746,7 +1746,7 @@ function login(){
   return `<section class="lgs">${scene}
     <div class="lgc">
       ${lg}
-      <div class="brand-wave brand-wave-art" role="img" aria-label="BARAPP">${logoHtml(42)}</div>
+      <div class="brand-wave brand-wave-art" role="img" aria-label="BARAPP">${logoHtml(60)}</div>
       <p class="sub">${esc(TH.sub)} · ${L('Pilih cara masuk ke aplikasi.','Choose how to enter the application.')}</p>
       ${st}
       <div class="lgf">
