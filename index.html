@@ -334,6 +334,10 @@ details[open]>summary::after{transform:rotate(180deg)}
 .lgc{position:relative;z-index:2;width:100%;max-width:440px;padding:32px 28px 26px;text-align:center;background:var(--cd);border:2.5px solid var(--dk);border-radius:calc(var(--r)*2);box-shadow:0 8px 0 0 var(--dk);animation:komEnter .65s cubic-bezier(.16,1,.3,1) backwards}
 .lg-top{display:flex;justify-content:flex-end;margin:-14px -10px 0 0}
 .logo{width:68px;height:68px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;background:var(--ac2);color:var(--tt);border:2.5px solid var(--dk);box-shadow:0 5px 0 0 var(--dk);border-radius:22px;animation:komFloat 6s ease-in-out infinite}
+.brand-wave{position:relative;display:flex;align-items:center;justify-content:center;gap:.015em;min-height:78px;margin:6px auto 14px;color:var(--tx);font-size:clamp(46px,12vw,76px);font-weight:900;letter-spacing:-.075em;line-height:1.05;user-select:none;-webkit-user-select:none;touch-action:pan-y;isolation:isolate}
+.bw-letter{position:relative;display:inline-block;animation:barappWave 3.2s ease-in-out infinite;animation-delay:calc(var(--i)*-.19s);will-change:transform}
+.bw-letter>span{display:inline-block;transform-origin:50% 65%;transition:transform .13s cubic-bezier(.2,.8,.2,1);will-change:transform}
+@keyframes barappWave{0%,100%{transform:translateY(0) rotate(0deg)}20%{transform:translateY(-10px) rotate(-4deg)}40%{transform:translateY(1px) rotate(2deg)}60%{transform:translateY(-5px) rotate(4deg)}80%{transform:translateY(0) rotate(-1deg)}}
 .lgc h1{font-size:27px;line-height:1.2;margin-bottom:4px}
 .lgc .sub{margin:0 0 16px;font-size:13px;color:var(--mu)}
 .lg-st{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:center;margin-bottom:16px;padding:7px 12px;border-radius:12px;background:var(--in);font-size:12px;color:var(--mu)}
@@ -1692,6 +1696,27 @@ async function initAuth(){
     R();
   }
 }
+function logoWaveMove(e,el){
+  if(!el||!e||(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+  const r=el.getBoundingClientRect();if(!r.width)return;
+  const px=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  const py=Math.max(-.5,Math.min(.5,(e.clientY-r.top)/r.height-.5));
+  el.querySelectorAll('.bw-letter>span').forEach(letter=>{
+    const outer=letter.parentElement;
+    const cx=(outer.offsetLeft+outer.offsetWidth/2)/r.width;
+    const dx=cx-px;
+    const power=Math.max(0,1-Math.abs(dx)/.42);
+    const lift=16*power*(1-Math.min(1,Math.abs(py)*.7));
+    const shift=Math.sign(dx)*5*power;
+    const turn=(Math.sign(dx)*11-py*9)*power;
+    letter.style.transform='translate3d('+shift.toFixed(1)+'px,'+(-lift).toFixed(1)+'px,0) rotate('+turn.toFixed(1)+'deg) scale('+(1+power*.08).toFixed(3)+')';
+  });
+}
+function logoWaveReset(el){
+  if(!el)return;
+  el.querySelectorAll('.bw-letter>span').forEach(letter=>{letter.style.transform=''});
+}
+
 function login(){
   const lg=`<div class="lg-top"><button class="btn x s" onclick="setLang(LANG=='id'?'en':'id')">${IC('globe',14)}${LANG=='id'?'English':'Indonesia'}</button></div>`;
   const st=`<div class="lg-st"><span class="dot ${SB.state}"></span><span>${sbLabel()}${SB.state=='err'?' - '+esc(SB.msg):''}</span>${SB.state=='err'?`<span class="lg-ac"><a class="nm" onclick="sbLoad()">${L('Coba lagi','Retry')}</a> · <a class="nm" onclick="openSb()">${L('Atur sambungan','Connection settings')}</a></span>`:''}</div>${SB.state=='loading'?'<div class="prog" style="margin-bottom:16px"><i></i></div>':''}`;
@@ -1702,7 +1727,7 @@ function login(){
   return `<section class="lgs">${scene}
     <div class="lgc">
       ${lg}
-      <div class="logo">${logoHtml(36)}</div>
+      <div class="brand-wave" role="img" aria-label="BARAPP" onpointerdown="logoWaveMove(event,this)" onpointermove="logoWaveMove(event,this)" onpointerleave="logoWaveReset(this)" onpointerup="logoWaveReset(this)" onpointercancel="logoWaveReset(this)"><span class="bw-letter" style="--i:0"><span aria-hidden="true">B</span></span><span class="bw-letter" style="--i:1"><span aria-hidden="true">A</span></span><span class="bw-letter" style="--i:2"><span aria-hidden="true">R</span></span><span class="bw-letter" style="--i:3"><span aria-hidden="true">A</span></span><span class="bw-letter" style="--i:4"><span aria-hidden="true">P</span></span><span class="bw-letter" style="--i:5"><span aria-hidden="true">P</span></span></div>
       <p class="sub">${esc(TH.sub)} · ${L('Pilih cara masuk ke aplikasi.','Choose how to enter the application.')}</p>
       ${st}
       <div class="lgf">
@@ -3439,7 +3464,7 @@ if(x1>x0&&y1>y0){const cw=x1-x0+1,ch=y1-y0+1,c2=document.createElement('canvas')
 TH.logo=c.toDataURL('image/png');logoDone()};im.src=T.lgsrc}
 function logoDone(){applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
 function logoDel(){TH.logo='';T.lgsrc=null;applyTheme();R();const p=$('#lgpv');if(p)p.innerHTML=logoPv()}
-function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Tampil di login, sidebar, dan header.','Shown on login, sidebar and header.')}</small></div>`}
+function logoPv(){return`<span class="tile">${logoHtml(30)}</span><div><b>${TH.logo?L('Logo kustom aktif','Custom logo active'):L('Logo bawaan (pohon)','Default logo (tree)')}</b><small>${L('Simbol tampil di sidebar dan header; login memakai BARAPP animasi.','Symbol appears in sidebar and header; login uses the animated BARAPP wordmark.')}</small></div>`}
 
 function quickHtml(){const m=TH.mode=='dark'?'dark':'light';return [['bg','Warna latar'],['tx','Warna teks'],['ac','Warna utama (tombol)']].map(([k,l])=>`<label class="cr"><span><b>${l}</b></span><input type="color" value="${TH[m][k]}" oninput="TH.${m}['${k}']=this.value;applyTheme()"></label>`).join('')}
 function thTab(k,btn){document.getElementById('th_lg').style.display=k=='lg'?'':'none';document.getElementById('th_in').style.display=k=='in'?'':'none';btn.parentElement.querySelectorAll('.mb').forEach(b=>b.classList.toggle('on',b===btn))}
