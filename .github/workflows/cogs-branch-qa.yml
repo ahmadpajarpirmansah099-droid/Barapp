@@ -44,7 +44,7 @@ jobs:
           });
           NODE
 
-      - name: Check employee session token storage
+      - name: Check employee login and PIN removal
         run: node scripts/security-session-storage.test.cjs
 
       - name: Check Approval Closing Excel importer
