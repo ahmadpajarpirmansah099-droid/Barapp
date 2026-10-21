@@ -221,7 +221,7 @@ function clExcelParseWorkbook(wb,fileName){
   if(!ru.length)errors.push('Suplies tidak memiliki baris master. Muat ulang template setelah Master Suplies diisi.');
   ru.forEach((r,i)=>{const id=name(r,['ID Item','item_id']),n=clExcelNumber(clExcelGet(r,ku));
    if(!clExcelUUIDValid(id)||n.blank||!n.valid||n.value<0){errors.push('Suplies baris '+(i+2)+': ID item dan jumlah akhir aktual ≥ 0 wajib diisi.');return}
-   if(su.has(id)){errors.push('Suplies: item ganda ('+name(r,['Nama Item'],id)+').');return}su.add(id);payload.supplies.push({item_id:id,qty:n.value});
+   if(su.has(id)){errors.push('Suplies: item ganda ('+name(r,['Nama Item'],id)+').');return}su.add(id);payload.supplies.push({item_id:id,qty:n.value,actual_qty_base:n.value});
   });
   payload.supplies_notes=note(ru);
  }
