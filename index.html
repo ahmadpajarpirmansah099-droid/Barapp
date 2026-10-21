@@ -1106,14 +1106,14 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 })();
 </script>
 <script>
-const K='absensi_bar_v1',STAFF_SESSION_KEY='barapp_staff_session_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
+const K='absensi_bar_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
 const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return r=='dev'?'D':(r=='div_admin'||r=='hr'||r=='legacy_admin')?'A':null};
-let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
+let D={emp:[],per:[],att:[],ot:[],cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');if(persisted&&persisted.me&&persisted.me.r==='K'){delete persisted.me;localStorage.setItem(K,JSON.stringify(persisted))}}catch(e){}
-try{const staffSession=JSON.parse(sessionStorage.getItem(STAFF_SESSION_KEY)||'null');if(staffSession&&staffSession.r==='K'&&staffSession.tok)D.me=staffSession;else if(D.me&&D.me.r==='K')D.me=null}catch(e){if(D.me&&D.me.r==='K')D.me=null}
+try{sessionStorage.removeItem('barapp_staff_session_v1')}catch(e){}
 /* ===== DATA LOKAL LAMA (legacy): karyawan & absensi dari versi localStorage. TIDAK dihapus; hanya disimpan apa adanya.
    Sumber data karyawan & absensi sekarang = Supabase (lihat modul SUPABASE di bawah). ===== */
 const LEG={emp:Array.isArray(D.emp)?D.emp:[],att:Array.isArray(D.att)?D.att:[]};D.emp=[];D.att=[];
@@ -1141,8 +1141,6 @@ Setup awal: buat akun ADMIN. => First-time setup: create the ADMIN account.
 Simpan & Masuk => Save & Sign in
 Masuk sebagai Admin => Sign in as Admin
 atau => or
-Masuk sebagai Karyawan => Sign in as Employee
-Masuk sebagai karyawan (nama) => Sign in as employee (name)
 Password (min. 4 karakter) => Password (min. 4 characters)
 Ulangi password => Repeat password
 Nama karyawan => Employee name
@@ -1482,7 +1480,7 @@ const decorateAllCardHeadings=(root=document)=>{if(root.matches&&root.matches('.
 (()=>{const css=document.createElement('style');css.id='context-card-heading-icons';css.textContent='.card>h3.has-card-head-icon::before,.md>h3.has-card-head-icon::before{display:none!important}.card-head-icon{flex:0 0 36px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:var(--ac2,var(--tint));border:1.5px solid var(--dk,var(--line));color:var(--ac,var(--tx))}.card-head-icon .ic{width:20px;height:20px;display:block;stroke:currentColor}';document.head.appendChild(css);decorateAllCardHeadings();if(typeof MutationObserver!=='undefined')new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)decorateAllCardHeadings(n)}))).observe(document.body,{childList:true,subtree:true})})();
 
 
-const sv=()=>{try{const {emp,att,...rest}=D;if(rest.me&&rest.me.r==='K'&&rest.me.tok){try{sessionStorage.setItem(STAFF_SESSION_KEY,JSON.stringify(rest.me))}catch(e){}}else{try{sessionStorage.removeItem(STAFF_SESSION_KEY)}catch(e){}}delete rest.me;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
+const sv=()=>{try{const {emp,att,...rest}=D;delete rest.me;localStorage.setItem(K,JSON.stringify({...rest,emp:LEG.emp,att:LEG.att}))}catch(e){toast('Gagal menyimpan (storage penuh/diblokir)','err')}};
 const $=s=>document.querySelector(s),v=id=>($('#'+id)||{}).value||'',esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const U=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)),iso=t=>new Date(t).toISOString().slice(0,10);
@@ -1573,8 +1571,6 @@ function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=
 const EMP_SAFE_SELECT='id,name,role,active,created_at,outlet_id,division_id,deleted_at';
 async function fetchAll(tbl,ord){const out=[],cols=tbl==='employees'?EMP_SAFE_SELECT:'*';for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select(cols).order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
-async function staffMe(tok){const {data,error}=await sb().rpc('staff_me',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
-async function staffAttendance(tok){const {data,error}=await sb().rpc('staff_attendance',{p_token:String(tok)});if(error){if(/SESI_HABIS/.test(error.message||'')){D.me=null;sv()}throw error}return Array.isArray(data)?data:[]}
 
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
@@ -1630,7 +1626,7 @@ if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loa
 T.perms=[];if(session&&['hr','div_admin'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session
  ?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')])
- :[(D.me&&D.me.r=='K'&&D.me.tok)?await staffMe(D.me.tok).catch(()=>[]):[],(D.me&&D.me.r=='K'&&D.me.tok)?await staffAttendance(D.me.tok).catch(()=>[]):[]];
+ :[[],[]];
 if(session)await otLoad().catch(()=>{});
 const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
 let dIds=null;if(session&&T.dbRole=='div_admin'){try{const sc=await payQ('user_scopes','division_id');dIds=sc.map(x=>String(x.division_id))}catch(e){dIds=[]}}
@@ -1641,7 +1637,6 @@ const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a
 if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
 D.emp=emp;D.arc=arc;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
-if(D.me&&D.me.r=='K'&&(!D.me.tok||!D.emp.some(e=>e.id==D.me.id))){D.me=null;sv()}
 derivePeriods();sbCacheSave()
 }catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
@@ -1703,7 +1698,7 @@ const {data,error}=await c.from('employees').insert({name:le.nama,role:le.jab||'
 const rows=[],seen=new Set(D.att.map(a=>a.e+'|'+a.d)),phk={};
 LEG.att.forEach(a=>{const eid=map[a.e],st=normSt(a.s);if(!eid||!st||!a.d)return skipped++;const k=eid+'|'+a.d;if(seen.has(k))return skipped++;seen.add(k);rows.push({employee_id:eid,attendance_date:a.d,status:st,notes:a.n||null});if(a.ph)phk[k]=a.ph});
 for(let i=0;i<rows.length;i+=200){const {data,error}=await c.from('attendance').insert(rows.slice(i,i+200)).select();if(error)throw error;(data||[]).forEach(rw=>{const m=mapAtt(rw),k=m.e+'|'+m.d;if(phk[k]&&!m.ph){PH[m.id]=phk[k];m.ph=phk[k]}D.att.push(m);added++})}
-savePH();D.ot.forEach(o=>{if(map[o.e])o.e=map[o.e]});if(D.me&&D.me.r=='K'&&map[D.me.id])D.me.id=map[D.me.id];
+savePH();D.ot.forEach(o=>{if(map[o.e])o.e=map[o.e]});
 derivePeriods();sbCacheSave();sv()});
 if(ok){toast(L(`Selesai: ${added} absensi disalin, ${skipped} dilewati`,`Done: ${added} attendance copied, ${skipped} skipped`));R()}})}
 
@@ -1778,14 +1773,7 @@ function login(){
         <div class="fld"><label for="lp">Password</label><div class="iw">${IC('key',16)}<input id="lp" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key=='Enter')lgA()"></div></div>
         <div class="btns">
           <button class="btn" onclick="lgA()">${IC('sparkles',16)}Login Admin</button>
-          <button class="btn s" onclick="T.kl=1;R()">${IC('ucheck',16)}${L('Karyawan','Employee')}</button>
         </div>
-        ${T.kl?`<div class="lg-emp">
-          <div class="fld"><label for="li">${L('Nama:','Name:')}</label><div class="iw">${IC('user',16)}<input id="li" placeholder="${L('Nama karyawan','Employee name')}" onkeydown="if(event.key=='Enter')lgK()"></div></div>
-          <div class="btns">
-            <button class="btn" onclick="lgK()">${IC('out',16)}${L('Masuk sebagai Karyawan','Sign in as Employee')}</button>
-            <button class="btn s" onclick="T.kl=0;R()">${L('Batal','Cancel')}</button>
-          </div></div>`:''}
       </div>
       <div class="lg-ft">${esc(TH.name)} · ${esc(TH.sub)}</div>
     </div>
@@ -1834,16 +1822,6 @@ async function lgA(){
 }
 
 
-/* ===== PIN LOGIN KARYAWAN ===== */
-function staffPinAsk(nm){modal(`<h3>Masuk sebagai ${esc(nm)}</h3><p class="mu">Masukkan PIN 4–6 angka.</p><label>PIN<input id="sp" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="staffPinGo('${encodeURIComponent(nm).replace(/'/g,'%27')}')">Masuk</button></div>`)}
-async function staffPinGo(enc){const nm=decodeURIComponent(enc),pin=v('sp').trim();if(!/^[0-9]{4,6}$/.test(pin))return toast('PIN harus 4–6 angka','err');
- try{const {data,error}=await sb().rpc('staff_login',{p_name:nm,p_pin:pin});if(error)throw error;
-  if(!data||!data.ok)return toast((data&&data.msg)||'Nama atau PIN salah','err');
-  D.me={r:'K',id:data.id,tok:data.token};pg='dash';sv();closeM();await sbLoad(true);R()}catch(e){toast(errText(e),'err')}}
-function lgK(){const nm=v('li').trim();if(!nm)return toast('Masukkan nama karyawan','err');staffPinAsk(nm)}
-function pinOpen(i){if(!guard())return;const e=D.emp[i];if(!e)return;modal(`<h3>PIN login — ${esc(e.nama)}</h3><p class="mu">4–6 angka. Dipakai karyawan untuk masuk. PIN lama langsung tidak berlaku.</p><label>PIN baru<input id="pn" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></label><div class="row"><button class="btn s" onclick="openEmp(${i})">Kembali</button><button class="btn" onclick="pinSave('${e.id}')">Simpan PIN</button></div>`)}
-async function pinSave(id){const p=v('pn').trim();if(!/^[0-9]{4,6}$/.test(p))return toast('PIN harus 4–6 angka','err');const ok=await sbRun(async()=>{const {error}=await sb().rpc('staff_set_pin',{p_employee:String(id),p_pin:p});if(error)throw error});if(ok){closeM();toast('PIN disimpan')}}
-
 
 /* ===== LOGOUT OTOMATIS SETELAH 3 MENIT TIDAK AKTIF ===== */
 const IDLE_MS=3*60*1000;
@@ -1856,7 +1834,6 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me
 setInterval(idleCheck,15000);
 async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
   try{localStorage.removeItem('bar_last')}catch(e){}
-  if(D.me&&D.me.r=='K'&&D.me.tok){try{await sb().rpc('staff_logout',{p_token:String(D.me.tok)})}catch(e){}}
   try{await sb().auth.signOut()}catch(e){console.warn('Auth signOut:',e)}
   resetAcc();
   D.me=null;
@@ -3197,7 +3174,7 @@ V.pay_set=()=>{if(!payOK())return payDenied();payEnsure();const s=PAY.s||{period
  <div><div class="mu" style="margin-bottom:8px">Kode absensi yang dapat uang makan</div><div style="display:flex;gap:8px;flex-wrap:wrap">${['M','L','PH','S','I'].map(chip).join('')}</div></div>
  <label>Alamat perusahaan (dicetak di slip)<input id="co_addr" value="${esc((PAY.s&&PAY.s.company_address)||'')}" autocomplete="off"></label>
  <div><button class="btn" onclick="paySaveSet()">Simpan aturan</button></div></div>`;
- const emp=D.emp.length?`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Jabatan</th><th>Aktif</th><th></th></tr>${D.emp.map((e,i)=>`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td>${e.aktif?'Ya':'Tidak'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn s x" onclick="pinOpen(${i})">PIN</button></td></tr>`).join('')}</table></div><div style="margin-top:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`:`<div style="margin-bottom:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`;
+ const emp=D.emp.length?`<div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Nama</th><th>Jabatan</th><th>Aktif</th><th></th></tr>${D.emp.map((e,i)=>`<tr><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td>${e.aktif?'Ya':'Tidak'}</td><td style="white-space:nowrap"><button class="btn s x" onclick="openEmp(${i})">Edit</button></td></tr>`).join('')}</table></div><div style="margin-top:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`:`<div style="margin-bottom:10px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>`;
  return payBlk('set_main','Periode & Uang Makan',body,true)};
 async function paySaveSet(){const m=v('pm'),codes=['M','L','PH','S','I'].filter(k=>document.getElementById('mc_'+k)&&document.getElementById('mc_'+k).checked);
  const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_settings').update({period_mode:m,custom_start_day:null,custom_end_day:null,meal_codes:codes,company_address:v('co_addr').trim()||null}).eq('id',true);if(error)throw error});
@@ -3376,7 +3353,7 @@ function cell(e,d){const tw=document.querySelector('.tw');if(tw)T.tableLeft=tw.s
 
 V.kar=()=>{let l=D.emp.filter(e=>(!F.q||(e.nama+e.id).toLowerCase().includes(F.q.toLowerCase()))&&(!T.fs||(T.fs=='a')==e.aktif));
 return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openEmp(-1)">+ Tambah karyawan</button></div>':''}<div class="card"><div class="row"><label>Cari nama<input value="${esc(F.q)}" oninput="fSearchInput(this)" data-q></label></div></div>`+
-(l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th>${L('Aktif','Active')}</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr data-fsearch="${esc((e.nama+e.id).toLowerCase())}"><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><input type="checkbox" ${e.aktif?'checked':''} onchange="togEmp(${i},this.checked)"></td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn s x" onclick="pinOpen(${i})">PIN</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div><div class="card empty" data-fsearch-empty style="display:none">Tidak ada hasil.</div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
+(l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th>${L('Aktif','Active')}</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr data-fsearch="${esc((e.nama+e.id).toLowerCase())}"><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><input type="checkbox" ${e.aktif?'checked':''} onchange="togEmp(${i},this.checked)"></td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div><div class="card empty" data-fsearch-empty style="display:none">Tidak ada hasil.</div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
 
 function empOutDivHtml(defOut){
   const outs=T.outlets||[];const cur=defOut||(outs[0]&&outs[0].id);
@@ -3384,7 +3361,7 @@ function empOutDivHtml(defOut){
   return `<label>Outlet<select id="eo" onchange="empDivRefresh()">${outs.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label><label>Divisi<select id="ed"><option value="">(tidak dipilih)</option>${divsOf(cur).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>`}
 function empDivRefresh(){const oid=v('eo');const sel=document.getElementById('ed');if(!sel)return;sel.innerHTML='<option value="">(tidak dipilih)</option>'+(T.allDivs||[]).filter(d=>d.outlet_id==oid).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}
 async function openEmp(i){if(!guard())return;if(i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')){try{if(!T.outlets)await outInit();if(!T.allDivs)T.allDivs=await payQ('divisions','id,name,code,outlet_id')}catch(e){toast(errText(e),'err')}}const e=i>=0?D.emp[i]:{};T.i=i;
-modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label>${i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')?empOutDivHtml(D.outId||D.ljId):''}<div class="row">${i>=0?`<button class="btn s" onclick="pinOpen(${i})">Atur PIN login</button>`:''}<button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
+modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label>${i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')?empOutDivHtml(D.outId||D.ljId):''}<div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
 async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
 const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:(document.getElementById('eo')?.value)||await outInit(),division_id:(document.getElementById('ed')?.value)||null}).select(EMP_SAFE_SELECT).single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select(EMP_SAFE_SELECT);if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini (cek izin divisi/outlet)');D.emp[i]=mapEmp(data[0])}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}

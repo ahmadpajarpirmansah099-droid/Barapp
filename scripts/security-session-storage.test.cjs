@@ -2,6 +2,21 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const html = fs.readFileSync('index.html', 'utf8');
+const sql = fs.readFileSync('barapp_security_remove_employee_login_pin.sql', 'utf8');
+
+assert(!/staff_login|staff_me|staff_attendance|staff_logout|staff_set_pin/.test(html),
+  'Browser code must not expose employee PIN login/session RPC calls');
+assert(!/function\s+(?:staffPinAsk|staffPinGo|lgK|pinOpen|pinSave)\b/.test(html),
+  'Employee login/PIN handlers must be removed');
+assert(!/onclick=["'][^"']*(?:pinOpen|lgK)\(/.test(html),
+  'Employee login/PIN controls must not remain in the UI');
+assert(!/Masuk sebagai Karyawan|Sign in as Employee|Atur PIN login|PIN login —/.test(html),
+  'Employee login/PIN copy must not remain in the UI');
+assert.match(html, /sessionStorage\.removeItem\('barapp_staff_session_v1'\)/,
+  'Any legacy employee session token must be cleared on load');
+assert(!/sessionStorage\.setItem\(['"]barapp_staff_session_v1/.test(html),
+  'Browser code must not persist new employee sessions');
+
 const svStart = html.indexOf('const sv=()=>{try{const {emp,att,...rest}=D;');
 const svEnd = html.indexOf('const $=', svStart);
 assert.ok(svStart >= 0 && svEnd > svStart, 'Could not locate Barapp sv() persistence function');
@@ -16,44 +31,37 @@ const makeStorage = (seed = {}) => {
   };
 };
 const K = 'absensi_bar_v1';
-const STAFF_SESSION_KEY = 'barapp_staff_session_v1';
 const localStorage = makeStorage();
-const sessionStorage = makeStorage();
 const LEG = { emp: [], att: [] };
-const D = { me: { r: 'K', id: 'emp-1', tok: 'TEST_STAFF_TOKEN' }, emp: [], att: [], cur: 'x' };
+const D = { me: { r: 'A', uid: 'admin-1', email: 'admin@example.invalid' }, emp: [], att: [], cur: 'x' };
 const toast = () => {};
-const sv = new Function('D', 'LEG', 'K', 'STAFF_SESSION_KEY', 'localStorage', 'sessionStorage', 'toast', `${svSource}; return sv;`)(D, LEG, K, STAFF_SESSION_KEY, localStorage, sessionStorage, toast);
-
+const sv = new Function('D', 'LEG', 'K', 'localStorage', 'toast', `${svSource}; return sv;`)(D, LEG, K, localStorage, toast);
 sv();
-assert.equal(JSON.parse(localStorage.getItem(K)).me, undefined, 'D.me must not be persisted in app localStorage');
-assert.equal(localStorage.getItem(K).includes('TEST_STAFF_TOKEN'), false, 'staff token must not appear in app localStorage');
-assert.equal(JSON.parse(sessionStorage.getItem(STAFF_SESSION_KEY)).tok, 'TEST_STAFF_TOKEN', 'staff token should live in sessionStorage');
+assert.equal(JSON.parse(localStorage.getItem(K)).me, undefined,
+  'Admin identity must be rehydrated by Supabase Auth, not app localStorage');
 
-D.me = { r: 'A', uid: 'admin-1', email: 'admin@example.invalid' };
-sv();
-assert.equal(sessionStorage.getItem(STAFF_SESSION_KEY), null, 'admin session must clear custom staff token');
-assert.equal(JSON.parse(localStorage.getItem(K)).me, undefined, 'admin identity must be rehydrated by Supabase Auth, not app localStorage');
+const staffFunctions = [
+  ['staff_login', 'text, text'],
+  ['staff_me', 'text'],
+  ['staff_attendance', 'text'],
+  ['staff_logout', 'text'],
+  ['staff_set_pin', 'text, text']
+];
+for (const [name, args] of staffFunctions) {
+  assert.match(sql, new RegExp('REVOKE\\s+EXECUTE\\s+ON\\s+FUNCTION\\s+public\\.' + name + '\\(' + args.replace(/, /g, ',\\s*') + '\\)\\s+FROM\\s+PUBLIC,\\s*anon,\\s*authenticated', 'i'),
+    'Migration must disable browser execution of ' + name);
+}
+assert.match(sql, /BEGIN\s*;/i, 'Migration must be transactional');
+assert.match(sql, /COMMIT\s*;/i, 'Migration must be transactional');
+assert.match(sql, /REVOKE\s+SELECT\s*,\s*INSERT\s*,\s*UPDATE\s+ON\s+TABLE\s+public\.employees\s+FROM\s+authenticated/i,
+  'Broad employee read/write privileges must be revoked');
+assert.match(sql, /GRANT SELECT \(id, name, role, active, created_at, outlet_id, division_id, deleted_at\)/i,
+  'Admin employee read allowlist must remain');
+assert.match(sql, /GRANT INSERT \(name, role, active, outlet_id, division_id\)/i,
+  'Admin employee create allowlist must remain');
+assert.match(sql, /GRANT UPDATE \(name, role, active, deleted_at\)/i,
+  'Admin employee update allowlist must remain');
+assert.match(sql, /PIN verifier metadata server-only/i,
+  'Migration must document that PIN metadata stays server-only');
 
-D.me = null;
-sv();
-assert.equal(sessionStorage.getItem(STAFF_SESSION_KEY), null, 'signed-out state must clear staff token');
-
-const migrationStart = html.indexOf("try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');");
-const migrationEnd = html.indexOf('\n/* ===== DATA LOKAL LAMA', migrationStart);
-assert.ok(migrationStart >= 0 && migrationEnd > migrationStart, 'Could not locate legacy-token cleanup block');
-const migrationSource = html.slice(migrationStart, migrationEnd);
-const runMigration = new Function('D', 'K', 'STAFF_SESSION_KEY', 'localStorage', 'sessionStorage', migrationSource);
-
-const oldLocal = makeStorage({ [K]: JSON.stringify({ me: { r: 'K', id: 'emp-old', tok: 'LEGACY_TOKEN' }, emp: [] }) });
-const oldSession = makeStorage();
-const oldD = { me: { r: 'K', id: 'emp-old', tok: 'LEGACY_TOKEN' } };
-runMigration(oldD, K, STAFF_SESSION_KEY, oldLocal, oldSession);
-assert.equal(JSON.parse(oldLocal.getItem(K)).me, undefined, 'legacy persistent staff token should be removed');
-assert.equal(oldD.me, null, 'legacy staff session without sessionStorage should require re-login');
-
-const restoredSession = makeStorage({ [STAFF_SESSION_KEY]: JSON.stringify({ r: 'K', id: 'emp-1', tok: 'TAB_TOKEN' }) });
-const restoredD = { me: null };
-runMigration(restoredD, K, STAFF_SESSION_KEY, makeStorage({ [K]: JSON.stringify({ emp: [] }) }), restoredSession);
-assert.equal(restoredD.me.tok, 'TAB_TOKEN', 'current-tab staff session should restore from sessionStorage');
-
-console.log('Staff session storage security checks passed.');
+console.log('Employee login/PIN removal regression checks passed.');
