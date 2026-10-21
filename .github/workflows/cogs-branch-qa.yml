@@ -3,6 +3,7 @@ name: COGS branch QA
 on:
   push:
     branches:
+      - main
       - feat/cogs-backend-v1
   pull_request:
     branches:
@@ -45,6 +46,9 @@ jobs:
 
       - name: Check employee session token storage
         run: node scripts/security-session-storage.test.cjs
+
+      - name: Check Approval Closing Excel importer
+        run: node scripts/closing-template-import.test.cjs
 
       - name: Check expected COGS UI and RPC wiring
         run: |
