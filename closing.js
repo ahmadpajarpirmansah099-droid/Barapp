@@ -117,7 +117,7 @@ const clExcelUUIDValid=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a
 const clExcelActive=x=>x&&x.active!==false;
 const clExcelDivisionRows=arr=>(arr||[]).filter(x=>String(x.division_id)===String(CL.division)&&clExcelActive(x));
 function clExcelMasterLists(){
- const items=clExcelDivisionRows(INV.items),materials=items.filter(x=>x.is_supply!==true),supplies=items.filter(x=>x.is_supply===true);
+ const items=clExcelDivisionRows(INV.items),materials=items.filter(x=>x.is_supply!==true),supplies=items.filter(x=>x.is_supply===true&&(!x.created_at||String(x.created_at).slice(0,10)<=String(CL.date)));
  const wips=clExcelDivisionRows(CG.wips),menus=clExcelDivisionRows(CG.menus);
  const curr=clDivision(CL.division);
  const divs=(INV.divs.length?INV.divs:CG.divs).filter(x=>x.active!==false&&curr&&String(x.outlet_id)===String(curr.outlet_id));
@@ -146,7 +146,7 @@ function clExcelMakeTemplate(){
   clExcelAddSheet(wb,'Produksi WIP',['Jenis Transaksi','ID WIP','Nama WIP','Qty (unit atau batch)','Catatan'],
    m.wips.flatMap(x=>[['Saldo Awal',x.id,x.name,'',''],['Produksi',x.id,x.name,'','']]));
   clExcelAddSheet(wb,'Suplies',['ID Item','Nama Item','Jumlah Akhir Aktual','Catatan'],m.supplies.map(x=>[x.id,x.name,'','']));
-  const meta=XLSX.utils.aoa_to_sheet([['key','value'],['template_id',templateId],['version','1'],['division_id',CL.division],['division_name',(clDivision(CL.division)||{}).name||''],['generated_at',new Date().toISOString()]]);
+  const meta=XLSX.utils.aoa_to_sheet([['key','value'],['template_id',templateId],['version','1'],['division_id',CL.division],['division_name',(clDivision(CL.division)||{}).name||''],['target_date',CL.date],['generated_at',new Date().toISOString()]]);
   XLSX.utils.book_append_sheet(wb,meta,'Meta');
   wb.Workbook=wb.Workbook||{};wb.Workbook.Sheets=wb.SheetNames.map(n=>({name:n,Hidden:n==='Meta'?1:0}));
   XLSX.writeFile(wb,'BARAPP_Approval_Closing_Template_6_Sheet.xlsx');
@@ -171,6 +171,8 @@ function clExcelParseWorkbook(wb,fileName){
  if(!vr||String(vr[1])!=='1')errors.push('Versi template tidak didukung. Unduh template terbaru dari Approval Closing.');
  const metaDiv=metaRows.find(r=>clNormExcel(r[0])==='divisionid');
  if(!metaDiv||String(metaDiv[1]||'')!==division)errors.push('Template dibuat untuk divisi lain atau metadata divisi hilang. Unduh template dari divisi yang dipilih saat ini.');
+ const metaDate=metaRows.find(r=>clNormExcel(r[0])==='targetdate');
+ if(!metaDate||String(metaDate[1]||'')!==date)errors.push('Tanggal template berbeda dengan tanggal closing yang dipilih. Pilih tanggal yang sama atau unduh ulang template.');
  const dateObj=new Date(date+'T00:00:00Z');
  if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(dateObj.getTime())||dateObj.toISOString().slice(0,10)!==date||date>clToday())errors.push('Tanggal closing tidak valid atau berada di masa depan.');
  if(!division||!clDivision(division))errors.push('Divisi tidak valid. Muat ulang Approval Closing dan pilih divisi yang benar.');
