@@ -392,29 +392,42 @@ window.__clShowHistoryDetail=async(date)=>{
  if(!clCanAccess())return toast('Akses ditolak.','warn');
  const h=CL.history.find(x=>String(x.closing_date)===String(date));if(!h)return toast('Riwayat closing tidak ditemukan.','warn');
  const status=h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status;
- modal('<div class="cl-history-detail-head"><h3 style="margin:0">Detail Closing Divisi</h3><p class="mu" style="margin:6px 0 14px">Tanggal: <b>'+esc(date)+'</b> · Status: <b>'+esc(status)+'</b></p><p class="mu" style="margin:0 0 14px">Waktu approval: '+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</p></div><div class="card"><div id="cl-history-detail-body"><p class="mu">Memuat ringkasan closing…</p></div></div><div class="btns"><button class="btn s" onclick="window.__clDownloadClosingExcelForDate(' + "'"+esc(date)+"'" + ')">Unduh Excel lengkap</button><button class="btn" onclick="closeModal()">Tutup</button></div>');
+ modal('<div><h3 style="margin:0">LAPORAN DAILY SO</h3><p class="mu" style="margin:6px 0 14px">Tanggal: <b>'+esc(date)+'</b> · Divisi: <b id="cl-history-division">—</b></p><p class="mu">Status closing: <b>'+esc(status)+'</b> · Waktu approval: '+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</p></div><div class="card" style="padding:10px"><div id="cl-history-detail-body"><p class="mu">Memuat laporan Daily SO…</p></div></div><div class="btns"><button class="btn s" onclick="window.__clDownloadClosingExcelForDate(' + "'"+esc(date)+"'" + ')">Unduh Excel</button><button class="btn" onclick="closeModal()">Tutup</button></div>');
  const host=document.getElementById('cl-history-detail-body');if(!host)return;
  try{
-  const active=clModulesForDivision(CL.division);
-  const snaps=await Promise.all(active.map(async m=>{const {data,error}=await sb().rpc('barapp_closing_module_snapshot',{p_division_id:CL.division,p_closing_date:date,p_module_key:m.key});if(error)throw error;return {m,data}}));
-  const summary=(value)=>{
-   if(value==null)return {label:'Status data',value:'Tidak ada data'};
-   if(Array.isArray(value))return {label:'Jumlah rekaman',value:value.length.toLocaleString('id-ID')};
-   if(typeof value!=='object')return {label:'Nilai',value:String(value)};
-   const count=Number(value.count),quantity=Number(value.quantity);
-   if(Number.isFinite(count)||Number.isFinite(quantity))return {count:Number.isFinite(count)?count:null,quantity:Number.isFinite(quantity)?quantity:null};
-   const keys=Object.keys(value).filter(k=>!['fingerprint','hash','checksum','id'].includes(k.toLowerCase()));
-   return {label:'Ringkasan',value:keys.length?keys.map(k=>k.replace(/_/g,' ')+': '+(typeof value[k]==='object'?'tersedia':String(value[k]))).join(' · '):'Data tersedia'};
-  };
-  const html=snaps.map(({m,data})=>{
-   const s=summary(data??{});
-   const metrics=[];
-   if(s.count!==undefined){if(s.count!==null)metrics.push('<div class="cl-history-metric"><small>Jumlah rekaman</small><b>'+esc(s.count.toLocaleString('id-ID'))+'</b></div>');if(s.quantity!==null)metrics.push('<div class="cl-history-metric"><small>Total kuantitas</small><b>'+esc(s.quantity.toLocaleString('id-ID'))+'</b></div>')}
-   else metrics.push('<div class="cl-history-metric wide"><small>'+esc(s.label||'Ringkasan')+'</small><b>'+esc(s.value||'Data tersedia')+'</b></div>');
-   return '<section class="cl-history-module"><h4>'+esc(m.name)+'</h4><div class="cl-history-metrics">'+metrics.join('')+'</div></section>';
-  }).join('');
-  if(host.isConnected)host.innerHTML='<style>.cl-history-module{padding:12px 0;border-bottom:1px solid var(--line)}.cl-history-module:last-child{border-bottom:0}.cl-history-module h4{margin:0 0 10px;font-size:15px}.cl-history-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cl-history-metric{min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--in)}.cl-history-metric.wide{grid-column:1/-1}.cl-history-metric small{display:block;color:var(--mu);font-size:12px}.cl-history-metric b{display:block;margin-top:5px;overflow-wrap:anywhere;font-size:17px}@media(max-width:480px){.cl-history-metrics{grid-template-columns:1fr 1fr}}</style>'+(html||'<p class="mu">Tidak ada modul aktif pada tanggal ini.</p>');
- }catch(e){if(host.isConnected)host.innerHTML='<p class="mu">Ringkasan tidak berhasil dimuat: '+esc(clError(e))+'</p>'}
+  if(typeof cgLoad==='function'&&!CG.ready)await cgLoad(true);
+  if(typeof invLoad==='function'&&!INV.ready)await invLoad(true);
+  const division=CL.division;
+  const divName=(typeof opsDivName==='function'?opsDivName(division):(CL.divisions||[]).find(x=>String(x.id)===String(division))?.name)||'—';
+  const dh=document.getElementById('cl-history-division');if(dh)dh.textContent=divName;
+  const so=(CG.dailySO||[]).find(x=>String(x.division_id)===String(division)&&String(x.so_date)===String(date)&&x.status==='submitted');
+  if(!so){host.innerHTML='<p class="mu">Tidak ditemukan laporan Daily SO tersimpan untuk divisi dan tanggal ini. Data tidak diganti dengan angka hari ini.</p>';return;}
+  const lines=(CG.dailySOLines||[]).filter(x=>String(x.so_id)===String(so.id));
+  const sum=(xs,fn)=>xs.reduce((a,x)=>a+Number(fn(x)||0),0);
+  const money=n=>'Rp '+Number(n||0).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const qty=n=>Number(n||0).toLocaleString('id-ID',{maximumFractionDigits:4});
+  const rows=lines.map(l=>{
+   const type=l.component_type==='material'?'material':'wip',id=type==='material'?l.item_id:l.component_wip_id;
+   const item=type==='material'?(typeof cgItem==='function'?cgItem(id):null):(typeof opsWip==='function'?opsWip(id):null);
+   const incoming=type==='material'
+    ?sum((INV.ins||[]).filter(x=>String(x.item_id)===String(id)&&String(x.division_id)===String(division)&&x.status==='posted'&&String(x.received_at)===String(date)),x=>x.qty_base)-sum((INV.rets||[]).filter(x=>String(x.item_id)===String(id)&&String(x.division_id)===String(division)&&x.status==='posted'&&String(x.returned_at)===String(date)),x=>x.qty_base)+sum((INV.stockOut||[]).filter(x=>String(x.target_item_id)===String(id)&&String(x.to_division_id)===String(division)&&x.category==='Move'&&x.status==='posted'&&String(x.out_date)===String(date)),x=>x.qty_base)
+    :sum((CG.productions||[]).filter(x=>String(x.wip_id)===String(id)&&String(x.division_id)===String(division)&&x.status==='posted'&&String(x.produced_at)===String(date)),x=>x.produced_qty);
+   const usedOut=sum((INV.stockOut||[]).filter(x=>String(x.item_id)===String(id)&&String(x.from_division_id)===String(division)&&x.status==='posted'&&String(x.out_date)===String(date)),x=>x.qty_base);
+   const sales=sum((CG.saleLines||[]).filter(x=>x.component_type===type&&String(type==='material'?x.item_id:x.component_wip_id)===String(id)&&(CG.sales||[]).some(z=>String(z.id)===String(x.sale_id)&&String(z.division_id)===String(division)&&z.status==='posted'&&String(z.sold_at)===String(date))),x=>x.qty_base);
+   const production=sum((CG.productionInputs||[]).filter(x=>x.component_type===type&&String(type==='material'?x.item_id:x.component_wip_id)===String(id)&&(CG.productions||[]).some(z=>String(z.id)===String(x.batch_id)&&String(z.division_id)===String(division)&&z.status==='posted'&&String(z.produced_at)===String(date))),x=>x.qty_base);
+   let price=l.unit_cost_snapshot==null?null:Number(l.unit_cost_snapshot);
+   if(price==null){if(type==='material'){const p=typeof cgPrice==='function'?cgPrice(item):null;price=p?.value??0}else{const p=typeof cgWipCost==='function'?cgWipCost(id,[]):null;price=p?.ok?p.unitCost:0}}
+   const variance=Number(l.variance_qty_base||0);
+   const suppliesSo=(INV.suppliesSO||[]).find(z=>String(z.division_id)===String(division)&&String(z.so_date)===String(date)&&z.status==='submitted');
+   const supplyLine=(INV.suppliesSOLines||[]).find(q=>String(q.item_id)===String(id)&&String(q.so_id)===String(suppliesSo?.id));
+   const suppliesUsed=supplyLine?Math.max(0,Number(supplyLine.expected_qty_base||0)-Number(supplyLine.counted_qty_base||0)):0;
+   return [l.component_name_snapshot||item?.name||'Item',incoming,sales,usedOut,suppliesUsed,production,Number(l.counted_qty_base||0),Number(l.expected_qty_base||0),variance,variance*Number(price||0)];
+  });
+  const heads=['ITEM','BARANG MASUK','TERPAKAI SALES','TERPAKAI PENGELUARAN','SUPPLIES','TERPAKAI PRODUKSI WIP','STOK AKHIR AKTUAL','STOK SISTEM','SELISIH QTY','NILAI RP SELISIH'];
+  const total=rows.reduce((a,r)=>a+Number(r[9]||0),0);
+  const table='<div style="overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:10px"><table style="border-collapse:collapse;width:max-content;min-width:100%;font-size:12px;white-space:nowrap"><thead><tr>'+heads.map((x,j)=>'<th style="position:sticky;top:0;background:var(--in);padding:9px 10px;text-align:'+(j?'right':'left')+';border-bottom:1px solid var(--line)">'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((v,j)=>'<td style="padding:7px 10px;border-bottom:1px solid var(--line);text-align:'+(j?'right':'left')+';'+(j===8&&Number(v)!==0?'color:'+(Number(v)<0?'#bd5549':'#167443')+';font-weight:600;':'')+'">'+esc(j===9?money(v):typeof v==='number'?qty(v):v)+'</td>').join('')+'</tr>').join('')+'<tr><td colspan="9" style="padding:9px 10px;font-weight:700">TOTAL NILAI SELISIH</td><td style="padding:9px 10px;text-align:right;font-weight:700">'+esc(money(total))+'</td></tr></tbody></table></div>';
+  if(host.isConnected)host.innerHTML='<style>#cl-history-detail-body{min-width:0}#cl-history-detail-body table th{font-weight:700}#cl-history-detail-body table td:first-child{position:sticky;left:0;background:var(--cd);z-index:1;max-width:220px;overflow:hidden;text-overflow:ellipsis}</style>'+table;
+ }catch(e){if(host.isConnected)host.innerHTML='<p class="mu">Laporan tidak berhasil dimuat: '+esc(clError(e))+'</p>'}
 };
 window.__clOpen=()=>{if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');go('cogs_closing')};
 window.__clDownloadClosingExcelForDate=async(date)=>{
