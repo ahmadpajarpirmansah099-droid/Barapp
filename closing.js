@@ -140,8 +140,9 @@ function clExcelMakeTemplate(){
    m.materials.map(x=>[x.id,'material',x.name,x.base_unit||'UNIT','','']).concat(m.wips.map(x=>[x.id,'wip',x.name,x.yield_unit||'UNIT','',''])));
   clExcelAddSheet(wb,'Sales',['ID Menu','Nama Menu','Qty Terjual','Harga Jual','Catatan'],m.menus.map(x=>[x.id,x.name,'','','']));
   clExcelAddSheet(wb,'Barang Masuk',['ID Item','Nama Item','Qty Masuk','Satuan','Total Faktur','Catatan'],m.items.map(x=>[x.id,x.name,'',x.base_unit||'UNIT','','']));
-  clExcelAddSheet(wb,'Pengeluaran',['Jenis Item','ID Item/WIP','Nama Item','Qty','Satuan','Kategori','ID Divisi Tujuan','Nama Divisi Tujuan','Catatan'],
-   m.items.map(x=>['material',x.id,x.name,'',x.base_unit||'UNIT','Waste','','','']).concat(m.wips.map(x=>['wip',x.id,x.name,'',x.yield_unit||'UNIT','Waste','','',''])));
+  const expenseMasters=m.items.map(x=>['material',x.id,x.name,'',x.base_unit||'UNIT','Waste','','','']).concat(m.wips.map(x=>['wip',x.id,x.name,'',x.yield_unit||'UNIT','Waste','','','']));
+  const expenseRows=Array.from({length:Math.max(expenseMasters.length,m.divs.length)},(_,i)=>(expenseMasters[i]||['','','','','','','','','']).concat([m.divs[i]?.id||'',m.divs[i]?.name||'']));
+  clExcelAddSheet(wb,'Pengeluaran',['Jenis Item','ID Item/WIP','Nama Item','Qty','Satuan','Kategori','ID Divisi Tujuan','Nama Divisi Tujuan','Catatan','ID Divisi Referensi','Nama Divisi Referensi'],expenseRows);
   clExcelAddSheet(wb,'Produksi WIP',['Jenis Transaksi','ID WIP','Nama WIP','Qty (unit atau batch)','Catatan'],
    m.wips.flatMap(x=>[['Saldo Awal',x.id,x.name,'',''],['Produksi',x.id,x.name,'','']]));
   clExcelAddSheet(wb,'Suplies',['ID Item','Nama Item','Jumlah Akhir Aktual','Catatan'],m.supplies.map(x=>[x.id,x.name,'','']));
@@ -203,6 +204,7 @@ function clExcelParseWorkbook(wb,fileName){
   if(qty.blank&&!n&&!target)return;
   if(!['material','wip'].includes(type)||!clExcelUUIDValid(id)||qty.blank||!qty.valid||qty.value<=0||!unit||!['Move','Waste','QC','R&D','Kalibrasi','Lainnya'].includes(cat)){errors.push('Pengeluaran baris '+(i+2)+': jenis, ID, qty > 0, satuan, dan kategori tidak valid.');return}
   if(cat==='Move'?!clExcelUUIDValid(target):!!target){errors.push('Pengeluaran baris '+(i+2)+': Move wajib memiliki ID divisi tujuan; kategori lain tidak boleh memiliki tujuan.');return}
+  if(cat==='Move'&&(!m.divs.some(d=>String(d.id)===target)||target===division)){errors.push('Pengeluaran baris '+(i+2)+': ID divisi tujuan harus aktif, berbeda dari asal, dan berada di outlet yang sama. Gunakan tabel referensi pada sheet.');return}
   const k=type+':'+id+':'+cat;if(so.has(k)){errors.push('Pengeluaran: item dan kategori ganda ('+id+').');return}so.add(k);
   payload.stock_out.push({item_type:type,item_id:type==='material'?id:null,wip_id:type==='wip'?id:null,qty:qty.value,unit,category:cat,target_division_id:target||null,notes:n||null});
  });
