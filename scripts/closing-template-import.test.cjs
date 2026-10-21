@@ -211,7 +211,7 @@ function createHarness(options = {}) {
 }
 
 async function makeTemplate(harness) {
-  harness.api.clDownloadTemplate();
+  await harness.api.clDownloadTemplate();
   assert(harness.generated.Sheets, 'Template generation did not produce a workbook.');
   return cloneWorkbook(harness.generated);
 }
