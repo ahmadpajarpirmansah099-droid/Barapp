@@ -27,14 +27,14 @@ function objectColumns(source, verb) {
   const re = new RegExp("\\.from\\(['\"]employees['\"]\\)\\." + verb + "\\(\\s*\\{([^}]*)\\}", 'g');
   const found = [];
   for (const match of source.matchAll(re)) {
-    for (const key of match[1].matchAll(/(?:^|[,\\s])([a-zA-Z_][a-zA-Z0-9_]*)\\s*:/g)) found.push(key[1].toLowerCase());
+    for (const key of match[1].matchAll(/(?:^|[,\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g)) found.push(key[1].toLowerCase());
   }
   return [...new Set(found)];
 }
 
-assert.match(sql, /BEGIN\\s*;/i, 'Privilege migration must be transactional');
-assert.match(sql, /COMMIT\\s*;/i, 'Privilege migration must be transactional');
-assert.match(sql, /REVOKE\\s+SELECT\\s*,\\s*INSERT\\s*,\\s*UPDATE\\s+ON\\s+TABLE\\s+public\\.employees\\s+FROM\\s+authenticated/i,
+assert.match(sql, /BEGIN\s*;/i, 'Privilege migration must be transactional');
+assert.match(sql, /COMMIT\s*;/i, 'Privilege migration must be transactional');
+assert.match(sql, /REVOKE\s+SELECT\s*,\s*INSERT\s*,\s*UPDATE\s+ON\s+TABLE\s+public\.employees\s+FROM\s+authenticated/i,
   'Broad employee read/write grants must be revoked before allowlisting columns');
 
 const readGrant = grantColumns('SELECT');
@@ -43,13 +43,13 @@ assert(!readGrant.some(column => sensitive.includes(column)), 'A PIN/lockout col
 sameColumns(grantColumns('INSERT'), expectedInsert, 'INSERT grant');
 sameColumns(grantColumns('UPDATE'), expectedUpdate, 'UPDATE grant');
 
-const projectionMatch = html.match(/const\\s+EMP_SAFE_SELECT\\s*=\\s*['"]([^'"]+)['"]/);
+const projectionMatch = html.match(/const\s+EMP_SAFE_SELECT\s*=\s*['"]([^'"]+)['"]/);
 assert.ok(projectionMatch, 'Missing EMP_SAFE_SELECT frontend projection');
 const projection = projectionMatch[1].split(',').map(column => column.trim().toLowerCase());
 sameColumns(projection, readGrant, 'Frontend read projection');
 assert(!projection.some(column => sensitive.includes(column)), 'Frontend projection must exclude all PIN/lockout columns');
 
-assert.match(html, /const\\s+out\\s*=\\s*\[\]\s*,\s*cols\s*=\s*tbl\s*===\s*['"]employees['"]\s*\?\s*EMP_SAFE_SELECT\s*:\s*['"]\*['"]/,
+assert.match(html, /const\s+out\s*=\s*\[\]\s*,\s*cols\s*=\s*tbl\s*===\s*['"]employees['"]\s*\?\s*EMP_SAFE_SELECT\s*:\s*['"]\*['"]/,
   'Generic employee pagination must use the safe projection instead of SELECT *');
 
 for (const verb of ['insert', 'update']) {
@@ -58,11 +58,11 @@ for (const verb of ['insert', 'update']) {
   const missing = fields.filter(field => !granted.has(field));
   assert.deepEqual(missing, [], 'Employee ' + verb.toUpperCase() + ' writes use columns not granted by the migration');
 }
-for (const match of html.matchAll(/\\.from\\(['"]employees['"]\\)\\.select\\(([^)]*)\\)/g)) {
+for (const match of html.matchAll(/\.from\(['"]employees['"]\)\.select\(([^)]*)\)/g)) {
   const args = match[1].trim();
   assert.notEqual(args, '', 'Employee queries must not call select() with an implicit wildcard');
-  assert(!/(?:^|[,\\s])\\*(?:$|[,\\s])/.test(args), 'Employee query must not use SELECT *');
-  assert(!sensitive.some(column => new RegExp('\\\\b' + column + '\\\\b', 'i').test(args)),
+  assert(!/(?:^|[,\s])\*(?:$|[,\s])/.test(args), 'Employee query must not use SELECT *');
+  assert(!sensitive.some(column => new RegExp('\\b' + column + '\\b', 'i').test(args)),
     'Employee query must not explicitly request PIN/lockout metadata');
 }
 
