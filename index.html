@@ -1965,6 +1965,7 @@ function accToggle(b,open){if(!b)return;b.style.transition='grid-template-rows .
 function accFix(){const m=document.querySelector('main');if(!m)return;
  const cards=[...m.children].filter(c=>c.classList.contains('card')&&!c.classList.contains('empty')&&!c.querySelector('.dlg,.prog'));
  if(cards.length<2&&pg!='dash')return;T.acc3=T.acc3||{};
+ if(pg==='dash'&&T.acc3['dash:2']===undefined)T.acc3['dash:2']=true;
  cards.forEach((c,i)=>{if(i==0&&pg!='dash')return;
   const key=pg+':'+i,open=!!T.acc3[key];
   const head=c.querySelector(':scope > h3, :scope > h4, :scope > b');
