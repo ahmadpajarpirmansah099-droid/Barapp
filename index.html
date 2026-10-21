@@ -814,6 +814,14 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   .cogs-formgrid,.cogs-line-list,.cogs-section{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
   .cogs-section{overflow:hidden}
   .cg-line{max-width:100%;box-sizing:border-box}
+/* Recipe row layout: unit and remove button below search */
+.cg-line{grid-template-areas:'kind qty' 'picker picker' 'unit remove'!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;align-items:start}
+.cg-line>select[id*='_kind_']{grid-area:kind}
+.cg-line>.cg-component-picker{grid-area:picker}
+.cg-line>input[type='number']{grid-area:qty}
+.cg-line>input[id*='_unit_']{grid-area:unit}
+.cg-line>button{grid-area:remove;justify-self:start;width:100%;max-width:120px}
+.cg-line>input[type='hidden']{display:none!important}
 }
 @media(max-width:380px){
   .cogs-table{min-width:620px}
