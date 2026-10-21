@@ -266,7 +266,7 @@ details[open]>summary::after{transform:rotate(180deg)}
 .md .grid .btn .ic{color:inherit}
 
 /* ---------- centered toast notifications with playful motion ---------- */
-#t{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1200;display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(92vw,430px);max-height:76vh;overflow:visible;pointer-events:none}
+#t{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);z-index:1200;display:flex;flex-direction:column;align-items:stretch;gap:10px;width:min(92vw,430px);max-height:40vh;overflow:visible;pointer-events:none}
 #t .w{box-sizing:border-box;width:100%;max-width:100%;background:var(--cd);border:2px solid var(--line);border-radius:20px;box-shadow:var(--cozy-lg);padding:10px 12px;pointer-events:auto;transform-origin:center center;animation:toastPopIn .42s cubic-bezier(.18,.9,.28,1.25) both;will-change:transform,opacity}
 #t .mbx{display:flex;gap:12px;align-items:center;padding:4px}#t .mt{flex:1;min-width:0;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
 #t .w.is-leaving{pointer-events:none;animation:toastFlyOutRight .42s cubic-bezier(.55,.05,.8,.35) both}
@@ -4161,5 +4161,5 @@ if(typeof window.__barappRegisterViews==='function')window.__barappRegisterViews
 if(window.__barappRefreshUI)window.__barappRefreshUI();
 
 </script>
-<script src="./closing.js?v=20261021-detail-fix-2"></script>
+<script src="./closing.js?v=20261021-detail-fix-3"></script>
 </body></html>
