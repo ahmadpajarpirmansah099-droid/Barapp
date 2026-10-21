@@ -102,12 +102,17 @@ jobs:
           # and a malicious temporary relation cannot shadow a trusted relation.
           createdb barapp_security_path_test
           safe_url="postgresql://postgres:postgres@localhost:5432/barapp_security_path_test"
-          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_setup.sql
-          psql "$safe_url" --set ON_ERROR_STOP=1 --file barapp_security_hardening_v1.sql
-          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_assert.sql
+          # Keep a single session so the temporary table survives each stage:
+          # baseline shadowing must reproduce, then the migration must stop it.
+          psql "$safe_url" --set ON_ERROR_STOP=1 <<'SQL'
+          \\i tests/security_hardening_postgres_setup.sql
+          \\i tests/security_hardening_pre_migration_assert.sql
+          \\i barapp_security_hardening_v1.sql
+          \\i tests/security_hardening_postgres_assert.sql
           # The hardening migration must also be idempotent.
-          psql "$safe_url" --set ON_ERROR_STOP=1 --file barapp_security_hardening_v1.sql
-          psql "$safe_url" --set ON_ERROR_STOP=1 --file tests/security_hardening_postgres_assert.sql
+          \\i barapp_security_hardening_v1.sql
+          \\i tests/security_hardening_postgres_assert.sql
+          SQL
 
           # Fail-closed path: a SECURITY DEFINER routine without a fixed path must
           # abort atomically and leave the other functions untouched.
