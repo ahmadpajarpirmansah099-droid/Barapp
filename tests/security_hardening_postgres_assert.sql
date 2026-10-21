@@ -1,5 +1,5 @@
 -- Assertions run after barapp_security_hardening_v1.sql in an isolated database.
-CREATE TEMP TABLE path_probe(value text NOT NULL);
+CREATE TEMP TABLE IF NOT EXISTS path_probe(value text NOT NULL);
 INSERT INTO path_probe(value) VALUES ('attacker-temp-object');
 
 DO $assert$
