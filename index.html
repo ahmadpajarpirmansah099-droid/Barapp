@@ -4197,11 +4197,10 @@ function cgDashSetKind(kind){CG.dashboardKind=kind==='wip'?'wip':'menu';CG.dashb
 function cgDashChooseItem(id){CG.dashboardItemId=id;R()}
 function cgDashChooseDivision(id){OPS.division=id;CG.division=id;CG.dashboardItemId='';CG.dashboardFilter='';R()}
 function cgDashIngredientRows(kind,id,total){
- const visited=[];
- function row(line,depth,topTotal,stack){
-  const quantity=Number(line.qty_base)||0;
+ function row(line,depth,quantityFactor,shareBase,shareLabel,stack){
+  const quantity=(Number(line.qty_base)||0)*(Number(quantityFactor)||0);
   const isMaterial=line.component_type==='material';
-  let name='Komponen tidak ditemukan',unit='',type='WIP turunan',cost=null,source='',childLines=[];
+  let name='Komponen tidak ditemukan',unit='',type='WIP turunan',cost=null,source='',childLines=[],childFactor=1,childStack=stack,cycle=false;
   if(isMaterial){
    const x=cgItem(line.item_id),p=cgMaterialPrice(x);
    name=x&&x.name||'Bahan tidak ditemukan';unit=x&&x.base_unit||'';type='Bahan';
@@ -4209,32 +4208,36 @@ function cgDashIngredientRows(kind,id,total){
   }else{
    const child=cgWip(line.component_wip_id);
    name=child&&child.name||'WIP tidak ditemukan';unit=child&&child.yield_unit||'';type='WIP turunan';
-   const wc=child?cgWipCost(child.id,stack):null;
-   if(wc&&wc.ok&&quantity>0){cost=quantity*wc.unitCost;source=wc.source==='reference'?'Memakai harga acuan':'Cost resep WIP'}
-   if(child&&wc&&wc.ok&&quantity>0&&!stack.includes(String(child.id))){
+   cycle=!!child&&stack.includes(String(child.id));
+   const wc=child&&!cycle?cgWipCost(child.id,stack):null;
+   if(wc&&wc.ok&&quantity>0){cost=quantity*wc.unitCost;source=wc.source==='reference'?'Memakai harga acuan':'Cost sesuai pemakaian'}
+   const yieldQty=Number(child&&child.yield_qty)||0;
+   if(child&&!cycle&&yieldQty>0&&quantity>0){
     childLines=CG.wipLines.filter(x=>String(x.wip_id)===String(child.id));
+    childFactor=quantity/yieldQty;
+    childStack=stack.concat(String(child.id));
    }
   }
-  const share=cost!=null&&Number(topTotal)>0?cgNum(cost/Number(topTotal)*100)+'%':'—';
+  const share=cost!=null&&Number(shareBase)>0?cgNum(cost/Number(shareBase)*100)+'% dari '+shareLabel:'—';
   const pad=Math.min(depth,8)*16;
   let html='<div style="margin-left:'+pad+'px;position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0 9px '+(depth?'10px':'0')+';border-bottom:1px solid var(--br);'+(depth?'border-left:2px solid var(--br);':'')+'">';
   html+='<div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow-wrap:anywhere">'+(depth?'<span style="color:var(--mu);margin-right:5px">↳</span>':'')+esc(name)+'</div><div class="mu" style="font-size:11px;line-height:1.45;margin-top:3px">'+type+' · '+cgNum(quantity)+' '+esc(unit||'—')+(source?' · '+source:'')+'</div></div>';
-  html+='<div style="text-align:right;white-space:nowrap"><div style="font-size:12px;font-weight:650">'+(cost==null?'<span class="mu">—</span>':cgMoney(cost))+'</div><div class="mu" style="font-size:11px;margin-top:3px">'+share+' dari HPP</div></div></div>';
-  if(childLines.length){
+  html+='<div style="text-align:right;white-space:nowrap"><div style="font-size:12px;font-weight:650">'+(cost==null?'<span class="mu">—</span>':cgMoney(cost))+'</div><div class="mu" style="font-size:11px;margin-top:3px">'+share+'</div></div></div>';
+  if(cycle){
+   html+='<div style="margin-left:'+Math.min(depth+1,8)*16+'px;padding:5px 8px;font-size:11px;color:var(--mu);border-left:2px solid var(--br)">Siklus WIP terdeteksi; rincian dihentikan.</div>';
+  }else if(childLines.length){
    for(const childLine of childLines){
-    html+=row(childLine,depth+1,topTotal,stack.concat(String(line.component_wip_id)));
+    html+=row(childLine,depth+1,childFactor,cost,'cost '+name,childStack);
    }
-  }else if(!isMaterial){
+  }else if(!isMaterial&&quantity>0){
    const child=cgWip(line.component_wip_id);
-   if(child&&stack.includes(String(child.id))){
-    html+='<div style="margin-left:'+Math.min(depth+1,8)*16+'px;padding:5px 8px;font-size:11px;color:var(--mu);border-left:2px solid var(--br)">Siklus WIP terdeteksi; rincian dihentikan.</div>';
-   }
+   if(child)html+='<div style="margin-left:'+Math.min(depth+1,8)*16+'px;padding:5px 8px;font-size:11px;color:var(--mu);border-left:2px solid var(--br)">Belum ada detail ingredient dalam resep WIP ini.</div>';
   }
   return html;
  }
  const lines=kind==='menu'?CG.menuLines.filter(l=>String(l.menu_id)===String(id)):CG.wipLines.filter(l=>String(l.wip_id)===String(id));
  if(!lines.length)return '<div class="cogs-empty" style="font-size:12px;padding:14px">Belum ada detail ingredient pada resep ini.</div>';
- return lines.map(l=>row(l,0,total,kind==='wip'?[String(id)]:[])).join('');
+ return lines.map(l=>row(l,0,1,total,'HPP',kind==='wip'?[String(id)]:[])).join('');
 }
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_dashboard=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';
