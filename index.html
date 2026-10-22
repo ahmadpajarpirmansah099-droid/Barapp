@@ -4197,20 +4197,44 @@ function cgDashSetKind(kind){CG.dashboardKind=kind==='wip'?'wip':'menu';CG.dashb
 function cgDashChooseItem(id){CG.dashboardItemId=id;R()}
 function cgDashChooseDivision(id){OPS.division=id;CG.division=id;CG.dashboardItemId='';CG.dashboardFilter='';R()}
 function cgDashIngredientRows(kind,id,total){
- const lines=kind==='menu'?CG.menuLines.filter(l=>String(l.menu_id)===String(id)):CG.wipLines.filter(l=>String(l.wip_id)===String(id));
- if(!lines.length)return '<div class="cogs-empty" style="font-size:12px;padding:14px">Belum ada detail ingredient pada resep ini.</div>';
- return lines.map(l=>{
-  const quantity=Number(l.qty_base)||0;let name='Komponen tidak ditemukan',unit='',type='WIP turunan',cost=null,source='';
-  if(l.component_type==='material'){
-   const x=cgItem(l.item_id),p=cgMaterialPrice(x);name=x&&x.name||'Bahan tidak ditemukan';unit=x&&x.base_unit||'';type='Bahan';
+ const visited=[];
+ function row(line,depth,topTotal,stack){
+  const quantity=Number(line.qty_base)||0;
+  const isMaterial=line.component_type==='material';
+  let name='Komponen tidak ditemukan',unit='',type='WIP turunan',cost=null,source='',childLines=[];
+  if(isMaterial){
+   const x=cgItem(line.item_id),p=cgMaterialPrice(x);
+   name=x&&x.name||'Bahan tidak ditemukan';unit=x&&x.base_unit||'';type='Bahan';
    if(x&&x.active&&p&&quantity>0){cost=quantity*p.value;source=p.source==='reference'?'Harga acuan':'Harga terakhir'}
   }else{
-   const w=cgWip(l.component_wip_id),wc=w?cgWipCost(w.id,[]):null;name=w&&w.name||'WIP tidak ditemukan';unit=w&&w.yield_unit||'';
+   const child=cgWip(line.component_wip_id);
+   name=child&&child.name||'WIP tidak ditemukan';unit=child&&child.yield_unit||'';type='WIP turunan';
+   const wc=child?cgWipCost(child.id,stack):null;
    if(wc&&wc.ok&&quantity>0){cost=quantity*wc.unitCost;source=wc.source==='reference'?'Memakai harga acuan':'Cost resep WIP'}
+   if(child&&wc&&wc.ok&&quantity>0&&!stack.includes(String(child.id))){
+    childLines=CG.wipLines.filter(x=>String(x.wip_id)===String(child.id));
+   }
   }
-  const share=cost!=null&&Number(total)>0?cgNum(cost/Number(total)*100)+'%':'—';
-  return '<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--br)"><div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow-wrap:anywhere">'+esc(name)+'</div><div class="mu" style="font-size:11px;line-height:1.45;margin-top:3px">'+type+' · '+cgNum(quantity)+' '+esc(unit||'—')+(source?' · '+source:'')+'</div></div><div style="text-align:right;white-space:nowrap"><div style="font-size:12px;font-weight:650">'+(cost==null?'<span class="mu">—</span>':cgMoney(cost))+'</div><div class="mu" style="font-size:11px;margin-top:3px">'+share+' dari HPP</div></div></div>';
- }).join('');
+  const share=cost!=null&&Number(topTotal)>0?cgNum(cost/Number(topTotal)*100)+'%':'—';
+  const pad=Math.min(depth,8)*16;
+  let html='<div style="margin-left:'+pad+'px;position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0 9px '+(depth?'10px':'0')+';border-bottom:1px solid var(--br);'+(depth?'border-left:2px solid var(--br);':'')+'">';
+  html+='<div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow-wrap:anywhere">'+(depth?'<span style="color:var(--mu);margin-right:5px">↳</span>':'')+esc(name)+'</div><div class="mu" style="font-size:11px;line-height:1.45;margin-top:3px">'+type+' · '+cgNum(quantity)+' '+esc(unit||'—')+(source?' · '+source:'')+'</div></div>';
+  html+='<div style="text-align:right;white-space:nowrap"><div style="font-size:12px;font-weight:650">'+(cost==null?'<span class="mu">—</span>':cgMoney(cost))+'</div><div class="mu" style="font-size:11px;margin-top:3px">'+share+' dari HPP</div></div></div>';
+  if(childLines.length){
+   for(const childLine of childLines){
+    html+=row(childLine,depth+1,topTotal,stack.concat(String(line.component_wip_id)));
+   }
+  }else if(!isMaterial){
+   const child=cgWip(line.component_wip_id);
+   if(child&&stack.includes(String(child.id))){
+    html+='<div style="margin-left:'+Math.min(depth+1,8)*16+'px;padding:5px 8px;font-size:11px;color:var(--mu);border-left:2px solid var(--br)">Siklus WIP terdeteksi; rincian dihentikan.</div>';
+   }
+  }
+  return html;
+ }
+ const lines=kind==='menu'?CG.menuLines.filter(l=>String(l.menu_id)===String(id)):CG.wipLines.filter(l=>String(l.wip_id)===String(id));
+ if(!lines.length)return '<div class="cogs-empty" style="font-size:12px;padding:14px">Belum ada detail ingredient pada resep ini.</div>';
+ return lines.map(l=>row(l,0,total,kind==='wip'?[String(id)]:[])).join('');
 }
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_dashboard=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';
