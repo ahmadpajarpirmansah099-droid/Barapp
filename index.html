@@ -3886,7 +3886,7 @@ async function opsLoadPosition(show,force){
   }else{
    OPS.counts=Object.assign({},OPS.countCache?.[key]||{});rows.forEach(p=>{const k=opsKey(p.component_type,p.component_id);if(!(k in OPS.counts))OPS.counts[k]=''});
   }
-  OPS.position=rows;OPS.positionLoadedFor=key;
+  OPS.position=rows;OPS.positionLoadedFor=key;if(show)toast('Saldo berhasil dimuat: '+rows.length+' item.','ok');
  }catch(e){
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
   const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
@@ -3900,6 +3900,10 @@ async function opsLoadPosition(show,force){
   if(requestId===OPS.positionRequestId){OPS.positionLoading=false;}
   if(requestId===OPS.positionRequestId&&pg==='cogs_daily_so'){
    R();
+   if(show&&OPS.positionLoadedFor===key){
+    const table=document.querySelector('.ops-daily-so-table');
+    if(table)table.scrollIntoView({behavior:'smooth',block:'start'});
+   }
    const latestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
    if(latestKey!==key)opsLoadPosition(false);
   }
@@ -4149,6 +4153,7 @@ async function exportSuppliesSOExcel(){
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';const gate=cgModuleGate('cogs_daily_so','Daily SO COGS');if(gate)return gate;
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
  const key=division+'|'+date;
+ const positionStatus=OPS.positionLoading?'<p class="cogs-pill" role="status" aria-live="polite">Saldo sedang dimuat…</p>':(OPS.positionLoadedFor===key?'<p class="cogs-pill" role="status" aria-live="polite">Saldo siap · '+OPS.position.length+' item</p>':'');
  if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key)opsLoadPosition(false)
  if(OPS.positionErrorFor===key&&OPS.positionError){
   const retryDivs=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
@@ -4178,7 +4183,7 @@ async function exportSuppliesSOExcel(){
   const totalValue=lines.reduce((a,l)=>a+Number(l.variance_value_snapshot||0),0);
   return '<tr><td><b>'+esc(s.so_date)+'</b><br><small class="mu">'+esc(opsDivName(s.division_id))+'</small></td><td>'+lines.length+' item</td><td>'+varianceCount+' selisih</td><td>'+cgMoney(totalValue)+'</td><td>'+(s.status==='submitted'?'<span class="cogs-pill">Disimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='submitted'?opsCancelButton('daily_so',s.id):'')+'</td></tr>';
  }).join('');
- return '<div class="cogs-wrap">'+dailyShortcuts+'<div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p></div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+positionRows+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap">'+dailyShortcuts+'<div class="card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p>'+positionStatus+'</div><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Muat saldo</button></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+positionRows+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
 };
 
 // Register deferred feature views from the shared window bridge.
