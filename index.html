@@ -3829,8 +3829,9 @@ async function opsLoadUnitMaster(){
 async function opsLoadPosition(show,force){
  if(!CG.ready)return;
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
- if(OPS.positionLoading)return;
+ if(OPS.positionLoading&&!force)return;
  if(!force&&OPS.positionLoadedFor===key)return;
+ const requestId=(OPS.positionRequestId||0)+1;OPS.positionRequestId=requestId;
  OPS.positionLoading=true;OPS.positionError='';OPS.positionErrorFor='';if(show&&pg==='cogs_daily_so')R();
  let timeoutId=null,controller=null;
  try{
@@ -3840,6 +3841,7 @@ async function opsLoadPosition(show,force){
    try{await Promise.race([opsLoadUnitMaster(),timeout])}
    catch(e){if(/SO_POSITION_TIMEOUT/.test(String(e&&e.message||e)))throw e;console.warn('Master Barang units could not be loaded for Daily SO:',e)}
   }
+  if(requestId!==OPS.positionRequestId)return;
   if(!div){
    const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
    OPS.positionError=hasServiceDivision
@@ -3849,7 +3851,7 @@ async function opsLoadPosition(show,force){
   }
   // If the selected outlet/division/date changed while the unit cache was loading, skip this stale request.
   const requestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
-  if(requestKey!==key)return;
+  if(requestId!==OPS.positionRequestId||requestKey!==key)return;
   const request=sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
   if(typeof AbortController==='function'&&request&&typeof request.abortSignal==='function'){
    controller=new AbortController();request.abortSignal(controller.signal);
@@ -3860,7 +3862,7 @@ async function opsLoadPosition(show,force){
   if(error)throw error;
   // Ignore a slow response if the user has changed the outlet division or date while it was loading.
   const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
-  if(currentKey!==key)return;
+  if(requestId!==OPS.positionRequestId||currentKey!==key)return;
   let rows=(data||[]).sort((a,b)=>invAlpha(a.component_name,b.component_name)||invAlpha(a.component_type,b.component_type));
   const existing=CG.dailySO.find(s=>String(s.division_id)===String(div)&&String(s.so_date)===String(date)&&s.status==='submitted');
   if(existing){
@@ -3888,24 +3890,24 @@ async function opsLoadPosition(show,force){
  }catch(e){
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
   const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
-  if(currentKey!==key)return;
+  if(requestId!==OPS.positionRequestId||currentKey!==key)return;
   OPS.positionError=/SO_POSITION_TIMEOUT/.test(String(e&&e.message||e))
    ?'Penghitungan saldo melewati 25 detik dan dibatalkan. Periksa koneksi lalu coba muat saldo lagi.'
    :opsErr(e);
   OPS.positionErrorFor=key;OPS.position=[];if(show)toast(OPS.positionError,'err')
  }finally{
   if(timeoutId)clearTimeout(timeoutId);
-  OPS.positionLoading=false;
-  if(pg==='cogs_daily_so'){
+  if(requestId===OPS.positionRequestId){OPS.positionLoading=false;}
+  if(requestId===OPS.positionRequestId&&pg==='cogs_daily_so'){
    R();
    const latestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
    if(latestKey!==key)opsLoadPosition(false);
   }
  }
 }
-function opsRetryPosition(){OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];opsLoadPosition(true)}
-function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true);else R()}
-function opsSetDate(date,force){const next=date||opsDate(),div=OPS.division||CG.divs[0]?.id||'',key=div+'|'+next;if(OPS.positionLoading&&next===OPS.date){if(force)toast('Saldo sedang dimuat. Tunggu sampai selesai.','warn');return}if(!force&&next===OPS.date&&OPS.positionLoadedFor===key)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.positionErrorFor='';OPS.counts=Object.assign({},OPS.countCache?.[key]||{});opsLoadPosition(true)}
+function opsRetryPosition(){OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];opsLoadPosition(true,true)}
+function opsSetDivision(id){OPS.division=id;OPS.positionLoadedFor='';OPS.positionError='';OPS.positionErrorFor='';OPS.position=[];OPS.counts={};if(pg==='cogs_daily_so')opsLoadPosition(true,true);else R()}
+function opsSetDate(date,force){const next=date||opsDate(),div=OPS.division||CG.divs[0]?.id||'',key=div+'|'+next;if(OPS.positionLoading&&next===OPS.date&&!force)return;if(!force&&next===OPS.date&&OPS.positionLoadedFor===key)return;OPS.date=next;const input=document.getElementById('ops_so_date');if(input&&input.value!==next)input.value=next;OPS.positionLoadedFor='';OPS.position=[];OPS.positionError='';OPS.positionErrorFor='';OPS.counts=Object.assign({},OPS.countCache?.[key]||{});opsLoadPosition(true,true)}
 async function opsAddEntryRow(kind){
  const tbody=document.getElementById(kind==='sale'?'ops_sale_entry_rows':'ops_prod_entry_rows');if(!tbody)return;
  const first=tbody.querySelector('.ops-entry-row');if(!first)return;
