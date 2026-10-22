@@ -2608,10 +2608,16 @@ function accFeaturePermDirty(draft){
 }
 function accFeaturePermGroupStage(uid,index,on){
  const groups=[
-  ['attendance.view','employees.view'],['employees.directory.view'],['attendance.report.view'],['attendance.input','attendance.manage','attendance.approve','attendance.correct','employees.manage'],
-  ['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage'],['division.manage'],
+  ['attendance.view','employees.view'],
+  ['employees.directory.view'],
+  ['attendance.report.view'],
+  ['attendance.input','attendance.manage','attendance.approve','attendance.correct','employees.manage'],
+  ['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage'],
+  ['division.manage'],
   ['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage'],
-  ['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'],[]
+  ['cogs.wip.view','cogs.menu.view'],
+  ['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.manage','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'],
+  []
  ];
  const draft=T.featurePermDrafts&&T.featurePermDrafts[uid];if(!draft||!groups[index])return;
  for(const perm of groups[index]){draft.selected=draft.selected.filter(x=>x!==perm);if(on)draft.selected.push(perm)}
