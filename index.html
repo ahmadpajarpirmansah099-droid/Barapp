@@ -4220,8 +4220,9 @@ function cgDashIngredientRows(kind,id,total){
   }
   const share=cost!=null&&Number(shareBase)>0?cgNum(cost/Number(shareBase)*100)+'% dari '+shareLabel:'—';
   const pad=Math.min(depth,8)*16;
-  let html='<div style="margin-left:'+pad+'px;position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0 9px '+(depth?'10px':'0')+';border-bottom:1px solid var(--br);'+(depth?'border-left:2px solid var(--br);':'')+'">';
-  html+='<div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow-wrap:anywhere">'+(depth?'<span style="color:var(--mu);margin-right:5px">↳</span>':'')+esc(name)+'</div><div class="mu" style="font-size:11px;line-height:1.45;margin-top:3px">'+type+' · '+cgNum(quantity)+' '+esc(unit||'—')+(source?' · '+source:'')+'</div></div>';
+  const mainLine=depth===0;
+  let html='<div style="margin-left:'+pad+'px;position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:'+(mainLine?'11px 0 10px ':'9px 0 9px ') +(depth?'10px':'0')+';border-bottom:1px solid var(--br);'+(mainLine?'border-top:1px solid var(--br);':'')+(depth?'border-left:2px solid var(--br);':'')+'">';
+  html+='<div style="min-width:0"><div style="font-size:'+(mainLine?'14px':'12px')+'px;font-weight:'+(mainLine?'800':'650')+';overflow-wrap:anywhere">'+(depth?'<span style="color:var(--mu);margin-right:5px">↳</span>':'<span style="font-size:14px;font-weight:800;margin-right:6px">•</span>')+esc(name)+'</div><div class="mu" style="font-size:11px;line-height:1.45;margin-top:3px">'+type+' · '+cgNum(quantity)+' '+esc(unit||'—')+(source?' · '+source:'')+'</div></div>';
   html+='<div style="text-align:right;white-space:nowrap"><div style="font-size:12px;font-weight:650">'+(cost==null?'<span class="mu">—</span>':cgMoney(cost))+'</div><div class="mu" style="font-size:11px;margin-top:3px">'+share+'</div></div></div>';
   if(cycle){
    html+='<div style="margin-left:'+Math.min(depth+1,8)*16+'px;padding:5px 8px;font-size:11px;color:var(--mu);border-left:2px solid var(--br)">Siklus WIP terdeteksi; rincian dihentikan.</div>';
