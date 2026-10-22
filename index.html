@@ -1587,7 +1587,7 @@ async function outInit(){
   const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
   if(!multi){
     if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
-    if(T.scopeOut)return T.scopeOut;
+    if(T.scopeOut){if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut;}
     if(T.dbRole!='div_admin')return D.ljId||null;
     return (D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||null)}
   const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
