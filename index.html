@@ -472,7 +472,7 @@ label:has(> .cs){display:flex;flex-direction:column;gap:6px}
 .cs-sheet .cs-it.on{color:var(--ac);font-weight:700;border-color:color-mix(in srgb,var(--ac) 45%,var(--line));background:color-mix(in srgb,var(--ac) 10%,var(--cd))}
 .cs-sheet .cs-it:disabled{opacity:.45}
 .inv-receipt-picker{position:relative;min-width:0}.inv-receipt-picker input{box-sizing:border-box;width:100%;min-width:0}.inv-receipt-results{display:none;max-height:220px;overflow:auto;margin-top:6px;padding:5px;border:2px solid var(--line);border-radius:12px;background:var(--cd)}.inv-receipt-results.open{display:grid;gap:3px}.inv-receipt-option{width:100%;min-width:0;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--tx);font:inherit;overflow-wrap:anywhere}.inv-receipt-option:hover{background:var(--tint)}.inv-receipt-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;margin-top:14px}.inv-receipt-actions .btn{width:100%;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;white-space:normal}
-.cg-component-picker{position:relative;min-width:0;width:100%}.cg-component-results{display:none;max-height:220px;overflow:auto;margin-top:0;padding:5px;border:2px solid var(--line);border-radius:12px;background:var(--cd);position:absolute;top:100%;left:0;width:100%;box-sizing:border-box;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.16)}.cg-component-results.open{display:grid;gap:3px}.cg-line:has(.cg-component-results.open){z-index:1001}.cg-component-option{width:100%;min-width:0;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--tx);font:inherit;overflow-wrap:anywhere}.cg-component-option:hover{background:var(--tint)}
+.cg-component-picker{position:relative;min-width:0;width:100%}.cg-dashboard-picker{position:relative;z-index:1002;min-width:0;width:100%}.cg-dashboard-picker:has(.cg-component-results.open){z-index:1005}.cogs-wrap .card:has(.cg-dashboard-picker .cg-component-results.open){position:relative;z-index:1004;overflow:visible!important}.cg-component-results{display:none;max-height:220px;overflow:auto;margin-top:0;padding:5px;border:2px solid var(--line);border-radius:12px;background:var(--cd);position:absolute;top:100%;left:0;width:100%;box-sizing:border-box;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.16)}.cg-component-results.open{display:grid;gap:3px}.cg-line:has(.cg-component-results.open){z-index:1001}.cg-component-option{width:100%;min-width:0;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--tx);font:inherit;overflow-wrap:anywhere}.cg-component-option:hover{background:var(--tint)}
 .cg-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:28px 16px;font-weight:600}
 .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,var(--ac) 22%,transparent);border-top-color:var(--ac);animation:spinR .8s linear infinite;flex:0 0 auto}
 @keyframes spinR{to{transform:rotate(360deg)}}
@@ -4207,7 +4207,28 @@ async function exportSuppliesSOExcel(){
 
 
 function cgDashSetKind(kind){CG.dashboardKind=kind==='wip'?'wip':'menu';CG.dashboardItemId='';CG.dashboardFilter='';R()}
-function cgDashChooseItem(id){CG.dashboardItemId=id;R()}
+function cgDashChooseItem(id){CG.dashboardItemId=id;CG.dashboardFilter='';R()}
+function cgDashSearch(input){
+ const results=document.getElementById('cg_dashboard_results');
+ if(!input||!results)return;
+ const q=String(input.value||'').trim().toLocaleLowerCase();
+ if(!q){results.classList.remove('open');return;}
+ let shown=0;
+ results.querySelectorAll('.cg-dashboard-option').forEach(button=>{
+  const match=String(button.dataset.search||'').includes(q);
+  button.style.display=match?'':'none';
+  if(match)shown++;
+ });
+ const empty=results.querySelector('.cg-component-empty');
+ if(empty)empty.style.display=shown?'none':'block';
+ results.classList.add('open');
+}
+function cgDashPick(button){
+ if(!button)return;
+ CG.dashboardItemId=button.dataset.componentId||'';
+ CG.dashboardFilter='';
+ R();
+}
 function cgDashChooseDivision(id){OPS.division=id;CG.division=id;CG.dashboardItemId='';CG.dashboardFilter='';R()}
 function cgDashIngredientRows(kind,id,total){
  function row(line,depth,quantityFactor,shareBase,shareLabel,stack){
@@ -4263,7 +4284,7 @@ function cgDashIngredientRows(kind,id,total){
  const all=(kind==='wip'?CG.wips:CG.menus).filter(x=>String(x.division_id)===String(div)).sort((a,b)=>invAlpha(a.name,b.name));
  let selectedId=CG.dashboardItemId;
  if(!all.some(x=>String(x.id)===String(selectedId))){selectedId=all[0]?.id||'';CG.dashboardItemId=selectedId}
- const opts=all.map(x=>'<option value="'+esc(x.id)+'" '+(String(x.id)===String(selectedId)?'selected':'')+'>'+esc(x.name)+(x.active?'':' · Nonaktif')+'</option>').join('');
+ const opts=all.map(x=>'<button type="button" class="cg-component-option cg-dashboard-option" data-component-id="'+esc(x.id)+'" data-search="'+esc(String(x.name||'').toLocaleLowerCase())+'" onclick="cgDashPick(this)">'+esc(x.name)+(x.active?'':' · Nonaktif')+'</button>').join('');
  const divOpts=CG.divs.map(d=>'<option value="'+esc(d.id)+'" '+(String(d.id)===String(div)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const item=all.find(x=>String(x.id)===String(selectedId));
  const calc=item?(kind==='wip'?cgWipCost(item.id,[]):cgMenuCost(item.id)):null;
@@ -4287,7 +4308,7 @@ function cgDashIngredientRows(kind,id,total){
  const details=item?'<div class="cogs-section cg-dashboard-ingredients" style="margin-top:12px;background:var(--cd)!important;opacity:1!important;color:var(--tx)!important"><div class="cogs-top" style="align-items:center"><div><b>Detail ingredient</b><div class="mu" style="font-size:11px;margin-top:3px">Jumlah, satuan, cost, dan persentase kontribusi</div></div><span class="cogs-pill">'+(kind==='menu'?'Per menu':'Per batch')+'</span></div><div style="margin-top:7px">'+cgDashIngredientRows(kind,item.id,calc&&calc.ok?calc.total:null)+'</div></div>':'<div class="cogs-section cg-dashboard-ingredients" style="margin-top:12px;background:var(--cd)!important;opacity:1!important;color:var(--tx)!important"><div class="cogs-empty">Belum ada '+(kind==='wip'?'Resep WIP':'Menu')+' untuk divisi ini.</div></div>';
  return '<div class="cogs-wrap"><div class="card">'
   +'<div class="cogs-top" style="align-items:center;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><h3>'+(item?esc(item.name):'Dashboard COGS')+'</h3><p class="mu" style="font-size:12px;margin-top:4px">'+(item?(kind==='menu'?'Menu':'Resep WIP')+' · '+(item.active?'Aktif':'Nonaktif'):'Pilih menu atau resep WIP untuk melihat rincian.')+'</p></div><div class="cogs-actions" style="align-items:center"><button class="btn '+(kind==='menu'?'s':'o')+'" onclick="cgDashSetKind(\'menu\')">Menu</button><button class="btn '+(kind==='wip'?'s':'o')+'" onclick="cgDashSetKind(\'wip\')">Resep WIP</button></div></div>'
-  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:12px"><label>Divisi<select onchange="cgDashChooseDivision(this.value)">'+divOpts+'</select></label><label>'+(kind==='wip'?'Pilih resep WIP':'Pilih menu')+'<select id="cg_dashboard_item" onchange="cgDashChooseItem(this.value)">'+(opts||'<option value="">Tidak ada item</option>')+'</select></label></div>'
+  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:12px"><label>Divisi<select onchange="cgDashChooseDivision(this.value)">'+divOpts+'</select></label><label>'+(kind==='wip'?'Cari resep WIP':'Cari menu')+'<div class="cg-component-picker cg-dashboard-picker"><input id="cg_dashboard_search" type="search" value="'+esc(item?item.name:'')+'" placeholder="'+(kind==='wip'?'Cari nama resep WIP...':'Cari nama menu...')+'" oninput="cgDashSearch(this)" onfocus="cgDashSearch(this)" autocomplete="off" style="width:100%;min-width:0"><div id="cg_dashboard_results" class="cg-component-results">'+(opts||'<div class="cg-component-empty" style="padding:10px 12px;color:var(--mu)">Belum ada item.</div>')+'<div class="cg-component-empty" style="display:none;padding:10px 12px;color:var(--mu)">Item tidak ditemukan.</div></div></div></label></div>'
   +'<div style="margin-top:10px"><span class="cogs-pill">Baca saja</span><p class="mu" style="font-size:11px;margin:7px 0 0">Sumber: Master Bahan, Menu, dan Resep WIP. Dashboard ini hanya membaca data; tidak mengubah stok, resep, harga, atau transaksi.</p></div>'
   +(item?'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px">'+metrics+'</div>'+(calc&&!calc.ok?'<p class="mu" style="font-size:12px;margin-top:10px">Catatan: '+esc(calc.reason||'HPP belum valid')+'</p>':''):'')
   +'</div>'+details+'</div>';
