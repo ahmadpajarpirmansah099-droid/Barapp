@@ -814,6 +814,8 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   .cogs-formgrid,.cogs-line-list,.cogs-section{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
   .cogs-section{overflow:hidden}
   .cg-line{max-width:100%;box-sizing:border-box}
+/* Bold recipe ingredient details in WIP and menu */
+#cg_wip_lines .cg-line input[type='search'],#cg_menu_lines .cg-line input[type='search'],#cg_wip_lines .cg-line input[type='number'],#cg_menu_lines .cg-line input[type='number'],#cg_wip_lines .cg-line input[id*='_unit_'],#cg_menu_lines .cg-line input[id*='_unit_'],#cg_wip_lines .cg-component-option,#cg_menu_lines .cg-component-option{font-weight:700!important}
 /* Clear visual separation between recipe ingredients in WIP and menu forms */
 #cg_wip_lines>.cg-line,#cg_menu_lines>.cg-line{position:relative!important;background:var(--cd)!important;border:2px solid var(--br)!important;border-radius:14px!important;padding:12px!important;margin:0 0 18px!important;box-shadow:0 2px 0 var(--line)!important}#cg_wip_lines>.cg-line:not(:last-child),#cg_menu_lines>.cg-line:not(:last-child){border-bottom:3px solid var(--br)!important;padding-bottom:16px!important;margin-bottom:18px!important}
 /* Recipe row layout: unit and remove button below search */
