@@ -3826,31 +3826,34 @@ async function opsLoadUnitMaster(){
  INV.items=items;
  INV.unitMasterOutletId=outletKey;
 }
-async function opsLoadPosition(show){
+async function opsLoadPosition(show,force){
  if(!CG.ready)return;
- // Load the lightweight unit cache independently; do not block Daily SO on the full inventory history query.
- if(!INV.ready){try{await opsLoadUnitMaster()}catch(e){console.warn('Master Barang units could not be loaded for Daily SO:',e)}}
  const div=OPS.division||CG.divs[0]?.id||'',date=OPS.date||opsDate(),key=div+'|'+date;
- if(!div){
-  const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
-  OPS.positionError=hasServiceDivision
-   ?'Divisi Service tidak memakai Daily SO COGS. Untuk stok guest supplies, buka menu SUPLIES (Daily SO SUPLIES).'
-   :'Belum ada divisi COGS yang bisa diakses untuk Daily SO ini.';
-  OPS.positionErrorFor=key;OPS.position=[];OPS.positionLoading=false;
-  // This branch can run after the asynchronous inventory load, so re-render even if show=false.
-  if(pg==='cogs_daily_so')R();
-  return;
- }
- if(OPS.positionLoading||OPS.positionLoadedFor===key)return;
- OPS.positionLoading=true;OPS.positionError='';OPS.positionErrorFor='';if(show)R();
+ if(OPS.positionLoading)return;
+ if(!force&&OPS.positionLoadedFor===key)return;
+ OPS.positionLoading=true;OPS.positionError='';OPS.positionErrorFor='';if(show&&pg==='cogs_daily_so')R();
  let timeoutId=null,controller=null;
  try{
-  // Jangan biarkan layar menggantung selamanya jika RPC saldo tidak merespons.
+  // One deadline covers both the lightweight unit-cache preflight and the stock-position RPC.
+  const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>{if(controller)controller.abort();reject(new Error('SO_POSITION_TIMEOUT'))},25000)});
+  if(!INV.ready){
+   try{await Promise.race([opsLoadUnitMaster(),timeout])}
+   catch(e){if(/SO_POSITION_TIMEOUT/.test(String(e&&e.message||e)))throw e;console.warn('Master Barang units could not be loaded for Daily SO:',e)}
+  }
+  if(!div){
+   const hasServiceDivision=(INV.divs||[]).some(d=>/service/i.test(String(d.code||d.name||'')));
+   OPS.positionError=hasServiceDivision
+    ?'Divisi Service tidak memakai Daily SO COGS. Untuk stok guest supplies, buka menu SUPLIES (Daily SO SUPLIES).'
+    :'Belum ada divisi COGS yang bisa diakses untuk Daily SO ini.';
+   OPS.positionErrorFor=key;OPS.position=[];return;
+  }
+  // If the selected outlet/division/date changed while the unit cache was loading, skip this stale request.
+  const requestKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+  if(requestKey!==key)return;
   const request=sb().rpc('cogs_get_stock_position',{p_division_id:div,p_as_of:date});
   if(typeof AbortController==='function'&&request&&typeof request.abortSignal==='function'){
    controller=new AbortController();request.abortSignal(controller.signal);
   }
-  const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>{if(controller)controller.abort();reject(new Error('SO_POSITION_TIMEOUT'))},25000)});
   const result=await Promise.race([request,timeout]);
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
   const {data,error}=result;
@@ -3884,12 +3887,13 @@ async function opsLoadPosition(show){
   OPS.position=rows;OPS.positionLoadedFor=key;
  }catch(e){
   if(timeoutId){clearTimeout(timeoutId);timeoutId=null}
+  const currentKey=(OPS.division||CG.divs[0]?.id||'')+'|'+(OPS.date||opsDate());
+  if(currentKey!==key)return;
   OPS.positionError=/SO_POSITION_TIMEOUT/.test(String(e&&e.message||e))
    ?'Penghitungan saldo melewati 25 detik dan dibatalkan. Periksa koneksi lalu coba muat saldo lagi.'
    :opsErr(e);
   OPS.positionErrorFor=key;OPS.position=[];if(show)toast(OPS.positionError,'err')
- }
- finally{
+ }finally{
   if(timeoutId)clearTimeout(timeoutId);
   OPS.positionLoading=false;
   if(pg==='cogs_daily_so'){
@@ -4143,7 +4147,7 @@ async function exportSuppliesSOExcel(){
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';const gate=cgModuleGate('cogs_daily_so','Daily SO COGS');if(gate)return gate;
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
  const key=division+'|'+date;
- if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key){opsLoadPosition(false);return '<div class="card">Menghitung saldo harapan untuk Daily SO…</div>'}
+ if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key)opsLoadPosition(false)
  if(OPS.positionErrorFor===key&&OPS.positionError){
   const retryDivs=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
   const serviceHint=/Divisi Service tidak memakai Daily SO COGS/i.test(OPS.positionError);
