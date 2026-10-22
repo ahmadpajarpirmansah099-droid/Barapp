@@ -2980,17 +2980,7 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
   .inv-actions .btn{flex:1 1 100%}
 }
 `;
-const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt><script>
-/* Ensure inline recipe remove buttons can always reach the handler globally. */
-window.cgRemoveLine=function(type,i){
-  const row=document.querySelector('.cg-line[data-kind="'+type+'"][data-index="'+i+'"]');
-  if(!row)return;
-  row.remove();
-  if(type==='wip'&&typeof window.cgWipPreview==='function')window.cgWipPreview();
-  if(type==='menu'&&typeof window.cgMenuPreview==='function')window.cgMenuPreview();
-};
-</script>
-</body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
@@ -4205,6 +4195,16 @@ async function exportSuppliesSOExcel(){
 if(typeof window.__barappRegisterViews==='function')window.__barappRegisterViews(window.__barappPendingViews||{});
 if(window.__barappRefreshUI)window.__barappRefreshUI();
 
+</script>
+<script>
+/* Keep the recipe remove handler available to inline buttons. */
+window.cgRemoveLine=function(type,i){
+  const row=document.querySelector('.cg-line[data-kind="'+type+'"][data-index="'+i+'"]');
+  if(!row)return;
+  row.remove();
+  if(type==='wip'&&typeof window.cgWipPreview==='function')window.cgWipPreview();
+  if(type==='menu'&&typeof window.cgMenuPreview==='function')window.cgMenuPreview();
+};
 </script>
 <script src="./closing.js?v=20261022-menu-inactive-filter-fix-2"></script>
 </body></html>
