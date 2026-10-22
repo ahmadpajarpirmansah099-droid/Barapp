@@ -2512,7 +2512,7 @@ V.div=()=>{if(!isDeveloper()){if(T.dbRole==='div_admin'&&hasDivMgr())return divM
  const ds=T.divs||[];const __oc=outCardHtml();
  const rows=ds.map(d=>{const enabled=DIV_MODULE_FIELDS.filter(m=>divisionModuleOn(d,m.key)).map(m=>m.label);return `<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td><small>${esc(enabled.join(', ')||'Tidak ada modul COGS/SUPLIES aktif')}</small></td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit modul</button></td></tr>`}).join('');
  return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px;min-width:520px"><tr><th>Divisi</th><th>Admin</th><th>Modul aktif</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada divisi.</td></tr>'}</table></div></div>`+
- `${isDeveloper()?accsCard():(T.dbRole==='div_admin'&&hasDivMgr()?divMgrPermissionsCard():'')}<div class="card"><b>Tambah divisi</b><p class="mu">Divisi baru otomatis mendapat Master Barang dan SUPLIES. Modul COGS tidak aktif sampai Developer mengaturnya melalui Edit modul.</p><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
+ `${isDeveloper()?accsCard():(T.dbRole==='div_admin'&&hasDivMgr()?divMgrPermissionsCard():'')}${isDeveloper()?'<div class="card"><b>Aktifkan akun Viewer · Lazy Jennie</b><p class="mu">Buat user <code>crew@div.bar</code> terlebih dahulu di Supabase Authentication → Users, lalu tekan tombol ini untuk memberi akses terbatas ke Rekap dan Dashboard COGS outlet LJN.</p><button class="btn" onclick="assignCrewReportViewer()">Atur akses Viewer Lazy Jennie</button></div>':''}<div class="card"><b>Tambah divisi</b><p class="mu">Divisi baru otomatis mendapat Master Barang dan SUPLIES. Modul COGS tidak aktif sampai Developer mengaturnya melalui Edit modul.</p><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divMgrPermLoad(){
  try{const [accounts,perms]=await Promise.all([payRpc('division_manager_list_accounts'),payRpc('division_manager_list_feature_perms')]);T.permManagedAccounts=accounts||[];T.featurePerms=perms||[];T.divMgrPermError=''}
@@ -2552,6 +2552,20 @@ async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
 async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
  const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
  if(ok){toast('Admin divisi diatur');divLoad()}}
+async function assignCrewReportViewer(){
+ if(!isDeveloper())return toast('Fitur ini hanya untuk Developer.','err');
+ try{
+  const result=await payRpc('dev_assign_report_viewer',{p_email:'crew@div.bar'});
+  if(!result||result.ok!==true)throw new Error('Konfirmasi role Viewer tidak diterima.');
+  toast('Akun crew@div.bar sekarang menjadi Viewer untuk Lazy Jennie.','ok');
+  await divLoad();
+ }catch(e){
+  const m=String(e&&e.message||e);
+  if(/REPORT_VIEWER_AUTH_USER_NOT_FOUND/i.test(m))return toast('User Auth crew@div.bar belum dibuat. Tambahkan dulu di Supabase → Authentication → Users, lalu ulangi.','warn');
+  if(/CANNOT_DOWNGRADE_DEVELOPER/i.test(m))return toast('Email ini terdaftar sebagai Developer dan tidak bisa diubah ke Viewer.','err');
+  toast('Gagal mengatur akses Viewer: '+errText(e),'err');
+ }
+}
 
 /* ===== AUDIT LOG (dev, baca saja) ===== */
 async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
