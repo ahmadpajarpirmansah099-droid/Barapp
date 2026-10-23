@@ -189,15 +189,14 @@ async function clDownloadTemplate(){
   const border={top:thin,bottom:thin,left:thin,right:thin};
   for(let r=1;r<=lastRow;r++){
    if(r===1||r===wipHeaderRow||r===suppliesHeaderRow)continue;
-   const hasStockRow=rowMap.some(x=>x.row===r);
-   const isExpense=r>=expenseFirstRow&&r<=expenseLastRow;
-   if(!hasStockRow&&!isExpense)continue;
-   for(let col=1;col<=9;col++){
+   const hasStockRow=rowMap.some(x=>x.row===r),isExpense=r>=expenseFirstRow&&r<=expenseLastRow;
+   const ranges=[];if(hasStockRow)ranges.push([1,5]);if(isExpense)ranges.push([6,9]);
+   ranges.forEach(([startCol,endCol])=>{for(let col=startCol;col<=endCol;col++){
     const cell=ws.getCell(r,col);cell.border=border;
     cell.alignment={vertical:'middle',wrapText:col===2||col===6||col===9};
     cell.font={name:'Arial',size:10,color:{argb:'FF26352D'}};
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(r%2===0?'FFFFFFFF':'FFF8FAF8')}};
-   }
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(r%2===0?'FFFFFFFF':(col>=6?'FFFFF9F9':'FFF8FAF8'))}};
+   }});
   }
   const styleHeader=(row,startCol,endCol,color)=>{
    for(let col=startCol;col<=endCol;col++){
@@ -252,9 +251,9 @@ async function clDownloadTemplate(){
   });
   const nameCount=new Map();options.forEach(x=>{const key=x.name.trim().toLocaleLowerCase();nameCount.set(key,(nameCount.get(key)||0)+1)});
   options.forEach(x=>{if(nameCount.get(x.name.trim().toLocaleLowerCase())>1)x.display=x.name+' ['+x.kind+']';});
-  options.forEach(x=>lists.addRow([x.display,x.id,x.listType,x.listUnit,'','']));
   const categories=['Waste','QC','R&D','Kalibrasi','Lainnya','Move'];
-  categories.forEach((name,i)=>lists.addRow(i===0?[name]:['','','','','',name]));
+  const listsRowCount=Math.max(options.length,categories.length);
+  for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.listType||'',options[i]?.listUnit||'','',categories[i]||'']);
   lists.state='hidden';
   if(options.length&&wb.definedNames&&typeof wb.definedNames.add==='function')wb.definedNames.add('_LISTS!$A$2:$A$'+(options.length+1),'ExpenseItemList');
   const categoryStart=2,categoryEnd=categoryStart+categories.length-1;
@@ -351,7 +350,7 @@ async function clPreviewTemplateImport(input){
   ];
   sectionHeaders.forEach(([r,c,h])=>{if(String(matrix[r-1]?.[c]??'').trim().toUpperCase()!==h)errors.push('Header '+h+' hilang atau berubah. Unduh ulang template.')});
   const metaMatrix=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});
-  const rowMap=metaMatrix.slice(1).filter(r=>String(r[3]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[3]).trim())).map(r=>({section:String(r[3]).trim(),row:Number(r[4]),id:String(r[5]||'').trim(),type:String(r[6]||'').trim(),name:String(r[7]||''),unit:String(r[8]||''),yieldQty:clTemplateNumber(r[9])}));
+  const rowMap=metaMatrix.slice(1).filter(r=>String(r[2]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[2]).trim())).map(r=>({section:String(r[2]).trim(),row:Number(r[3]),id:String(r[4]||'').trim(),type:String(r[5]||'').trim(),name:String(r[6]||''),unit:String(r[7]||''),yieldQty:clTemplateNumber(r[8])}));
   const c=clTemplateCatalog();
   const expectedMap={ITEM:c.daily.filter(x=>x.type==='material'),WIP:c.daily.filter(x=>x.type==='wip'),SUPPLIES:c.supplies||[]};
   for(const section of ['ITEM','WIP','SUPPLIES']){
