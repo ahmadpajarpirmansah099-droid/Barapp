@@ -107,8 +107,19 @@ function clTemplateCatalog(){
  const div=String(CL.division),date=String(CL.date),ii=(INV.items||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
  const materials=ii.filter(x=>!x.is_supply),supplies=ii.filter(x=>x.is_supply===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date),wips=(CG.wips||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name)),menus=(CG.menus||[]).filter(x=>String(x.division_id)===div&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
  const wd=clModuleOn(div,'cogs_wip'),sales=clModuleOn(div,'cogs_sales'),production=clModuleOn(div,'cogs_production'),supply=clModuleOn(div,'supplies'),daily=clModuleOn(div,'cogs_daily_so'),row=(id,type,name,unit)=>({id:String(id),type:type,name:String(name||''),unit:String(unit||'UNIT')});
+ const dailyUnit=item=>{
+  const conversions=Array.isArray(item.conversions)?item.conversions.filter(c=>String(c.unit||'').trim()&&Number(c.factor)>0):[];
+  if(!conversions.length)return {unit:String(item.base_unit||'UNIT'),factor:1};
+  const preferred=/^(galon|kaleng|can|botol|bottle|kantong|bag|pack|pak|pcs|pc|piece|unit|butir|buah|sachet|cup|jar|box|dus|ikat|lembar|sheet|tabung)$/i;
+  const ranked=conversions.slice().sort((a,b)=>{
+   const ap=preferred.test(String(a.unit||'').trim())?1:0,bp=preferred.test(String(b.unit||'').trim())?1:0;
+   return bp-ap||Number(b.factor)-Number(a.factor);
+  });
+  const chosen=ranked[0];
+  return {unit:String(chosen.unit),factor:Number(chosen.factor)};
+ };
  return {
-  daily:daily?materials.map(x=>row(x.id,'material',x.name,x.base_unit)).concat(wd?wips.map(x=>row(x.id,'wip',x.name,x.yield_unit)):[]):[],
+  daily:daily?materials.map(x=>Object.assign(row(x.id,'material',x.name,dailyUnit(x).unit),{unitFactor:dailyUnit(x).factor})).concat(wd?wips.map(x=>row(x.id,'wip',x.name,x.yield_unit)):[]):[],
   sales:sales?menus.map(x=>row(x.id,'menu',x.name,'')):[],
   incoming:materials.concat(supplies).map(x=>row(x.id,'material',x.name,x.base_unit)).concat(production?wips.map(x=>row(x.id,'wip',x.name,x.yield_unit)):[]),
   expenses:materials.concat(supplies).map(x=>row(x.id,'material',x.name,x.base_unit)).concat(wd?wips.map(x=>row(x.id,'wip',x.name,x.yield_unit)):[]),
@@ -169,7 +180,9 @@ async function clDownloadTemplate(){
   const rowMap=[];
   itemRows.forEach((x,i)=>{
    const r=itemFirstRow+i;matrix[r-1][0]=String(CL.date);matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
-   rowMap.push({section:'ITEM',row:r,id:x.id,type:x.type,name:x.name,unit:x.unit,yieldQty:null});
+   const masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id));
+   const unitFactor=Number(x.unitFactor||masterItem?.conversions?.find(cv=>String(cv.unit||'').toLowerCase()===String(x.unit).toLowerCase())?.factor||1);
+   rowMap.push({section:'ITEM',row:r,id:x.id,type:x.type,name:x.name,unit:x.unit,unitFactor:unitFactor>0?unitFactor:1});
   });
   wipRows.forEach((x,i)=>{
    const r=wipFirstRow+i,w=(CG.wips||[]).find(y=>String(y.id)===String(x.id));
@@ -459,7 +472,7 @@ async function clPreviewTemplateImport(input){
    if(!clTemplateBlank(countedRaw)){
     const q=clTemplateNumber(countedRaw);
     if(q===null||!Number.isFinite(q)||q<0)errors.push('ITEM baris '+x.row+': AKHIR harus angka 0 atau lebih.');
-    else dailyRows.push({item_id:x.id,item_type:'material',qty:q});
+    else dailyRows.push({item_id:x.id,item_type:'material',qty:q*Number(x.unitFactor||1)});
    }
   });
   rowMap.filter(x=>x.section==='WIP').forEach(x=>{
