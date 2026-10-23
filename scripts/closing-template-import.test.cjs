@@ -81,6 +81,19 @@ function createHarness(options = {}) {
       this.rows = [];
       this.cellMeta = {};
       this.columns = {};
+      this.validationRanges = [];
+      this.dataValidations = {
+        add: (address, rule) => {
+          this.validationRanges.push({ address, rule: JSON.parse(JSON.stringify(rule)) });
+          const match = /^([A-Z]+)([0-9]+):([A-Z]+)([0-9]+)$/.exec(address);
+          if (!match || match[1] !== match[3]) throw new Error('Unsupported validation range in test harness: ' + address);
+          let column = 0;
+          for (const letter of match[1]) column = column * 26 + letter.charCodeAt(0) - 64;
+          for (let row = Number(match[2]); row <= Number(match[4]); row++) {
+            this.getCell(row, column).dataValidation = rule;
+          }
+        }
+      };
       this.state = 'visible';
       this.views = [];
     }
@@ -132,6 +145,7 @@ function createHarness(options = {}) {
             return [ws.name, {
               rows: ws.rows.map(row => row.slice()),
               validations,
+              validationRanges: ws.validationRanges.map(entry => ({ address: entry.address, rule: JSON.parse(JSON.stringify(entry.rule)) })),
               '!cols': Object.entries(ws.columns).map(([index, column]) => ({ index: Number(index), width: column.width, hidden: column.hidden }))
             }];
           }));
@@ -282,6 +296,14 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  assert.deepEqual(
+    base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
+    [
+      { address: 'F2:F26', type: 'list', formulae: ['=$K$2:$K$4'] },
+      { address: 'H2:H26', type: 'list', formulae: ['=$P$2:$P$7'] }
+    ],
+    'one non-overlapping worksheet-level dropdown rule is emitted per column'
+  );
   assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, ['=$K$2:$K$4'], 'ITEM dropdown references the same-sheet hidden helper range');
   assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, ['=$P$2:$P$7'], 'KATEGORI dropdown references the same-sheet hidden helper range');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));

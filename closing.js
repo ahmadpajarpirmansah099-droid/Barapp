@@ -275,10 +275,11 @@ async function clDownloadTemplate(){
   const dollar=String.fromCharCode(36);
   const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
   const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+dollar+(categories.length+1);
-  for(let r=expenseFirstRow;r<=expenseLastRow;r++){
-   if(options.length)ws.getCell(r,6).dataValidation={type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'};
-   ws.getCell(r,8).dataValidation={type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'};
-  }
+  // Add one worksheet-level rule per contiguous range. Setting the same
+  // validation on every cell can serialize into overlapping sqref rules, which
+  // some spreadsheet importers fail to interpret.
+  if(options.length)ws.dataValidations.add('F'+expenseFirstRow+':F'+expenseLastRow,{type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'});
+  ws.dataValidations.add('H'+expenseFirstRow+':H'+expenseLastRow,{type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'});
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
