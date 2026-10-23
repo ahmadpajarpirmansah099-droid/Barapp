@@ -292,7 +292,7 @@ async function main() {
   const preferredItems = preferredDefinitions.map(([name, unit], index) => ({
     id: id(20 + index), division_id: DIVISION_ID, name, base_unit: 'pcs',
     active: true, is_supply: false, created_at: '2026-01-01',
-    conversions: [{ unit: 'pcs', factor: 1 }, { unit, factor: 1 }]
+    conversions: [{ unit: 'pcs', factor: 1 }, { unit, factor: name === 'SKM' && unit === 'CAN' ? 488 : 1 }]
   }));
   const preferredHarness = createHarness({ items: preferredItems, wips: [], menus: [] });
   const preferredBook = await makeTemplate(preferredHarness);
@@ -302,6 +302,17 @@ async function main() {
     assert.equal(preferredBook.Sheets['Daily SO'].rows[row.row - 1][4], unit, name + ' has the requested default UNIT');
     assert.equal(row.unit, 'pcs', name + ' retains its canonical unit in metadata');
   }
+
+  // Daily SO import converts the chosen counting unit to the Master Barang base unit.
+  const preferredConversionBook = cloneWorkbook(preferredBook);
+  const skmTemplateRow = mapRows(preferredConversionBook, 'ITEM').find(x => x.name === 'SKM');
+  for (const x of mapRows(preferredConversionBook, 'ITEM')) {
+    setExcelCell(preferredConversionBook, 'Daily SO', x.row, 4, x.name === 'SKM' ? 2 : 0);
+  }
+  const preferredConversionPlan = await preview(preferredHarness, preferredConversionBook, 'preferred-unit-conversion.xlsx');
+  assert.deepEqual(preferredConversionPlan.errors, []);
+  assert.equal(preferredConversionPlan.payload.daily_so.find(row => row.item_id === skmTemplateRow.id)?.qty, 976,
+    '2 CAN SKM converts to 976 base units using the Master Barang factor of 488');
 
   // Do not prefill a preferred unit absent from an item conversion list.
   const missingUnitHarness = createHarness({
