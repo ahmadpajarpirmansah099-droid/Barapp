@@ -272,7 +272,13 @@ async function clDownloadTemplate(){
    ws.getCell(r,dropdownCols.itemUnit).value=x.listUnit;
   });
   categories.forEach((category,i)=>{ws.getCell(i+2,dropdownCols.category).value=category});
-  const itemValidationFormula='=$K$2:$K
+  const dollar=String.fromCharCode(36);
+  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+(options.length+1);
+  const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+(categories.length+1);
+  for(let r=expenseFirstRow;r<=expenseLastRow;r++){
+   if(options.length)ws.getCell(r,6).dataValidation={type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'};
+   ws.getCell(r,8).dataValidation={type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'};
+  }
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
