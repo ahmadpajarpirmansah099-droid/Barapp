@@ -173,11 +173,11 @@ async function clDownloadTemplate(){
   });
   wipRows.forEach((x,i)=>{
    const r=wipFirstRow+i,w=(CG.wips||[]).find(y=>String(y.id)===String(x.id));
-   matrix[r-1][0]=String(CL.date);matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
+   matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
    rowMap.push({section:'WIP',row:r,id:x.id,type:'wip',name:x.name,unit:x.unit,yieldQty:Number(w?.yield_qty||1)});
   });
   supplyRows.forEach((x,i)=>{
-   const r=suppliesFirstRow+i;matrix[r-1][0]=String(CL.date);matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
+   const r=suppliesFirstRow+i;matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
    rowMap.push({section:'SUPPLIES',row:r,id:x.id,type:'supply',name:x.name,unit:x.unit,yieldQty:null});
   });
   matrix.forEach(row=>ws.addRow(row));
@@ -367,8 +367,7 @@ async function clPreviewTemplateImport(input){
    const shownName=String(cells[1]??'').trim(),shownUnit=String(cells[4]??'').trim();
    if(shownName!==x.name)errors.push(x.section+' baris '+x.row+': nama item berubah atau tidak sesuai metadata.');
    if(shownUnit!==x.unit)errors.push(x.section+' baris '+x.row+': satuan berubah atau tidak sesuai master.');
-   if(x.section!=='SUPPLIES'&&clTemplateDateValue(cells[0])!==String(CL.date))errors.push(x.section+' baris '+x.row+': DATE harus '+String(CL.date)+'.');
-   if(x.section==='SUPPLIES'&&clTemplateDateValue(cells[0])!==String(CL.date))errors.push('SUPPLIES baris '+x.row+': DATE harus '+String(CL.date)+'.');
+   if(x.section==='ITEM'&&clTemplateDateValue(cells[0])!==String(CL.date))errors.push('ITEM baris '+x.row+': DATE harus '+String(CL.date)+'.');
   });
   const p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
   let dailyTouched=false;const dailyRows=[];
@@ -458,8 +457,8 @@ async function clPreviewTemplateImport(input){
    if(!cats.includes(category)){errors.push('PENGELUARAN baris '+r+': pilih KATEGORI dari dropdown Barapp.');continue}
    const option=listByLabel.get(label);
    if(!option){errors.push('PENGELUARAN baris '+r+': ITEM tidak dikenal. Pilih dari dropdown master Barapp.');continue}
-   const key=option.type+':'+option.id;
-   if(expenseSeen.has(key)){errors.push('PENGELUARAN: item yang sama hanya boleh dicatat satu kali per template.');continue}
+   const key=option.type+':'+option.id+':'+category;
+   if(expenseSeen.has(key)){errors.push('PENGELUARAN: item dan kategori yang sama hanya boleh dicatat satu kali per template. Gabungkan kuantitas pada satu baris.');continue}
    expenseSeen.add(key);
    let target=null,notes=details;
    if(category==='Move'){
