@@ -369,7 +369,7 @@ async function main() {
   const legacyBook = await makeTemplate(legacyHarness);
   legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
   const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
-  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan wajib tidak ditemukan')),
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan wajib tersedia')),
     'V2 workbook should be routed to the legacy multi-sheet importer');
 
   // A workbook with validation errors cannot reach the atomic RPC.
