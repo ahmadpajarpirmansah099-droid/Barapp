@@ -321,7 +321,7 @@ async function clDownloadTemplate(){
   // Use contiguous same-sheet ranges rather than inline lists or hidden sheets;
   // this mirrors the user's working example in Google Sheets.
   const itemLastRow=itemFirstRow+itemRows.length-1;
-  if(unitOptions.length&&itemRows.length)ws.dataValidations.add('E2:E'+itemLastRow,{type:'list',allowBlank:true,formulae:[unitValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar Master Barang; saat impor satuan juga harus valid untuk item ini.'});
+  if(unitOptions.length&&itemRows.length)ws.dataValidations.add('E3:E'+itemLastRow,{type:'list',allowBlank:true,formulae:[unitValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar Master Barang; saat impor satuan juga harus valid untuk item ini.'});
   if(options.length)ws.dataValidations.add('G'+expenseFirstRow+':G'+expenseLastRow,{type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item aktif dari Master Barang.'});
   if(categories.length)ws.dataValidations.add('I'+expenseFirstRow+':I'+expenseLastRow,{type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorTitle:'Kategori tidak valid',error:'Pilih kategori dari fitur Pengeluaran Barapp.'});
   if(targets.length)ws.dataValidations.add('J'+expenseFirstRow+':J'+expenseLastRow,{type:'list',allowBlank:true,formulae:[targetValidationFormula],showErrorMessage:true,errorTitle:'Tujuan tidak valid',error:'Untuk kategori Move, pilih divisi aktif dari outlet yang sama.'});
