@@ -441,6 +441,14 @@ async function main() {
   const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
   assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
 
+  // The previous V3 layout is retired; only the current template is accepted.
+  const oldTemplateHarness = createHarness();
+  const oldTemplateBook = await makeTemplate(oldTemplateHarness);
+  oldTemplateBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_DAILY_SO_TEMPLATE_V3';
+  const oldTemplatePlan = await preview(oldTemplateHarness, oldTemplateBook, 'old-template-v3.xlsx');
+  assert(oldTemplatePlan.errors.some(error => error.includes('Template lama tidak didukung')),
+    'old V3 template must be rejected so download/upload use one current format');
+
   // Move must provide an unambiguous destination division in the same outlet.
   const moveHarness = createHarness();
   const moveBook = await makeTemplate(moveHarness);
