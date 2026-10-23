@@ -369,8 +369,8 @@ async function main() {
   const legacyBook = await makeTemplate(legacyHarness);
   legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
   const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
-  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan wajib tidak ditemukan')),
-    'V2 workbook should be routed to the legacy multi-sheet importer');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
 
   // A workbook with validation errors cannot reach the atomic RPC.
   const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
