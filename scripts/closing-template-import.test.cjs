@@ -41,7 +41,7 @@ function createHarness(options = {}) {
   const div = { id: DIVISION_ID, name: 'Outlet Test', outlet_id: OUTLET_ID, active: true };
   const target = { id: TARGET_DIVISION_ID, name: 'Kitchen', outlet_id: OUTLET_ID, active: true };
   const items = options.items || [
-    { id: id(1), division_id: DIVISION_ID, name: 'Coffee Beans', base_unit: 'g', active: true, is_supply: false, created_at: '2026-01-01', conversions: [{ unit: 'g', factor: 1 }] },
+    { id: id(1), division_id: DIVISION_ID, name: 'Coffee Beans', base_unit: 'g', active: true, is_supply: false, created_at: '2026-01-01', conversions: [{ unit: 'g', factor: 1 }, { unit: 'kg', factor: 1000 }] },
     { id: id(2), division_id: DIVISION_ID, name: 'Glass Cloth', base_unit: 'pcs', active: true, is_supply: true, created_at: '2026-01-01', conversions: [{ unit: 'pcs', factor: 1 }] }
   ];
   const wips = options.wips || [
@@ -296,29 +296,32 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
-  const dropdownHeaderRow = base.Sheets['Daily SO'].rows.findIndex(row => row[10] === 'DAFTAR ITEM DROPDOWN (OTOMATIS; JANGAN DIUBAH)') + 1;
-  const dropdownFirstRow = dropdownHeaderRow + 1;
-  const itemOptionCount = base.Sheets._LISTS.rows.filter(row => String(row[0] || '').trim()).length - 1;
   const dollar = String.fromCharCode(36);
-  const itemFormula = '=' + dollar + 'K' + dollar + dropdownFirstRow + ':' + dollar + 'K' + dollar + (dropdownFirstRow + itemOptionCount - 1);
-  const categoryFormula = '=' + dollar + 'P' + dollar + dropdownFirstRow + ':' + dollar + 'P' + dollar + (dropdownFirstRow + 5);
-  assert(dropdownHeaderRow > 26, 'dropdown helper list is located below the operational table');
+  const itemFormula = '=' + dollar + 'K' + dollar + '2:' + dollar + 'K' + dollar + '4';
+  const categoryFormula = '=' + dollar + 'J' + dollar + '2:' + dollar + 'J' + dollar + '7';
+  const unitFormula = '=' + dollar + 'J' + dollar + '9:' + dollar + 'J' + dollar + '10';
   assert.deepEqual(
     base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
     [
+      { address: 'E2:E3', type: 'list', formulae: [unitFormula] },
       { address: 'F2:F26', type: 'list', formulae: [itemFormula] },
       { address: 'H2:H26', type: 'list', formulae: [categoryFormula] }
     ],
-    'one non-overlapping worksheet-level dropdown rule per column references visible same-sheet lists'
+    'UNIT, ITEM, and KATEGORI use contiguous same-sheet source ranges like the provided example'
   );
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, [itemFormula], 'ITEM dropdown references a visible helper range');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, [categoryFormula], 'KATEGORI dropdown references a visible helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:5']?.formulae, [unitFormula], 'UNIT dropdown covers the first item row');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['3:5']?.formulae, [unitFormula], 'UNIT dropdown covers the last item row');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, [itemFormula], 'ITEM dropdown references a visible same-sheet range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, [categoryFormula], 'KATEGORI dropdown references a visible same-sheet range');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
-  [10, 12, 13, 14, 15].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
-  [11, 16].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
-  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][10], 'Coffee Beans', 'visible same-sheet helper item option exists');
-  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][11], id(1), 'hidden same-sheet helper preserves item ID');
-  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][15], 'Waste', 'visible same-sheet helper category option exists');
+  [10, 11].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
+  [12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
+  assert.equal(base.Sheets['Daily SO'].rows[1][9], 'Waste', 'category list begins at J2 like the provided example');
+  assert.equal(base.Sheets['Daily SO'].rows[6][9], 'Move', 'category list ends at J7');
+  assert.equal(base.Sheets['Daily SO'].rows[8][9], 'g', 'unit options begin at J9');
+  assert.equal(base.Sheets['Daily SO'].rows[9][9], 'kg', 'all valid master units are included');
+  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'expense item options are visible in column K');
+  assert.equal(base.Sheets['Daily SO'].rows[1][11], id(1), 'hidden same-sheet helper preserves the item ID');
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
   assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
@@ -355,6 +358,7 @@ async function main() {
   setExcelCell(valid, 'Daily SO', 2, 7, 2);
   setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
   setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  setExcelCell(valid, 'Daily SO', mapRows(valid, 'ITEM')[0].row, 5, 'kg');
   const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
   assert.deepEqual(accepted.errors, []);
   assert.equal(accepted.payload.daily_so.length, 2);
@@ -365,6 +369,8 @@ async function main() {
   assert.equal(accepted.payload.stock_out.length, 1);
   assert.equal(accepted.payload.stock_out[0].category, 'Waste');
   assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+  assert.equal(accepted.payload.stock_in.find(row => row.item_id === id(1))?.unit, 'kg', 'MASUK uses the selected unit from the row');
+  assert.equal(accepted.payload.daily_so.find(row => row.item_id === id(1))?.qty, 5000, 'AKHIR converts 5 kg to 5000 g using that item conversion');
 
   // Blank template and partial counts are not silently imported.
   const emptyHarness = createHarness();
@@ -410,6 +416,14 @@ async function main() {
   setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
   const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
   assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  const invalidUnitHarness = createHarness();
+  const invalidUnitBook = await makeTemplate(invalidUnitHarness);
+  const invalidUnitItem = mapRows(invalidUnitBook, 'ITEM')[0];
+  setExcelCell(invalidUnitBook, 'Daily SO', invalidUnitItem.row, 4, 1);
+  setExcelCell(invalidUnitBook, 'Daily SO', invalidUnitItem.row, 5, 'LITER');
+  const invalidUnitPlan = await preview(invalidUnitHarness, invalidUnitBook, 'invalid-unit.xlsx');
+  assert(invalidUnitPlan.errors.some(error => error.includes('satuan "LITER" tidak tersedia di Master Barang untuk item ini')), 'a global unit option cannot bypass per-item master conversion validation');
 
   // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
   const legacyHarness = createHarness();

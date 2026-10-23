@@ -173,7 +173,6 @@ async function clDownloadTemplate(){
    const masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id));
    const unitOptions=(Array.isArray(masterItem?.conversions)?masterItem.conversions:[]).filter(cv=>String(cv.unit||'').trim()&&Number(cv.factor)>0).map(cv=>({unit:String(cv.unit),factor:Number(cv.factor)}));
    const unitFactor=Number(unitOptions.find(cv=>cv.unit.toLowerCase()===String(x.unit).toLowerCase())?.factor||1);
-   if(unitOptions.length>1)ws.getCell(r,5).dataValidation={type:'list',allowBlank:false,formulae:['"'+unitOptions.map(cv=>cv.unit.replace(/"/g,'')).join(',')+'"'],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan sesuai konversi Master Barang.'};
    rowMap.push({section:'ITEM',row:r,id:x.id,type:x.type,name:x.name,unit:x.unit,unitFactor:unitFactor>0?unitFactor:1,unitOptions});
   });
   wipRows.forEach((x,i)=>{
@@ -260,37 +259,42 @@ async function clDownloadTemplate(){
   const listsRowCount=Math.max(options.length,categories.length);
   for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.listType||'',options[i]?.listUnit||'','',categories[i]||'']);
   lists.state='hidden';
-  // Keep import IDs on _LISTS. Google Sheets mobile may fail to load XLSX
-  // list validations backed by hidden source columns, so place the list sources
-  // visibly below the operational table, while keeping metadata columns hidden.
-  const dropdownCols={item:11,itemId:12,itemType:13,itemUnit:14,category:16};
-  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=(col!==dropdownCols.item&&col!==dropdownCols.category);
+  // Put dropdown sources near the top of the same worksheet, matching the
+  // proven sample template: categories in J2:J7, unit choices from J9 down,
+  // and expense item choices in K2 down. Keep metadata/helper columns hidden.
+  const dropdownCols={unit:10,category:10,item:11,itemId:12,itemType:13,itemUnit:14};
+  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=(col!==10&&col!==11);
+  ws.getColumn(dropdownCols.unit).width=18;
   ws.getColumn(dropdownCols.item).width=32;
-  ws.getColumn(dropdownCols.category).width=22;
-  const dropdownHeaderRow=lastRow+3,dropdownFirstRow=dropdownHeaderRow+1;
-  ws.getCell(dropdownHeaderRow,dropdownCols.item).value='DAFTAR ITEM DROPDOWN (OTOMATIS; JANGAN DIUBAH)';
-  ws.getCell(dropdownHeaderRow,dropdownCols.category).value='DAFTAR KATEGORI (JANGAN DIUBAH)';
-  [dropdownCols.item,dropdownCols.category].forEach(col=>{
-   const cell=ws.getCell(dropdownHeaderRow,col);
-   cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF26352D'}};
-   cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE2E8E3'}};
-   cell.alignment={vertical:'middle',wrapText:true};
-   cell.border=border;
+  categories.forEach((category,i)=>{ws.getCell(2+i,dropdownCols.category).value=category});
+  const unitOptions=[],unitSeen=new Set();
+  itemRows.forEach(x=>{
+   const masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id));
+   const conversions=Array.isArray(masterItem?.conversions)?masterItem.conversions:[];
+   const candidates=conversions.length?conversions:[{unit:x.unit,factor:1}];
+   candidates.forEach(cv=>{
+    const unit=String(cv.unit||'').trim(),key=unit.toLocaleLowerCase();
+    if(unit&&Number(cv.factor)>0&&!unitSeen.has(key)){unitSeen.add(key);unitOptions.push(unit)}
+   });
   });
+  if(!unitOptions.length)itemRows.forEach(x=>{const unit=String(x.unit||'').trim(),key=unit.toLowerCase();if(unit&&!unitSeen.has(key)){unitSeen.add(key);unitOptions.push(unit)}});
+  const unitFirstRow=9;
+  unitOptions.forEach((unit,i)=>{ws.getCell(unitFirstRow+i,dropdownCols.unit).value=unit});
   options.forEach((x,i)=>{
-   const r=dropdownFirstRow+i;
+   const r=i+2;
    ws.getCell(r,dropdownCols.item).value=x.display;
    ws.getCell(r,dropdownCols.itemId).value=x.id;
    ws.getCell(r,dropdownCols.itemType).value=x.listType;
    ws.getCell(r,dropdownCols.itemUnit).value=x.listUnit;
   });
-  categories.forEach((category,i)=>{ws.getCell(dropdownFirstRow+i,dropdownCols.category).value=category});
   const dollar=String.fromCharCode(36);
-  const itemValidationFormula='='+dollar+'K'+dollar+dropdownFirstRow+':'+dollar+'K'+dollar+(dropdownFirstRow+options.length-1);
-  const categoryValidationFormula='='+dollar+'P'+dollar+dropdownFirstRow+':'+dollar+'P'+dollar+(dropdownFirstRow+categories.length-1);
-  // Add one worksheet-level rule per contiguous range. Setting the same
-  // validation on every cell can serialize into overlapping sqref rules, which
-  // some spreadsheet importers fail to interpret.
+  const unitValidationFormula='='+dollar+'J'+dollar+unitFirstRow+':'+dollar+'J'+dollar+(unitFirstRow+unitOptions.length-1);
+  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
+  const categoryValidationFormula='='+dollar+'J'+dollar+'2:'+dollar+'J'+dollar+'7';
+  // Use contiguous same-sheet ranges rather than inline lists or hidden sheets;
+  // this mirrors the user's working example in Google Sheets.
+  const itemLastRow=itemFirstRow+itemRows.length-1;
+  if(unitOptions.length&&itemRows.length)ws.dataValidations.add('E2:E'+itemLastRow,{type:'list',allowBlank:true,formulae:[unitValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar Master Barang; saat impor satuan juga harus valid untuk item ini.'});
   if(options.length)ws.dataValidations.add('F'+expenseFirstRow+':F'+expenseLastRow,{type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'});
   ws.dataValidations.add('H'+expenseFirstRow+':H'+expenseLastRow,{type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'});
   const buffer=await wb.xlsx.writeBuffer();
@@ -356,8 +360,8 @@ async function clPreviewLegacyTemplateImport(input){
   if(!CG.ready)throw new Error(CG.err||'Data master COGS belum berhasil dimuat.');if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   const c=clTemplateCatalog(),p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
   const dso=clTemplateRows(wb,'Daily SO',['TANGGAL_TARGET','ITEM','SATUAN','QTY_AKTUAL','__ITEM_ID','__ITEM_TYPE'],errors);clTemplateCompareCatalog('Daily SO',dso.rows,c.daily,'__ITEM_ID','__ITEM_TYPE',errors);
-  const dailyByKey=new Map(c.daily.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Daily SO',dso.rows,r=>dailyByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name},{header:'SATUAN',label:'Satuan dasar',get:x=>x.unit}],errors);
-  const dsoRows=[];let dsoTouched=false;dso.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))dsoTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim();if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Daily SO baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else dsoRows.push({item_id:id,item_type:type,qty:q})}});
+  const dailyByKey=new Map(c.daily.map(x=>[x.type+':'+x.id,x]));clTemplateCompareMasterValues('Daily SO',dso.rows,r=>dailyByKey.get(String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim()+':'+String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim()),[{header:'ITEM',label:'Nama item',get:x=>x.name}],errors);
+  const dsoRows=[];let dsoTouched=false;dso.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_AKTUAL');if(!clTemplateBlank(raw))dsoTouched=true;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__ITEM_ID')||'').trim(),type=String(clTemplateCell(r.row,r.hi,'__ITEM_TYPE')||'').trim(),unit=String(clTemplateCell(r.row,r.hi,'SATUAN')||'').trim(),master=dailyByKey.get(type+':'+id),conversion=(master?.unitOptions||[]).find(cv=>cv.unit.toLowerCase()===unit.toLowerCase());if(!clTemplateBlank(raw)){if(q===null||!Number.isFinite(q)||q<0)errors.push('Daily SO baris '+r.line+': QTY_AKTUAL harus angka 0 atau lebih.');else if(!conversion)errors.push('Daily SO baris '+r.line+': satuan tidak tersedia di Master Barang untuk item ini.');else dsoRows.push({item_id:id,item_type:type,qty:q*Number(conversion.factor||1)})}});
   if(dsoTouched){if(dsoRows.length!==c.daily.length)errors.push('Daily SO: jika sheet ini dipakai, isi kuantitas aktual untuk semua item dan WIP, termasuk 0.');else p.daily_so=dsoRows}
   const sale=clTemplateRows(wb,'Penjualan',['TANGGAL_TARGET','MENU','QTY_TERJUAL','HARGA_JUAL_OPSIONAL','__MENU_ID'],errors);clTemplateCompareCatalog('Penjualan',sale.rows,c.sales,'__MENU_ID',null,errors);const salesById=new Map(c.sales.map(x=>[x.id,x]));clTemplateCompareMasterValues('Penjualan',sale.rows,r=>salesById.get(String(clTemplateCell(r.row,r.hi,'__MENU_ID')||'').trim()),[{header:'MENU',label:'Nama menu',get:x=>x.name}],errors);const saleSeen=new Set();
   sale.rows.forEach(r=>{const raw=clTemplateCell(r.row,r.hi,'QTY_TERJUAL');if(clTemplateBlank(raw))return;const q=clTemplateNumber(raw),id=String(clTemplateCell(r.row,r.hi,'__MENU_ID')||'').trim(),pr=clTemplateCell(r.row,r.hi,'HARGA_JUAL_OPSIONAL'),price=clTemplateNumber(pr);if(q===null||!Number.isFinite(q)||q<0){errors.push('Penjualan baris '+r.line+': QTY_TERJUAL harus angka 0 atau lebih.');return}if(!q)return;if(!id){errors.push('Penjualan baris '+r.line+': ID menu hilang.');return}if(saleSeen.has(id)){errors.push('Penjualan: menu yang sama muncul lebih dari sekali.');return}saleSeen.add(id);if(!clTemplateBlank(pr)&&(price===null||!Number.isFinite(price)||price<0)){errors.push('Penjualan baris '+r.line+': harga jual opsional harus 0 atau lebih.');return}p.sales.push({menu_id:id,qty:q,selling_price:clTemplateBlank(pr)?null:price})});
@@ -431,7 +435,11 @@ async function clPreviewTemplateImport(input){
   ];
   sectionHeaders.forEach(([r,c,h])=>{if(String(matrix[r-1]?.[c]??'').trim().toUpperCase()!==h)errors.push('Header '+h+' hilang atau berubah. Unduh ulang template.')});
   const metaMatrix=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});
-  const rowMap=metaMatrix.slice(1).filter(r=>String(r[2]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[2]).trim())).map(r=>({section:String(r[2]).trim(),row:Number(r[3]),id:String(r[4]||'').trim(),type:String(r[5]||'').trim(),name:String(r[6]||''),unit:String(r[7]||''),yieldQty:clTemplateNumber(r[8])}));
+  const rowMap=metaMatrix.slice(1).filter(r=>String(r[2]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[2]).trim())).map(r=>{
+   const section=String(r[2]).trim(),id=String(r[4]||'').trim(),unit=String(r[7]||''),item=section==='ITEM'?(INV.items||[]).find(v=>String(v.id)===id):null;
+   const unitOptions=(Array.isArray(item?.conversions)?item.conversions:[]).filter(cv=>String(cv.unit||'').trim()&&Number(cv.factor)>0).map(cv=>({unit:String(cv.unit),factor:Number(cv.factor)}));
+   return {section,row:Number(r[3]),id,type:String(r[5]||'').trim(),name:String(r[6]||''),unit,yieldQty:clTemplateNumber(r[8]),unitOptions};
+  });
   const c=clTemplateCatalog();
   const expectedMap={ITEM:c.daily.filter(x=>x.type==='material'),WIP:c.daily.filter(x=>x.type==='wip'),SUPPLIES:c.supplies||[]};
   for(const section of ['ITEM','WIP','SUPPLIES']){
@@ -447,25 +455,29 @@ async function clPreviewTemplateImport(input){
    const cells=matrix[x.row-1]||[];
    const shownName=String(cells[1]??'').trim(),shownUnit=String(cells[4]??'').trim();
    if(shownName!==x.name)errors.push(x.section+' baris '+x.row+': nama item berubah atau tidak sesuai metadata.');
-   if(shownUnit!==x.unit)errors.push(x.section+' baris '+x.row+': satuan berubah atau tidak sesuai master.');
+   if(x.section==='ITEM'){
+    if(!(x.unitOptions||[]).some(cv=>cv.unit.toLowerCase()===shownUnit.toLowerCase()))errors.push('ITEM baris '+x.row+': satuan "'+shownUnit+'" tidak tersedia di Master Barang untuk item ini.');
+   }else if(shownUnit!==x.unit)errors.push(x.section+' baris '+x.row+': satuan berubah atau tidak sesuai master.');
    if(x.section==='ITEM'&&clTemplateDateValue(cells[0])!==String(CL.date))errors.push('ITEM baris '+x.row+': DATE harus '+String(CL.date)+'.');
   });
   const p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
   let dailyTouched=false;const dailyRows=[];
   const incomingSeen=new Set();
   rowMap.filter(x=>x.section==='ITEM').forEach(x=>{
-   const cells=matrix[x.row-1]||[],incomingRaw=cells[2],countedRaw=cells[3];
+   const cells=matrix[x.row-1]||[],incomingRaw=cells[2],countedRaw=cells[3],selectedUnit=String(cells[4]||x.unit||'').trim(),selectedConversion=(x.unitOptions||[]).find(cv=>cv.unit.toLowerCase()===selectedUnit.toLowerCase());
+   if(!clTemplateBlank(incomingRaw)||!clTemplateBlank(countedRaw)){
+    if(!selectedConversion)errors.push('ITEM baris '+x.row+': satuan "'+selectedUnit+'" tidak tersedia di Master Barang untuk item ini. Pilih satuan yang benar dari dropdown.');
+   }
    if(!clTemplateBlank(incomingRaw)){
     const q=clTemplateNumber(incomingRaw);
     if(q===null||!Number.isFinite(q)||q<0)errors.push('ITEM baris '+x.row+': MASUK harus angka 0 atau lebih.');
-    else if(q>0){const key=x.id;if(incomingSeen.has(key))errors.push('ITEM: item masuk terduplikasi.');else{incomingSeen.add(key);p.stock_in.push({item_id:x.id,qty:q,unit:x.unit,invoice_total:null,notes:''})}}
+    else if(q>0&&selectedConversion){const key=x.id;if(incomingSeen.has(key))errors.push('ITEM: item masuk terduplikasi.');else{incomingSeen.add(key);p.stock_in.push({item_id:x.id,qty:q,unit:selectedUnit,invoice_total:null,notes:''})}}
    }
    if(!clTemplateBlank(countedRaw))dailyTouched=true;
    if(!clTemplateBlank(countedRaw)){
-    const q=clTemplateNumber(countedRaw),selectedUnit=String(cells[4]||x.unit||'').trim(),selectedConversion=(x.unitOptions||[]).find(cv=>cv.unit.toLowerCase()===selectedUnit.toLowerCase());
+    const q=clTemplateNumber(countedRaw);
     if(q===null||!Number.isFinite(q)||q<0)errors.push('ITEM baris '+x.row+': AKHIR harus angka 0 atau lebih.');
-    else if(!selectedConversion)errors.push('ITEM baris '+x.row+': satuan "'+selectedUnit+'" tidak tersedia di Master Barang. Pilih dari dropdown satuan.');
-    else dailyRows.push({item_id:x.id,item_type:'material',qty:q*Number(selectedConversion.factor||1)});
+    else if(selectedConversion)dailyRows.push({item_id:x.id,item_type:'material',qty:q*Number(selectedConversion.factor||1)});
    }
   });
   rowMap.filter(x=>x.section==='WIP').forEach(x=>{
