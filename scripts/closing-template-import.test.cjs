@@ -334,19 +334,22 @@ async function main() {
   assert.equal(base.Workbook.Sheets.find(sheet => sheet.name === '_META')?.Hidden, 1);
   assert.equal(base.Workbook.Sheets.find(sheet => sheet.name === '_LISTS')?.Hidden, 1);
   assert.equal(base.Sheets._META.rows.find(row => row[0] === 'VERSION')?.[1], 'BARAPP_DAILY_SO_TEMPLATE_V4');
-  assert.deepEqual(base.Sheets['Daily SO'].rows[0].slice(0, 10), [
+  assert.equal(base.Sheets['Daily SO'].rows[0][0], 'Ini untuk Daily SO');
+  assert.equal(base.Sheets['Daily SO'].rows[0][6], 'Ini untuk Pengeluaran');
+  assert.deepEqual(base.Sheets['Daily SO'].rows[1].slice(0, 10), [
     'DATE', 'ITEM', 'MASUK', 'AKHIR', 'UNIT', null,
     'ITEM', 'JUMLAH', 'KATEGORI', 'TUJUAN'
   ]);
-  assert.equal(base.Sheets['Daily SO'].rows[1][1] ?? '', '');
-  assert.equal(base.Sheets['Daily SO'].rows[1][6] ?? '', '');
-  assert.equal(base.Sheets['Daily SO'].rows[25][6] ?? '', '');
-  assert.equal(base.Sheets['Daily SO'].validations['2:7']?.type, 'list', 'expense ITEM dropdown exists in G');
-  assert.equal(base.Sheets['Daily SO'].validations['2:9']?.type, 'list', 'expense KATEGORI dropdown exists in I');
-  assert.equal(base.Sheets['Daily SO'].validations['26:7']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
-  assert.equal(base.Sheets['Daily SO'].validations['26:9']?.type, 'list', 'category dropdown covers row 25 of expenses');
-  assert.equal(base.Sheets['Daily SO'].validations['2:10']?.type, 'list', 'destination dropdown exists in J');
-  assert.equal(base.Sheets['Daily SO'].validations['26:10']?.type, 'list', 'destination dropdown covers all expense rows');
+  assert.equal(base.Sheets['Daily SO'].rows[2][6], 'Dropdown dari FITUR MASTER BARANG > ITEM');
+  assert.equal(base.Sheets['Daily SO'].rows[2][8], 'Dropdown dari FITUR PENGELUARAN > KATEGORI');
+  assert.equal(base.Sheets['Daily SO'].rows[3][6] ?? '', '');
+  assert.equal(base.Sheets['Daily SO'].rows[27][6] ?? '', '');
+  assert.equal(base.Sheets['Daily SO'].validations['4:7']?.type, 'list', 'expense ITEM dropdown exists in G');
+  assert.equal(base.Sheets['Daily SO'].validations['4:9']?.type, 'list', 'expense KATEGORI dropdown exists in I');
+  assert.equal(base.Sheets['Daily SO'].validations['28:7']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
+  assert.equal(base.Sheets['Daily SO'].validations['28:9']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  assert.equal(base.Sheets['Daily SO'].validations['4:10']?.type, 'list', 'destination dropdown exists in J');
+  assert.equal(base.Sheets['Daily SO'].validations['28:10']?.type, 'list', 'destination dropdown covers all expense rows');
   const dollar = String.fromCharCode(36);
   const itemFormula = '=' + dollar + 'L' + dollar + '2:' + dollar + 'L' + dollar + '3';
   const categoryFormula = '=' + dollar + 'K' + dollar + '2:' + dollar + 'K' + dollar + '7';
@@ -355,17 +358,16 @@ async function main() {
   assert.deepEqual(
     base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
     [
-      { address: 'E2:E3', type: 'list', formulae: [unitFormula] },
-      { address: 'G2:G26', type: 'list', formulae: [itemFormula] },
-      { address: 'I2:I26', type: 'list', formulae: [categoryFormula] },
-      { address: 'J2:J26', type: 'list', formulae: [targetFormula] }
+      { address: 'E3:E3', type: 'list', formulae: [unitFormula] },
+      { address: 'G4:G28', type: 'list', formulae: [itemFormula] },
+      { address: 'I4:I28', type: 'list', formulae: [categoryFormula] },
+      { address: 'J4:J28', type: 'list', formulae: [targetFormula] }
     ],
     'UNIT, ITEM, KATEGORI, and TUJUAN match the uploaded sample layout'
   );
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:5']?.formulae, [unitFormula], 'UNIT dropdown covers the first item row');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['3:5']?.formulae, [unitFormula], 'UNIT dropdown covers the last item row');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:7']?.formulae, [itemFormula], 'ITEM dropdown is sourced from the same worksheet');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:9']?.formulae, [categoryFormula], 'KATEGORI dropdown is sourced from the same worksheet');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['3:5']?.formulae, [unitFormula], 'UNIT dropdown covers the first item row');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['4:7']?.formulae, [itemFormula], 'ITEM dropdown is sourced from the same worksheet');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['4:9']?.formulae, [categoryFormula], 'KATEGORI dropdown is sourced from the same worksheet');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
   [11, 12, 13, 14, 15, 16, 17].forEach(column => assert.equal(hiddenColumns.get(column), true, 'dropdown helper column ' + column + ' is hidden'));
   [13, 14, 15, 16, 17].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
@@ -409,9 +411,9 @@ async function main() {
     setExcelCell(valid, 'Daily SO', x.row, 4, 6);
     setExcelCell(valid, 'Daily SO', x.row, 3, 3);
   }
-  setExcelCell(valid, 'Daily SO', 2, 7, 'Coffee Beans');
-  setExcelCell(valid, 'Daily SO', 2, 8, 2);
-  setExcelCell(valid, 'Daily SO', 2, 9, 'Waste');
+  setExcelCell(valid, 'Daily SO', 4, 7, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 4, 8, 2);
+  setExcelCell(valid, 'Daily SO', 4, 9, 'Waste');
   setExcelCell(valid, 'Daily SO', mapRows(valid, 'ITEM')[0].row, 5, 'kg');
   const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
   assert.deepEqual(accepted.errors, []);
@@ -461,10 +463,10 @@ async function main() {
   // Move must provide an unambiguous destination division in the same outlet.
   const moveHarness = createHarness();
   const moveBook = await makeTemplate(moveHarness);
-  setExcelCell(moveBook, 'Daily SO', 2, 7, 'Coffee Beans');
-  setExcelCell(moveBook, 'Daily SO', 2, 8, 1);
-  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Move');
-  setExcelCell(moveBook, 'Daily SO', 2, 10, 'Kitchen');
+  setExcelCell(moveBook, 'Daily SO', 4, 7, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 4, 8, 1);
+  setExcelCell(moveBook, 'Daily SO', 4, 9, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 4, 10, 'Kitchen');
   const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
   assert.deepEqual(movePlan.errors, []);
   assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
@@ -472,10 +474,10 @@ async function main() {
 
   const badMoveHarness = createHarness();
   const badMoveBook = await makeTemplate(badMoveHarness);
-  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 'Coffee Beans');
-  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 1);
-  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'Move');
-  setExcelCell(badMoveBook, 'Daily SO', 2, 10, '');
+  setExcelCell(badMoveBook, 'Daily SO', 4, 7, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 4, 8, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 4, 9, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 4, 10, '');
   const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
   assert(badMovePlan.errors.some(error => error.includes('TUJUAN wajib dipilih')));
 
