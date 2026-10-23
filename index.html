@@ -2446,7 +2446,7 @@ V.pengeluaran=()=>{
  const divOptions=INV.divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(firstDiv)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
  const targetOptions=INV.divs.filter(d=>String(d.id)!==String(firstDiv)).map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('');
  const itemOptions=outItemOptions(firstDiv),unitOptions='';
- const cats=['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];
+ const cats=window.__barappStockOutCategories||['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];
  const historyToday=today();
  const historyFrom=INV.stockOutHistoryFrom||historyToday;
  const historyTo=INV.stockOutHistoryTo||historyToday;
@@ -4392,5 +4392,6 @@ window.cgRemoveLine=function(type,i){
   if(type==='menu'&&typeof window.cgMenuPreview==='function')window.cgMenuPreview();
 };
 </script>
-<script src="./closing.js?v=20261024-daily-so-preferred-default-units-2"></script>
+<script>window.__barappStockOutCategories=['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];</script>
+<script src="./closing.js?v=20261024-template-item-tujuan-v4"></script>
 </body></html>
