@@ -101,7 +101,7 @@ async function approve(){
 function clTemplateId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()===''}
 function clTemplatePreferredUnit(item){
- const key=String(item?.name||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\\s+/g,' ');
+ const key=String(item?.name||'').toLocaleUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\s+/g,' ');
  const preferred={
   'SKM':'CAN',
   'SKM COKLAT':'CAN',
