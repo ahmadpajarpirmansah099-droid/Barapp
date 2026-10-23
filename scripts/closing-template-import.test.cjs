@@ -364,6 +364,14 @@ async function main() {
   const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
   assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
 
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan wajib tidak ditemukan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer');
+
   // A workbook with validation errors cannot reach the atomic RPC.
   const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
   const submitBook = await makeTemplate(submitHarness);
