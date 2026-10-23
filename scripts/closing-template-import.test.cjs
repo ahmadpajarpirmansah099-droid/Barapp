@@ -285,7 +285,7 @@ async function main() {
   // Requested default UNIT values are applied only when each unit is already
   // present in that item's conversion list; canonical metadata remains intact.
   const preferredDefinitions = [
-    ['SKM', 'CAN'], ['SKM COKLAT', 'CAN'], ['GINGER ALE', 'CAN'],
+    ['SKM', 'CAN'], ['SKM COKLAT', 'CAN'], ['GINGER ALE', 'CAN'], ['GINGGERALE', 'CAN'],
     ['GALON AQUA', 'GALON'], ['GALON VIT', 'GALON'], ['ES BATU ATLAS', 'BALL'],
     ['COCONUT WATER', 'BOTOL/PACK'], ['RON88', 'BOTOL/PACK']
   ];
