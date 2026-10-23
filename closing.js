@@ -101,17 +101,18 @@ async function approve(){
 function clTemplateId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()===''}
 function clTemplatePreferredUnit(item){
- const key=String(item?.name||'').toLocaleUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+ // Normalize names by removing spaces/punctuation so aliases such as
+ // "GINGGERALE", "GINGGER ALE", and "GINGER ALE" resolve consistently.
+ const key=String(item?.name||'').toLocaleUpperCase().replace(/[^A-Z0-9]/g,'');
  const preferred={
   'SKM':'CAN',
-  'SKM COKLAT':'CAN',
-  'GINGER ALE':'CAN',
-  'GINGGER ALE':'CAN',
+  'SKMCOKLAT':'CAN',
+  'GINGERALE':'CAN',
   'GINGGERALE':'CAN',
-  'GALON AQUA':'GALON',
-  'GALON VIT':'GALON',
-  'ES BATU ATLAS':'BALL',
-  'COCONUT WATER':'BOTOL/PACK',
+  'GALONAQUA':'GALON',
+  'GALONVIT':'GALON',
+  'ESBATUATLAS':'BALL',
+  'COCONUTWATER':'BOTOL/PACK',
   'RON88':'BOTOL/PACK'
  }[key];
  const baseUnit=String(item?.base_unit||'UNIT');
