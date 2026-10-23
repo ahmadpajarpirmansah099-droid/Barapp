@@ -286,8 +286,8 @@ async function main() {
   }
   const wipRow = mapRows(base, 'WIP')[0].row;
   const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
-  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0], '', 'WIP DATE column stays blank like the reference layout');
-  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0], '', 'SUPPLIES DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
 
   // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
   // supplies receipt/count, and one row from the 25-line expense block.
