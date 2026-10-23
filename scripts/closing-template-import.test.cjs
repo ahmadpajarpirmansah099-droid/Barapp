@@ -285,7 +285,7 @@ async function main() {
   // Requested default UNIT values are applied only when each unit is already
   // present in that item's conversion list; canonical metadata remains intact.
   const preferredDefinitions = [
-    ['SKM', 'CAN'], ['SKM COKLAT', 'CAN'], ['GINGER ALE', 'CAN'], ['GINGGERALE', 'CAN'],
+    ['SKM', 'CAN'], ['SKM COKLAT', 'PACK'], ['GINGER ALE', 'CAN'], ['GINGGERALE', 'CAN'],
     ['GALON AQUA', 'GALON'], ['GALON VIT', 'GALON'], ['ES BATU ATLAS', 'BALL'],
     ['COCONUT WATER', 'BOTOL/PACK'], ['RON88', 'BOTOL/PACK']
   ];
@@ -322,9 +322,10 @@ async function main() {
   assert.deepEqual(visible, ['Daily SO'], 'only the visual Daily SO template is visible');
   assert.equal(base.Workbook.Sheets.find(sheet => sheet.name === '_META')?.Hidden, 1);
   assert.equal(base.Workbook.Sheets.find(sheet => sheet.name === '_LISTS')?.Hidden, 1);
-  assert.deepEqual(base.Sheets['Daily SO'].rows[0].slice(0, 9), [
+  assert.equal(base.Sheets._META.rows.find(row => row[0] === 'VERSION')?.[1], 'BARAPP_DAILY_SO_TEMPLATE_V4');
+  assert.deepEqual(base.Sheets['Daily SO'].rows[0].slice(0, 10), [
     'DATE', 'ITEM', 'MASUK', 'AKHIR', 'UNIT',
-    'BARANG KELUAR', 'JUMLAH', 'KATEGORI', 'KETERANGAN'
+    'ITEM', 'JUMLAH', 'KATEGORI', 'TUJUAN', 'KETERANGAN'
   ]);
   assert.equal(base.Sheets['Daily SO'].rows[1][1] ?? '', '');
   assert.equal(base.Sheets['Daily SO'].rows[1][5] ?? '', '');
@@ -333,32 +334,38 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  assert.equal(base.Sheets['Daily SO'].validations['2:9']?.type, 'list', 'destination dropdown exists');
+  assert.equal(base.Sheets['Daily SO'].validations['26:9']?.type, 'list', 'destination dropdown covers all expense rows');
   const dollar = String.fromCharCode(36);
-  const itemFormula = '=' + dollar + 'K' + dollar + '2:' + dollar + 'K' + dollar + '4';
-  const categoryFormula = '=' + dollar + 'J' + dollar + '2:' + dollar + 'J' + dollar + '7';
-  const unitFormula = '=' + dollar + 'J' + dollar + '9:' + dollar + 'J' + dollar + '10';
+  const itemFormula = '=' + dollar + 'L' + dollar + '2:' + dollar + 'L' + dollar + '3';
+  const categoryFormula = '=' + dollar + 'K' + dollar + '2:' + dollar + 'K' + dollar + '7';
+  const unitFormula = '=' + dollar + 'K' + dollar + '9:' + dollar + 'K' + dollar + '10';
+  const targetFormula = '=' + dollar + 'P' + dollar + '2:' + dollar + 'P' + dollar + '2';
   assert.deepEqual(
     base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
     [
       { address: 'E2:E3', type: 'list', formulae: [unitFormula] },
       { address: 'F2:F26', type: 'list', formulae: [itemFormula] },
-      { address: 'H2:H26', type: 'list', formulae: [categoryFormula] }
+      { address: 'H2:H26', type: 'list', formulae: [categoryFormula] },
+      { address: 'I2:I26', type: 'list', formulae: [targetFormula] }
     ],
-    'UNIT, ITEM, and KATEGORI use contiguous same-sheet source ranges like the provided example'
+    'UNIT, ITEM, KATEGORI, and TUJUAN use contiguous same-sheet source ranges like the provided example'
   );
   assert.deepEqual(base.Sheets['Daily SO'].validations['2:5']?.formulae, [unitFormula], 'UNIT dropdown covers the first item row');
   assert.deepEqual(base.Sheets['Daily SO'].validations['3:5']?.formulae, [unitFormula], 'UNIT dropdown covers the last item row');
   assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, [itemFormula], 'ITEM dropdown references a visible same-sheet range');
   assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, [categoryFormula], 'KATEGORI dropdown references a visible same-sheet range');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
-  [10, 11].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
-  [12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
-  assert.equal(base.Sheets['Daily SO'].rows[1][9], 'Waste', 'category list begins at J2 like the provided example');
-  assert.equal(base.Sheets['Daily SO'].rows[6][9], 'Move', 'category list ends at J7');
-  assert.equal(base.Sheets['Daily SO'].rows[8][9], 'g', 'unit options begin at J9');
-  assert.equal(base.Sheets['Daily SO'].rows[9][9], 'kg', 'all valid master units are included');
-  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'expense item options are visible in column K');
-  assert.equal(base.Sheets['Daily SO'].rows[1][11], id(1), 'hidden same-sheet helper preserves the item ID');
+  [11, 12].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
+  [13, 14, 15, 16, 17].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
+  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Move', 'category list begins at K2 from Pengeluaran');
+  assert.equal(base.Sheets['Daily SO'].rows[6][10], 'Lainnya', 'category list follows Pengeluaran order');
+  assert.equal(base.Sheets['Daily SO'].rows[8][10], 'g', 'unit options begin at K9');
+  assert.equal(base.Sheets['Daily SO'].rows[9][10], 'kg', 'all valid master units are included');
+  assert.equal(base.Sheets['Daily SO'].rows[1][11], 'Coffee Beans', 'expense item options are visible in column L');
+  assert.equal(base.Sheets['Daily SO'].rows[1][12], id(1), 'hidden same-sheet helper preserves the item ID');
+  assert.equal(base.Sheets['Daily SO'].rows[1][15], 'Kitchen', 'target division dropdown options are in column P');
+  assert.equal(base.Sheets['Daily SO'].rows[1][16], TARGET_DIVISION_ID, 'hidden same-sheet helper preserves the target division ID');
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
   assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
@@ -394,7 +401,8 @@ async function main() {
   setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
   setExcelCell(valid, 'Daily SO', 2, 7, 2);
   setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
-  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  setExcelCell(valid, 'Daily SO', 2, 9, '');
+  setExcelCell(valid, 'Daily SO', 2, 10, 'Rusak');
   setExcelCell(valid, 'Daily SO', mapRows(valid, 'ITEM')[0].row, 5, 'kg');
   const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
   assert.deepEqual(accepted.errors, []);
@@ -439,7 +447,8 @@ async function main() {
   setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
   setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
   setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
-  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Kitchen');
+  setExcelCell(moveBook, 'Daily SO', 2, 10, 'ke dapur');
   const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
   assert.deepEqual(movePlan.errors, []);
   assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
@@ -450,9 +459,10 @@ async function main() {
   setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
   setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
   setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
-  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, '');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 10, 'pindah');
   const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
-  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+  assert(badMovePlan.errors.some(error => error.includes('TUJUAN wajib dipilih')));
 
   const invalidUnitHarness = createHarness();
   const invalidUnitBook = await makeTemplate(invalidUnitHarness);
