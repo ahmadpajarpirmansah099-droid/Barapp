@@ -317,7 +317,7 @@ async function main() {
   [10, 11].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
   [12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
   assert.equal(base.Sheets['Daily SO'].rows[1][9], 'Waste', 'category list begins at J2 like the provided example');
-  assert.equal(base.Sheets['Daily SO'].rows[5][9], 'Move', 'category list ends at J7');
+  assert.equal(base.Sheets['Daily SO'].rows[6][9], 'Move', 'category list ends at J7');
   assert.equal(base.Sheets['Daily SO'].rows[8][9], 'g', 'unit options begin at J9');
   assert.equal(base.Sheets['Daily SO'].rows[9][9], 'kg', 'all valid master units are included');
   assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'expense item options are visible in column K');
