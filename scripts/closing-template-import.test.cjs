@@ -267,7 +267,7 @@ async function main() {
   ]);
   assert.equal(base.Sheets['Daily SO'].rows[1][1] ?? '', '');
   assert.equal(base.Sheets['Daily SO'].rows[1][5] ?? '', '');
-  assert.equal(base.Sheets['Daily SO'].rows[26][5] ?? '', '');
+  assert.equal(base.Sheets['Daily SO'].rows[25][5] ?? '', '');
   assert.equal(base.Sheets['Daily SO'].validations['2:6']?.type, 'list', 'expense ITEM dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
