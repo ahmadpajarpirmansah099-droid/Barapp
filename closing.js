@@ -100,6 +100,26 @@ async function approve(){
 
 function clTemplateId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()===''}
+function clTemplatePreferredUnit(item){
+ const key=String(item?.name||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/\\s+/g,' ');
+ const preferred={
+  'SKM':'CAN',
+  'SKM COKLAT':'CAN',
+  'GINGER ALE':'CAN',
+  'GINGGER ALE':'CAN',
+  'GINGGERALE':'CAN',
+  'GALON AQUA':'GALON',
+  'GALON VIT':'GALON',
+  'ES BATU ATLAS':'BALL',
+  'COCONUT WATER':'BOTOL/PACK',
+  'RON88':'BOTOL/PACK'
+ }[key];
+ const baseUnit=String(item?.base_unit||'UNIT');
+ if(!preferred)return {unit:baseUnit,requested:'',missing:false};
+ const conversions=Array.isArray(item?.conversions)?item.conversions:[];
+ const match=conversions.find(cv=>String(cv.unit||'').trim().toLocaleLowerCase()===preferred.toLocaleLowerCase()&&Number(cv.factor)>0);
+ return match?{unit:String(match.unit).trim(),requested:preferred,missing:false}:{unit:baseUnit,requested:preferred,missing:true};
+}
 function clTemplateDateValue(v){if(v instanceof Date&&!Number.isNaN(v.getTime()))return v.toISOString().slice(0,10);if(typeof v==='number'&&Number.isFinite(v)&&v>=1&&v<100000){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10)}const s=String(v??'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;return s}
 function clTemplateNumber(v){if(typeof v==='number')return Number.isFinite(v)?v:NaN;if(clTemplateBlank(v))return null;const n=Number(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN}
 function clTemplateSameSet(actual,expected){if(actual.length!==expected.length)return false;const a=new Set(actual),e=new Set(expected);return a.size===actual.length&&e.size===expected.length&&actual.every(x=>e.has(x))}
@@ -167,12 +187,13 @@ async function clDownloadTemplate(){
   matrix[0][5]='BARANG KELUAR';matrix[0][6]='JUMLAH';matrix[0][7]='KATEGORI';matrix[0][8]='KETERANGAN';
   matrix[wipHeaderRow-1][1]='ITEM WIP';matrix[wipHeaderRow-1][2]='PRODUKSI';matrix[wipHeaderRow-1][3]='AKHIR';matrix[wipHeaderRow-1][4]='UNIT';
   matrix[suppliesHeaderRow-1][1]='ITEM SUPLIES';matrix[suppliesHeaderRow-1][2]='MASUK';matrix[suppliesHeaderRow-1][3]='AKHIR';matrix[suppliesHeaderRow-1][4]='UNIT';
-  const rowMap=[];
+  const rowMap=[],missingPreferredUnits=[];
   itemRows.forEach((x,i)=>{
-   const r=itemFirstRow+i;matrix[r-1][0]=String(CL.date);matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=x.unit;
-   const masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id));
+   const r=itemFirstRow+i,masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id)),preference=clTemplatePreferredUnit(masterItem),defaultUnit=preference.unit;
+   if(preference.missing)missingPreferredUnits.push(x.name+' → '+preference.requested);
+   matrix[r-1][0]=String(CL.date);matrix[r-1][1]=x.name;matrix[r-1][2]='';matrix[r-1][3]='';matrix[r-1][4]=defaultUnit;
    const unitOptions=(Array.isArray(masterItem?.conversions)?masterItem.conversions:[]).filter(cv=>String(cv.unit||'').trim()&&Number(cv.factor)>0).map(cv=>({unit:String(cv.unit),factor:Number(cv.factor)}));
-   const unitFactor=Number(unitOptions.find(cv=>cv.unit.toLowerCase()===String(x.unit).toLowerCase())?.factor||1);
+   const unitFactor=Number(unitOptions.find(cv=>cv.unit.toLowerCase()===String(defaultUnit).toLowerCase())?.factor||1);
    rowMap.push({section:'ITEM',row:r,id:x.id,type:x.type,name:x.name,unit:x.unit,unitFactor:unitFactor>0?unitFactor:1,unitOptions});
   });
   wipRows.forEach((x,i)=>{
@@ -303,7 +324,8 @@ async function clDownloadTemplate(){
   a.href=url;a.download='Template-Daily-SO-'+(String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')||'Divisi')+'-'+CL.date+'.xlsx';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   CL.templateDraft=null;
-  toast('Template Daily SO diunduh dengan daftar master dinamis dan 25 baris pengeluaran.','ok');
+  if(missingPreferredUnits.length)toast('Template diunduh. Default satuan belum tersedia di Master Barang untuk: '+missingPreferredUnits.join(', ')+'. Satuan dasar dipakai dan Master Barang tidak diubah.','warn');
+  else toast('Template Daily SO diunduh dengan daftar master dinamis, default satuan pilihan, dan 25 baris pengeluaran.','ok');
  }catch(e){toast('Gagal membuat template Excel: '+String(e&&e.message||e),'err')}
 }
 function clTemplateHeaderIndex(headers){const o={};(headers||[]).forEach((h,i)=>{const k=String(h??'').trim().toUpperCase();if(k)o[k]=i});return o}
