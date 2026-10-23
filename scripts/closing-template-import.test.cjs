@@ -296,21 +296,1074 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  const dropdownHeaderRow = base.Sheets['Daily SO'].rows.findIndex(row => row[10] === 'DAFTAR ITEM DROPDOWN (OTOMATIS; JANGAN DIUBAH)') + 1;
+  const dropdownFirstRow = dropdownHeaderRow + 1;
+  const itemOptionCount = base.Sheets._LISTS.rows.filter(row => String(row[0] || '').trim()).length - 1;
+  assert(dropdownHeaderRow > 26, 'dropdown helper list is located below the operational table');
   assert.deepEqual(
     base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
     [
-      { address: 'F2:F26', type: 'list', formulae: ['=$K$2:$K$4'] },
-      { address: 'H2:H26', type: 'list', formulae: ['=$P$2:$P$7'] }
+      { address: 'F2:F26', type: 'list', formulae: ['=$K
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + dropdownFirstRow + ':$K
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + (dropdownFirstRow + itemOptionCount - 1)] },
+      { address: 'H2:H26', type: 'list', formulae: ['=$P
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + dropdownFirstRow + ':$P
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + (dropdownFirstRow + 5)] }
     ],
-    'one non-overlapping worksheet-level dropdown rule is emitted per column'
+    'one non-overlapping worksheet-level dropdown rule per column references visible same-sheet lists'
   );
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, ['=$K$2:$K$4'], 'ITEM dropdown references the same-sheet hidden helper range');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, ['=$P$2:$P$7'], 'KATEGORI dropdown references the same-sheet hidden helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, ['=$K
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + dropdownFirstRow + ':$K
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + (dropdownFirstRow + itemOptionCount - 1)], 'ITEM dropdown references a visible helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, ['=$P
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + dropdownFirstRow + ':$P
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
+  assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
+  assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
+
+  const expectedSections = {
+    ITEM: [{ id: id(1), type: 'material', name: 'Coffee Beans', unit: 'g' }],
+    WIP: [{ id: id(3), type: 'wip', name: 'Cold Brew', unit: 'L' }],
+    SUPPLIES: [{ id: id(2), type: 'supply', name: 'Glass Cloth', unit: 'pcs' }]
+  };
+  for (const [section, expected] of Object.entries(expectedSections)) {
+    assert.deepEqual(mapRows(base, section).map(x => ({ id: x.id, type: x.type, name: x.name, unit: x.unit })), expected);
+  }
+  const wipRow = mapRows(base, 'WIP')[0].row;
+  const supplyRow = mapRows(base, 'SUPPLIES')[0].row;
+  assert.equal(base.Sheets['Daily SO'].rows[wipRow - 1][0] ?? '', '', 'WIP DATE column stays blank like the reference layout');
+  assert.equal(base.Sheets['Daily SO'].rows[supplyRow - 1][0] ?? '', '', 'SUPPLIES DATE column stays blank like the reference layout');
+
+  // Fill data in the single sheet: ITEM/WIP counts, item receipt, WIP production,
+  // supplies receipt/count, and one row from the 25-line expense block.
+  const valid = cloneWorkbook(base);
+  for (const x of mapRows(valid, 'ITEM')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 5);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 2);
+  }
+  for (const x of mapRows(valid, 'WIP')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 3);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 20); // yield 10 per batch => 2 batches
+  }
+  for (const x of mapRows(valid, 'SUPPLIES')) {
+    setExcelCell(valid, 'Daily SO', x.row, 4, 6);
+    setExcelCell(valid, 'Daily SO', x.row, 3, 3);
+  }
+  setExcelCell(valid, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(valid, 'Daily SO', 2, 7, 2);
+  setExcelCell(valid, 'Daily SO', 2, 8, 'Waste');
+  setExcelCell(valid, 'Daily SO', 2, 9, 'Rusak');
+  const accepted = await preview(baseHarness, valid, 'daily-so.xlsx');
+  assert.deepEqual(accepted.errors, []);
+  assert.equal(accepted.payload.daily_so.length, 2);
+  assert.equal(accepted.payload.stock_in.length, 2);
+  assert.equal(accepted.payload.production.length, 1);
+  assert.equal(accepted.payload.production[0].batches, 2);
+  assert.equal(accepted.payload.supplies.length, 1);
+  assert.equal(accepted.payload.stock_out.length, 1);
+  assert.equal(accepted.payload.stock_out[0].category, 'Waste');
+  assert.equal(accepted.payload.stock_out[0].notes, 'Rusak');
+
+  // Blank template and partial counts are not silently imported.
+  const emptyHarness = createHarness();
+  const emptyBook = await makeTemplate(emptyHarness);
+  const empty = await preview(emptyHarness, emptyBook, 'empty.xlsx');
+  assert(empty.errors.some(error => error.includes('Tidak ada data untuk diimpor')));
+  const partialHarness = createHarness();
+  const partialBook = await makeTemplate(partialHarness);
+  const first = mapRows(partialBook, 'ITEM')[0];
+  setExcelCell(partialBook, 'Daily SO', first.row, 4, 0);
+  const partial = await preview(partialHarness, partialBook, 'partial.xlsx');
+  assert(partial.errors.some(error => error.includes('isi AKHIR untuk semua ITEM dan WIP')));
+
+  // Item or unit edits and target-date changes are rejected before database writes.
+  const changedNameHarness = createHarness();
+  const changedNameBook = await makeTemplate(changedNameHarness);
+  setExcelCell(changedNameBook, 'Daily SO', mapRows(changedNameBook, 'ITEM')[0].row, 2, 'Renamed Coffee');
+  const changedName = await preview(changedNameHarness, changedNameBook, 'changed-name.xlsx');
+  assert(changedName.errors.some(error => error.includes('nama item berubah')));
+  const wrongDateHarness = createHarness();
+  const wrongDateBook = await makeTemplate(wrongDateHarness);
+  wrongDateBook.Sheets._META.rows.find(row => row[0] === 'TARGET_DATE')[1] = '2026-10-19';
+  const wrongDate = await preview(wrongDateHarness, wrongDateBook, 'wrong-date.xlsx');
+  assert(wrongDate.errors.some(error => error.includes('tanggal closing terpilih')));
+
+  // Move must provide an unambiguous destination division in the same outlet.
+  const moveHarness = createHarness();
+  const moveBook = await makeTemplate(moveHarness);
+  setExcelCell(moveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(moveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(moveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(moveBook, 'Daily SO', 2, 9, 'Tujuan: Kitchen | ke dapur');
+  const movePlan = await preview(moveHarness, moveBook, 'move.xlsx');
+  assert.deepEqual(movePlan.errors, []);
+  assert.equal(movePlan.payload.stock_out[0].target_division_id, TARGET_DIVISION_ID);
+  assert.equal(movePlan.payload.stock_out[0].notes, 'ke dapur');
+
+  const badMoveHarness = createHarness();
+  const badMoveBook = await makeTemplate(badMoveHarness);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 6, 'Coffee Beans');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 7, 1);
+  setExcelCell(badMoveBook, 'Daily SO', 2, 8, 'Move');
+  setExcelCell(badMoveBook, 'Daily SO', 2, 9, 'pindah');
+  const badMovePlan = await preview(badMoveHarness, badMoveBook, 'bad-move.xlsx');
+  assert(badMovePlan.errors.some(error => error.includes('format "Tujuan: Nama Divisi')));
+
+  // A pre-existing V2 workbook is routed through the legacy importer rather than rejected as V3.
+  const legacyHarness = createHarness();
+  const legacyBook = await makeTemplate(legacyHarness);
+  legacyBook.Sheets._META.rows.find(row => row[0] === 'VERSION')[1] = 'BARAPP_CLOSING_TEMPLATE_V2';
+  const legacyPlan = await preview(legacyHarness, legacyBook, 'legacy-v2.xlsx');
+  assert(legacyPlan.errors.some(error => error.includes('Sheet Penjualan')),
+    'V2 workbook should be routed to the legacy multi-sheet importer; errors='+JSON.stringify(legacyPlan.errors));
+
+  // A workbook with validation errors cannot reach the atomic RPC.
+  const submitHarness = createHarness({ allowRpc: true, rpcResult: { data: { summary: { daily_so: 2, stock_in: 2, stock_out: 1, production: 1, supplies: 1 } }, error: null } });
+  const submitBook = await makeTemplate(submitHarness);
+  for (const x of mapRows(submitBook, 'ITEM')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  for (const x of mapRows(submitBook, 'WIP')) setExcelCell(submitBook, 'Daily SO', x.row, 4, 0);
+  const submitPlan = await preview(submitHarness, submitBook, 'submit.xlsx');
+  assert.deepEqual(submitPlan.errors, []);
+  await submitHarness.api.clConfirmTemplateImport();
+  assert.equal(submitHarness.rpcCalls.length, 1);
+  assert.equal(submitHarness.rpcCalls[0].name, 'barapp_closing_import_template');
+  assert.equal(submitHarness.rpcCalls[0].args.p_division_id, DIVISION_ID);
+  assert.equal(submitHarness.rpcCalls[0].args.p_target_date, '2026-10-20');
+  assert.equal(submitHarness.rpcCalls[0].args.p_template_id, submitPlan.templateId);
+  assert.equal(submitHarness.rpcCalls[0].args.p_payload.daily_so.length, 2);
+  assert.equal(submitHarness.CL.templateDraft, null);
+  assert.equal(submitHarness.counters.loads, 1);
+
+  const blockedHarness = createHarness({ allowRpc: true });
+  const blockedBook = await makeTemplate(blockedHarness);
+  setExcelCell(blockedBook, 'Daily SO', mapRows(blockedBook, 'ITEM')[0].row, 4, 0);
+  await preview(blockedHarness, blockedBook, 'blocked.xlsx');
+  await blockedHarness.api.clConfirmTemplateImport();
+  assert.equal(blockedHarness.rpcCalls.length, 0);
+  console.log('Approval Closing single-sheet Daily SO template: all tests passed.');
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
+ + (dropdownFirstRow + 5)], 'KATEGORI dropdown references a visible helper range');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
-  [10, 11, 12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'helper column ' + column + ' stays hidden'));
-  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'same-sheet item options are written for Google Sheets compatibility');
-  assert.equal(base.Sheets['Daily SO'].rows[1][11], id(1), 'same-sheet helper preserves the item ID');
-  assert.equal(base.Sheets['Daily SO'].rows[1][15], 'Waste', 'same-sheet category options are written for Google Sheets compatibility');
+  [10, 12, 13, 14, 15].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
+  [11, 16].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][10], 'Coffee Beans', 'visible same-sheet helper item option exists');
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][11], id(1), 'hidden same-sheet helper preserves item ID');
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][15], 'Waste', 'visible same-sheet helper category option exists');
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
   assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
