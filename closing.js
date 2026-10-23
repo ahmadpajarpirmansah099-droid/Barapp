@@ -273,8 +273,8 @@ async function clDownloadTemplate(){
   });
   categories.forEach((category,i)=>{ws.getCell(i+2,dropdownCols.category).value=category});
   const dollar=String.fromCharCode(36);
-  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+(options.length+1);
-  const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+(categories.length+1);
+  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
+  const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+dollar+(categories.length+1);
   for(let r=expenseFirstRow;r<=expenseLastRow;r++){
    if(options.length)ws.getCell(r,6).dataValidation={type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'};
    ws.getCell(r,8).dataValidation={type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'};
