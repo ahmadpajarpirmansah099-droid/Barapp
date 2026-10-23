@@ -145,14 +145,6 @@ function clTemplateCatalog(){
  };
 }
 function clTemplatePermissions(payload){if(isDeveloper()||!payload)return[];const out=[],req=(cond,key,label)=>{if(cond&&!hasFeature(key))out.push('Akun belum memiliki izin '+label+'.')};req(payload.daily_so?.length,'cogs.daily_so.edit','edit Daily SO');req(payload.sales?.length,'cogs.sales.manage','input Penjualan');req(payload.production?.length,'cogs.production.manage','input Produksi WIP');const invWrite=!!(payload.stock_in?.length||payload.stock_out?.length||payload.supplies?.length);req(invWrite,'inventory.view','lihat Inventory');req(invWrite,'inventory.manage','mengelola Inventory');if(payload.opening_wip?.length&&!hasFeature('inventory.inbound.manage')&&!hasFeature('cogs.production.manage'))out.push('Akun belum memiliki izin stok awal WIP.');return[...new Set(out)]}
-function clTemplateWorksheet(wb,name,headers,rows,widths,hiddenCols){
- const ws=XLSX.utils.aoa_to_sheet([headers].concat(rows));
- ws['!cols']=headers.map((h,i)=>({wch:widths[i]||18,hidden:(hiddenCols||[]).includes(i)}));
- if(rows.length)ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length,c:headers.length-1}})};
- ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
- for(let c=0;c<headers.length;c++){const cell=ws[XLSX.utils.encode_cell({r:0,c:c})];if(cell)cell.s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'42594A'}},alignment:{vertical:'center',wrapText:true}}}
- ws['!rows']=[{hpt:30}];XLSX.utils.book_append_sheet(wb,ws,name);
-}
 function clOpenTemplateDialog(){
  if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');
  if(!window.XLSX)return toast('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.','warn');
@@ -268,7 +260,7 @@ async function clDownloadTemplate(){
    ['SUPPLIES_COUNT',String(supplyRows.length)],
    ['EXPENSE_FIRST_ROW',String(expenseFirstRow)],
    ['EXPENSE_LAST_ROW',String(expenseLastRow)],
-   ['INSTRUCTIONS','Isi AKHIR untuk semua item ITEM dan WIP jika Daily SO digunakan. PRODUKSI diisi jumlah hasil dalam UNIT; jumlah harus kelipatan hasil per batch dari master. PENGELUARAN: pilih ITEM, isi JUMLAH dan KATEGORI, lalu untuk Move pilih TUJUAN dari dropdown divisi aktif dalam outlet yang sama. KETERANGAN opsional. Jangan mengubah struktur atau master item.']
+   ['INSTRUCTIONS','Isi AKHIR untuk semua item ITEM dan WIP jika Daily SO digunakan. PRODUKSI diisi jumlah hasil dalam UNIT; jumlah harus kelipatan hasil per batch dari master. PENGELUARAN: pilih ITEM, isi JUMLAH dan KATEGORI, lalu untuk Move pilih TUJUAN dari dropdown divisi aktif dalam outlet yang sama. Jangan mengubah struktur atau master item.']
   ].forEach(r=>meta.addRow(r));
   meta.addRow([]);
   meta.addRow(['','','SECTION','ROW_NUMBER','ITEM_ID','ITEM_TYPE','ITEM_NAME','UNIT','YIELD_QTY']);
