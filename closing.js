@@ -255,26 +255,34 @@ async function clDownloadTemplate(){
   const listsRowCount=Math.max(options.length,categories.length);
   for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.listType||'',options[i]?.listUnit||'','',categories[i]||'']);
   lists.state='hidden';
-  // Keep import IDs on _LISTS, but source dropdowns from the same worksheet.
-  // Google Sheets can drop validations that reference named ranges or hidden sheets during XLSX import.
+  // Keep import IDs on _LISTS. Google Sheets mobile may fail to load XLSX
+  // list validations backed by hidden source columns, so place the list sources
+  // visibly below the operational table, while keeping metadata columns hidden.
   const dropdownCols={item:11,itemId:12,itemType:13,itemUnit:14,category:16};
-  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=true;
-  ws.getCell(1,dropdownCols.item).value='__EXPENSE_ITEM_OPTION';
-  ws.getCell(1,dropdownCols.itemId).value='__EXPENSE_ITEM_ID';
-  ws.getCell(1,dropdownCols.itemType).value='__EXPENSE_ITEM_TYPE';
-  ws.getCell(1,dropdownCols.itemUnit).value='__EXPENSE_ITEM_UNIT';
-  ws.getCell(1,dropdownCols.category).value='__EXPENSE_CATEGORY_OPTION';
+  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=(col!==dropdownCols.item&&col!==dropdownCols.category);
+  ws.getColumn(dropdownCols.item).width=32;
+  ws.getColumn(dropdownCols.category).width=22;
+  const dropdownHeaderRow=lastRow+3,dropdownFirstRow=dropdownHeaderRow+1;
+  ws.getCell(dropdownHeaderRow,dropdownCols.item).value='DAFTAR ITEM DROPDOWN (OTOMATIS; JANGAN DIUBAH)';
+  ws.getCell(dropdownHeaderRow,dropdownCols.category).value='DAFTAR KATEGORI (JANGAN DIUBAH)';
+  [dropdownCols.item,dropdownCols.category].forEach(col=>{
+   const cell=ws.getCell(dropdownHeaderRow,col);
+   cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF26352D'}};
+   cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE2E8E3'}};
+   cell.alignment={vertical:'middle',wrapText:true};
+   cell.border=border;
+  });
   options.forEach((x,i)=>{
-   const r=i+2;
+   const r=dropdownFirstRow+i;
    ws.getCell(r,dropdownCols.item).value=x.display;
    ws.getCell(r,dropdownCols.itemId).value=x.id;
    ws.getCell(r,dropdownCols.itemType).value=x.listType;
    ws.getCell(r,dropdownCols.itemUnit).value=x.listUnit;
   });
-  categories.forEach((category,i)=>{ws.getCell(i+2,dropdownCols.category).value=category});
+  categories.forEach((category,i)=>{ws.getCell(dropdownFirstRow+i,dropdownCols.category).value=category});
   const dollar=String.fromCharCode(36);
-  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
-  const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+dollar+(categories.length+1);
+  const itemValidationFormula='='+dollar+'K'+dollar+dropdownFirstRow+':'+dollar+'K'+dollar+(dropdownFirstRow+options.length-1);
+  const categoryValidationFormula='='+dollar+'P'+dollar+dropdownFirstRow+':'+dollar+'P'+dollar+(dropdownFirstRow+categories.length-1);
   // Add one worksheet-level rule per contiguous range. Setting the same
   // validation on every cell can serialize into overlapping sqref rules, which
   // some spreadsheet importers fail to interpret.
