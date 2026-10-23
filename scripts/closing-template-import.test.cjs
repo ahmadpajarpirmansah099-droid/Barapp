@@ -281,6 +281,43 @@ function setExcelCell(book, sheet, excelRow, excelColumn, value) {
 async function main() {
   const baseHarness = createHarness();
   const base = await makeTemplate(baseHarness);
+
+  // Requested default UNIT values are applied only when each unit is already
+  // present in that item's conversion list; canonical metadata remains intact.
+  const preferredDefinitions = [
+    ['SKM', 'CAN'], ['SKM COKLAT', 'CAN'], ['GINGER ALE', 'CAN'],
+    ['GALON AQUA', 'GALON'], ['GALON VIT', 'GALON'], ['ES BATU ATLAS', 'BALL'],
+    ['COCONUT WATER', 'BOTOL/PACK'], ['RON88', 'BOTOL/PACK']
+  ];
+  const preferredItems = preferredDefinitions.map(([name, unit], index) => ({
+    id: id(20 + index), division_id: DIVISION_ID, name, base_unit: 'pcs',
+    active: true, is_supply: false, created_at: '2026-01-01',
+    conversions: [{ unit: 'pcs', factor: 1 }, { unit, factor: 1 }]
+  }));
+  const preferredHarness = createHarness({ items: preferredItems, wips: [], menus: [] });
+  const preferredBook = await makeTemplate(preferredHarness);
+  for (const [name, unit] of preferredDefinitions) {
+    const row = mapRows(preferredBook, 'ITEM').find(x => x.name === name);
+    assert(row, 'preferred item is in the template: ' + name);
+    assert.equal(preferredBook.Sheets['Daily SO'].rows[row.row - 1][4], unit, name + ' has the requested default UNIT');
+    assert.equal(row.unit, 'pcs', name + ' retains its canonical unit in metadata');
+  }
+
+  // Do not prefill a preferred unit absent from an item conversion list.
+  const missingUnitHarness = createHarness({
+    items: [{
+      id: id(40), division_id: DIVISION_ID, name: 'SKM', base_unit: 'pcs',
+      active: true, is_supply: false, created_at: '2026-01-01',
+      conversions: [{ unit: 'pcs', factor: 1 }]
+    }],
+    wips: [], menus: []
+  });
+  const missingUnitBook = await makeTemplate(missingUnitHarness);
+  const missingUnitRow = mapRows(missingUnitBook, 'ITEM')[0];
+  assert.equal(missingUnitBook.Sheets['Daily SO'].rows[missingUnitRow.row - 1][4], 'pcs',
+    'missing preferred units safely fall back to the canonical unit');
+  assert(missingUnitHarness.toastMessages.some(message => message.includes('SKM → CAN')),
+    'the download warns when a requested default is absent from Master Barang');
   const visible = base.SheetNames.filter(name => !(base.Workbook.Sheets || []).some(sheet => sheet.name === name && sheet.Hidden === 1));
   assert.deepEqual(visible, ['Daily SO'], 'only the visual Daily SO template is visible');
   assert.equal(base.Workbook.Sheets.find(sheet => sheet.name === '_META')?.Hidden, 1);
