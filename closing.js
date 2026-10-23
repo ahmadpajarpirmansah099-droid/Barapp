@@ -175,16 +175,18 @@ async function clDownloadTemplate(){
  try{
   const ExcelJS=await clEnsureExcelJS(),c=clTemplateCatalog(),wb=new ExcelJS.Workbook();
   const itemRows=c.daily.filter(x=>x.type==='material'),wipRows=c.daily.filter(x=>x.type==='wip'),supplyRows=c.supplies||[];
-  const itemHeaderRow=1,itemFirstRow=3,wipHeaderRow=itemFirstRow+itemRows.length,wipFirstRow=wipHeaderRow+1;
+  const itemHeaderRow=2,itemFirstRow=3,wipHeaderRow=itemFirstRow+itemRows.length,wipFirstRow=wipHeaderRow+1;
   const suppliesHeaderRow=wipFirstRow+wipRows.length,suppliesFirstRow=suppliesHeaderRow+1;
-  const expenseFirstRow=2,expenseLastRow=26;
+  const expenseFirstRow=4,expenseLastRow=28;
   const lastRow=Math.max(expenseLastRow,suppliesHeaderRow+supplyRows.length);
   const ws=wb.addWorksheet('Daily SO');
   const matrix=Array.from({length:lastRow},()=>Array(10).fill(null));
-  matrix[0][0]='DATE';matrix[0][1]='ITEM';matrix[0][2]='MASUK';matrix[0][3]='AKHIR';matrix[0][4]='UNIT';
-  matrix[0][6]='ITEM';matrix[0][7]='JUMLAH';matrix[0][8]='KATEGORI';matrix[0][9]='TUJUAN';
+  matrix[0][0]='Ini untuk Daily SO';matrix[0][6]='Ini untuk Pengeluaran';
+  matrix[1][0]='DATE';matrix[1][1]='ITEM';matrix[1][2]='MASUK';matrix[1][3]='AKHIR';matrix[1][4]='UNIT';
+  matrix[1][6]='ITEM';matrix[1][7]='JUMLAH';matrix[1][8]='KATEGORI';matrix[1][9]='TUJUAN';
   matrix[wipHeaderRow-1][1]='ITEM WIP';matrix[wipHeaderRow-1][2]='PRODUKSI';matrix[wipHeaderRow-1][3]='AKHIR';matrix[wipHeaderRow-1][4]='UNIT';
   matrix[suppliesHeaderRow-1][1]='ITEM SUPLIES';matrix[suppliesHeaderRow-1][2]='MASUK';matrix[suppliesHeaderRow-1][3]='AKHIR';matrix[suppliesHeaderRow-1][4]='UNIT';
+  matrix[2][6]='Dropdown dari FITUR MASTER BARANG > ITEM';matrix[2][8]='Dropdown dari FITUR PENGELUARAN > KATEGORI';
   const rowMap=[],missingPreferredUnits=[];
   itemRows.forEach((x,i)=>{
    const r=itemFirstRow+i,masterItem=(INV.items||[]).find(y=>String(y.id)===String(x.id)),preference=clTemplatePreferredUnit(masterItem),defaultUnit=preference.unit;
@@ -207,11 +209,11 @@ async function clDownloadTemplate(){
   ws.views=[{state:'frozen',ySplit:1}];
   const widths=[13,31,14,14,12,3,30,12,17,24];
   widths.forEach((w,i)=>{ws.getColumn(i+1).width=w});
-  ws.getRow(1).height=25;ws.getRow(wipHeaderRow).height=23;ws.getRow(suppliesHeaderRow).height=23;
+  ws.getRow(1).height=24;ws.getRow(2).height=25;ws.getRow(3).height=32;ws.getRow(wipHeaderRow).height=23;ws.getRow(suppliesHeaderRow).height=23;
   const thin={style:'thin',color:{argb:'FFD7DDD8'}};
   const border={top:thin,bottom:thin,left:thin,right:thin};
   for(let r=1;r<=lastRow;r++){
-   if(r===1||r===wipHeaderRow||r===suppliesHeaderRow)continue;
+   if(r===1||r===itemHeaderRow||r===wipHeaderRow||r===suppliesHeaderRow)continue;
    const hasStockRow=rowMap.some(x=>x.row===r),isExpense=r>=expenseFirstRow&&r<=expenseLastRow;
    const ranges=[];if(hasStockRow)ranges.push([1,5]);if(isExpense)ranges.push([7,10]);
    ranges.forEach(([startCol,endCol])=>{for(let col=startCol;col<=endCol;col++){
@@ -227,7 +229,7 @@ async function clDownloadTemplate(){
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:color}};cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};cell.border=border;
    }
   };
-  styleHeader(1,1,5,'FF42594A');styleHeader(1,7,10,'FFC62828');
+  styleHeader(2,1,5,'FF42594A');styleHeader(2,7,10,'FFC62828');
   styleHeader(wipHeaderRow,2,5,'FF42594A');styleHeader(suppliesHeaderRow,2,5,'FF42594A');
   for(let r=expenseFirstRow;r<=expenseLastRow;r++){
    for(let col=7;col<=10;col++){
@@ -237,7 +239,8 @@ async function clDownloadTemplate(){
    }
   }
   for(const x of rowMap){const cell=ws.getCell(x.row,1);cell.numFmt='@';ws.getCell(x.row,3).numFmt='0.####';ws.getCell(x.row,4).numFmt='0.####';}
-  for(let r=expenseFirstRow;r<=expenseLastRow;r++)ws.getCell(r,7).numFmt='0.####';
+  for(const hintCol of [7,9]){const hint=ws.getCell(3,hintCol);hint.font={name:'Arial',size:9,italic:true,color:{argb:'FF7D8980'}};hint.alignment={vertical:'middle',wrapText:true}}
+  for(let r=expenseFirstRow;r<=expenseLastRow;r++)ws.getCell(r,8).numFmt='0.####';
 
   const meta=wb.addWorksheet('_META');
   [
@@ -375,14 +378,14 @@ async function clPreviewTemplateImport(input){
   if(!ws||!wb.Sheets._META||!wb.Sheets._LISTS)throw new Error('Struktur template tidak lengkap.');
   const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
   const expectedMain=[['DATE',0],['ITEM',1],['MASUK',2],['AKHIR',3],['UNIT',4],['ITEM',6],['JUMLAH',7],['KATEGORI',8],['TUJUAN',9]];
-  expectedMain.forEach(([h,i])=>{if(String(matrix[0]?.[i]??'').trim().toUpperCase()!==h)errors.push('Header kolom '+(i+1)+' harus '+h+'. Jangan ubah layout template.')});
-  if(!clTemplateBlank(matrix[0]?.[5]))errors.push('Kolom F harus menjadi pemisah kosong sesuai layout template.');
+  expectedMain.forEach(([h,i])=>{if(String(matrix[1]?.[i]??'').trim().toUpperCase()!==h)errors.push('Header kolom '+(i+1)+' harus '+h+'. Jangan ubah layout template.')});
+  if(!clTemplateBlank(matrix[1]?.[5]))errors.push('Kolom F harus menjadi pemisah kosong sesuai layout template.');
   const intMeta=k=>{const n=Number(meta[k]);return Number.isInteger(n)&&n>0?n:0};
   const itemHeader=intMeta('ITEM_HEADER_ROW'),itemFirst=intMeta('ITEM_FIRST_ROW'),itemCount=Number(meta.ITEM_COUNT);
   const wipHeader=intMeta('WIP_HEADER_ROW'),wipFirst=intMeta('WIP_FIRST_ROW'),wipCount=Number(meta.WIP_COUNT);
   const supplyHeader=intMeta('SUPPLIES_HEADER_ROW'),supplyFirst=intMeta('SUPPLIES_FIRST_ROW'),supplyCount=Number(meta.SUPPLIES_COUNT);
   const expenseFirst=intMeta('EXPENSE_FIRST_ROW'),expenseLast=intMeta('EXPENSE_LAST_ROW');
-  if(itemHeader!==1||itemFirst!==3||itemCount<0||wipHeader!==itemFirst+itemCount||wipFirst!==wipHeader+1||wipCount<0||supplyHeader!==wipFirst+wipCount||supplyFirst!==supplyHeader+1||supplyCount<0||expenseFirst!==2||expenseLast!==26)errors.push('Struktur baris pada template berubah. Unduh file baru.');
+  if(itemHeader!==2||itemFirst!==3||itemCount<0||wipHeader!==itemFirst+itemCount||wipFirst!==wipHeader+1||wipCount<0||supplyHeader!==wipFirst+wipCount||supplyFirst!==supplyHeader+1||supplyCount<0||expenseFirst!==4||expenseLast!==28)errors.push('Struktur baris pada template berubah. Unduh file baru.');
   const sectionHeaders=[
    [wipHeader,1,'ITEM WIP'],[wipHeader,2,'PRODUKSI'],[wipHeader,3,'AKHIR'],[wipHeader,4,'UNIT'],
    [supplyHeader,1,'ITEM SUPLIES'],[supplyHeader,2,'MASUK'],[supplyHeader,3,'AKHIR'],[supplyHeader,4,'UNIT']
