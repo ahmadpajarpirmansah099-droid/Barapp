@@ -100,13 +100,18 @@ async function approve(){
 
 function clTemplateId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function clTemplateBlank(v){return v===null||v===undefined||String(v).trim()===''}
+function clTemplateCategories(){
+ const configured=window.__barappStockOutCategories;
+ const values=Array.isArray(configured)?configured:['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];
+ return [...new Set(values.map(x=>String(x||'').trim()).filter(Boolean))];
+}
 function clTemplatePreferredUnit(item){
  // Normalize names by removing spaces/punctuation so aliases such as
  // "GINGGERALE", "GINGGER ALE", and "GINGER ALE" resolve consistently.
  const key=String(item?.name||'').toLocaleUpperCase().replace(/[^A-Z0-9]/g,'');
  const preferred={
   'SKM':'CAN',
-  'SKMCOKLAT':'CAN',
+  'SKMCOKLAT':'PACK',
   'GINGERALE':'CAN',
   'GINGGERALE':'CAN',
   'GALONAQUA':'GALON',
@@ -152,7 +157,7 @@ function clOpenTemplateDialog(){
  if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');
  if(!window.XLSX)return toast('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.','warn');
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Closing sudah final atau memerlukan rekonsiliasi. Template untuk tanggal ini dikunci.','warn');
- modal('<h3>Template Daily SO</h3><p class="mu">Outlet/divisi: <b>'+esc(clDivision(CL.division)?.name||'Divisi')+'</b><br>Tanggal target: <b>'+esc(CL.date)+'</b></p><p class="mu">Satu sheet dengan layout menyerupai contoh: ITEM, WIP, SUPPLIES, dan PENGELUARAN. Daftar otomatis mengikuti master aktif. Bagian Waste Menu tidak disertakan.</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadTemplate()">Unduh template Excel</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Pilih file untuk upload<input id="cl_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewTemplateImport(this)"></label></div><p class="mu" style="font-size:12px">Isi MASUK, AKHIR, PRODUKSI, dan maksimal 25 baris PENGELUARAN sesuai kebutuhan. Jangan ubah tanggal, nama item, satuan, atau struktur template. Upload hanya menambah data; transaksi yang sudah ada tidak ditimpa.</p>');
+ modal('<h3>Template Daily SO</h3><p class="mu">Outlet/divisi: <b>'+esc(clDivision(CL.division)?.name||'Divisi')+'</b><br>Tanggal target: <b>'+esc(CL.date)+'</b></p><p class="mu">Satu sheet dengan layout menyerupai contoh: ITEM, WIP, SUPPLIES, dan PENGELUARAN. Daftar otomatis mengikuti master aktif. Bagian Waste Menu tidak disertakan.</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadTemplate()">Unduh template Excel</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Pilih file untuk upload<input id="cl_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewTemplateImport(this)"></label></div><p class="mu" style="font-size:12px">Isi MASUK, AKHIR, PRODUKSI, dan maksimal 25 baris PENGELUARAN. ITEM dan KATEGORI memakai dropdown; TUJUAN wajib dipilih untuk kategori Move saja. Jangan ubah tanggal, nama item, satuan, atau struktur template. Upload hanya menambah data; transaksi yang sudah ada tidak ditimpa.</p>');
 }
 function clEnsureExcelJS(){
  if(window.ExcelJS&&typeof window.ExcelJS.Workbook==='function')return Promise.resolve(window.ExcelJS);
@@ -183,9 +188,9 @@ async function clDownloadTemplate(){
   const expenseFirstRow=2,expenseLastRow=26;
   const lastRow=Math.max(expenseLastRow,suppliesHeaderRow+supplyRows.length);
   const ws=wb.addWorksheet('Daily SO');
-  const matrix=Array.from({length:lastRow},()=>Array(9).fill(null));
+  const matrix=Array.from({length:lastRow},()=>Array(10).fill(null));
   matrix[0][0]='DATE';matrix[0][1]='ITEM';matrix[0][2]='MASUK';matrix[0][3]='AKHIR';matrix[0][4]='UNIT';
-  matrix[0][5]='BARANG KELUAR';matrix[0][6]='JUMLAH';matrix[0][7]='KATEGORI';matrix[0][8]='KETERANGAN';
+  matrix[0][5]='ITEM';matrix[0][6]='JUMLAH';matrix[0][7]='KATEGORI';matrix[0][8]='TUJUAN';matrix[0][9]='KETERANGAN';
   matrix[wipHeaderRow-1][1]='ITEM WIP';matrix[wipHeaderRow-1][2]='PRODUKSI';matrix[wipHeaderRow-1][3]='AKHIR';matrix[wipHeaderRow-1][4]='UNIT';
   matrix[suppliesHeaderRow-1][1]='ITEM SUPLIES';matrix[suppliesHeaderRow-1][2]='MASUK';matrix[suppliesHeaderRow-1][3]='AKHIR';matrix[suppliesHeaderRow-1][4]='UNIT';
   const rowMap=[],missingPreferredUnits=[];
@@ -208,7 +213,7 @@ async function clDownloadTemplate(){
   });
   matrix.forEach(row=>ws.addRow(row));
   ws.views=[{state:'frozen',ySplit:1}];
-  const widths=[13,31,14,14,12,30,12,17,30];
+  const widths=[13,31,14,14,12,30,12,17,24,30];
   widths.forEach((w,i)=>{ws.getColumn(i+1).width=w});
   ws.getRow(1).height=25;ws.getRow(wipHeaderRow).height=23;ws.getRow(suppliesHeaderRow).height=23;
   const thin={style:'thin',color:{argb:'FFD7DDD8'}};
@@ -216,10 +221,10 @@ async function clDownloadTemplate(){
   for(let r=1;r<=lastRow;r++){
    if(r===1||r===wipHeaderRow||r===suppliesHeaderRow)continue;
    const hasStockRow=rowMap.some(x=>x.row===r),isExpense=r>=expenseFirstRow&&r<=expenseLastRow;
-   const ranges=[];if(hasStockRow)ranges.push([1,5]);if(isExpense)ranges.push([6,9]);
+   const ranges=[];if(hasStockRow)ranges.push([1,5]);if(isExpense)ranges.push([6,10]);
    ranges.forEach(([startCol,endCol])=>{for(let col=startCol;col<=endCol;col++){
     const cell=ws.getCell(r,col);cell.border=border;
-    cell.alignment={vertical:'middle',wrapText:col===2||col===6||col===9};
+    cell.alignment={vertical:'middle',wrapText:col===2||col===6||col===9||col===10};
     cell.font={name:'Arial',size:10,color:{argb:'FF26352D'}};
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(r%2===0?'FFFFFFFF':(col>=6?'FFFFF9F9':'FFF8FAF8'))}};
    }});
@@ -230,12 +235,12 @@ async function clDownloadTemplate(){
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:color}};cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};cell.border=border;
    }
   };
-  styleHeader(1,1,5,'FF42594A');styleHeader(1,6,9,'FFC62828');
+  styleHeader(1,1,5,'FF42594A');styleHeader(1,6,10,'FFC62828');
   styleHeader(wipHeaderRow,2,5,'FF42594A');styleHeader(suppliesHeaderRow,2,5,'FF42594A');
   for(let r=expenseFirstRow;r<=expenseLastRow;r++){
-   for(let col=6;col<=9;col++){
+   for(let col=6;col<=10;col++){
     const cell=ws.getCell(r,col);cell.border=border;
-    cell.alignment={vertical:'middle',wrapText:col===6||col===9};
+    cell.alignment={vertical:'middle',wrapText:col===6||col===9||col===10};
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(r%2===0?'FFFFFFFF':'FFFFF9F9')}};
    }
   }
@@ -245,7 +250,7 @@ async function clDownloadTemplate(){
   const meta=wb.addWorksheet('_META');
   [
    ['FIELD','VALUE'],
-   ['VERSION','BARAPP_DAILY_SO_TEMPLATE_V3'],
+   ['VERSION','BARAPP_DAILY_SO_TEMPLATE_V4'],
    ['TEMPLATE_ID',clTemplateId()],
    ['DIVISION_ID',String(CL.division)],
    ['DIVISION_NAME',String(clDivision(CL.division)?.name||'')],
@@ -263,31 +268,30 @@ async function clDownloadTemplate(){
    ['SUPPLIES_COUNT',String(supplyRows.length)],
    ['EXPENSE_FIRST_ROW',String(expenseFirstRow)],
    ['EXPENSE_LAST_ROW',String(expenseLastRow)],
-   ['INSTRUCTIONS','Isi AKHIR untuk semua item ITEM dan WIP jika Daily SO digunakan. PRODUKSI diisi jumlah hasil dalam UNIT; jumlah harus kelipatan hasil per batch dari master. Untuk kategori Move, isi KETERANGAN dengan format Tujuan: Nama Divisi | catatan opsional. Jangan mengubah struktur atau master item.']
+   ['INSTRUCTIONS','Isi AKHIR untuk semua item ITEM dan WIP jika Daily SO digunakan. PRODUKSI diisi jumlah hasil dalam UNIT; jumlah harus kelipatan hasil per batch dari master. PENGELUARAN: pilih ITEM, isi JUMLAH dan KATEGORI, lalu untuk Move pilih TUJUAN dari dropdown divisi aktif dalam outlet yang sama. KETERANGAN opsional. Jangan mengubah struktur atau master item.']
   ].forEach(r=>meta.addRow(r));
   meta.addRow([]);
   meta.addRow(['','','SECTION','ROW_NUMBER','ITEM_ID','ITEM_TYPE','ITEM_NAME','UNIT','YIELD_QTY']);
   rowMap.forEach(x=>meta.addRow(['','',x.section,String(x.row),x.id,x.type,x.name,x.unit,x.yieldQty===null?'':String(x.yieldQty)]));
   meta.state='hidden';
   const lists=wb.addWorksheet('_LISTS');
-  lists.addRow(['ITEM_OPTION','ITEM_ID','ITEM_TYPE','UNIT','','CATEGORY']);
-  const options=(c.expenses||[]).map(x=>{
-   const item=(INV.items||[]).find(y=>String(y.id)===String(x.id));
-   return Object.assign({},x,{listType:x.type==='wip'?'wip':'material',listUnit:x.unit,display:x.name,kind:x.type==='wip'?'WIP':item?.is_supply===true?'SUPPLIES':'ITEM'});
-  });
-  const nameCount=new Map();options.forEach(x=>{const key=x.name.trim().toLocaleLowerCase();nameCount.set(key,(nameCount.get(key)||0)+1)});
-  options.forEach(x=>{if(nameCount.get(x.name.trim().toLocaleLowerCase())>1)x.display=x.name+' ['+x.kind+']';});
-  const categories=['Waste','QC','R&D','Kalibrasi','Lainnya','Move'];
-  const listsRowCount=Math.max(options.length,categories.length);
-  for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.listType||'',options[i]?.listUnit||'','',categories[i]||'']);
+  lists.addRow(['ITEM_OPTION','ITEM_ID','ITEM_TYPE','UNIT','','CATEGORY','TARGET_OPTION','TARGET_DIVISION_ID']);
+  const options=(INV.items||[]).filter(x=>String(x.division_id)===String(CL.division)&&x.active===true)
+   .slice().sort((a,b)=>invAlpha(a.name,b.name))
+   .map(x=>({id:String(x.id),type:'material',unit:String(x.base_unit||'UNIT'),name:String(x.name||''),display:String(x.name||''),kind:x.is_supply===true?'SUPPLIES':'ITEM'}));
+  const categories=clTemplateCategories();
+  const targets=(c.divisions||[]).map(d=>({id:String(d.id),name:String(d.name||'').trim()})).filter(d=>d.id&&d.name);
+  const listsRowCount=Math.max(options.length,categories.length,targets.length);
+  for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.type||'',options[i]?.unit||'','',categories[i]||'',targets[i]?.name||'',targets[i]?.id||'']);
   lists.state='hidden';
   // Put dropdown sources near the top of the same worksheet, matching the
   // proven sample template: categories in J2:J7, unit choices from J9 down,
   // and expense item choices in K2 down. Keep metadata/helper columns hidden.
-  const dropdownCols={unit:10,category:10,item:11,itemId:12,itemType:13,itemUnit:14};
-  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=(col!==10&&col!==11);
+  const dropdownCols={unit:11,category:11,item:12,itemId:13,itemType:14,itemUnit:15,target:16,targetId:17};
+  for(let col=11;col<=17;col++)ws.getColumn(col).hidden=(col!==11&&col!==12);
   ws.getColumn(dropdownCols.unit).width=18;
   ws.getColumn(dropdownCols.item).width=32;
+  ws.getColumn(dropdownCols.target).width=28;
   categories.forEach((category,i)=>{ws.getCell(2+i,dropdownCols.category).value=category});
   const unitOptions=[],unitSeen=new Set();
   itemRows.forEach(x=>{
@@ -307,18 +311,25 @@ async function clDownloadTemplate(){
    ws.getCell(r,dropdownCols.item).value=x.display;
    ws.getCell(r,dropdownCols.itemId).value=x.id;
    ws.getCell(r,dropdownCols.itemType).value=x.listType;
-   ws.getCell(r,dropdownCols.itemUnit).value=x.listUnit;
+   ws.getCell(r,dropdownCols.itemUnit).value=x.unit;
+  });
+  targets.forEach((x,i)=>{
+   const r=i+2;
+   ws.getCell(r,dropdownCols.target).value=x.name;
+   ws.getCell(r,dropdownCols.targetId).value=x.id;
   });
   const dollar=String.fromCharCode(36);
-  const unitValidationFormula='='+dollar+'J'+dollar+unitFirstRow+':'+dollar+'J'+dollar+(unitFirstRow+unitOptions.length-1);
-  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
-  const categoryValidationFormula='='+dollar+'J'+dollar+'2:'+dollar+'J'+dollar+'7';
+  const unitValidationFormula='='+dollar+'K'+dollar+unitFirstRow+':'+dollar+'K'+dollar+(unitFirstRow+unitOptions.length-1);
+  const itemValidationFormula='='+dollar+'L'+dollar+'2:'+dollar+'L'+dollar+(options.length+1);
+  const categoryValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(categories.length+1);
+  const targetValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+dollar+(targets.length+1);
   // Use contiguous same-sheet ranges rather than inline lists or hidden sheets;
   // this mirrors the user's working example in Google Sheets.
   const itemLastRow=itemFirstRow+itemRows.length-1;
   if(unitOptions.length&&itemRows.length)ws.dataValidations.add('E2:E'+itemLastRow,{type:'list',allowBlank:true,formulae:[unitValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar Master Barang; saat impor satuan juga harus valid untuk item ini.'});
-  if(options.length)ws.dataValidations.add('F'+expenseFirstRow+':F'+expenseLastRow,{type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'});
-  ws.dataValidations.add('H'+expenseFirstRow+':H'+expenseLastRow,{type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'});
+  if(options.length)ws.dataValidations.add('F'+expenseFirstRow+':F'+expenseLastRow,{type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item aktif dari Master Barang.'});
+  if(categories.length)ws.dataValidations.add('H'+expenseFirstRow+':H'+expenseLastRow,{type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorTitle:'Kategori tidak valid',error:'Pilih kategori dari fitur Pengeluaran Barapp.'});
+  if(targets.length)ws.dataValidations.add('I'+expenseFirstRow+':I'+expenseLastRow,{type:'list',allowBlank:true,formulae:[targetValidationFormula],showErrorMessage:true,errorTitle:'Tujuan tidak valid',error:'Untuk kategori Move, pilih divisi aktif dari outlet yang sama.'});
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -434,7 +445,8 @@ async function clPreviewTemplateImport(input){
    const m=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});
    m.slice(1).forEach(r=>{const k=String(r[0]||'').trim().toUpperCase();if(k)meta[k]=k==='TARGET_DATE'?clTemplateDateValue(r[1]):String(r[1]??'').trim()});
   }
-  if(meta.VERSION!=='BARAPP_DAILY_SO_TEMPLATE_V3')errors.push('Versi template tidak dikenal. Unduh template Daily SO terbaru.');
+  const isTemplateV4=meta.VERSION==='BARAPP_DAILY_SO_TEMPLATE_V4';
+  if(!isTemplateV4&&meta.VERSION!=='BARAPP_DAILY_SO_TEMPLATE_V3')errors.push('Versi template tidak dikenal. Unduh template Daily SO terbaru.');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh template baru.');
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda. Sesuaikan pilihan divisi atau unduh ulang.');
   if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal pada template berbeda dari tanggal closing terpilih. Pilih tanggal yang benar atau unduh ulang.');
@@ -444,7 +456,7 @@ async function clPreviewTemplateImport(input){
   if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   if(!ws||!wb.Sheets._META||!wb.Sheets._LISTS)throw new Error('Struktur template tidak lengkap.');
   const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-  const expectedMain=['DATE','ITEM','MASUK','AKHIR','UNIT','BARANG KELUAR','JUMLAH','KATEGORI','KETERANGAN'];
+  const expectedMain=isTemplateV4?['DATE','ITEM','MASUK','AKHIR','UNIT','ITEM','JUMLAH','KATEGORI','TUJUAN','KETERANGAN']:['DATE','ITEM','MASUK','AKHIR','UNIT','BARANG KELUAR','JUMLAH','KATEGORI','KETERANGAN'];
   expectedMain.forEach((h,i)=>{if(String(matrix[0]?.[i]??'').trim().toUpperCase()!==h)errors.push('Header kolom '+(i+1)+' harus '+h+'. Jangan ubah layout template.')});
   const intMeta=k=>{const n=Number(meta[k]);return Number.isInteger(n)&&n>0?n:0};
   const itemHeader=intMeta('ITEM_HEADER_ROW'),itemFirst=intMeta('ITEM_FIRST_ROW'),itemCount=Number(meta.ITEM_COUNT);
@@ -553,7 +565,7 @@ async function clPreviewTemplateImport(input){
    const label=String(lists[i]?.[0]??'').trim(),id=String(lists[i]?.[1]??'').trim(),type=String(lists[i]?.[2]??'').trim(),unit=String(lists[i]?.[3]??'').trim();
    if(label&&id&&type){const entry={label,id,type,unit};if(listByLabel.has(label))errors.push('Dropdown ITEM memiliki label duplikat: '+label+'.');else listByLabel.set(label,entry);listRows.push(entry)}
   }
-  const currentOptions=(c.expenses||[]).map(x=>({id:x.id,type:x.type==='wip'?'wip':'material',unit:x.unit,name:x.name}));
+  const currentOptions=(isTemplateV4?(INV.items||[]).filter(x=>String(x.division_id)===String(CL.division)&&x.active===true).map(x=>({id:String(x.id),type:'material',unit:String(x.base_unit||'UNIT'),name:String(x.name||'')})):(c.expenses||[]).map(x=>({id:x.id,type:x.type==='wip'?'wip':'material',unit:x.unit,name:x.name})));
   const metadataOptions=currentOptions.map(x=>{
    const duplicates=currentOptions.filter(y=>y.name.trim().toLocaleLowerCase()===x.name.trim().toLocaleLowerCase()).length;
    const item=(INV.items||[]).find(y=>String(y.id)===String(x.id));
@@ -561,12 +573,17 @@ async function clPreviewTemplateImport(input){
    return {id:x.id,type:x.type,unit:x.unit,label:duplicates>1?x.name+' ['+suffix+']':x.name};
   });
   if(listRows.length!==metadataOptions.length||!clTemplateSameSet(listRows.map(x=>x.label+'|'+x.type+':'+x.id),metadataOptions.map(x=>x.label+'|'+x.type+':'+x.id)))errors.push('Dropdown ITEM sudah berbeda dari master Barapp. Unduh template terbaru.');
-  const cats=['Waste','QC','R&D','Kalibrasi','Lainnya','Move'],listedCats=lists.slice(1).map(r=>String(r?.[5]??'').trim()).filter(Boolean);
+  const cats=clTemplateCategories(),listedCats=lists.slice(1).map(r=>String(r?.[5]??'').trim()).filter(Boolean);
   if(!clTemplateSameSet(listedCats,cats))errors.push('Daftar kategori dropdown berubah atau tidak sesuai template Barapp.');
+  if(isTemplateV4){
+   const listedTargets=lists.slice(1).map(r=>({name:String(r?.[6]??'').trim(),id:String(r?.[7]??'').trim()})).filter(x=>x.name&&x.id);
+   const expectedTargets=(c.divisions||[]).map(d=>({name:String(d.name||'').trim(),id:String(d.id||'').trim()})).filter(x=>x.name&&x.id);
+   if(listedTargets.length!==expectedTargets.length||!clTemplateSameSet(listedTargets.map(x=>x.name+'|'+x.id),expectedTargets.map(x=>x.name+'|'+x.id)))errors.push('Dropdown TUJUAN sudah berbeda dari daftar divisi aktif. Unduh template terbaru.');
+  }
   const expenseSeen=new Set();
   for(let r=expenseFirst;r<=expenseLast;r++){
-   const cells=matrix[r-1]||[],label=String(cells[5]??'').trim(),rawQty=cells[6],category=String(cells[7]??'').trim(),details=String(cells[8]??'').trim();
-   if(!label&&clTemplateBlank(rawQty)&&!category&&!details)continue;
+   const cells=matrix[r-1]||[],label=String(cells[5]??'').trim(),rawQty=cells[6],category=String(cells[7]??'').trim(),targetName=isTemplateV4?String(cells[8]??'').trim():'',details=String(cells[isTemplateV4?9:8]??'').trim();
+   if(!label&&clTemplateBlank(rawQty)&&!category&&!targetName&&!details)continue;
    if(!label){errors.push('PENGELUARAN baris '+r+': pilih ITEM dari dropdown.');continue}
    if(clTemplateBlank(rawQty)){errors.push('PENGELUARAN baris '+r+': JUMLAH wajib diisi.');continue}
    const qty=clTemplateNumber(rawQty);
@@ -579,11 +596,20 @@ async function clPreviewTemplateImport(input){
    expenseSeen.add(key);
    let target=null,notes=details;
    if(category==='Move'){
-    const match=details.match(/^\s*Tujuan\s*:\s*([^|]+?)(?:\s*\|\s*(.*))?\s*$/i);
-    if(!match){errors.push('PENGELUARAN baris '+r+': untuk kategori Move, isi KETERANGAN dengan format "Tujuan: Nama Divisi | catatan opsional".');continue}
-    const targetName=match[1].trim(),destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());
-    if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': tujuan Move harus nama divisi lain yang unik dalam outlet yang sama.');continue}
-    target=destinations[0].id;notes=String(match[2]||'').trim();
+    if(isTemplateV4){
+     if(!targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN wajib dipilih untuk kategori Move.');continue}
+     const destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());
+     if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': TUJUAN harus dipilih dari dropdown divisi aktif dalam outlet yang sama.');continue}
+     target=destinations[0].id;
+    }else{
+     const match=details.match(/^\s*Tujuan\s*:\s*([^|]+?)(?:\s*\|\s*(.*))?\s*$/i);
+     if(!match){errors.push('PENGELUARAN baris '+r+': untuk template lama, isi KETERANGAN dengan format "Tujuan: Nama Divisi | catatan opsional".');continue}
+     const legacyTargetName=match[1].trim(),destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===legacyTargetName.toLocaleLowerCase());
+     if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': tujuan Move harus nama divisi lain yang unik dalam outlet yang sama.');continue}
+     target=destinations[0].id;notes=String(match[2]||'').trim();
+    }
+   }else if(isTemplateV4&&targetName){
+    errors.push('PENGELUARAN baris '+r+': TUJUAN hanya boleh diisi untuk kategori Move.');continue;
    }
    if(option.type==='wip'){
     const w=(CG.wips||[]).find(x=>String(x.id)===option.id&&String(x.division_id)===String(CL.division)&&x.active===true);
