@@ -85,7 +85,7 @@ function createHarness(options = {}) {
       this.dataValidations = {
         add: (address, rule) => {
           this.validationRanges.push({ address, rule: JSON.parse(JSON.stringify(rule)) });
-          const match = /^([A-Z]+)(\\d+):([A-Z]+)(\\d+)$/.exec(address);
+          const match = /^([A-Z]+)([0-9]+):([A-Z]+)([0-9]+)$/.exec(address);
           if (!match || match[1] !== match[3]) throw new Error('Unsupported validation range in test harness: ' + address);
           let column = 0;
           for (const letter of match[1]) column = column * 26 + letter.charCodeAt(0) - 64;
