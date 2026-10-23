@@ -446,7 +446,7 @@ async function clPreviewTemplateImport(input){
    m.slice(1).forEach(r=>{const k=String(r[0]||'').trim().toUpperCase();if(k)meta[k]=k==='TARGET_DATE'?clTemplateDateValue(r[1]):String(r[1]??'').trim()});
   }
   const isTemplateV4=meta.VERSION==='BARAPP_DAILY_SO_TEMPLATE_V4';
-  if(!isTemplateV4&&meta.VERSION!=='BARAPP_DAILY_SO_TEMPLATE_V3')errors.push('Versi template tidak dikenal. Unduh template Daily SO terbaru.');
+  if(!isTemplateV4)errors.push('Template lama tidak didukung. Unduh template Daily SO terbaru.');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh template baru.');
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda. Sesuaikan pilihan divisi atau unduh ulang.');
   if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal pada template berbeda dari tanggal closing terpilih. Pilih tanggal yang benar atau unduh ulang.');
@@ -456,7 +456,7 @@ async function clPreviewTemplateImport(input){
   if(!INV.ready)throw new Error(INV.err||'Data master barang belum berhasil dimuat.');
   if(!ws||!wb.Sheets._META||!wb.Sheets._LISTS)throw new Error('Struktur template tidak lengkap.');
   const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-  const expectedMain=isTemplateV4?['DATE','ITEM','MASUK','AKHIR','UNIT','ITEM','JUMLAH','KATEGORI','TUJUAN','KETERANGAN']:['DATE','ITEM','MASUK','AKHIR','UNIT','BARANG KELUAR','JUMLAH','KATEGORI','KETERANGAN'];
+  const expectedMain=['DATE','ITEM','MASUK','AKHIR','UNIT','ITEM','JUMLAH','KATEGORI','TUJUAN','KETERANGAN'];
   expectedMain.forEach((h,i)=>{if(String(matrix[0]?.[i]??'').trim().toUpperCase()!==h)errors.push('Header kolom '+(i+1)+' harus '+h+'. Jangan ubah layout template.')});
   const intMeta=k=>{const n=Number(meta[k]);return Number.isInteger(n)&&n>0?n:0};
   const itemHeader=intMeta('ITEM_HEADER_ROW'),itemFirst=intMeta('ITEM_FIRST_ROW'),itemCount=Number(meta.ITEM_COUNT);
@@ -565,7 +565,7 @@ async function clPreviewTemplateImport(input){
    const label=String(lists[i]?.[0]??'').trim(),id=String(lists[i]?.[1]??'').trim(),type=String(lists[i]?.[2]??'').trim(),unit=String(lists[i]?.[3]??'').trim();
    if(label&&id&&type){const entry={label,id,type,unit};if(listByLabel.has(label))errors.push('Dropdown ITEM memiliki label duplikat: '+label+'.');else listByLabel.set(label,entry);listRows.push(entry)}
   }
-  const currentOptions=(isTemplateV4?(INV.items||[]).filter(x=>String(x.division_id)===String(CL.division)&&x.active===true).map(x=>({id:String(x.id),type:'material',unit:String(x.base_unit||'UNIT'),name:String(x.name||'')})):(c.expenses||[]).map(x=>({id:x.id,type:x.type==='wip'?'wip':'material',unit:x.unit,name:x.name})));
+  const currentOptions=(INV.items||[]).filter(x=>String(x.division_id)===String(CL.division)&&x.active===true).map(x=>({id:String(x.id),type:'material',unit:String(x.base_unit||'UNIT'),name:String(x.name||'')}));
   const metadataOptions=currentOptions.map(x=>{
    const duplicates=currentOptions.filter(y=>y.name.trim().toLocaleLowerCase()===x.name.trim().toLocaleLowerCase()).length;
    const item=(INV.items||[]).find(y=>String(y.id)===String(x.id));
@@ -575,14 +575,12 @@ async function clPreviewTemplateImport(input){
   if(listRows.length!==metadataOptions.length||!clTemplateSameSet(listRows.map(x=>x.label+'|'+x.type+':'+x.id),metadataOptions.map(x=>x.label+'|'+x.type+':'+x.id)))errors.push('Dropdown ITEM sudah berbeda dari master Barapp. Unduh template terbaru.');
   const cats=clTemplateCategories(),listedCats=lists.slice(1).map(r=>String(r?.[5]??'').trim()).filter(Boolean);
   if(!clTemplateSameSet(listedCats,cats))errors.push('Daftar kategori dropdown berubah atau tidak sesuai template Barapp.');
-  if(isTemplateV4){
-   const listedTargets=lists.slice(1).map(r=>({name:String(r?.[6]??'').trim(),id:String(r?.[7]??'').trim()})).filter(x=>x.name&&x.id);
-   const expectedTargets=(c.divisions||[]).map(d=>({name:String(d.name||'').trim(),id:String(d.id||'').trim()})).filter(x=>x.name&&x.id);
-   if(listedTargets.length!==expectedTargets.length||!clTemplateSameSet(listedTargets.map(x=>x.name+'|'+x.id),expectedTargets.map(x=>x.name+'|'+x.id)))errors.push('Dropdown TUJUAN sudah berbeda dari daftar divisi aktif. Unduh template terbaru.');
-  }
+  const listedTargets=lists.slice(1).map(r=>({name:String(r?.[6]??'').trim(),id:String(r?.[7]??'').trim()})).filter(x=>x.name&&x.id);
+  const expectedTargets=(c.divisions||[]).map(d=>({name:String(d.name||'').trim(),id:String(d.id||'').trim()})).filter(x=>x.name&&x.id);
+  if(listedTargets.length!==expectedTargets.length||!clTemplateSameSet(listedTargets.map(x=>x.name+'|'+x.id),expectedTargets.map(x=>x.name+'|'+x.id)))errors.push('Dropdown TUJUAN sudah berbeda dari daftar divisi aktif. Unduh template terbaru.');
   const expenseSeen=new Set();
   for(let r=expenseFirst;r<=expenseLast;r++){
-   const cells=matrix[r-1]||[],label=String(cells[5]??'').trim(),rawQty=cells[6],category=String(cells[7]??'').trim(),targetName=isTemplateV4?String(cells[8]??'').trim():'',details=String(cells[isTemplateV4?9:8]??'').trim();
+   const cells=matrix[r-1]||[],label=String(cells[5]??'').trim(),rawQty=cells[6],category=String(cells[7]??'').trim(),targetName=String(cells[8]??'').trim(),details=String(cells[9]??'').trim();
    if(!label&&clTemplateBlank(rawQty)&&!category&&!targetName&&!details)continue;
    if(!label){errors.push('PENGELUARAN baris '+r+': pilih ITEM dari dropdown.');continue}
    if(clTemplateBlank(rawQty)){errors.push('PENGELUARAN baris '+r+': JUMLAH wajib diisi.');continue}
@@ -596,19 +594,11 @@ async function clPreviewTemplateImport(input){
    expenseSeen.add(key);
    let target=null,notes=details;
    if(category==='Move'){
-    if(isTemplateV4){
-     if(!targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN wajib dipilih untuk kategori Move.');continue}
-     const destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());
-     if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': TUJUAN harus dipilih dari dropdown divisi aktif dalam outlet yang sama.');continue}
-     target=destinations[0].id;
-    }else{
-     const match=details.match(/^\s*Tujuan\s*:\s*([^|]+?)(?:\s*\|\s*(.*))?\s*$/i);
-     if(!match){errors.push('PENGELUARAN baris '+r+': untuk template lama, isi KETERANGAN dengan format "Tujuan: Nama Divisi | catatan opsional".');continue}
-     const legacyTargetName=match[1].trim(),destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===legacyTargetName.toLocaleLowerCase());
-     if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': tujuan Move harus nama divisi lain yang unik dalam outlet yang sama.');continue}
-     target=destinations[0].id;notes=String(match[2]||'').trim();
-    }
-   }else if(isTemplateV4&&targetName){
+    if(!targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN wajib dipilih untuk kategori Move.');continue}
+    const destinations=(c.divisions||[]).filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());
+    if(destinations.length!==1){errors.push('PENGELUARAN baris '+r+': TUJUAN harus dipilih dari dropdown divisi aktif dalam outlet yang sama.');continue}
+    target=destinations[0].id;
+   }else if(targetName){
     errors.push('PENGELUARAN baris '+r+': TUJUAN hanya boleh diisi untuk kategori Move.');continue;
    }
    if(option.type==='wip'){
