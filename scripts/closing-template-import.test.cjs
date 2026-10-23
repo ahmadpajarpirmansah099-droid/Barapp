@@ -296,21 +296,29 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  const dropdownHeaderRow = base.Sheets['Daily SO'].rows.findIndex(row => row[10] === 'DAFTAR ITEM DROPDOWN (OTOMATIS; JANGAN DIUBAH)') + 1;
+  const dropdownFirstRow = dropdownHeaderRow + 1;
+  const itemOptionCount = base.Sheets._LISTS.rows.filter(row => String(row[0] || '').trim()).length - 1;
+  const dollar = String.fromCharCode(36);
+  const itemFormula = '=' + dollar + 'K' + dollar + dropdownFirstRow + ':' + dollar + 'K' + dollar + (dropdownFirstRow + itemOptionCount - 1);
+  const categoryFormula = '=' + dollar + 'P' + dollar + dropdownFirstRow + ':' + dollar + 'P' + dollar + (dropdownFirstRow + 5);
+  assert(dropdownHeaderRow > 26, 'dropdown helper list is located below the operational table');
   assert.deepEqual(
     base.Sheets['Daily SO'].validationRanges.map(({ address, rule }) => ({ address, type: rule.type, formulae: rule.formulae })),
     [
-      { address: 'F2:F26', type: 'list', formulae: ['=$K$2:$K$4'] },
-      { address: 'H2:H26', type: 'list', formulae: ['=$P$2:$P$7'] }
+      { address: 'F2:F26', type: 'list', formulae: [itemFormula] },
+      { address: 'H2:H26', type: 'list', formulae: [categoryFormula] }
     ],
-    'one non-overlapping worksheet-level dropdown rule is emitted per column'
+    'one non-overlapping worksheet-level dropdown rule per column references visible same-sheet lists'
   );
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, ['=$K$2:$K$4'], 'ITEM dropdown references the same-sheet hidden helper range');
-  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, ['=$P$2:$P$7'], 'KATEGORI dropdown references the same-sheet hidden helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, [itemFormula], 'ITEM dropdown references a visible helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, [categoryFormula], 'KATEGORI dropdown references a visible helper range');
   const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
-  [10, 11, 12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'helper column ' + column + ' stays hidden'));
-  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'same-sheet item options are written for Google Sheets compatibility');
-  assert.equal(base.Sheets['Daily SO'].rows[1][11], id(1), 'same-sheet helper preserves the item ID');
-  assert.equal(base.Sheets['Daily SO'].rows[1][15], 'Waste', 'same-sheet category options are written for Google Sheets compatibility');
+  [10, 12, 13, 14, 15].forEach(column => assert.equal(hiddenColumns.get(column), true, 'metadata helper column ' + column + ' stays hidden'));
+  [11, 16].forEach(column => assert.equal(hiddenColumns.get(column), false, 'dropdown source column ' + column + ' is visible'));
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][10], 'Coffee Beans', 'visible same-sheet helper item option exists');
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][11], id(1), 'hidden same-sheet helper preserves item ID');
+  assert.equal(base.Sheets['Daily SO'].rows[dropdownFirstRow - 1][15], 'Waste', 'visible same-sheet helper category option exists');
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
   assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');
