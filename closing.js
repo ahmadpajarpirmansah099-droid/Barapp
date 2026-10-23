@@ -435,7 +435,11 @@ async function clPreviewTemplateImport(input){
   ];
   sectionHeaders.forEach(([r,c,h])=>{if(String(matrix[r-1]?.[c]??'').trim().toUpperCase()!==h)errors.push('Header '+h+' hilang atau berubah. Unduh ulang template.')});
   const metaMatrix=XLSX.utils.sheet_to_json(wb.Sheets._META,{header:1,defval:'',raw:true});
-  const rowMap=metaMatrix.slice(1).filter(r=>String(r[2]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[2]).trim())).map(r=>({section:String(r[2]).trim(),row:Number(r[3]),id:String(r[4]||'').trim(),type:String(r[5]||'').trim(),name:String(r[6]||''),unit:String(r[7]||''),yieldQty:clTemplateNumber(r[8])}));
+  const rowMap=metaMatrix.slice(1).filter(r=>String(r[2]||'').trim()&&/^(ITEM|WIP|SUPPLIES)$/.test(String(r[2]).trim())).map(r=>{
+   const section=String(r[2]).trim(),id=String(r[4]||'').trim(),unit=String(r[7]||''),item=section==='ITEM'?(INV.items||[]).find(v=>String(v.id)===id):null;
+   const unitOptions=(Array.isArray(item?.conversions)?item.conversions:[]).filter(cv=>String(cv.unit||'').trim()&&Number(cv.factor)>0).map(cv=>({unit:String(cv.unit),factor:Number(cv.factor)}));
+   return {section,row:Number(r[3]),id,type:String(r[5]||'').trim(),name:String(r[6]||''),unit,yieldQty:clTemplateNumber(r[8]),unitOptions};
+  });
   const c=clTemplateCatalog();
   const expectedMap={ITEM:c.daily.filter(x=>x.type==='material'),WIP:c.daily.filter(x=>x.type==='wip'),SUPPLIES:c.supplies||[]};
   for(const section of ['ITEM','WIP','SUPPLIES']){
@@ -451,7 +455,9 @@ async function clPreviewTemplateImport(input){
    const cells=matrix[x.row-1]||[];
    const shownName=String(cells[1]??'').trim(),shownUnit=String(cells[4]??'').trim();
    if(shownName!==x.name)errors.push(x.section+' baris '+x.row+': nama item berubah atau tidak sesuai metadata.');
-   if(shownUnit!==x.unit)errors.push(x.section+' baris '+x.row+': satuan berubah atau tidak sesuai master.');
+   if(x.section==='ITEM'){
+    if(!(x.unitOptions||[]).some(cv=>cv.unit.toLowerCase()===shownUnit.toLowerCase()))errors.push('ITEM baris '+x.row+': satuan "'+shownUnit+'" tidak tersedia di Master Barang untuk item ini.');
+   }else if(shownUnit!==x.unit)errors.push(x.section+' baris '+x.row+': satuan berubah atau tidak sesuai master.');
    if(x.section==='ITEM'&&clTemplateDateValue(cells[0])!==String(CL.date))errors.push('ITEM baris '+x.row+': DATE harus '+String(CL.date)+'.');
   });
   const p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[]};
