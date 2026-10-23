@@ -99,7 +99,17 @@ function createHarness(options = {}) {
     }
     getCell(row, column) {
       const key = row + ':' + column;
-      if (!this.cellMeta[key]) this.cellMeta[key] = {};
+      while (this.rows.length < row) this.rows.push([]);
+      while (this.rows[row - 1].length < column) this.rows[row - 1].push('');
+      if (!this.cellMeta[key]) {
+        const cell = {};
+        Object.defineProperty(cell, 'value', {
+          enumerable: true,
+          get: () => this.rows[row - 1][column - 1],
+          set: value => { this.rows[row - 1][column - 1] = value; }
+        });
+        this.cellMeta[key] = cell;
+      }
       return this.cellMeta[key];
     }
     getColumn(number) {
@@ -272,6 +282,13 @@ async function main() {
   assert.equal(base.Sheets['Daily SO'].validations['2:8']?.type, 'list', 'expense KATEGORI dropdown exists');
   assert.equal(base.Sheets['Daily SO'].validations['26:6']?.type, 'list', 'ITEM dropdown covers row 25 of expenses');
   assert.equal(base.Sheets['Daily SO'].validations['26:8']?.type, 'list', 'category dropdown covers row 25 of expenses');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:6']?.formulae, ['=$K$2:$K$4'], 'ITEM dropdown references the same-sheet hidden helper range');
+  assert.deepEqual(base.Sheets['Daily SO'].validations['2:8']?.formulae, ['=$P$2:$P$7'], 'KATEGORI dropdown references the same-sheet hidden helper range');
+  const hiddenColumns = new Map(base.Sheets['Daily SO']['!cols'].map(col => [col.index, col.hidden]));
+  [10, 11, 12, 13, 14, 15, 16].forEach(column => assert.equal(hiddenColumns.get(column), true, 'helper column ' + column + ' stays hidden'));
+  assert.equal(base.Sheets['Daily SO'].rows[1][10], 'Coffee Beans', 'same-sheet item options are written for Google Sheets compatibility');
+  assert.equal(base.Sheets['Daily SO'].rows[1][11], id(1), 'same-sheet helper preserves the item ID');
+  assert.equal(base.Sheets['Daily SO'].rows[1][15], 'Waste', 'same-sheet category options are written for Google Sheets compatibility');
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[0] === 'Coffee Beans' && row[1] === id(1)));
   assert(base.Sheets._LISTS.rows.slice(1).some(row => row[5] === 'Waste'));
   assert.equal(base.Sheets['Daily SO'].rows[2][0], '2026-10-20', 'ITEM DATE is initialized with selected target date');

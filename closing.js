@@ -255,12 +255,29 @@ async function clDownloadTemplate(){
   const listsRowCount=Math.max(options.length,categories.length);
   for(let i=0;i<listsRowCount;i++)lists.addRow([options[i]?.display||'',options[i]?.id||'',options[i]?.listType||'',options[i]?.listUnit||'','',categories[i]||'']);
   lists.state='hidden';
-  if(options.length&&wb.definedNames&&typeof wb.definedNames.add==='function')wb.definedNames.add('_LISTS!$A$2:$A$'+(options.length+1),'ExpenseItemList');
-  const categoryStart=2,categoryEnd=categoryStart+categories.length-1;
-  if(wb.definedNames&&typeof wb.definedNames.add==='function')wb.definedNames.add('_LISTS!$F$'+categoryStart+':$F$'+categoryEnd,'ExpenseCategoryList');
+  // Keep import IDs on _LISTS, but source dropdowns from the same worksheet.
+  // Google Sheets can drop validations that reference named ranges or hidden sheets during XLSX import.
+  const dropdownCols={item:11,itemId:12,itemType:13,itemUnit:14,category:16};
+  for(let col=10;col<=16;col++)ws.getColumn(col).hidden=true;
+  ws.getCell(1,dropdownCols.item).value='__EXPENSE_ITEM_OPTION';
+  ws.getCell(1,dropdownCols.itemId).value='__EXPENSE_ITEM_ID';
+  ws.getCell(1,dropdownCols.itemType).value='__EXPENSE_ITEM_TYPE';
+  ws.getCell(1,dropdownCols.itemUnit).value='__EXPENSE_ITEM_UNIT';
+  ws.getCell(1,dropdownCols.category).value='__EXPENSE_CATEGORY_OPTION';
+  options.forEach((x,i)=>{
+   const r=i+2;
+   ws.getCell(r,dropdownCols.item).value=x.display;
+   ws.getCell(r,dropdownCols.itemId).value=x.id;
+   ws.getCell(r,dropdownCols.itemType).value=x.listType;
+   ws.getCell(r,dropdownCols.itemUnit).value=x.listUnit;
+  });
+  categories.forEach((category,i)=>{ws.getCell(i+2,dropdownCols.category).value=category});
+  const dollar=String.fromCharCode(36);
+  const itemValidationFormula='='+dollar+'K'+dollar+'2:'+dollar+'K'+dollar+(options.length+1);
+  const categoryValidationFormula='='+dollar+'P'+dollar+'2:'+dollar+'P'+dollar+(categories.length+1);
   for(let r=expenseFirstRow;r<=expenseLastRow;r++){
-   if(options.length)ws.getCell(r,6).dataValidation={type:'list',allowBlank:true,formulae:['=ExpenseItemList'],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'};
-   ws.getCell(r,8).dataValidation={type:'list',allowBlank:true,formulae:['=ExpenseCategoryList'],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'};
+   if(options.length)ws.getCell(r,6).dataValidation={type:'list',allowBlank:true,formulae:[itemValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Item tidak dikenal',error:'Pilih item dari dropdown master Barapp.'};
+   ws.getCell(r,8).dataValidation={type:'list',allowBlank:true,formulae:[categoryValidationFormula],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori dari dropdown Barapp.'};
   }
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
