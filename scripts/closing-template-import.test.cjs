@@ -316,7 +316,7 @@ async function main() {
   const missingUnitRow = mapRows(missingUnitBook, 'ITEM')[0];
   assert.equal(missingUnitBook.Sheets['Daily SO'].rows[missingUnitRow.row - 1][4], 'pcs',
     'missing preferred units safely fall back to the canonical unit');
-  assert(missingUnitHarness.toastMessages.some(message => message.includes('SKM (CAN)')),
+  assert(missingUnitHarness.toastMessages.some(message => message.includes('SKM → CAN')),
     'the download warns when a requested default is absent from Master Barang');
   const visible = base.SheetNames.filter(name => !(base.Workbook.Sheets || []).some(sheet => sheet.name === name && sheet.Hidden === 1));
   assert.deepEqual(visible, ['Daily SO'], 'only the visual Daily SO template is visible');
