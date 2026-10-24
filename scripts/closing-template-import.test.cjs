@@ -28,7 +28,7 @@ for (const symbol of [
   assert.equal(closingSource.includes(symbol), false, 'Removed template reference: ' + symbol);
 }
 assert.equal(indexSource.includes('window.__clOpenTemplate'), false, 'Approval UI must not call the removed template feature');
-assert.match(indexSource, /closing\.js\?v=20261024-approval-daily-so-excel-template-v1/);
+assert.match(indexSource, /closing\.js\?v=20261024-approval-mobile-buttons-v1/);
 assert.ok(closingSource.includes('function clExportDailySOTemplate'), 'Approval includes Daily SO template export');
 assert.ok(closingSource.includes('function clImportDailySO'), 'Approval includes Daily SO import');
 assert.ok(closingSource.includes('BARAPP_DAILY_SO_V1'), 'Template format is versioned');
