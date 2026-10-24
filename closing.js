@@ -230,7 +230,7 @@ async function opTDownload(){
    }
    const isSection=r>1&&headerRows.includes(r+1);
    if(isSection){for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7E7E7'}};cell.border=border}continue;}
-   if(r>=stockStart&&r<expenseStart-1||r>=expenseStart&&r<=expenseLast||r>=salesStart&&r<wipStart-1||r>=wipStart&&r<returnStart-1||r>=returnStart&&r<=rowEnd){
+   if(r>=stockStart&&r<expenseStart-1||r>=expenseStart&&r<=expenseLast||r>=salesStart&&r<wipStart-1||r>=wipStart&&r<=rowEnd){
     for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.border=border;cell.font={name:'Arial',size:10,color:{argb:'FF111111'}};cell.alignment={vertical:'middle',wrapText:col===1||col===6||col===7};if(r%2===0)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}}}
    }
   }
