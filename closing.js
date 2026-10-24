@@ -238,7 +238,7 @@ async function opTDownload(){
    const rm=rowMeta.find(y=>y.section==='STOCK'&&y.id===String(x.id));if(rm){ws.getCell(rm.row,4).numFmt='0.####';ws.getCell(rm.row,5).numFmt='"Rp" #,##0.00';ws.getCell(rm.row,6).numFmt='0.####'}
   });
   for(let r=expenseStart;r<=expenseLast;r++)ws.getCell(r,4).numFmt='0.####';
-  for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4,5])ws.getCell(x.row,col).numFmt='0.####';
+  for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4])ws.getCell(x.row,col).numFmt='0.####';
   for(const x of rowMeta.filter(x=>x.section==='SALES')){ws.getCell(x.row,2).numFmt='0.####';ws.getCell(x.row,3).numFmt='"Rp" #,##0.00'}
   const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD'];
   hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
@@ -328,7 +328,7 @@ async function opTPreview(input){
   };
   for(const sec of Object.keys(requiredSections)){
    const actual=mapped.filter(x=>x.section===sec),expected=requiredSections[sec];
-   if(actual.length!==expected.length||!opTSameSet(actual.map(x=>x.id+':'+x.type),expected.map(x=>x.id+':'+x.type)))errors.push(sec+': daftar master atau transaksi retur berubah. Unduh template baru.');
+   if(actual.length!==expected.length||!opTSameSet(actual.map(x=>x.id+':'+x.type),expected.map(x=>x.id+':'+x.type)))errors.push(sec+': daftar master berubah. Unduh template baru.');
    actual.forEach(x=>{
     const ex=expected.find(y=>y.id===x.id);
     if(!ex||x.name!==ex.name||x.type!==ex.type||x.unit!==ex.unit)errors.push(sec+' baris '+x.row+': nama, jenis, atau satuan tidak sesuai master terbaru.');
@@ -426,7 +426,6 @@ async function opTPreview(input){
   if(p.supplies.length&&!c.suppliesOn)errors.push('Modul SUPPLIES tidak aktif untuk divisi ini.');
   if(p.daily_so.length&&!c.dailyOn)errors.push('Modul Daily SO tidak aktif untuk divisi ini.');
   if(p.stock_out.some(x=>x.item_type==='wip')&&!c.wipOn)errors.push('Modul WIP tidak aktif untuk divisi ini.');
-!p.stock_out
   errors.push(...opTPermissions(p),...opTConflictErrors(p,c));
   const counts=[
    ['Stock opname ITEM',p.daily_so.filter(x=>x.item_type==='material').length,'jumlah akhir; satuan dikonversi dari master'],
@@ -490,7 +489,7 @@ async function opTConfirmImport(){
   const {data,error}=await sb().rpc('barapp_closing_import_operational_template_v2',{p_division_id:CL.division,p_target_date:CL.date,p_template_id:d.templateId,p_payload:d.payload});
   if(error)throw error;
   const z=data?.summary||{};CL.operationalTemplateDraft=null;CL.busy='';CL.ready=false;CG.ready=false;INV.ready=false;await load(true);
-  toast('Import berhasil secara atomik. Stock opname '+(z.daily_so||0)+', Barang Masuk '+(z.stock_in||0)+', Pengeluaran '+(z.stock_out||0)+', Sales '+(z.sales||0)+', Produksi WIP '+(z.production||0)+'+', Supplies '+(z.supplies||0)+'.','ok');
+  toast('Import berhasil secara atomik. Stock opname '+(z.daily_so||0)+', Barang Masuk '+(z.stock_in||0)+', Pengeluaran '+(z.stock_out||0)+', Sales '+(z.sales||0)+', Produksi WIP '+(z.production||0)+', Supplies '+(z.supplies||0)+'.','ok');
  }catch(e){d.busy=false;CL.busy='';d.serverError=opTFriendlyError(e);opTRenderPreview()}
 }
 window.__clOpenOperationalTemplate=opTOpenDialog;
