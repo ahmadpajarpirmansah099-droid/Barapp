@@ -495,6 +495,7 @@ body::before{display:none!important}
 .s-c12{background:color-mix(in srgb,#c99a2e 30%,var(--cd));font-weight:700}
 .jd-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));border-color:color-mix(in srgb,#6d7fa0 60%,var(--line))}
 .s-c1{background:color-mix(in srgb,#6d7fa0 30%,var(--cd));font-weight:700}
+.jad-last-edited .cs-btn{outline:3px solid color-mix(in srgb,var(--ac) 55%,transparent)!important;outline-offset:2px;box-shadow:0 0 0 4px color-mix(in srgb,var(--ac) 12%,transparent)!important;transition:outline-color .2s ease}
 
 /* ---------- TEMA KARTUN: sentuhan khas (CSS-only, logika & jalur tidak berubah) ---------- */
 body{font-size:14px;line-height:1.55}
@@ -2781,9 +2782,9 @@ async function outEditSave(id){const n=v('on1').trim(),c=v('oc1').trim();
   if(ok){closeM();T.outlets=null;await outInit();toast('Outlet diperbarui');R()}}
 
 /* ===== JADWAL KERJA MINGGUAN (rencana, Senin-Minggu) ===== */
-const JAD_CODES=['','6','7','8','9','10','11','12','1','L','S','PH'];
-const JAD_TIME={'6':'06:00','7':'07:00','8':'08:00','9':'09:00','10':'10:00','11':'11:00','12':'12:00','1':'13:00'};
-const JAD_KEY={'':'blank',L:'off',S:'sakit',PH:'ph','6':'c6','7':'c7','8':'c8','9':'c9','10':'c10','11':'c11','12':'c12','1':'c1'};
+const JAD_CODES=['','6','7','8','9','10','11','12','1','2','L','S','PH'];
+const JAD_TIME={'6':'06:00','7':'07:00','8':'08:00','9':'09:00','10':'10:00','11':'11:00','12':'12:00','1':'13:00','2':'14:00'};
+const JAD_KEY={'':'blank',L:'off',S:'sakit',PH:'ph','6':'c6','7':'c7','8':'c8','9':'c9','10':'c10','11':'c11','12':'c12','1':'c1','2':'c1'};
 const jadKey=c=>JAD_KEY[c]||'blank';
 const jadOpt=c=>!c?'–':c==='L'?'Libur':c==='S'?'Sakit':c==='PH'?'PH':(JAD_TIME[c]||c);
 const JAD_NAMA=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
@@ -2813,15 +2814,39 @@ async function jadLoad(){
     T.jad=m;T.jadKey=ws+'|'+did;
   }catch(e){toast(errText(e),'err');T.jad={};T.jadKey='err'}
   R()}
+function jadCellDomId(eid,day){return 'jadcell_'+String(eid).replace(/[^a-zA-Z0-9_-]/g,'_')+'_'+String(day).replace(/[^0-9]/g,'')}
+function jadCapturePosition(eid,day){
+ const sc=document.querySelector('.jad-table-scroll');
+ return {eid,day,scrollY:window.scrollY||0,scrollX:window.scrollX||0,tableLeft:sc?sc.scrollLeft:0};
+}
+function jadRestorePosition(state){
+ if(!state)return;
+ setTimeout(()=>requestAnimationFrame(()=>{
+  window.scrollTo({left:state.scrollX||0,top:state.scrollY||0,behavior:'auto'});
+  const cell=document.getElementById(jadCellDomId(state.eid,state.day));
+  const target=cell&&(cell.closest('.cs')||cell);
+  const table=target&&target.closest('.jad-table-scroll');
+  if(table)table.scrollLeft=state.tableLeft||0;
+  if(target){
+   const rect=target.getBoundingClientRect();
+   if(rect.top<0||rect.bottom>window.innerHeight)target.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'});
+   target.classList.add('jad-last-edited');
+   setTimeout(()=>target.classList.remove('jad-last-edited'),1400);
+  }
+ }),60);
+}
 async function jadSet(eid,day,code,didArg){
   const k=eid+'|'+day,did=didArg||T.jadDid,ws=T.jadWs||jadMon(today());
   if(!did||did==='ALL')return toast('Pilih divisi dulu','err');
+  const lastPosition=jadCapturePosition(eid,day);
+  T.jadLastCell={eid,day};
   const ok=await sbRun(async()=>{const c=sb();
     if(!code){const {error}=await c.from('work_schedules').delete().eq('employee_id',eid).eq('day',day);if(error)throw error}
     else{const {error}=await c.from('work_schedules').upsert({employee_id:eid,division_id:did,week_start:ws,day,code},{onConflict:'employee_id,day'});if(error)throw error}});
   if(ok){if(code)T.jad[k]=code;else delete T.jad[k]}
-  R()}
-function jadNav(n){T.jadWs=jadAddDays(T.jadWs||jadMon(today()),n);T.jadKey=null;R()}
+  R();
+  jadRestorePosition(lastPosition);
+}function jadNav(n){T.jadWs=jadAddDays(T.jadWs||jadMon(today()),n);T.jadKey=null;R()}
 function jadNow(){T.jadWs=jadMon(today());T.jadKey=null;R()}
 function jadPick(v){T.jadDid=v;T.jadKey=null;R()}
 function jadOutCode(d){const o=(T.outlets||[]).find(x=>x.id==d.outlet_id);return o?o.code:''}
@@ -2844,8 +2869,8 @@ function jadCard(){
     const emps=D.emp.filter(e=>e.aktif&&String(e.dv)==String(g.id));
     if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
     const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}${jadOutCode(g)?' · '+esc(jadOutCode(g)):''}</span></div>`:'';
-    return `${title}<div style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select class="jd jd-${jadKey(v)}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:104px;min-width:104px;padding:6px 24px 6px 8px;text-align:left">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${jadOpt(c)}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
-  return `<div class="card"><h3>Jadwal</h3>${(osel||dsel)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">${osel}${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
+    return `${title}<div class="jad-table-scroll" style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select id="${jadCellDomId(e.id,d)}" data-jad-cell="1" class="jd jd-${jadKey(v)}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:104px;min-width:104px;padding:6px 24px 6px 8px;text-align:left">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${jadOpt(c)}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
+  return `<div class="card"><h3>Jadwal</h3>${(osel||dsel)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">${osel}${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1–2 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
 
 /* ===== JADWAL: tampilan & unduh PDF ===== */
 const jadLabel=c=>c==='L'?'OFF':(JAD_TIME[c]||c||'');
