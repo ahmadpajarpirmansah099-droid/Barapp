@@ -161,10 +161,10 @@ function opTOpenDialog(){
  if(!window.XLSX)return toast('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.','warn');
  if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Closing sudah final atau memerlukan rekonsiliasi. Template untuk tanggal ini dikunci.','warn');
- modal('<h3>Template Operasional Barapp</h3><p class="mu">Satu file Excel dengan satu sheet utama untuk Stock Opname, Barang Masuk, Pengeluaran, Penjualan Menu, Produksi WIP, dan Supplies. Jenis Master serta satuan diambil dari master Barapp.</p><p class="mu"><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadOperationalTemplate()">Export Template Operasional</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import Template Operasional<input id="op_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewOperationalImport(this)"></label></div><p class="mu" style="font-size:12px">Isi hanya kolom jumlah yang diperlukan. Jangan mengubah nama item, ID tersembunyi, struktur, outlet, divisi, atau tanggal. Sistem memvalidasi semua bagian lebih dulu dan menyimpan semua transaksi dalam satu transaksi database; bila satu bagian gagal, semuanya dibatalkan.</p>');
+ modal('<h3>Template Daily SO</h3><p class="mu">File Excel khusus Stock Opname. Isi hanya kolom Stok Fisik Akhir untuk item dan WIP yang tampil. Master serta satuan mengikuti Barapp; bagian operasional lain tidak digunakan.</p><p class="mu"><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadOperationalTemplate()">Export Template Daily SO</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import Template Daily SO<input id="op_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewOperationalImport(this)"></label></div><p class="mu" style="font-size:12px">Isi hanya kolom Stok Fisik Akhir. Jangan mengubah nama item, ID tersembunyi, struktur, outlet, divisi, atau tanggal. Import hanya menyimpan Daily SO.</p>');
 }
 async function opTOpenFromDailySO(){
- if(!clCanAccess())return toast('Template Operasional hanya tersedia untuk Developer dan Admin Divisi.','warn');
+ if(!clCanAccess())return toast('Template Daily SO hanya tersedia untuk Developer dan Admin Divisi.','warn');
  const division=typeof OPS!=='undefined'?String(OPS.division||CG.divs[0]?.id||''):'';
  const date=typeof OPS!=='undefined'?String(OPS.date||opsDate()):clToday();
  if(!division||!date)return toast('Pilih divisi dan tanggal Daily SO terlebih dahulu.','warn');
@@ -459,7 +459,7 @@ async function opTPreview(input){
    ['SUPPLIES',p.supplies.length,'stok fisik supplies']
   ];
   CL.operationalTemplateDraft={templateId:meta.TEMPLATE_ID||'',payload:p,errors:[...new Set(errors)],counts,fileName:file.name,serverError:'',busy:false};opTRenderPreview();
- }catch(e){CL.operationalTemplateDraft={templateId:'',payload:null,errors:['Gagal membaca template: '+String(e?.message||e)],counts:[],fileName:file.name,serverError:'',busy:false};opTRenderPreview()}
+ }catch(e){CL.operationalTemplateDraft={templateId:'',payload:null,errors:['Gagal membaca template Daily SO: '+String(e?.message||e)],counts:[],fileName:file.name,serverError:'',busy:false};opTRenderPreview()}
 }
 function opTRenderPreview(){
  const d=CL.operationalTemplateDraft;if(!d)return;
