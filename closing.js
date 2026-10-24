@@ -132,7 +132,7 @@ function opTCatalog(){
    .concat((divisionModuleOn(div,'cogs_wip')?wips:[]).map(x=>({id:String(x.id),rawType:'wip',labelType:'WIP',name:String(x.name),unit:String(x.yield_unit||'UNIT'),division_id:String(x.division_id),item:x})))
    .sort((a,b)=>invAlpha(a.name,b.name)||invAlpha(a.labelType,b.labelType));
  const dailyOn=clModuleOn(division,'cogs_daily_so'),wipOn=clModuleOn(division,'cogs_wip'),productionOn=clModuleOn(division,'cogs_production'),salesOn=clModuleOn(division,'cogs_sales'),suppliesOn=clModuleOn(division,'supplies');
- return {division,date,outlet,div,items,materials,supplies,wips,menus,returns,expenseItems,categories:opTStockOutCategories(),divisions:[...dm.values()].sort((a,b)=>invAlpha(a.name,b.name)),dailyOn,wipOn,productionOn,salesOn,suppliesOn,
+ return {division,date,outlet,div,items,materials,supplies,wips:wipOn?wips:[],menus:salesOn?menus:[],returns,expenseItems,categories:opTStockOutCategories(),divisions:[...dm.values()].sort((a,b)=>invAlpha(a.name,b.name)),dailyOn,wipOn,productionOn,salesOn,suppliesOn,
    dailyMaterials:dailyOn?materials:[],dailyWips:dailyOn&&wipOn?wips:[]};
 }
 function opTEnsureExcelJS(){
@@ -173,7 +173,7 @@ async function opTDownload(){
   if(!CG.ready)await cgLoad(false);if(!INV.ready)await invLoad(false);
   if(!CG.ready||!INV.ready)throw new Error('Master operasional belum berhasil dimuat.');
   const c=opTCatalog(),ExcelJS=await opTEnsureExcelJS(),book=new ExcelJS.Workbook(),ws=book.addWorksheet('DAILY SO');
-  const rowMeta=[];
+  const rowMeta=[],headerRows=[];
   ws.getCell('A1').value='BARAPP — TEMPLATE OPERASIONAL DAILY SO';
   ws.getCell('A2').value='FORMAT';ws.getCell('B2').value='BARAPP_OPERATIONAL_TEMPLATE_V2';
   ws.getCell('A3').value='OUTLET_ID';ws.getCell('B3').value=c.outlet;ws.getCell('C3').value='DIVISI';ws.getCell('D3').value=String(c.div?.name||'');ws.getCell('E3').value='TANGGAL SO';ws.getCell('F3').value=String(CL.date);
@@ -181,7 +181,7 @@ async function opTDownload(){
   ws.mergeCells('B4:G4');ws.getCell('B4').alignment={wrapText:true,vertical:'middle'};
   const addSection=(title,headers)=>{
    const sec=ws.addRow([title]);const r=sec.number;ws.mergeCells(r,1,r,headers.length);sec.height=22;
-   const head=ws.addRow(headers);head.height=30;return head.number+1;
+   const head=ws.addRow(headers);head.height=30;headerRows.push(head.number);return head.number+1;
   };
   const stockStart=addSection('1. STOCK OPNAME + BARANG MASUK — ITEM & SUPPLIES',['Nama Barang','Jenis Master','Satuan Input','Barang Masuk (Qty)','Total Invoice (Opsional)','Stok Fisik Akhir (Qty)','Catatan']);
   const stockUnitOptions=[],unitSet=new Set();
@@ -223,11 +223,6 @@ async function opTDownload(){
    rowMeta.push({section:'RETURNS',row:row.number,id:String(r.id),type:'return',name:it?.name||r.item_id,unit:String(it?.base_unit||'UNIT'),base_unit:String(it?.base_unit||'UNIT'),factor:1,aux_id:String(r.item_id),remaining:Number(x.remaining),received_at:String(r.received_at||'')});
   });
   const rowEnd=ws.rowCount;
-  const headerRows=[];
-  for(let r=1;r<=rowEnd;r++){
-   const first=String(ws.getCell(r,1).value||'');
-   if(/^\\d\\. /.test(first))headerRows.push(r);
-  }
   ws.views=[{state:'frozen',ySplit:7}];
   const widths=[34,18,16,19,22,21,32];widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
   ws.getColumn(8).hidden=true;
@@ -252,9 +247,10 @@ async function opTDownload(){
   for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4,5])ws.getCell(x.row,col).numFmt='0.####';
   for(const x of rowMeta.filter(x=>x.section==='SALES')){ws.getCell(x.row,2).numFmt='0.####';ws.getCell(x.row,3).numFmt='"Rp" #,##0.00'}
   for(const x of rowMeta.filter(x=>x.section==='RETURNS')){ws.getCell(x.row,3).numFmt='0.####';ws.getCell(x.row,5).numFmt='0.####'}
-  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB'];
+  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD'];
   hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
-  [['AA','FORMAT'],['AB','BARAPP_OPERATIONAL_TEMPLATE_V2'],['AC','TEMPLATE_ID'],['AD',opTId()],['AE','OUTLET_ID'],['AF',c.outlet],['AG','DIVISION_ID'],['AH',String(CL.division)],['AI','TARGET_DATE'],['AJ',String(CL.date)],['AK','GENERATED_AT'],['AL',new Date().toISOString()]].forEach(([col,val],i)=>{ws.getCell(col+'1').value=val});
+  [['FORMAT','BARAPP_OPERATIONAL_TEMPLATE_V2'],['TEMPLATE_ID',opTId()],['OUTLET_ID',c.outlet],['DIVISION_ID',String(CL.division)],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()]].forEach(([key,val],i)=>{ws.getCell('AA'+(i+1)).value=key;ws.getCell('AB'+(i+1)).value=val});
+  ws.getCell('BC1').value='EXPENSE_START';ws.getCell('BD1').value=expenseStart;ws.getCell('BC2').value='EXPENSE_LAST';ws.getCell('BD2').value=expenseLast;
   ['SECTION','ROW','ID','TYPE','NAME','UNIT','BASE_UNIT','FACTOR','YIELD_QTY','AUX_ID','REMAINING','RECEIVED_AT'].forEach((v,i)=>ws.getCell(1,30+i).value=v);
   rowMeta.forEach((x,i)=>{
    const r=i+2,vals=[x.section,x.row,x.id,x.type,x.name,x.unit,x.base_unit,x.factor??1,x.yield_qty??'',x.aux_id||'',x.remaining??'',x.received_at||''];
@@ -280,7 +276,7 @@ async function opTDownload(){
  }catch(e){toast('Gagal membuat template operasional: '+String(e?.message||e),'err')}
 }
 function opTReadMeta(ws){
- const out={};for(const colPair of [['AA','AB'],['AC','AD'],['AE','AF'],['AG','AH'],['AI','AJ'],['AK','AL']]){const k=String(ws[colPair[0]+'1']?.v||'').trim();if(k)out[k]=String(ws[colPair[1]+'1']?.v??'').trim()}
+ const out={};for(let r=1;r<=6;r++){const k=String(ws['AA'+r]?.v||'').trim();if(k)out[k]=String(ws['AB'+r]?.v??'').trim()}
  return out;
 }
 function opTMapRows(ws){
@@ -409,7 +405,7 @@ async function opTPreview(input){
    else if(!opTBlank(ws['C'+r]?.v))errors.push('SALES baris '+r+': Harga Jual hanya boleh diisi jika Qty Terjual terisi.');
   });
   const options=opTExpenseOptions(ws),optionByLabel=new Map(options.map(x=>[x.label,x])),seenExpense=new Set();
-  const mappedExpenseRowStart=Number(ws['AC'+1]?.v||0),expenseStart=Number(ws['AD'+1]?.v||0),expenseLast=Number(ws['AE'+1]?.v||0);
+  const expenseStart=Number(ws['BD1']?.v||0),expenseLast=Number(ws['BD2']?.v||0);
   if(!Number.isInteger(expenseStart)||!Number.isInteger(expenseLast)||expenseStart<1||expenseLast<expenseStart)errors.push('Rentang baris Pengeluaran pada metadata tidak valid.');
   else for(let r=expenseStart;r<=expenseLast;r++){
    const label=String(ws['A'+r]?.v??'').trim(),qtyRaw=ws['D'+r]?.v,cat=String(ws['E'+r]?.v??'').trim(),targetName=String(ws['F'+r]?.v??'').trim(),notes=String(ws['G'+r]?.v??'').trim();
