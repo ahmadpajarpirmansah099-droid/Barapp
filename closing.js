@@ -101,7 +101,7 @@ async function approve(){
 
 const clSoType=p=>p.component_type==='wip'?'WIP':(typeof opsUnitItem==='function'&&opsUnitItem(p)?.is_supply?'Supplies':'Item');
 function clSoTemplateUnit(p){
- const name=String(p.component_name||'').trim().toLocaleLowerCase().replace(/\\s+/g,' ');
+ const name=String(p.component_name||'').trim().toLocaleLowerCase().replace(/\s+/g,' ');
  const preferred={'skm':'CAN','skm coklat':'PACK','galon aqua':'GALON','galon vit':'GALON','es batu atlas':'BALL','gingerale':'CAN'}[name];
  const units=typeof opsUnitList==='function'?opsUnitList(p):[{unit:String(p.unit||'UNIT'),factor:1}];
  if(preferred){const match=units.find(u=>String(u.unit).toUpperCase()===preferred);if(match)return match.unit}
