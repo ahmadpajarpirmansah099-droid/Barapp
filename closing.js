@@ -154,7 +154,6 @@ function opTPermissions(p){
  need(p.production.length,'cogs.production.manage','input Produksi WIP');
  const invWrite=!!(p.stock_in.length||p.stock_out.length||p.supplies.length||p.stock_returns.length);
  need(invWrite,'inventory.view','lihat Inventory');need(invWrite,'inventory.manage','mengelola Inventory');
- if(p.opening_wip.length&&!hasFeature('inventory.inbound.manage')&&!hasFeature('cogs.production.manage'))errors.push('Akun belum memiliki izin stok awal WIP.');
  return [...new Set(errors)];
 }
 function opTOpenDialog(){
@@ -162,7 +161,7 @@ function opTOpenDialog(){
  if(!window.XLSX)return toast('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.','warn');
  if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Closing sudah final atau memerlukan rekonsiliasi. Template untuk tanggal ini dikunci.','warn');
- modal('<h3>Template Operasional Barapp</h3><p class="mu">Satu file Excel dengan satu sheet utama untuk ITEM, SUPPLIES, Pengeluaran, Penjualan Menu, Produksi WIP, stok awal WIP, dan Retur. Jenis Master serta satuan diambil dari master Barapp.</p><p class="mu"><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadOperationalTemplate()">Export Template Operasional</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import Template Operasional<input id="op_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewOperationalImport(this)"></label></div><p class="mu" style="font-size:12px">Isi hanya kolom jumlah yang diperlukan. Jangan mengubah nama item, ID tersembunyi, struktur, outlet, divisi, atau tanggal. Sistem memvalidasi semua bagian lebih dulu dan menyimpan semua transaksi dalam satu transaksi database; bila satu bagian gagal, semuanya dibatalkan.</p>');
+ modal('<h3>Template Operasional Barapp</h3><p class="mu">Satu file Excel dengan satu sheet utama untuk Stock Opname, Barang Masuk, Pengeluaran, Penjualan Menu, Produksi WIP, dan Supplies. Jenis Master serta satuan diambil dari master Barapp.</p><p class="mu"><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadOperationalTemplate()">Export Template Operasional</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import Template Operasional<input id="op_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewOperationalImport(this)"></label></div><p class="mu" style="font-size:12px">Isi hanya kolom jumlah yang diperlukan. Jangan mengubah nama item, ID tersembunyi, struktur, outlet, divisi, atau tanggal. Sistem memvalidasi semua bagian lebih dulu dan menyimpan semua transaksi dalam satu transaksi database; bila satu bagian gagal, semuanya dibatalkan.</p>');
 }
 async function opTDownload(){
  if(!clCanAccess())return toast('Akses ditolak.','warn');
@@ -212,15 +211,10 @@ async function opTDownload(){
    const row=ws.addRow([x.name,'','','']);
    rowMeta.push({section:'SALES',row:row.number,id:String(x.id),type:'menu',name:x.name,unit:'',base_unit:'',factor:1});
   });
-  const wipStart=addSection('4. PRODUKSI WIP + STOK AKHIR WIP',['Nama WIP','Satuan Hasil','Stok Awal WIP (Qty)','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']);
+  const wipStart=addSection('4. PRODUKSI WIP + STOK FISIK AKHIR',['Nama WIP','Satuan Hasil','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']);
   c.wips.forEach(x=>{
-   const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','','']);
+    const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','']);
    rowMeta.push({section:'WIP',row:row.number,id:String(x.id),type:'wip',name:x.name,unit:String(x.yield_unit||'UNIT'),base_unit:String(x.yield_unit||'UNIT'),factor:1,yield_qty:Number(x.yield_qty||0)});
-  });
-  const returnStart=addSection('5. RETUR KE SUPPLIER — QTY DALAM SATUAN DASAR',['Barang Masuk / Item','Tanggal Masuk','Sisa Bisa Diretur','Satuan Dasar','Qty Retur','Alasan']);
-  c.returns.forEach(x=>{
-   const r=x.receipt,it=x.item||invItem(r.item_id),row=ws.addRow([(it?.name||'Barang')+' · '+String(r.received_at||''),String(r.received_at||''),Number(x.remaining),String(it?.base_unit||'UNIT'),'','']);
-   rowMeta.push({section:'RETURNS',row:row.number,id:String(r.id),type:'return',name:it?.name||r.item_id,unit:String(it?.base_unit||'UNIT'),base_unit:String(it?.base_unit||'UNIT'),factor:1,aux_id:String(r.item_id),remaining:Number(x.remaining),received_at:String(r.received_at||'')});
   });
   const rowEnd=ws.rowCount;
   ws.views=[{state:'frozen',ySplit:7}];
@@ -246,7 +240,6 @@ async function opTDownload(){
   for(let r=expenseStart;r<=expenseLast;r++)ws.getCell(r,4).numFmt='0.####';
   for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4,5])ws.getCell(x.row,col).numFmt='0.####';
   for(const x of rowMeta.filter(x=>x.section==='SALES')){ws.getCell(x.row,2).numFmt='0.####';ws.getCell(x.row,3).numFmt='"Rp" #,##0.00'}
-  for(const x of rowMeta.filter(x=>x.section==='RETURNS')){ws.getCell(x.row,3).numFmt='0.####';ws.getCell(x.row,5).numFmt='0.####'}
   const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD'];
   hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
   [['FORMAT','BARAPP_OPERATIONAL_TEMPLATE_V2'],['TEMPLATE_ID',opTId()],['OUTLET_ID',c.outlet],['DIVISION_ID',String(CL.division)],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()]].forEach(([key,val],i)=>{ws.getCell('AA'+(i+1)).value=key;ws.getCell('AB'+(i+1)).value=val});
@@ -299,7 +292,6 @@ function opTConflictErrors(p,c){
  if(p.supplies.length&&(INV.suppliesSO||[]).some(x=>String(x.division_id)===d&&String(x.so_date)===date&&x.status==='submitted'))e.push('Daily SO Supplies sudah tersimpan pada tanggal ini. Kosongkan seluruh Stok Fisik Supplies untuk melewati bagian ini.');
  if(p.sales.length&&(CG.sales||[]).some(x=>String(x.division_id)===d&&String(x.sold_at)===date&&x.status==='posted'))e.push('Sudah ada Penjualan Menu pada tanggal ini. Kosongkan seluruh Qty Terjual agar tidak duplikat.');
  if(p.stock_in.length&&(INV.ins||[]).some(x=>String(x.division_id)===d&&String(x.received_at)===date&&x.status==='posted'))e.push('Sudah ada Barang Masuk pada tanggal ini. Kosongkan seluruh Barang Masuk agar tidak duplikat.');
- if(p.opening_wip.length&&(INV.productionBatches||[]).some(x=>String(x.division_id)===d&&String(x.produced_at)===date&&x.status==='posted'&&x.cost_source==='opening'))e.push('Sudah ada Stok Awal WIP pada tanggal ini. Kosongkan seluruh Stok Awal WIP agar tidak duplikat.');
  if(p.stock_out.length&&(INV.stockOut||[]).some(x=>String(x.from_division_id)===d&&String(x.out_date)===date&&x.status==='posted'))e.push('Sudah ada Pengeluaran pada tanggal ini. Kosongkan seluruh Pengeluaran agar tidak duplikat.');
  if(p.production.length&&(CG.productions||[]).some(x=>String(x.division_id)===d&&String(x.produced_at)===date&&x.status==='posted'&&x.cost_source!=='opening'))e.push('Sudah ada Produksi WIP pada tanggal ini. Kosongkan seluruh Produksi Aktual agar tidak duplikat.');
  return e;
@@ -309,7 +301,7 @@ async function opTPreview(input){
  if(!clCanAccess())return toast('Akses ditolak.','warn');
  if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
  if(file.size>15*1024*1024)return toast('Ukuran file terlalu besar. Maksimal 15 MB.','warn');
- modal('<h3>Memvalidasi Template Operasional…</h3><p class="mu">Memeriksa master, satuan, penjualan, pengeluaran, produksi, supplies, retur, serta konflik transaksi. Belum ada data disimpan.</p>');
+ modal('<h3>Memvalidasi Template Operasional…</h3><p class="mu">Memeriksa master, satuan, penjualan, pengeluaran, produksi, supplies, serta konflik transaksi. Belum ada data disimpan.</p>');
  const errors=[];
  try{
   await Promise.all([cgLoad(false),invLoad(false)]);
@@ -333,7 +325,6 @@ async function opTPreview(input){
    STOCK:c.items.map(x=>({id:String(x.id),name:String(x.name),type:x.is_supply===true?'supply':'material',unit:String(x.base_unit||'UNIT')})),
    WIP:c.wips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
    SALES:c.menus.map(x=>({id:String(x.id),name:String(x.name),type:'menu',unit:''})),
-   RETURNS:c.returns.map(x=>({id:String(x.receipt.id),name:String(x.item?.name||x.receipt.item_id),type:'return',unit:String(x.item?.base_unit||'UNIT')}))
   };
   for(const sec of Object.keys(requiredSections)){
    const actual=mapped.filter(x=>x.section===sec),expected=requiredSections[sec];
@@ -386,10 +377,9 @@ async function opTPreview(input){
    const r=x.row,w=(CG.wips||[]).find(y=>String(y.id)===x.id);
    const name=String(ws['A'+r]?.v??'').trim(),unit=String(ws['B'+r]?.v??'').trim();
    if(!w||w.active!==true||String(w.division_id)!==String(CL.division)||name!==x.name||unit!==String(w.yield_unit||'UNIT')){errors.push('WIP baris '+r+': WIP atau satuan hasil tidak cocok dengan master.');return}
-   const opening=opTNum(ws['C'+r]?.v),produced=opTNum(ws['D'+r]?.v),actual=opTNum(ws['E'+r]?.v),note=String(ws['F'+r]?.v??'').trim(),yieldQty=Number(w.yield_qty||0);
-   if(!opTBlank(ws['C'+r]?.v)){if(opening===null||!Number.isFinite(opening)||opening<0)errors.push('WIP baris '+r+': Stok Awal harus angka 0 atau lebih.');else if(opening>0)p.opening_wip.push({wip_id:x.id,qty:opening,notes:note||globalNote})}
-   if(!opTBlank(ws['D'+r]?.v)){if(produced===null||!Number.isFinite(produced)||produced<0)errors.push('WIP baris '+r+': Produksi Aktual harus angka 0 atau lebih.');else if(produced>0){if(!(yieldQty>0))errors.push('WIP baris '+r+': hasil per batch di master tidak valid.');else{const batches=produced/yieldQty,round=Math.round(batches);if(Math.abs(batches-round)>1e-8)errors.push('WIP baris '+r+': Produksi Aktual harus kelipatan '+yieldQty+' '+unit+' per batch.');else p.production.push({wip_id:x.id,batches:round})}}}
-   if(!opTBlank(ws['E'+r]?.v)){if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('WIP baris '+r+': Stok Fisik harus angka 0 atau lebih.');else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'wip',qty:actual})}}
+    const produced=opTNum(ws['C'+r]?.v),actual=opTNum(ws['D'+r]?.v),yieldQty=Number(w.yield_qty||0);
+   if(!opTBlank(ws['C'+r]?.v)){if(produced===null||!Number.isFinite(produced)||produced<0)errors.push('WIP baris '+r+': Produksi Aktual harus angka 0 atau lebih.');else if(produced>0){if(!(yieldQty>0))errors.push('WIP baris '+r+': hasil per batch di master tidak valid.');else{const batches=produced/yieldQty,round=Math.round(batches);if(Math.abs(batches-round)>1e-8)errors.push('WIP baris '+r+': Produksi Aktual harus kelipatan '+yieldQty+' '+unit+' per batch.');else p.production.push({wip_id:x.id,batches:round})}}}
+   if(!opTBlank(ws['D'+r]?.v)){if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('WIP baris '+r+': Stok Fisik harus angka 0 atau lebih.');else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'wip',qty:actual})}}
   });
   if(dailyTouched){
    const expected=c.dailyMaterials.map(x=>String(x.id)).concat(c.dailyWips.map(x=>String(x.id)));
@@ -430,35 +420,21 @@ async function opTPreview(input){
     p.stock_out.push({item_type:'material',item_id:opt.id,wip_id:null,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
    }
   }
-  const returnRows=mapped.filter(x=>x.section==='RETURNS'),seenReturn=new Set();
-  returnRows.forEach(x=>{
-   const r=x.row,qty=opTNum(ws['E'+r]?.v),reason=String(ws['F'+r]?.v??'').trim();
-   if(opTBlank(ws['E'+r]?.v))return;
-   if(qty===null||!Number.isFinite(qty)||qty<=0){errors.push('RETUR baris '+r+': Qty Retur harus lebih dari 0.');return}
-   if(seenReturn.has(x.id)){errors.push('RETUR: transaksi Barang Masuk yang sama dipilih lebih dari sekali.');return}seenReturn.add(x.id);
-   const receipt=(INV.ins||[]).find(y=>String(y.id)===x.id&&String(y.division_id)===String(CL.division)&&y.status==='posted');
-   const returned=(INV.rets||[]).filter(y=>String(y.stock_in_id)===x.id&&y.status==='posted').reduce((a,y)=>a+Number(y.qty_base||0),0);
-   const remain=receipt?Number(receipt.qty_base||0)-returned:0;
-   if(!receipt||qty>remain+1e-8||Math.abs(remain-x.remaining)>1e-6){errors.push('RETUR baris '+r+': receipt tidak valid atau sisa retur sudah berubah. Unduh ulang template.');return}
-   p.stock_returns.push({stock_in_id:x.id,qty,reason:reason||null});
-  });
   if(p.daily_so.length>1000||p.sales.length>200||p.stock_in.length>1000||p.opening_wip.length>500||p.stock_out.length>1000||p.production.length>200||p.supplies.length>1000||p.stock_returns.length>1000)errors.push('Jumlah baris transaksi melebihi batas impor salah satu bagian.');
   if(p.sales.length&&!c.salesOn)errors.push('Modul Penjualan Menu tidak aktif untuk divisi ini.');
-  if((p.production.length||p.opening_wip.length)&&!c.productionOn)errors.push('Modul Produksi WIP tidak aktif untuk divisi ini.');
+  if(p.production.length&&!c.productionOn)errors.push('Modul Produksi WIP tidak aktif untuk divisi ini.');
   if(p.supplies.length&&!c.suppliesOn)errors.push('Modul SUPPLIES tidak aktif untuk divisi ini.');
   if(p.daily_so.length&&!c.dailyOn)errors.push('Modul Daily SO tidak aktif untuk divisi ini.');
   if(p.stock_out.some(x=>x.item_type==='wip')&&!c.wipOn)errors.push('Modul WIP tidak aktif untuk divisi ini.');
-  if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length&&!p.stock_returns.length)errors.push('Tidak ada jumlah yang diisi untuk diimpor.');
+!p.stock_out
   errors.push(...opTPermissions(p),...opTConflictErrors(p,c));
   const counts=[
    ['Stock opname ITEM',p.daily_so.filter(x=>x.item_type==='material').length,'jumlah akhir; satuan dikonversi dari master'],
    ['Daily SO WIP',p.daily_so.filter(x=>x.item_type==='wip').length,'stok fisik akhir WIP'],
    ['Barang Masuk',p.stock_in.length,'baris dengan qty masuk lebih dari 0'],
-   ['Retur',p.stock_returns.length,'retur supplier yang sudah divalidasi'],
    ['Pengeluaran',p.stock_out.length,'baris pengeluaran yang valid'],
    ['Penjualan Menu',p.sales.length,'menu yang terjual'],
    ['Produksi WIP',p.production.length,'produksi aktual dikonversi menjadi batch'],
-   ['Stok Awal WIP',p.opening_wip.length,'stok awal tanpa pemakaian resep'],
    ['SUPPLIES',p.supplies.length,'stok fisik supplies']
   ];
   CL.operationalTemplateDraft={templateId:meta.TEMPLATE_ID||'',payload:p,errors:[...new Set(errors)],counts,fileName:file.name,serverError:'',busy:false};opTRenderPreview();
@@ -480,12 +456,7 @@ function opTFriendlyError(e){
  ['BARAPP_TEMPLATE_EXISTING_STOCK_IN','Sudah ada Barang Masuk pada tanggal ini. Kosongkan bagian Barang Masuk.'],
  ['BARAPP_TEMPLATE_EXISTING_EXPENSES','Sudah ada Pengeluaran pada tanggal ini. Kosongkan bagian Pengeluaran.'],
  ['BARAPP_TEMPLATE_EXISTING_PRODUCTION','Sudah ada Produksi WIP pada tanggal ini. Kosongkan bagian Produksi Aktual.'],
- ['BARAPP_TEMPLATE_EXISTING_OPENING_WIP','Sudah ada Stok Awal WIP pada tanggal ini. Kosongkan bagian Stok Awal WIP.'],
- ['BARAPP_TEMPLATE_EXISTING_RETURNS','Receipt ini sudah diretur pada tanggal ini. Kosongkan baris retur tersebut.'],
  ['BARAPP_TEMPLATE_INVALID_UNIT','Satuan tidak cocok dengan konversi Master Barang. Unduh template terbaru.'],
- ['BARAPP_TEMPLATE_RETURN_EXCEEDS_REMAINING','Qty retur melebihi sisa yang masih dapat diretur. Unduh template baru dan periksa ulang.'],
- ['BARAPP_TEMPLATE_INVALID_RETURN_RECEIPT','ID Barang Masuk untuk retur tidak valid atau tidak tersedia.'],
- ['BARAPP_TEMPLATE_RETURNS_FORBIDDEN','Akun tidak memiliki izin untuk input retur.'],
  ['BARAPP_TEMPLATE_TARGET_CLOSING_LOCKED','Divisi tujuan Move sudah closing final pada tanggal ini.'],
  ['BARAPP_TEMPLATE_INVALID_MOVE_TARGET','Tujuan Move tidak valid atau di luar outlet yang sama.'],
  ['BARAPP_TEMPLATE_DUPLICATE_EXPENSE_ITEM','Item dan kategori Pengeluaran sama muncul lebih dari sekali. Gabungkan kuantitas.'],
@@ -519,7 +490,7 @@ async function opTConfirmImport(){
   const {data,error}=await sb().rpc('barapp_closing_import_operational_template_v2',{p_division_id:CL.division,p_target_date:CL.date,p_template_id:d.templateId,p_payload:d.payload});
   if(error)throw error;
   const z=data?.summary||{};CL.operationalTemplateDraft=null;CL.busy='';CL.ready=false;CG.ready=false;INV.ready=false;await load(true);
-  toast('Import berhasil secara atomik. Stock opname '+(z.daily_so||0)+', Barang Masuk '+(z.stock_in||0)+', Retur '+(z.stock_returns||0)+', Pengeluaran '+(z.stock_out||0)+', Sales '+(z.sales||0)+', Produksi WIP '+(z.production||0)+', Stok Awal WIP '+(z.opening_wip||0)+', Supplies '+(z.supplies||0)+'.','ok');
+  toast('Import berhasil secara atomik. Stock opname '+(z.daily_so||0)+', Barang Masuk '+(z.stock_in||0)+', Pengeluaran '+(z.stock_out||0)+', Sales '+(z.sales||0)+', Produksi WIP '+(z.production||0)+'+', Supplies '+(z.supplies||0)+'.','ok');
  }catch(e){d.busy=false;CL.busy='';d.serverError=opTFriendlyError(e);opTRenderPreview()}
 }
 window.__clOpenOperationalTemplate=opTOpenDialog;
