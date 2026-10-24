@@ -322,7 +322,7 @@ async function opTPreview(input){
   const byKey=new Map(mapped.map(x=>[x.section+':'+x.id,x]));
   if(byKey.size!==mapped.length)errors.push('Metadata template berisi ID duplikat.');
   const requiredSections={
-   STOCK:c.items.map(x=>({id:String(x.id),name:String(x.name),type:x.is_supply===true?'supply':'material',unit:String(x.base_unit||'UNIT')})),
+   STOCK:c.items.map(x=>({id:String(x.id),name:String(x.name),type:x.is_supply===true?'supply':'material',unit:x.is_supply===true?String(x.base_unit||'UNIT'):String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')})),
    WIP:c.wips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
    SALES:c.menus.map(x=>({id:String(x.id),name:String(x.name),type:'menu',unit:''})),
   };
