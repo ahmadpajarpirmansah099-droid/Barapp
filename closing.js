@@ -187,53 +187,31 @@ async function opTDownload(){
   if(!CG.ready||!INV.ready)throw new Error('Master operasional belum berhasil dimuat.');
   const c=opTCatalog(),ExcelJS=await opTEnsureExcelJS(),book=new ExcelJS.Workbook(),ws=book.addWorksheet('DAILY SO');
   const rowMeta=[],headerRows=[];
-  ws.getCell('A1').value='BARAPP — TEMPLATE OPERASIONAL DAILY SO';
-  ws.getCell('A2').value='FORMAT';ws.getCell('B2').value='BARAPP_OPERATIONAL_TEMPLATE_V2';
+  ws.getCell('A1').value='BARAPP — TEMPLATE DAILY SO';
+  ws.getCell('A2').value='FORMAT';ws.getCell('B2').value='BARAPP_DAILY_SO_TEMPLATE_V1';
   ws.getCell('A3').value='OUTLET_ID';ws.getCell('B3').value=c.outlet;ws.getCell('C3').value='DIVISI';ws.getCell('D3').value=String(c.div?.name||'');ws.getCell('E3').value='TANGGAL SO';ws.getCell('F3').value=String(CL.date);
-  ws.getCell('A4').value='CATATAN UMUM';ws.getCell('B4').value='';
+  ws.getCell('A4').value='CATATAN';ws.getCell('B4').value='Isi hanya kolom Stok Fisik Akhir. Kosongkan jika belum melakukan stock opname.';
   ws.mergeCells('B4:G4');ws.getCell('B4').alignment={wrapText:true,vertical:'middle'};
   const addSection=(title,headers)=>{
-   const sec=ws.addRow([title]);const r=sec.number;ws.mergeCells(r,1,r,headers.length);sec.height=22;
+   const sec=ws.addRow([title]),r=sec.number;ws.mergeCells(r,1,r,headers.length);sec.height=22;
    const head=ws.addRow(headers);head.height=30;headerRows.push(head.number);return head.number+1;
   };
   const stockStart=addSection('1. DAILY SO — STOK FISIK AKHIR ITEM',['Nama Barang','Jenis Master','Satuan Input','','','Stok Fisik Akhir (Qty)','Catatan']);
-  const stockUnitOptions=[],unitSet=new Set();
-  c.items.forEach(x=>{
-   const pref=x.is_supply===true?{unit:String(x.base_unit||'UNIT'),factor:1,missing:false}:opTPreferredUnit(x);
-   const row=ws.addRow([x.name,x.is_supply===true?'Supplies':'Item',pref.unit,'','','','']);
-   rowMeta.push({section:'STOCK',row:row.number,id:String(x.id),type:x.is_supply===true?'supply':'material',name:x.name,unit:pref.unit,base_unit:String(x.base_unit||'UNIT'),factor:pref.factor,missing:pref.missing,created_at:x.created_at||''});
-   (Array.isArray(x.conversions)?x.conversions:[]).forEach(cv=>{const u=String(cv.unit||'').trim(),k=u.toLowerCase();if(u&&Number(cv.factor)>0&&!unitSet.has(k)){unitSet.add(k);stockUnitOptions.push(u)}});
+  const unitSet=new Set();
+  c.dailyMaterials.forEach(x=>{
+   const pref=opTPreferredUnit(x);
+   const row=ws.addRow([x.name,'Item',pref.unit,'','','','']);
+   rowMeta.push({section:'STOCK',row:row.number,id:String(x.id),type:'material',name:x.name,unit:pref.unit,base_unit:String(x.base_unit||'UNIT'),factor:pref.factor,missing:pref.missing});
+   (Array.isArray(x.conversions)?x.conversions:[]).forEach(cv=>{const u=String(cv.unit||'').trim();if(u&&Number(cv.factor)>0)unitSet.add(u)});
   });
-  const expenseStart=addSection('2. BAGIAN INTERNAL — JANGAN DIISI',['','','','','','','']);
-  const optionMap=[],labelCount=new Map();
-  c.expenseItems.forEach(x=>{const k=x.name.trim().toLocaleLowerCase();labelCount.set(k,(labelCount.get(k)||0)+1)});
-  c.expenseItems.forEach(x=>{
-   const duplicate=labelCount.get(x.name.trim().toLocaleLowerCase())>1;
-   const label=duplicate?x.name+' ['+x.labelType+']':x.name;
-   optionMap.push({label,id:x.id,rawType:x.rawType,labelType:x.labelType,unit:x.unit,division_id:x.division_id,name:x.name});
-  });
-  const expenseLast=expenseStart+19;
-  for(let r=expenseStart;r<=expenseLast;r++){
-   const row=ws.getRow(r);row.getCell(1).value='';
-   const lookupEnd=Math.max(2,optionMap.length+1);
-   row.getCell(2).value={formula:'IFERROR(VLOOKUP($A'+r+',$AQ$2:$AV$'+lookupEnd+',4,FALSE),\"\")',result:''};
-   row.getCell(3).value={formula:'IFERROR(VLOOKUP($A'+r+',$AQ$2:$AV$'+lookupEnd+',5,FALSE),\"\")',result:''};
-   row.getCell(4).value='';row.getCell(5).value='';row.getCell(6).value='';row.getCell(7).value='';
-  }
-  const salesStart=addSection('3. BAGIAN INTERNAL — JANGAN DIISI',['','','','']);
-  c.menus.forEach(x=>{
-   const row=ws.addRow([x.name,'','','']);
-   rowMeta.push({section:'SALES',row:row.number,id:String(x.id),type:'menu',name:x.name,unit:'',base_unit:'',factor:1});
-  });
-  const wipStart=addSection('4. DAILY SO — STOK FISIK AKHIR WIP',['Nama WIP','Satuan Hasil','','Stok Fisik Akhir (Qty)','Catatan']);
-  c.wips.forEach(x=>{
-    const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','']);
+  const wipStart=addSection('2. DAILY SO — STOK FISIK AKHIR WIP',['Nama WIP','Satuan Hasil','','Stok Fisik Akhir (Qty)','Catatan']);
+  c.dailyWips.forEach(x=>{
+   const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','']);
    rowMeta.push({section:'WIP',row:row.number,id:String(x.id),type:'wip',name:x.name,unit:String(x.yield_unit||'UNIT'),base_unit:String(x.yield_unit||'UNIT'),factor:1,yield_qty:Number(x.yield_qty||0)});
   });
   const rowEnd=ws.rowCount;
   ws.views=[{state:'frozen',ySplit:7}];
-  const widths=[34,18,16,19,22,21,32];widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
-  ws.getColumn(8).hidden=true;
+  [34,18,16,19,22,21,32].forEach((w,i)=>ws.getColumn(i+1).width=w);
   const thin={style:'thin',color:{argb:'FFBEBEBE'}},border={top:thin,bottom:thin,left:thin,right:thin};
   ws.getRow(1).height=28;ws.getCell('A1').font={name:'Arial',size:14,bold:true,color:{argb:'FF111111'}};
   for(const addr of ['A2','A3','C3','E3','A4'])ws.getCell(addr).font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};
@@ -242,50 +220,27 @@ async function opTDownload(){
     for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF333333'}};cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};cell.border=border}
     continue;
    }
-   const isSection=r>1&&headerRows.includes(r+1);
-   if(isSection){for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7E7E7'}};cell.border=border}continue;}
-   if(r>=stockStart&&r<expenseStart-1||r>=expenseStart&&r<=expenseLast||r>=salesStart&&r<wipStart-1||r>=wipStart&&r<=rowEnd){
+   if(r>1&&headerRows.includes(r+1)){for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7E7E7'}};cell.border=border}continue;}
+   if((r>=stockStart&&r<stockStart+c.dailyMaterials.length)||(r>=wipStart&&r<=rowEnd)){
     for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.border=border;cell.font={name:'Arial',size:10,color:{argb:'FF111111'}};cell.alignment={vertical:'middle',wrapText:col===1||col===6||col===7};if(r%2===0)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}}}
    }
   }
-  c.items.forEach((x,i)=>{
-   const rm=rowMeta.find(y=>y.section==='STOCK'&&y.id===String(x.id));if(rm){ws.getCell(rm.row,4).numFmt='0.####';ws.getCell(rm.row,5).numFmt='"Rp" #,##0.00';ws.getCell(rm.row,6).numFmt='0.####'}
-  });
-  for(let r=expenseStart;r<=expenseLast;r++)ws.getCell(r,4).numFmt='0.####';
-  for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4])ws.getCell(x.row,col).numFmt='0.####';
-  for(const x of rowMeta.filter(x=>x.section==='SALES')){ws.getCell(x.row,2).numFmt='0.####';ws.getCell(x.row,3).numFmt='"Rp" #,##0.00'}
-  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB','BC','BD'];
+  for(const x of rowMeta.filter(x=>x.section==='STOCK'))ws.getCell(x.row,6).numFmt='0.####';
+  for(const x of rowMeta.filter(x=>x.section==='WIP'))ws.getCell(x.row,4).numFmt='0.####';
+  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO'];
   hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
-  [['FORMAT','BARAPP_OPERATIONAL_TEMPLATE_V2'],['TEMPLATE_ID',opTId()],['OUTLET_ID',c.outlet],['DIVISION_ID',String(CL.division)],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()]].forEach(([key,val],i)=>{ws.getCell('AA'+(i+1)).value=key;ws.getCell('AB'+(i+1)).value=val});
-  ws.getCell('BC1').value='EXPENSE_START';ws.getCell('BD1').value=expenseStart;ws.getCell('BC2').value='EXPENSE_LAST';ws.getCell('BD2').value=expenseLast;
+  [['FORMAT','BARAPP_DAILY_SO_TEMPLATE_V1'],['TEMPLATE_ID',opTId()],['OUTLET_ID',c.outlet],['DIVISION_ID',String(CL.division)],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()]].forEach(([key,val],i)=>{ws.getCell('AA'+(i+1)).value=key;ws.getCell('AB'+(i+1)).value=val});
   ['SECTION','ROW','ID','TYPE','NAME','UNIT','BASE_UNIT','FACTOR','YIELD_QTY','AUX_ID','REMAINING','RECEIVED_AT'].forEach((v,i)=>ws.getCell(1,30+i).value=v);
-  rowMeta.forEach((x,i)=>{
-   const r=i+2,vals=[x.section,x.row,x.id,x.type,x.name,x.unit,x.base_unit,x.factor??1,x.yield_qty??'',x.aux_id||'',x.remaining??'',x.received_at||''];
-   vals.forEach((v,j)=>ws.getCell(r,30+j).value=v);
-  });
-  const expHeaders=['LABEL','ID','RAW_TYPE','MASTER_TYPE','UNIT','DIVISION_ID','NAME'];
-  expHeaders.forEach((v,i)=>ws.getCell(1,43+i).value=v);
-  optionMap.forEach((x,i)=>[x.label,x.id,x.rawType,x.labelType,x.unit,x.division_id,x.name].forEach((v,j)=>ws.getCell(i+2,43+j).value=v));
-  c.categories.forEach((v,i)=>ws.getCell(i+2,50).value=v);
-  c.divisions.forEach((v,i)=>{ws.getCell(i+2,51).value=v.name;ws.getCell(i+2,52).value=v.id});
-  const allUnits=new Set();c.items.forEach(x=>{if(x.base_unit)allUnits.add(String(x.base_unit));(Array.isArray(x.conversions)?x.conversions:[]).forEach(v=>{if(v?.unit&&Number(v.factor)>0)allUnits.add(String(v.unit))})});c.expenseItems.forEach(x=>allUnits.add(x.unit));
-  [...allUnits].sort((a,b)=>invAlpha(a,b)).forEach((u,i)=>ws.getCell(i+2,53).value=u);
-  const optEnd=Math.max(2,optionMap.length+1),catEnd=Math.max(2,c.categories.length+1),targetEnd=Math.max(2,c.divisions.length+1),unitEnd=Math.max(2,allUnits.size+1);
-  if(optionMap.length)ws.dataValidations.add('A'+expenseStart+':A'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AQ$2:$AQ$'+optEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Barang tidak valid',error:'Pilih barang dari daftar Master Barapp.'});
-  if(c.categories.length)ws.dataValidations.add('E'+expenseStart+':E'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AX$2:$AX$'+catEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori pengeluaran dari daftar.'});
-  if(c.divisions.length)ws.dataValidations.add('F'+expenseStart+':F'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AY$2:$AY$'+targetEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Tujuan tidak valid',error:'Untuk Move, pilih divisi aktif dalam outlet yang sama.'});
-  if(allUnits.size)ws.dataValidations.add('C'+stockStart+':C'+(stockStart+c.items.length-1),{type:'list',allowBlank:true,formulae:['=$BA$2:$BA$'+unitEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar; satuan akan diperiksa lagi berdasarkan master item.'});
-  ws.autoFilter={from:{row:stockStart-1,column:1},to:{row:stockStart+c.items.length-1,column:7}};
-  // Tampilkan hanya Daily SO; baris tersembunyi mempertahankan metadata validasi import yang sudah ada.
-  for(let r=expenseStart-2;r<wipStart-2;r++)ws.getRow(r).hidden=true;
-  for(const x of rowMeta.filter(x=>x.section==='STOCK'&&x.type==='supply'))ws.getRow(x.row).hidden=true;
-  for(const x of rowMeta.filter(x=>x.section==='STOCK'&&x.type==='material'&&!c.dailyMaterials.some(m=>String(m.id)===x.id)))ws.getRow(x.row).hidden=true;
-  for(const x of rowMeta.filter(x=>x.section==='WIP'&&!c.dailyWips.some(w=>String(w.id)===x.id)))ws.getRow(x.row).hidden=true;
+  rowMeta.forEach((x,i)=>[x.section,x.row,x.id,x.type,x.name,x.unit,x.base_unit,x.factor??1,x.yield_qty??'',x.aux_id||'',x.remaining??'',x.received_at||''].forEach((v,j)=>ws.getCell(i+2,30+j).value=v));
+  const allUnits=new Set();c.dailyMaterials.forEach(x=>{if(x.base_unit)allUnits.add(String(x.base_unit));(Array.isArray(x.conversions)?x.conversions:[]).forEach(v=>{if(v?.unit&&Number(v.factor)>0)allUnits.add(String(v.unit))})});
+  [...allUnits].sort((a,b)=>invAlpha(a,b)).forEach((u,i)=>ws.getCell(i+2,43).value=u);
+  const unitEnd=Math.max(2,allUnits.size+1);
+  if(allUnits.size)ws.dataValidations.add('C'+stockStart+':C'+Math.max(stockStart,stockStart+c.dailyMaterials.length-1),{type:'list',allowBlank:true,formulae:['=$AQ$2:$AQ$'+unitEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar; satuan akan diperiksa lagi berdasarkan master item.'});
+  ws.autoFilter={from:{row:stockStart-1,column:1},to:{row:Math.max(stockStart,stockStart+c.dailyMaterials.length-1),column:7}};
   const buf=await book.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BARAPP_Template_Daily_SO_'+String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-')+'-'+CL.date+'.xlsx';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  const missing=rowMeta.filter(x=>x.section==='STOCK'&&x.missing).map(x=>x.name+' → '+(opTPreferredUnit(c.items.find(i=>String(i.id)===x.id))?.requested||''));
   toast('Telah Di Unduh, DAGOAN!','ok');
- }catch(e){toast('Gagal membuat template operasional: '+String(e?.message||e),'err')}
+ }catch(e){toast('Gagal membuat template Daily SO: '+String(e?.message||e),'err')}
 }
 function opTReadMeta(ws){
  const out={};for(let r=1;r<=6;r++){const k=String(ws['AA'+r]?.v||'').trim();if(k)out[k]=String(ws['AB'+r]?.v??'').trim()}
