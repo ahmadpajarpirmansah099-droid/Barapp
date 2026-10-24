@@ -1602,6 +1602,32 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 }
 </style>
 
+
+<style id="stock-out-empty-state-card-fix">
+@media(max-width:600px){
+ .ops-stock-out-page .ops-history-card>.cogs-scroll{
+   border:0!important;outline:0!important;box-shadow:none!important;
+   border-radius:0!important;background:transparent!important;
+   padding:0!important;margin:4px 0 0!important;overflow:visible!important;
+ }
+ .ops-stock-out-page .ops-history-card .ops-empty-history{
+   display:block!important;width:100%;box-sizing:border-box;
+   margin:4px 0 0!important;padding:8px 2px!important;
+   border:0!important;border-radius:0!important;background:transparent!important;
+   color:var(--mu);font-size:12px!important;line-height:1.4!important;
+   font-weight:600!important;text-align:left;
+ }
+ .ops-stock-out-page .ops-stock-out-history-table tbody tr:has(td[colspan]){
+   display:block!important;width:100%!important;padding:0!important;margin:0!important;
+   border:0!important;border-radius:0!important;background:transparent!important;
+ }
+ .ops-stock-out-page .ops-stock-out-history-table tbody tr:has(td[colspan]) td{
+   display:block!important;width:100%!important;box-sizing:border-box;
+   padding:8px 2px!important;border:0!important;background:transparent!important;
+ }
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -2902,7 +2928,7 @@ V.pengeluaran=()=>{
   const where=r.category==='Move'?esc(invDiv(r.from_division_id))+' → '+esc(invDiv(r.to_division_id)):'Keluar dari '+esc(invDiv(r.from_division_id));
   return '<tr><td><b>'+esc(r.out_date)+'</b><br><small class="mu">ID '+esc(String(r.id).slice(0,8))+' · '+where+'</small></td><td><b>'+esc(r.category)+'</b><br>'+esc(name)+(r.item_type==='wip'?' <span class="cogs-pill">WIP</span>':'')+'<br><small class="mu">'+invNum(r.qty_input)+' '+esc(r.unit_input)+' = '+invNum(r.qty_base)+' '+esc(unit)+'</small>'+(r.notes?'<br><small class="mu">'+esc(r.notes)+'</small>':'')+'</td><td>'+(r.status==='posted'?'<span class="cogs-pill">Tercatat</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+'</td><td><div class="btns"><button class="btn s x" onclick="invStockOutDetail(&quot;'+r.id+'&quot;)">Detail</button>'+(r.status==='posted'&&invCanWrite()?'<button class="btn s x" onclick="invCancelStockOut(&quot;'+r.id+'&quot;)">Batal</button>':'—')+'</div></td></tr>';
  }).join('');
- return '<div class="cogs-wrap ops-feature-page ops-stock-out-page"><div class="card ops-entry-card ops-stock-out-form"><div class="cogs-top"><div><h3>Pengeluaran</h3></div><div class="btns"><button class="btn s daily-so-back" onclick="go(&quot;cogs_daily_so&quot;)">← Kembali ke Daily SO</button><button class="btn s" onclick="invLoad(true)">Muat ulang</button></div></div><div class="cogs-formgrid"><label>Tanggal<input id="out_date" type="date" value="'+today()+'" max="'+today()+'"></label><label>Divisi asal<select id="out_from" onchange="outChangeFrom()">'+divOptions+'</select></label></div><label>Kategori<select id="out_category" onchange="outChangeCategory()"><option value="">Pilih kategori</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label><label>Barang<select id="out_item" onchange="outChangeItem()"><option value="">Pilih barang</option>'+itemOptions+'</select></label><div class="cogs-formgrid"><label>Jumlah<input id="out_qty" type="number" min="0.000001" step="any" oninput="outPreview()" placeholder="Contoh: 2"></label><label>Satuan<select id="out_unit" onchange="outPreview()"><option value="">Pilih satuan</option>'+unitOptions+'</select></label></div><div id="out_target_wrap" style="display:none"><label>Divisi penerima<select id="out_to"><option value="">Pilih divisi penerima</option>'+targetOptions+'</select></label></div><div id="out_preview" class="card mu"></div><label>Catatan / alasan<input id="out_note" maxlength="500" placeholder="Opsional"></label><button class="btn" onclick="invSaveStockOut()">Posting Pengeluaran</button></div><div class="card ops-history-card"><div class="cogs-top"><h3>Riwayat Pengeluaran</h3><span class="mu">'+visibleOut.length+' transaksi</span></div><div class="btns inv-actions" style="margin:8px 0 12px"><button class="btn s" style="width:100%;max-width:none" onclick="rOpen(&quot;O&quot;)">📅 '+(INV.stockOutHistoryPicked&&INV.stockOutHistoryFrom&&INV.stockOutHistoryTo?fdp(INV.stockOutHistoryFrom)+' s/d '+fdp(INV.stockOutHistoryTo):'Pilih rentang tanggal')+'</button></div><div class="cogs-scroll"><div class="cogs-scroll"><table class="cogs-table ops-stock-out-history-table"><thead><tr><th>Tanggal / divisi</th><th>Kategori / barang</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="mu">Tidak ada transaksi Pengeluaran pada rentang tanggal ini.</td></tr>')+'</tbody></table></div></div></div></div>';
+ return '<div class="cogs-wrap ops-feature-page ops-stock-out-page"><div class="card ops-entry-card ops-stock-out-form"><div class="cogs-top"><div><h3>Pengeluaran</h3></div><div class="btns"><button class="btn s daily-so-back" onclick="go(&quot;cogs_daily_so&quot;)">← Kembali ke Daily SO</button><button class="btn s" onclick="invLoad(true)">Muat ulang</button></div></div><div class="cogs-formgrid"><label>Tanggal<input id="out_date" type="date" value="'+today()+'" max="'+today()+'"></label><label>Divisi asal<select id="out_from" onchange="outChangeFrom()">'+divOptions+'</select></label></div><label>Kategori<select id="out_category" onchange="outChangeCategory()"><option value="">Pilih kategori</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label><label>Barang<select id="out_item" onchange="outChangeItem()"><option value="">Pilih barang</option>'+itemOptions+'</select></label><div class="cogs-formgrid"><label>Jumlah<input id="out_qty" type="number" min="0.000001" step="any" oninput="outPreview()" placeholder="Contoh: 2"></label><label>Satuan<select id="out_unit" onchange="outPreview()"><option value="">Pilih satuan</option>'+unitOptions+'</select></label></div><div id="out_target_wrap" style="display:none"><label>Divisi penerima<select id="out_to"><option value="">Pilih divisi penerima</option>'+targetOptions+'</select></label></div><div id="out_preview" class="card mu"></div><label>Catatan / alasan<input id="out_note" maxlength="500" placeholder="Opsional"></label><button class="btn" onclick="invSaveStockOut()">Posting Pengeluaran</button></div><div class="card ops-history-card"><div class="cogs-top"><h3>Riwayat Pengeluaran</h3><span class="mu">'+visibleOut.length+' transaksi</span></div><div class="btns inv-actions" style="margin:8px 0 12px"><button class="btn s" style="width:100%;max-width:none" onclick="rOpen(&quot;O&quot;)">📅 '+(INV.stockOutHistoryPicked&&INV.stockOutHistoryFrom&&INV.stockOutHistoryTo?fdp(INV.stockOutHistoryFrom)+' s/d '+fdp(INV.stockOutHistoryTo):'Pilih rentang tanggal')+'</button></div>'+(rows?'<div class="cogs-scroll"><table class="cogs-table ops-stock-out-history-table"><thead><tr><th>Tanggal / divisi</th><th>Kategori / barang</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="ops-empty-history">Tidak ada transaksi Pengeluaran pada rentang tanggal ini.</div>')+'</div></div>';
 };
 
 async function invToggleSupply(id){
