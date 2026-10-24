@@ -617,6 +617,6 @@ window.__clDownloadClosingExcel=async()=>{
  finally{window.__clDownloadingSO=false;}
 };
 window.__clDownloadSO=async()=>{if(window.__clDownloadingSO)return;window.__clDownloadingSO=true;try{if(typeof cgLoad==='function'&&!CG.ready)await cgLoad(true);if(typeof invLoad==='function'&&!INV.ready)await invLoad(true);if(!OPS.division)OPS.division=CG.divs[0]?.id||INV.divs[0]?.id||'';if(!OPS.soHistoryDate)OPS.soHistoryDate=OPS.date||opsDate();if(typeof exportDailySOExcel!=='function')throw new Error('Fungsi ekspor Daily SO belum tersedia.');await exportDailySOExcel()}catch(e){toast(e.message||'Gagal menyiapkan Excel Daily SO.','err')}finally{window.__clDownloadingSO=false;}};
-window.__clExportDailySOTemplate=clExportDailySOTemplate;window.__clImportDailySO=clImportDailySO;window.__clApplyDailySOImport=clApplyDailySOImport;window.__clCancelDailySOImport=clCancelDailySOImport;window.__clConfirm=confirmModule;window.__clApprove=approve;window.__clReload=()=>{CL.ready=false;return load(true)};window.__clFilter=filter;
+window.__clConfirm=confirmModule;window.__clApprove=approve;window.__clReload=()=>{CL.ready=false;return load(true)};window.__clFilter=filter;
 window.__barappRegisterViews?.({cogs_closing:view});
 })();

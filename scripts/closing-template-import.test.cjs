@@ -55,10 +55,14 @@ assert.ok(migrationSource.includes('public.cogs_record_production_batch'), 'WIP 
 assert.ok(migrationSource.includes('public.barapp_supplies_save_so'), 'Supplies uses the existing validated RPC');
 assert.ok(migrationSource.includes('public.barapp_stock_returns'), 'Supplier returns are included in the same DB transaction');
 assert.ok(migrationSource.includes('revoke all on function public.barapp_closing_import_operational_template_v2'), 'RPC execute permissions are explicitly restricted');
+assert.match(migrationSource, /\$function\$;\s*revoke all on function public\.barapp_closing_import_operational_template_v2/i, 'Function terminator must be complete before permissions are changed');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
 
-assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v2'), 'The app must load the new operational template script version');
+assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v3'), 'The app must load the new operational template script version');
 assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
+assert.equal(closingSource.includes('clExportDailySOTemplate'), false, 'Removed Daily SO-only template binding must not break registration');
+assert.equal(closingSource.includes('clImportDailySO'), false, 'Removed Daily SO-only importer must not remain referenced');
+assert.ok(closingSource.includes('window.__barappRegisterViews?.({cogs_closing:view})'), 'Closing view registration must remain reachable after function binding');
 assert.equal(indexSource.includes('window.__clOpenTemplate'), false, 'Legacy single-template entry point must not be used');
 
 console.log('Approval Closing single-sheet operational Excel template v2: all static QA checks passed.');

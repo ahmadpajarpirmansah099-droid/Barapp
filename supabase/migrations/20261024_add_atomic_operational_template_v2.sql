@@ -370,7 +370,7 @@ begin
     jsonb_build_object('division_id',p_division_id,'target_date',p_target_date,'template_id',p_template_id,'summary',v_summary),null);
   return jsonb_build_object('import_id',v_import_id,'target_date',p_target_date,'summary',v_summary);
 end;
-$function$
+$function$;
 
 revoke all on function public.barapp_closing_import_operational_template_v2(uuid,date,uuid,jsonb) from public, anon;
 grant execute on function public.barapp_closing_import_operational_template_v2(uuid,date,uuid,jsonb) to authenticated;
