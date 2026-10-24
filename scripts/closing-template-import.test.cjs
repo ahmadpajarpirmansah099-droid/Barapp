@@ -58,7 +58,7 @@ assert.ok(migrationSource.includes('revoke all on function public.barapp_closing
 assert.match(migrationSource, /\$function\$;\s*revoke all on function public\.barapp_closing_import_operational_template_v2/i, 'Function terminator must be complete before permissions are changed');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
 
-assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v5'), 'The app must load the new operational template script version');
+assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v6'), 'The app must load the new operational template script version');
 assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
 assert.equal(closingSource.includes('Stok Awal WIP (Qty)'), false, 'Operational template must not request opening WIP stock');
 assert.equal(closingSource.includes('returnStart'), false, 'Operational template export must not reference the removed supplier returns section');
