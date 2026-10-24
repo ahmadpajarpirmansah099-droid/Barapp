@@ -116,8 +116,8 @@ function opTPreferredUnit(item){
 function opTStockOutCategories(){const x=window.__barappStockOutCategories;return [...new Set((Array.isArray(x)?x:['Move','Waste','QC','R&D','Kalibrasi','Lainnya']).map(v=>String(v||'').trim()).filter(Boolean))]}
 function opTCatalog(){
  const division=String(CL.division),date=String(CL.date),div=clDivision(division),outlet=String(div?.outlet_id||'');
- const items=(INV.items||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
- const materials=items.filter(x=>x.is_supply!==true),supplies=items.filter(x=>x.is_supply===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date);
+ const allItems=(INV.items||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const materials=allItems.filter(x=>x.is_supply!==true),supplies=allItems.filter(x=>x.is_supply===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date),items=materials.concat(supplies);
  const wips=(CG.wips||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
  const menus=(CG.menus||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
  const divisions=[...(INV.divs||[]),...(CG.divs||[])],dm=new Map();
@@ -128,7 +128,7 @@ function opTCatalog(){
    return {receipt:r,item:it,remaining:Number(r.qty_base||0)-returned};
   }).filter(x=>x.remaining>0.000001&&!((INV.rets||[]).some(q=>String(q.stock_in_id)===String(x.receipt.id)&&String(q.returned_at)===date&&q.status==='posted')))
   .sort((a,b)=>String(b.receipt.received_at||'').localeCompare(String(a.receipt.received_at||''))||invAlpha(a.item?.name,b.item?.name));
- const expenseItems=items.map(x=>({id:String(x.id),rawType:'material',labelType:x.is_supply===true?'Supplies':'Item',name:String(x.name),unit:String(x.base_unit||'UNIT'),division_id:String(x.division_id),item:x}))
+ const expenseItems=items.map(x=>({id:String(x.id),rawType:'material',labelType:x.is_supply===true?'Supplies':'Item',name:String(x.name),unit:String(x.is_supply===true?(x.base_unit||'UNIT'):opTPreferredUnit(x).unit),division_id:String(x.division_id),item:x}))
    .concat((divisionModuleOn(div,'cogs_wip')?wips:[]).map(x=>({id:String(x.id),rawType:'wip',labelType:'WIP',name:String(x.name),unit:String(x.yield_unit||'UNIT'),division_id:String(x.division_id),item:x})))
    .sort((a,b)=>invAlpha(a.name,b.name)||invAlpha(a.labelType,b.labelType));
  const dailyOn=clModuleOn(division,'cogs_daily_so'),wipOn=clModuleOn(division,'cogs_wip'),productionOn=clModuleOn(division,'cogs_production'),salesOn=clModuleOn(division,'cogs_sales'),suppliesOn=clModuleOn(division,'supplies');
@@ -421,12 +421,12 @@ async function opTPreview(input){
    else if(targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN hanya boleh diisi untuk Move.');continue}
    if(opt.rawType==='wip'){
     const w=(CG.wips||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
-    if(!w||String(w.yield_unit||'').toLowerCase()!==opt.unit.toLowerCase()){errors.push('PENGELUARAN baris '+r+': WIP/satuan tidak sesuai master.');continue}
+    if(!w||String(w.name)!==String(opt.name)||String(w.yield_unit||'').toLowerCase()!==opt.unit.toLowerCase()){errors.push('PENGELUARAN baris '+r+': WIP/nama/satuan tidak sesuai master.');continue}
     p.stock_out.push({item_type:'wip',item_id:null,wip_id:opt.id,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
    }else{
     const it=(INV.items||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
     const cv=it&&[{unit:it.base_unit,factor:1},...(Array.isArray(it.conversions)?it.conversions:[])].find(z=>String(z.unit||'').trim().toLowerCase()===opt.unit.toLowerCase()&&Number(z.factor||0)>0);
-    if(!it||!cv){errors.push('PENGELUARAN baris '+r+': item/satuan tidak sesuai master.');continue}
+    if(!it||String(it.name)!==String(opt.name)||!cv){errors.push('PENGELUARAN baris '+r+': item/nama/satuan tidak sesuai master.');continue}
     p.stock_out.push({item_type:'material',item_id:opt.id,wip_id:null,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
    }
   }
@@ -443,6 +443,11 @@ async function opTPreview(input){
    p.stock_returns.push({stock_in_id:x.id,qty,reason:reason||null});
   });
   if(p.daily_so.length>1000||p.sales.length>200||p.stock_in.length>1000||p.opening_wip.length>500||p.stock_out.length>1000||p.production.length>200||p.supplies.length>1000||p.stock_returns.length>1000)errors.push('Jumlah baris transaksi melebihi batas impor salah satu bagian.');
+  if(p.sales.length&&!c.salesOn)errors.push('Modul Penjualan Menu tidak aktif untuk divisi ini.');
+  if((p.production.length||p.opening_wip.length)&&!c.productionOn)errors.push('Modul Produksi WIP tidak aktif untuk divisi ini.');
+  if(p.supplies.length&&!c.suppliesOn)errors.push('Modul SUPPLIES tidak aktif untuk divisi ini.');
+  if(p.daily_so.length&&!c.dailyOn)errors.push('Modul Daily SO tidak aktif untuk divisi ini.');
+  if(p.stock_out.some(x=>x.item_type==='wip')&&!c.wipOn)errors.push('Modul WIP tidak aktif untuk divisi ini.');
   if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length&&!p.stock_returns.length)errors.push('Tidak ada jumlah yang diisi untuk diimpor.');
   errors.push(...opTPermissions(p),...opTConflictErrors(p,c));
   const counts=[
