@@ -1305,6 +1305,43 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 }
 </style>
 
+
+<style id="daily-so-remove-guidance-tighten">
+/* Compact Daily SO after removing redundant guidance. */
+@media(max-width:600px){
+ .daily-so-page{gap:6px!important}
+ .daily-so-page .daily-so-shortcuts,
+ .daily-so-page .daily-so-main-card,
+ .daily-so-page .daily-so-history-card{padding:10px!important}
+ .daily-so-page .daily-so-shortcuts>h3:first-child{margin-bottom:5px!important}
+ .daily-so-page .daily-so-shortcut-grid{gap:5px!important}
+ .daily-so-page .daily-so-shortcut-grid>.btn{min-height:40px!important;padding:6px 7px!important}
+ .daily-so-page .daily-so-main-card .cogs-top{gap:2px!important;margin-bottom:3px!important}
+ .daily-so-page .daily-so-main-card .cogs-top>div:first-child h3{margin:0!important}
+ .daily-so-page .daily-so-main-card .cogs-top .btns{gap:4px!important;margin:3px 0!important}
+ .daily-so-page .daily-so-main-card .cogs-top .btns>.btn{min-height:38px!important;margin:0!important;padding:6px 9px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;margin:4px 0!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid label{font-size:11px!important;gap:2px!important;line-height:1.2!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid select,
+ .daily-so-page .daily-so-main-card .cogs-formgrid input{height:37px!important;min-height:37px!important;padding:5px 7px!important;margin-top:2px!important;font-size:13px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid+label{margin-top:3px!important;margin-bottom:4px!important}
+ .daily-so-page .daily-so-main-card>label{font-size:11px!important;line-height:1.2!important}
+ .daily-so-page .daily-so-main-card #ops_so_note{height:39px!important;min-height:39px!important;padding:7px 10px!important;margin-top:2px!important}
+ .daily-so-page .daily-so-main-card .cogs-scroll{margin-top:1px!important}
+ .daily-so-page .daily-so-main-card .btns:not(.cogs-top .btns){gap:5px!important;margin-top:4px!important}
+ .daily-so-page .daily-so-main-card .btns:not(.cogs-top .btns)>.btn{margin:0!important;min-height:38px!important;padding:6px 8px!important}
+ .daily-so-page .daily-so-history-card .cogs-top{gap:4px!important;margin-bottom:5px!important}
+}
+@media(max-width:380px){
+ .daily-so-page .daily-so-shortcuts,
+ .daily-so-page .daily-so-main-card,
+ .daily-so-page .daily-so-history-card{padding:9px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid{gap:5px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid select,
+ .daily-so-page .daily-so-main-card .cogs-formgrid input{padding-inline:5px!important;font-size:12px!important}
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -4408,7 +4445,6 @@ async function exportSuppliesSOExcel(){
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat saldo Daily SO…</div>';const gate=cgModuleGate('cogs_daily_so','Daily SO COGS');if(gate)return gate;
  const division=OPS.division||CG.divs[0]?.id||'';OPS.division=division;const date=OPS.date||opsDate();OPS.date=date;
  const key=division+'|'+date;
- const positionStatus=OPS.positionLoading?'<p class="cogs-pill" role="status" aria-live="polite">Saldo sedang dimuat…</p>':(OPS.positionLoadedFor===key?'<p class="cogs-pill" role="status" aria-live="polite">Saldo siap · '+OPS.position.length+' item</p>':'');
  if(!OPS.positionLoading&&OPS.positionLoadedFor!==key&&OPS.positionErrorFor!==key)opsLoadPosition(false)
  if(OPS.positionErrorFor===key&&OPS.positionError){
   const retryDivs=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
@@ -4422,7 +4458,7 @@ async function exportSuppliesSOExcel(){
  }
  const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
- const dailyShortcuts='<div class="card daily-so-shortcuts"><h3>Operasional Daily SO</h3><p class="mu">Akses cepat untuk transaksi yang memengaruhi saldo stok.</p><div class="grid daily-so-shortcut-grid">'+[['pengeluaran','Pengeluaran','arrow-left-right'],['supplies','Suplies','clipboard-list'],['masuk','Barang Masuk','truck'],['cogs_sales','Penjualan Menu','receipt-text'],['cogs_production','Produksi WIP','cooking-pot']].filter(x=>allowed().includes(x[0])).map(x=>'<button class="btn s" style="min-width:0;white-space:normal" onclick="go(&quot;'+x[0]+'&quot;)">'+IC(x[2],18)+' '+x[1]+'</button>').join('')+'</div></div>';
+ const dailyShortcuts='<div class="card daily-so-shortcuts"><h3>Operasional Daily SO</h3><div class="grid daily-so-shortcut-grid">'+[['pengeluaran','Pengeluaran','arrow-left-right'],['supplies','Suplies','clipboard-list'],['masuk','Barang Masuk','truck'],['cogs_sales','Penjualan Menu','receipt-text'],['cogs_production','Produksi WIP','cooking-pot']].filter(x=>allowed().includes(x[0])).map(x=>'<button class="btn s" style="min-width:0;white-space:normal" onclick="go(&quot;'+x[0]+'&quot;)">'+IC(x[2],18)+' '+x[1]+'</button>').join('')+'</div></div>';
  const rows=OPS.position.map(p=>{
   const k=opsKey(p.component_type,p.component_id),stored=active&&p.stored_counted_qty!=null;
   const units=opsUnitList(p),factor=opsUnitFactor(p,k),baseVal=OPS.counts[k]??'',val=baseVal===''?'':Number(baseVal)/factor;
@@ -4438,7 +4474,7 @@ async function exportSuppliesSOExcel(){
   const totalValue=lines.reduce((a,l)=>a+Number(l.variance_value_snapshot||0),0);
   return '<tr><td><b>'+esc(s.so_date)+'</b><br><small class="mu">'+esc(opsDivName(s.division_id))+'</small></td><td>'+lines.length+' item</td><td>'+varianceCount+' selisih</td><td>'+cgMoney(totalValue)+'</td><td>'+(s.status==='submitted'?'<span class="cogs-pill">Disimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>')+' '+(s.status==='submitted'?opsCancelButton('daily_so',s.id):'')+'</td></tr>';
  }).join('');
- return '<div class="cogs-wrap daily-so-page">'+dailyShortcuts+'<div class="card daily-so-main-card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3><p class="mu">Saldo harapan dihitung dari barang masuk, retur, produksi WIP, dan penjualan yang tercatat sampai tanggal SO.</p>'+positionStatus+'</div><div class="btns" style="gap:8px;flex-wrap:wrap"><button class="btn s" onclick="window.__clOpenOperationalTemplateFromDailySO()">Template Operasional (Excel)</button><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Muat saldo</button></div></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'<p class="mu">Masukkan jumlah fisik dalam satuan dasar. Angka 0 tetap harus diisi bila stok kosong.</p>')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+positionRows+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card daily-so-history-card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap daily-so-page">'+dailyShortcuts+'<div class="card daily-so-main-card"><div class="cogs-top"><div><h3>Daily SO · Stock Opname</h3></div><div class="btns" style="gap:8px;flex-wrap:wrap"><button class="btn s" onclick="window.__clOpenOperationalTemplateFromDailySO()">Template Operasional (Excel)</button><button class="btn s" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Muat saldo</button></div></div><div class="cogs-formgrid"><label>Divisi<select id="ops_so_div" onchange="opsSetDivision(this.value)">'+divOptions+'</select></label><label>Tanggal SO<input id="ops_so_date" type="date" value="'+esc(date)+'" max="'+opsDate()+'" onchange="opsSetDate(this.value)"></label></div>'+(OPS.positionError?'<p class="cogs-pill bad">'+esc(OPS.positionError)+'</p>':'')+(active?'<p class="mu">SO tanggal ini sudah disimpan dan dikunci. Batalkan di riwayat untuk mengoreksi.</p>':'')+'<label>Catatan SO<input id="ops_so_note" maxlength="500" value="'+esc(OPS.notes||'')+'" '+(active?'disabled':'')+' oninput="OPS.notes=this.value" placeholder="Petugas, shift, atau keterangan"></label><div class="cogs-scroll"><table class="cogs-table ops-daily-so-table"><thead><tr><th>Bahan / WIP</th><th>Fisik</th><th>Satuan input</th><th>Saldo harapan</th><th>Selisih</th><th>Nilai selisih</th></tr></thead><tbody>'+positionRows+'</tbody></table></div><div class="btns"><button class="btn o" onclick="opsSetDate(v(&quot;ops_so_date&quot;),true)">Hitung ulang saldo</button><button class="btn" '+(active?'disabled':'')+' onclick="opsSaveDailySO()">Simpan Daily SO</button></div></div><div class="card daily-so-history-card"><div class="cogs-top"><h3>Riwayat Daily SO</h3><label style="max-width:190px">Tanggal riwayat<input type="date" value="'+esc(soHistoryDate)+'" max="'+opsDate()+'" onchange="OPS.soHistoryDate=this.value||opsDate();R()"></label></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal / divisi</th><th>Item</th><th>Jumlah selisih</th><th>Total nilai varians</th><th>Status / aksi</th></tr></thead><tbody>'+(hrows||'<tr><td colspan="5" class="mu">Belum ada Daily SO.</td></tr>')+'</tbody></table></div></div></div>';
 };
 
 
