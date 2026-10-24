@@ -227,8 +227,7 @@ async function opTDownload(){
   }
   for(const x of rowMeta.filter(x=>x.section==='STOCK'))ws.getCell(x.row,6).numFmt='0.####';
   for(const x of rowMeta.filter(x=>x.section==='WIP'))ws.getCell(x.row,4).numFmt='0.####';
-  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO'];
-  hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
+  for(let col=8;col<=43;col++)ws.getColumn(col).hidden=true;
   [['FORMAT','BARAPP_DAILY_SO_TEMPLATE_V1'],['TEMPLATE_ID',opTId()],['OUTLET_ID',c.outlet],['DIVISION_ID',String(CL.division)],['TARGET_DATE',String(CL.date)],['GENERATED_AT',new Date().toISOString()]].forEach(([key,val],i)=>{ws.getCell('AA'+(i+1)).value=key;ws.getCell('AB'+(i+1)).value=val});
   ['SECTION','ROW','ID','TYPE','NAME','UNIT','BASE_UNIT','FACTOR','YIELD_QTY','AUX_ID','REMAINING','RECEIVED_AT'].forEach((v,i)=>ws.getCell(1,30+i).value=v);
   rowMeta.forEach((x,i)=>[x.section,x.row,x.id,x.type,x.name,x.unit,x.base_unit,x.factor??1,x.yield_qty??'',x.aux_id||'',x.remaining??'',x.received_at||''].forEach((v,j)=>ws.getCell(i+2,30+j).value=v));
