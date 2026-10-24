@@ -275,7 +275,7 @@ async function opTPreview(input){
  if(!clCanAccess())return toast('Akses ditolak.','warn');
  if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
  if(file.size>15*1024*1024)return toast('Ukuran file terlalu besar. Maksimal 15 MB.','warn');
- modal('<h3>Memvalidasi Template Operasional…</h3><p class="mu">Memeriksa master, satuan, penjualan, pengeluaran, produksi, supplies, serta konflik transaksi. Belum ada data disimpan.</p>');
+ modal('<h3>Memvalidasi Template Operasional…</h3><p class="mu">Memeriksa master, satuan, stok fisik ITEM dan WIP, serta status Daily SO. Belum ada data disimpan.</p>');
  const errors=[];
  try{
   await Promise.all([cgLoad(false),invLoad(false)]);
@@ -285,7 +285,7 @@ async function opTPreview(input){
   if(!ws)errors.push('Sheet DAILY SO tidak ditemukan. Gunakan template operasional yang diekspor dari Approval.');
   if(!ws)throw new Error('Sheet utama tidak ditemukan.');
   const meta=opTReadMeta(ws);
-  if(String(ws['B2']?.v||'').trim()!=='BARAPP_OPERATIONAL_TEMPLATE_V2'||meta.FORMAT!=='BARAPP_OPERATIONAL_TEMPLATE_V2')errors.push('Format template lama atau tidak dikenali. Unduh template operasional terbaru.');
+  if(String(ws['B2']?.v||'').trim()!=='BARAPP_DAILY_SO_TEMPLATE_V1'||meta.FORMAT!=='BARAPP_DAILY_SO_TEMPLATE_V1')errors.push('Format template lama atau tidak dikenali. Unduh template Daily SO terbaru.');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh ulang template.');
   if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda.');
   if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal template berbeda dari tanggal closing yang dipilih.');
@@ -296,9 +296,8 @@ async function opTPreview(input){
   const byKey=new Map(mapped.map(x=>[x.section+':'+x.id,x]));
   if(byKey.size!==mapped.length)errors.push('Metadata template berisi ID duplikat.');
   const requiredSections={
-   STOCK:c.items.map(x=>({id:String(x.id),name:String(x.name),type:x.is_supply===true?'supply':'material',unit:x.is_supply===true?String(x.base_unit||'UNIT'):String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')})),
-   WIP:c.wips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
-   SALES:c.menus.map(x=>({id:String(x.id),name:String(x.name),type:'menu',unit:''})),
+   STOCK:c.dailyMaterials.map(x=>({id:String(x.id),name:String(x.name),type:'material',unit:String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')})),
+   WIP:c.dailyWips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
   };
   for(const sec of Object.keys(requiredSections)){
    const actual=mapped.filter(x=>x.section===sec),expected=requiredSections[sec];
@@ -376,32 +375,7 @@ async function opTPreview(input){
    if(!opTBlank(ws['B'+r]?.v)){if(q===null||!Number.isFinite(q)||q<=0)errors.push('SALES baris '+r+': Qty Terjual harus lebih dari 0.');else if(price!==null&&(!Number.isFinite(price)||price<0))errors.push('SALES baris '+r+': Harga Jual harus 0 atau lebih.');else p.sales.push({menu_id:x.id,qty:q,selling_price:price===null?null:price})}
    else if(!opTBlank(ws['C'+r]?.v))errors.push('SALES baris '+r+': Harga Jual hanya boleh diisi jika Qty Terjual terisi.');
   });
-  const options=opTExpenseOptions(ws),optionByLabel=new Map(options.map(x=>[x.label,x])),seenExpense=new Set();
-  const expenseStart=Number(ws['BD1']?.v||0),expenseLast=Number(ws['BD2']?.v||0);
-  if(!Number.isInteger(expenseStart)||!Number.isInteger(expenseLast)||expenseStart<1||expenseLast<expenseStart)errors.push('Rentang baris Pengeluaran pada metadata tidak valid.');
-  else for(let r=expenseStart;r<=expenseLast;r++){
-   const label=String(ws['A'+r]?.v??'').trim(),qtyRaw=ws['D'+r]?.v,cat=String(ws['E'+r]?.v??'').trim(),targetName=String(ws['F'+r]?.v??'').trim(),notes=String(ws['G'+r]?.v??'').trim();
-   if(!label&&opTBlank(qtyRaw)&&!cat&&!targetName&&!notes)continue;
-   if(!label){errors.push('PENGELUARAN baris '+r+': pilih Nama Barang/WIP.');continue}
-   const opt=optionByLabel.get(label);if(!opt){errors.push('PENGELUARAN baris '+r+': barang tidak dikenal. Pilih dari dropdown.');continue}
-   if(opTBlank(qtyRaw)){errors.push('PENGELUARAN baris '+r+': Jumlah wajib diisi.');continue}
-   const q=opTNum(qtyRaw);if(q===null||!Number.isFinite(q)||q<=0){errors.push('PENGELUARAN baris '+r+': jumlah harus lebih dari 0.');continue}
-   if(!c.categories.includes(cat)){errors.push('PENGELUARAN baris '+r+': kategori tidak valid.');continue}
-   const key=opt.rawType+':'+opt.id+':'+cat;if(seenExpense.has(key)){errors.push('PENGELUARAN: item dan kategori yang sama hanya boleh sekali dalam satu template; gabungkan jumlahnya.');continue}seenExpense.add(key);
-   let target=null;
-   if(cat==='Move'){const dest=c.divisions.filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());if(dest.length!==1){errors.push('PENGELUARAN baris '+r+': TUJUAN wajib dipilih dari dropdown untuk kategori Move.');continue}target=dest[0].id}
-   else if(targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN hanya boleh diisi untuk Move.');continue}
-   if(opt.rawType==='wip'){
-    const w=(CG.wips||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
-    if(!w||String(w.name)!==String(opt.name)||String(w.yield_unit||'').toLowerCase()!==opt.unit.toLowerCase()){errors.push('PENGELUARAN baris '+r+': WIP/nama/satuan tidak sesuai master.');continue}
-    p.stock_out.push({item_type:'wip',item_id:null,wip_id:opt.id,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
-   }else{
-    const it=(INV.items||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
-    const cv=it&&[{unit:it.base_unit,factor:1},...(Array.isArray(it.conversions)?it.conversions:[])].find(z=>String(z.unit||'').trim().toLowerCase()===opt.unit.toLowerCase()&&Number(z.factor||0)>0);
-    if(!it||String(it.name)!==String(opt.name)||!cv){errors.push('PENGELUARAN baris '+r+': item/nama/satuan tidak sesuai master.');continue}
-    p.stock_out.push({item_type:'material',item_id:opt.id,wip_id:null,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
-   }
-  }
+  // Template Daily SO hanya memproses stok fisik ITEM dan WIP. Modul transaksi lain tidak diimpor dari file ini.
   if(p.daily_so.length>1000||p.sales.length>200||p.stock_in.length>1000||p.opening_wip.length>500||p.stock_out.length>1000||p.production.length>200||p.supplies.length>1000||p.stock_returns.length>1000)errors.push('Jumlah baris transaksi melebihi batas impor salah satu bagian.');
   if(p.sales.length&&!c.salesOn)errors.push('Modul Penjualan Menu tidak aktif untuk divisi ini.');
   if(p.production.length&&!c.productionOn)errors.push('Modul Produksi WIP tidak aktif untuk divisi ini.');
@@ -410,13 +384,8 @@ async function opTPreview(input){
   if(p.stock_out.some(x=>x.item_type==='wip')&&!c.wipOn)errors.push('Modul WIP tidak aktif untuk divisi ini.');
   errors.push(...opTPermissions(p),...opTConflictErrors(p,c));
   const counts=[
-   ['Stock opname ITEM',p.daily_so.filter(x=>x.item_type==='material').length,'jumlah akhir; satuan dikonversi dari master'],
-   ['Daily SO WIP',p.daily_so.filter(x=>x.item_type==='wip').length,'stok fisik akhir WIP'],
-   ['Barang Masuk',p.stock_in.length,'baris dengan qty masuk lebih dari 0'],
-   ['Pengeluaran',p.stock_out.length,'baris pengeluaran yang valid'],
-   ['Penjualan Menu',p.sales.length,'menu yang terjual'],
-   ['Produksi WIP',p.production.length,'produksi aktual dikonversi menjadi batch'],
-   ['SUPPLIES',p.supplies.length,'stok fisik supplies']
+   ['Daily SO — Barang',p.daily_so.filter(x=>x.item_type==='material').length,'stok fisik akhir barang aktif'],
+   ['Daily SO — WIP',p.daily_so.filter(x=>x.item_type==='wip').length,'stok fisik akhir WIP aktif']
   ];
   CL.operationalTemplateDraft={templateId:meta.TEMPLATE_ID||'',payload:p,errors:[...new Set(errors)],counts,fileName:file.name,serverError:'',busy:false};opTRenderPreview();
  }catch(e){CL.operationalTemplateDraft={templateId:'',payload:null,errors:['Gagal membaca template Daily SO: '+String(e?.message||e)],counts:[],fileName:file.name,serverError:'',busy:false};opTRenderPreview()}
@@ -426,7 +395,7 @@ function opTRenderPreview(){
  const errors=d.errors||[],summary=(d.counts||[]).map(x=>'<tr><td style="padding:7px;border-bottom:1px solid var(--line)">'+esc(x[0])+'</td><td style="padding:7px;text-align:right;border-bottom:1px solid var(--line)"><b>'+x[1]+'</b></td><td style="padding:7px;color:var(--mu);border-bottom:1px solid var(--line)">'+esc(x[2])+'</td></tr>').join('');
  const errHtml=errors.length?'<div class="cl-callout" style="border-color:#c55"><b>Belum bisa diimpor ('+errors.length+' masalah)</b><ul style="margin:8px 0 0;padding-left:20px">'+errors.slice(0,25).map(x=>'<li>'+esc(x)+'</li>').join('')+(errors.length>25?'<li>Dan '+(errors.length-25)+' masalah lainnya.</li>':'')+'</ul></div>':'<div class="cl-callout"><b>Validasi awal lolos</b><p>Belum ada data disimpan. Supabase akan memvalidasi ulang semua bagian secara atomik.</p></div>';
  const server=d.serverError?'<div class="cl-callout"><b>Impor tidak disimpan</b><p>'+esc(d.serverError)+'</p></div>':'';
- modal('<h3>Preview Import Daily SO</h3><p class="mu"><b>File:</b> '+esc(d.fileName||'File Excel')+'<br><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'<br>Semua bagian diperiksa sebelum konfirmasi. Jika satu bagian gagal, seluruh impor dibatalkan.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:7px">Bagian</th><th style="text-align:right;padding:7px">Baris</th><th style="text-align:left;padding:7px">Keterangan</th></tr></thead><tbody>'+summary+'</tbody></table></div>'+errHtml+server+'<div class="btns" style="margin-top:14px"><button type="button" class="btn s" onclick="window.__clOpenOperationalTemplate()">Kembali</button><button type="button" class="btn" '+(errors.length||d.busy||!d.payload?'disabled':'')+' onclick="window.__clConfirmOperationalImport()">'+(d.busy?'Memproses…':'Konfirmasi & Import Daily SO')+'</button></div>');
+ modal('<h3>Preview Import Daily SO</h3><p class="mu"><b>File:</b> '+esc(d.fileName||'File Excel')+'<br><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'<br>Hanya data Daily SO ITEM dan WIP yang akan diimpor. Belum ada data disimpan sebelum konfirmasi.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:7px">Bagian</th><th style="text-align:right;padding:7px">Baris</th><th style="text-align:left;padding:7px">Keterangan</th></tr></thead><tbody>'+summary+'</tbody></table></div>'+errHtml+server+'<div class="btns" style="margin-top:14px"><button type="button" class="btn s" onclick="window.__clOpenOperationalTemplate()">Kembali</button><button type="button" class="btn" '+(errors.length||d.busy||!d.payload?'disabled':'')+' onclick="window.__clConfirmOperationalImport()">'+(d.busy?'Memproses…':'Konfirmasi & Import Daily SO')+'</button></div>');
 }
 function opTFriendlyError(e){
  const m=String(e?.message||e||'Gagal import.'),u=m.toUpperCase(),map=[
