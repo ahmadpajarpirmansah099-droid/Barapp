@@ -196,7 +196,7 @@ async function opTDownload(){
    const sec=ws.addRow([title]);const r=sec.number;ws.mergeCells(r,1,r,headers.length);sec.height=22;
    const head=ws.addRow(headers);head.height=30;headerRows.push(head.number);return head.number+1;
   };
-  const stockStart=addSection('1. STOCK OPNAME + BARANG MASUK — ITEM & SUPPLIES',['Nama Barang','Jenis Master','Satuan Input','Barang Masuk (Qty)','Total Invoice (Opsional)','Stok Fisik Akhir (Qty)','Catatan']);
+  const stockStart=addSection('1. DAILY SO — STOK FISIK AKHIR ITEM',['Nama Barang','Jenis Master','Satuan Input','','','Stok Fisik Akhir (Qty)','Catatan']);
   const stockUnitOptions=[],unitSet=new Set();
   c.items.forEach(x=>{
    const pref=x.is_supply===true?{unit:String(x.base_unit||'UNIT'),factor:1,missing:false}:opTPreferredUnit(x);
@@ -204,7 +204,7 @@ async function opTDownload(){
    rowMeta.push({section:'STOCK',row:row.number,id:String(x.id),type:x.is_supply===true?'supply':'material',name:x.name,unit:pref.unit,base_unit:String(x.base_unit||'UNIT'),factor:pref.factor,missing:pref.missing,created_at:x.created_at||''});
    (Array.isArray(x.conversions)?x.conversions:[]).forEach(cv=>{const u=String(cv.unit||'').trim(),k=u.toLowerCase();if(u&&Number(cv.factor)>0&&!unitSet.has(k)){unitSet.add(k);stockUnitOptions.push(u)}});
   });
-  const expenseStart=addSection('2. PENGELUARAN — 20 BARIS INPUT MANUAL',['Nama Barang / WIP','Jenis Master','Satuan','Jumlah','Kategori Pengeluaran','Divisi Tujuan (Move)','Catatan']);
+  const expenseStart=addSection('2. BAGIAN INTERNAL — JANGAN DIISI',['','','','','','','']);
   const optionMap=[],labelCount=new Map();
   c.expenseItems.forEach(x=>{const k=x.name.trim().toLocaleLowerCase();labelCount.set(k,(labelCount.get(k)||0)+1)});
   c.expenseItems.forEach(x=>{
@@ -220,12 +220,12 @@ async function opTDownload(){
    row.getCell(3).value={formula:'IFERROR(VLOOKUP($A'+r+',$AQ$2:$AV$'+lookupEnd+',5,FALSE),\"\")',result:''};
    row.getCell(4).value='';row.getCell(5).value='';row.getCell(6).value='';row.getCell(7).value='';
   }
-  const salesStart=addSection('3. PENJUALAN MENU',['Nama Menu','Qty Terjual','Harga Jual (Opsional)','Catatan']);
+  const salesStart=addSection('3. BAGIAN INTERNAL — JANGAN DIISI',['','','','']);
   c.menus.forEach(x=>{
    const row=ws.addRow([x.name,'','','']);
    rowMeta.push({section:'SALES',row:row.number,id:String(x.id),type:'menu',name:x.name,unit:'',base_unit:'',factor:1});
   });
-  const wipStart=addSection('4. PRODUKSI WIP + STOK FISIK AKHIR',['Nama WIP','Satuan Hasil','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']);
+  const wipStart=addSection('4. DAILY SO — STOK FISIK AKHIR WIP',['Nama WIP','Satuan Hasil','','Stok Fisik Akhir (Qty)','Catatan']);
   c.wips.forEach(x=>{
     const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','']);
    rowMeta.push({section:'WIP',row:row.number,id:String(x.id),type:'wip',name:x.name,unit:String(x.yield_unit||'UNIT'),base_unit:String(x.yield_unit||'UNIT'),factor:1,yield_qty:Number(x.yield_qty||0)});
@@ -276,10 +276,15 @@ async function opTDownload(){
   if(c.divisions.length)ws.dataValidations.add('F'+expenseStart+':F'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AY$2:$AY$'+targetEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Tujuan tidak valid',error:'Untuk Move, pilih divisi aktif dalam outlet yang sama.'});
   if(allUnits.size)ws.dataValidations.add('C'+stockStart+':C'+(stockStart+c.items.length-1),{type:'list',allowBlank:true,formulae:['=$BA$2:$BA$'+unitEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar; satuan akan diperiksa lagi berdasarkan master item.'});
   ws.autoFilter={from:{row:stockStart-1,column:1},to:{row:stockStart+c.items.length-1,column:7}};
+  // Tampilkan hanya Daily SO; baris tersembunyi mempertahankan metadata validasi import yang sudah ada.
+  for(let r=expenseStart-2;r<wipStart-2;r++)ws.getRow(r).hidden=true;
+  for(const x of rowMeta.filter(x=>x.section==='STOCK'&&x.type==='supply'))ws.getRow(x.row).hidden=true;
+  for(const x of rowMeta.filter(x=>x.section==='STOCK'&&x.type==='material'&&!c.dailyMaterials.some(m=>String(m.id)===x.id)))ws.getRow(x.row).hidden=true;
+  for(const x of rowMeta.filter(x=>x.section==='WIP'&&!c.dailyWips.some(w=>String(w.id)===x.id)))ws.getRow(x.row).hidden=true;
   const buf=await book.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BARAPP_Template_Operasional_'+String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-')+'-'+CL.date+'.xlsx';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BARAPP_Template_Daily_SO_'+String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-')+'-'+CL.date+'.xlsx';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   const missing=rowMeta.filter(x=>x.section==='STOCK'&&x.missing).map(x=>x.name+' → '+(opTPreferredUnit(c.items.find(i=>String(i.id)===x.id))?.requested||''));
-  toast(missing.length?'Template operasional diunduh; default satuan belum tersedia di master untuk '+missing.join(', ')+'.':'Template operasional lengkap berhasil diunduh. Jenis Master dan satuan terisi dari master Barapp.','ok');
+  toast(missing.length?'Template Daily SO diunduh; default satuan belum tersedia di master untuk '+missing.join(', ')+'.':'Template Daily SO berhasil diunduh. Isi hanya kolom Stok Fisik Akhir.','ok');
  }catch(e){toast('Gagal membuat template operasional: '+String(e?.message||e),'err')}
 }
 function opTReadMeta(ws){
@@ -466,7 +471,7 @@ function opTRenderPreview(){
  const errors=d.errors||[],summary=(d.counts||[]).map(x=>'<tr><td style="padding:7px;border-bottom:1px solid var(--line)">'+esc(x[0])+'</td><td style="padding:7px;text-align:right;border-bottom:1px solid var(--line)"><b>'+x[1]+'</b></td><td style="padding:7px;color:var(--mu);border-bottom:1px solid var(--line)">'+esc(x[2])+'</td></tr>').join('');
  const errHtml=errors.length?'<div class="cl-callout" style="border-color:#c55"><b>Belum bisa diimpor ('+errors.length+' masalah)</b><ul style="margin:8px 0 0;padding-left:20px">'+errors.slice(0,25).map(x=>'<li>'+esc(x)+'</li>').join('')+(errors.length>25?'<li>Dan '+(errors.length-25)+' masalah lainnya.</li>':'')+'</ul></div>':'<div class="cl-callout"><b>Validasi awal lolos</b><p>Belum ada data disimpan. Supabase akan memvalidasi ulang semua bagian secara atomik.</p></div>';
  const server=d.serverError?'<div class="cl-callout"><b>Impor tidak disimpan</b><p>'+esc(d.serverError)+'</p></div>':'';
- modal('<h3>Preview Import Template Operasional</h3><p class="mu"><b>File:</b> '+esc(d.fileName||'File Excel')+'<br><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'<br>Semua bagian diperiksa sebelum konfirmasi. Jika satu bagian gagal, seluruh impor dibatalkan.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:7px">Bagian</th><th style="text-align:right;padding:7px">Baris</th><th style="text-align:left;padding:7px">Keterangan</th></tr></thead><tbody>'+summary+'</tbody></table></div>'+errHtml+server+'<div class="btns" style="margin-top:14px"><button type="button" class="btn s" onclick="window.__clOpenOperationalTemplate()">Kembali</button><button type="button" class="btn" '+(errors.length||d.busy||!d.payload?'disabled':'')+' onclick="window.__clConfirmOperationalImport()">'+(d.busy?'Memproses…':'Konfirmasi & Import Semua')+'</button></div>');
+ modal('<h3>Preview Import Daily SO</h3><p class="mu"><b>File:</b> '+esc(d.fileName||'File Excel')+'<br><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'<br>Semua bagian diperiksa sebelum konfirmasi. Jika satu bagian gagal, seluruh impor dibatalkan.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:7px">Bagian</th><th style="text-align:right;padding:7px">Baris</th><th style="text-align:left;padding:7px">Keterangan</th></tr></thead><tbody>'+summary+'</tbody></table></div>'+errHtml+server+'<div class="btns" style="margin-top:14px"><button type="button" class="btn s" onclick="window.__clOpenOperationalTemplate()">Kembali</button><button type="button" class="btn" '+(errors.length||d.busy||!d.payload?'disabled':'')+' onclick="window.__clConfirmOperationalImport()">'+(d.busy?'Memproses…':'Konfirmasi & Import Daily SO')+'</button></div>');
 }
 function opTFriendlyError(e){
  const m=String(e?.message||e||'Gagal import.'),u=m.toUpperCase(),map=[
@@ -505,7 +510,7 @@ function opTFriendlyError(e){
 async function opTConfirmImport(){
  const d=CL.operationalTemplateDraft;if(!d||!d.payload||d.errors?.length||CL.busy||d.busy)return;
  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Tanggal closing sudah final atau terkunci.','warn');
- if(!confirm('Import semua bagian Template Operasional untuk '+(clDivision(CL.division)?.name||'divisi')+' tanggal '+CL.date+'? Seluruh bagian disimpan atomik; jika satu bagian gagal, seluruh impor dibatalkan.'))return;
+ if(!confirm('Import data Daily SO untuk '+(clDivision(CL.division)?.name||'divisi')+' tanggal '+CL.date+'? Hanya Stock Opname yang akan disimpan.'))return;
  d.busy=true;CL.busy='operational-template-import';opTRenderPreview();
  try{
   const {data,error}=await sb().rpc('barapp_closing_import_operational_template_v2',{p_division_id:CL.division,p_target_date:CL.date,p_template_id:d.templateId,p_payload:d.payload});
