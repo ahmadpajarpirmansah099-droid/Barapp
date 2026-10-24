@@ -57,7 +57,7 @@ assert.ok(migrationSource.includes('public.barapp_stock_returns'), 'Supplier ret
 assert.ok(migrationSource.includes('revoke all on function public.barapp_closing_import_operational_template_v2'), 'RPC execute permissions are explicitly restricted');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
 
-assert.match(indexSource, /closing\\.js\\?v=20261024-approval-operational-template-v2/);
+assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v2'), 'The app must load the new operational template script version');
 assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
 assert.equal(indexSource.includes('window.__clOpenTemplate'), false, 'Legacy single-template entry point must not be used');
 
