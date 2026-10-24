@@ -48,6 +48,7 @@ assert.ok(closingSource.includes("cogs_save_daily_so") === false, 'V2 must use o
 
 assert.ok(migrationSource.includes('create table if not exists public.barapp_closing_operational_template_imports'), 'V2 import audit table must be created');
 assert.ok(migrationSource.toLowerCase().includes('create or replace function public.barapp_closing_import_operational_template_v2'), 'V2 atomic import RPC must be created');
+assert.ok(migrationSource.includes('$function$;\n\nrevoke all on function public.barapp_closing_import_operational_template_v2'), 'SQL function statement must end before its privilege statements');
 assert.match(migrationSource, /security definer/i, 'RPC must run with its protected database owner');
 assert.ok(migrationSource.includes('public.cogs_save_daily_so'), 'Daily SO is saved using the existing validated RPC');
 assert.ok(migrationSource.includes('public.cogs_record_menu_sales_batch'), 'Sales uses the existing validated batch RPC');
