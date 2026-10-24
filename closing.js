@@ -99,161 +99,432 @@ async function approve(){
 }
 
 
-const clSoType=p=>p.component_type==='wip'?'WIP':(typeof opsUnitItem==='function'&&opsUnitItem(p)?.is_supply?'Supplies':'Item');
-function clSoTemplateUnit(p){
- const name=String(p.component_name||'').trim().toLocaleLowerCase().replace(/\s+/g,' ');
- const preferred={'skm':'CAN','skm coklat':'PACK','galon aqua':'GALON','galon vit':'GALON','es batu atlas':'BALL','gingerale':'CAN'}[name];
- const units=typeof opsUnitList==='function'?opsUnitList(p):[{unit:String(p.unit||'UNIT'),factor:1}];
- if(preferred){const match=units.find(u=>String(u.unit).toUpperCase()===preferred);if(match)return match.unit}
- for(const wanted of ['GALON','CAN','BALL']){const match=units.find(u=>String(u.unit||'').toUpperCase()===wanted);if(match)return match.unit}
- return String(p.unit||(typeof opsUnitItem==='function'&&opsUnitItem(p)?.base_unit)||units[0]?.unit||'UNIT');
+
+function opTId(){try{if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
+function opTBlank(v){return v===null||v===undefined||String(v).trim()===''}
+function opTNum(v){if(typeof v==='number')return Number.isFinite(v)?v:NaN;if(opTBlank(v))return null;const n=Number(String(v).trim().replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN}
+function opTDate(v){if(v instanceof Date&&!Number.isNaN(v.getTime()))return v.toISOString().slice(0,10);if(typeof v==='number'&&Number.isFinite(v)&&v>=1&&v<100000){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10)}const x=String(v??'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(x))return x;const m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'):x}
+function opTSameSet(a,b){if(a.length!==b.length)return false;const x=new Set(a),y=new Set(b);return x.size===a.length&&y.size===b.length&&a.every(v=>y.has(v))}
+function opTPreferredUnit(item){
+ const key=String(item?.name||'').toLocaleUpperCase().replace(/[^A-Z0-9]/g,'');
+ const pref={'SKM':'CAN','SKMCOKLAT':'PACK','GALONAQUA':'GALON','GALONVIT':'GALON','ESBATUATLAS':'BALL','GINGERALE':'CAN','GINGGERALE':'CAN','COCONUTWATER':'BOTOL/PACK','RON88':'BOTOL/PACK'}[key];
+ const base=String(item?.base_unit||'UNIT'),convs=(Array.isArray(item?.conversions)?item.conversions:[]).filter(x=>x&&String(x.unit||'').trim()&&Number(x.factor)>0);
+ if(pref){const match=convs.find(x=>String(x.unit).trim().toUpperCase()===pref);if(match)return {unit:String(match.unit).trim(),factor:Number(match.factor),requested:pref,missing:false};return {unit:base,factor:1,requested:pref,missing:true}}
+ const exact=convs.find(x=>String(x.unit).trim().toUpperCase()===base.toUpperCase());
+ return {unit:base,factor:exact?Number(exact.factor):1,requested:'',missing:false};
 }
-async function clPrepareDailySOTemplate(){
- if(!clCanAccess())throw new Error('Akses ditolak.');
- if(!window.XLSX)throw new Error('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.');
- if(CL.period?.status==='approved')throw new Error('Closing tanggal ini sudah approved dan terkunci.');
- if(count('daily_so',CL.division,CL.date)>0)throw new Error('Daily SO tanggal ini sudah tersimpan. Batalkan rekaman lama sebelum membuat template baru.');
- if(!CG.ready)await cgLoad(true);
- if(!INV.ready)await invLoad(true);
- if(!CL.division)throw new Error('Pilih divisi terlebih dahulu.');
- const outletId=await outInit();
- if(!outletId)throw new Error('Pilih outlet aktif terlebih dahulu.');
- OPS.division=CL.division;OPS.date=CL.date;OPS.positionLoadedFor='';OPS.positionError='';
- await opsLoadPosition(false,true);
- const expectedKey=String(CL.division)+'|'+String(CL.date);
- if(OPS.positionLoadedFor!==expectedKey||OPS.positionError)throw new Error(OPS.positionError||'Saldo Daily SO belum berhasil dimuat.');
- if(!OPS.position.length)throw new Error('Tidak ada bahan atau WIP aktif untuk dibuatkan template.');
- return {outletId:String(outletId),position:OPS.position.slice(),division:String(CL.division),date:String(CL.date)};
+function opTStockOutCategories(){const x=window.__barappStockOutCategories;return [...new Set((Array.isArray(x)?x:['Move','Waste','QC','R&D','Kalibrasi','Lainnya']).map(v=>String(v||'').trim()).filter(Boolean))]}
+function opTCatalog(){
+ const division=String(CL.division),date=String(CL.date),div=clDivision(division),outlet=String(div?.outlet_id||'');
+ const items=(INV.items||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const materials=items.filter(x=>x.is_supply!==true),supplies=items.filter(x=>x.is_supply===true&&String(x.created_at||'0000-01-01').slice(0,10)<=date);
+ const wips=(CG.wips||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const menus=(CG.menus||[]).filter(x=>String(x.division_id)===division&&x.active===true).sort((a,b)=>invAlpha(a.name,b.name));
+ const divisions=[...(INV.divs||[]),...(CG.divs||[])],dm=new Map();
+ divisions.forEach(d=>{if(d&&d.id&&d.active!==false&&String(d.id)!==division&&(!outlet||String(d.outlet_id)===outlet))dm.set(String(d.id),d)});
+ const returns=(INV.ins||[]).filter(r=>String(r.division_id)===division&&r.status==='posted').map(r=>{
+   const it=(INV.items||[]).find(x=>String(x.id)===String(r.item_id));
+   const returned=(INV.rets||[]).filter(q=>String(q.stock_in_id)===String(r.id)&&q.status==='posted').reduce((n,q)=>n+Number(q.qty_base||0),0);
+   return {receipt:r,item:it,remaining:Number(r.qty_base||0)-returned};
+  }).filter(x=>x.remaining>0.000001&&!((INV.rets||[]).some(q=>String(q.stock_in_id)===String(x.receipt.id)&&String(q.returned_at)===date&&q.status==='posted')))
+  .sort((a,b)=>String(b.receipt.received_at||'').localeCompare(String(a.receipt.received_at||''))||invAlpha(a.item?.name,b.item?.name));
+ const expenseItems=items.map(x=>({id:String(x.id),rawType:'material',labelType:x.is_supply===true?'Supplies':'Item',name:String(x.name),unit:String(x.base_unit||'UNIT'),division_id:String(x.division_id),item:x}))
+   .concat((divisionModuleOn(div,'cogs_wip')?wips:[]).map(x=>({id:String(x.id),rawType:'wip',labelType:'WIP',name:String(x.name),unit:String(x.yield_unit||'UNIT'),division_id:String(x.division_id),item:x})))
+   .sort((a,b)=>invAlpha(a.name,b.name)||invAlpha(a.labelType,b.labelType));
+ const dailyOn=clModuleOn(division,'cogs_daily_so'),wipOn=clModuleOn(division,'cogs_wip'),productionOn=clModuleOn(division,'cogs_production'),salesOn=clModuleOn(division,'cogs_sales'),suppliesOn=clModuleOn(division,'supplies');
+ return {division,date,outlet,div,items,materials,supplies,wips,menus,returns,expenseItems,categories:opTStockOutCategories(),divisions:[...dm.values()].sort((a,b)=>invAlpha(a.name,b.name)),dailyOn,wipOn,productionOn,salesOn,suppliesOn,
+   dailyMaterials:dailyOn?materials:[],dailyWips:dailyOn&&wipOn?wips:[]};
 }
-async function clExportDailySOTemplate(){
- try{
-  const ctx=await clPrepareDailySOTemplate();
-  const divName=opsDivName(ctx.division);
-  const rows=[
-   ['BARAPP — TEMPLATE IMPORT DAILY SO'],
-   ['FORMAT','BARAPP_DAILY_SO_V1'],
-   ['OUTLET_ID',ctx.outletId,'DIVISI',divName,'DIVISION_ID',ctx.division,'TANGGAL SO',ctx.date],
-   ['CATATAN SO',''],
-   [],
-   ['ID Referensi','Nama Barang','Jenis Master','Satuan Dasar','Satuan Input','Faktor Konversi','Stok Fisik (Qty)']
-  ];
-  const master=[['ID Referensi','Nama Barang','Jenis Master','Satuan Dasar','Satuan Input Default','Faktor Konversi']];
-  const details=[];
-  ctx.position.forEach(p=>{
-   const key=opsKey(p.component_type,p.component_id);
-   const unit=clSoTemplateUnit(p);
-   const units=typeof opsUnitList==='function'?opsUnitList(p):[{unit:String(p.unit||'UNIT'),factor:1}];
-   const factor=Number(units.find(u=>String(u.unit).toUpperCase()===String(unit).toUpperCase())?.factor||1);
-   const base=String((p.component_type==='material'&&typeof opsUnitItem==='function'?opsUnitItem(p)?.base_unit:null)||p.unit||'UNIT');
-   const type=clSoType(p),name=String(p.component_name||'');
-   master.push([key,name,type,base,unit,factor]);
-   details.push({key,name,type,base,unit,factor});
-   rows.push([key,name,type,base,unit,factor,'']);
-  });
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:34,hidden:true},{wch:34},{wch:16},{wch:16},{wch:16},{wch:17,hidden:true},{wch:20}];
-  ws['!autofilter']={ref:'A6:G'+rows.length};
-  ws['!freeze']={xSplit:1,ySplit:6,topLeftCell:'B7',activePane:'bottomRight',state:'frozen'};
-  const masterWs=XLSX.utils.aoa_to_sheet(master);
-  masterWs['!cols']=[{wch:34},{wch:34},{wch:16},{wch:16},{wch:20},{wch:18}];
-  const end=master.length;
-  details.forEach((d,i)=>{
-   const rowNo=i+7;
-   const fType="IFERROR(VLOOKUP($A"+rowNo+",'MASTER BARANG'!$A$2:$F$"+end+",3,FALSE),\"\")";
-   const fBase="IFERROR(VLOOKUP($A"+rowNo+",'MASTER BARANG'!$A$2:$F$"+end+",4,FALSE),\"\")";
-   const fUnit="IFERROR(VLOOKUP($A"+rowNo+",'MASTER BARANG'!$A$2:$F$"+end+",5,FALSE),\"\")";
-   const fFactor="IFERROR(VLOOKUP($A"+rowNo+",'MASTER BARANG'!$A$2:$F$"+end+",6,FALSE),1)";
-   ws['C'+rowNo]={t:'s',f:fType,v:d.type};
-   ws['D'+rowNo]={t:'s',f:fBase,v:d.base};
-   ws['E'+rowNo]={t:'s',f:fUnit,v:d.unit};
-   ws['F'+rowNo]={t:'n',f:fFactor,v:d.factor};
-  });
-  XLSX.utils.book_append_sheet(wb,ws,'DAILY SO');
-  XLSX.utils.book_append_sheet(wb,masterWs,'MASTER BARANG');
-  wb.Workbook={Sheets:[{name:'DAILY SO',Hidden:0},{name:'MASTER BARANG',Hidden:1}]};
-  XLSX.writeFile(wb,'BARAPP_Template_Import_Daily_SO_'+ctx.date+'.xlsx');
-  toast('Template Daily SO berhasil diunduh: '+ctx.position.length+' item/WIP. Jenis master dan satuan terisi otomatis.','ok');
- }catch(e){toast(e.message||'Gagal membuat template Daily SO.','err')}
+function opTEnsureExcelJS(){
+ if(window.ExcelJS&&typeof window.ExcelJS.Workbook==='function')return Promise.resolve(window.ExcelJS);
+ if(window.__opTExcelJSLoading)return window.__opTExcelJSLoading;
+ window.__opTExcelJSLoading=new Promise((resolve,reject)=>{
+  const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';sc.async=true;
+  sc.onload=()=>window.ExcelJS&&typeof window.ExcelJS.Workbook==='function'?resolve(window.ExcelJS):reject(new Error('Library Excel tidak berhasil dimuat.'));
+  sc.onerror=()=>reject(new Error('Gagal memuat library Excel. Periksa koneksi internet lalu coba lagi.'));
+  document.head.appendChild(sc);
+ });
+ return window.__opTExcelJSLoading.finally(()=>{window.__opTExcelJSLoading=null});
 }
-function clImportDailySO(){
- if(!clCanAccess())return toast('Akses ditolak.','warn');
+function opTPermissions(p){
+ if(isDeveloper()||!p)return [];
+ const errors=[],need=(yes,key,label)=>{if(yes&&!hasFeature(key))errors.push('Akun belum memiliki izin '+label+'.')};
+ need(p.daily_so.length,'cogs.daily_so.edit','edit Daily SO');
+ need(p.sales.length,'cogs.sales.manage','input Penjualan');
+ need(p.production.length,'cogs.production.manage','input Produksi WIP');
+ const invWrite=!!(p.stock_in.length||p.stock_out.length||p.supplies.length||p.stock_returns.length);
+ need(invWrite,'inventory.view','lihat Inventory');need(invWrite,'inventory.manage','mengelola Inventory');
+ if(p.opening_wip.length&&!hasFeature('inventory.inbound.manage')&&!hasFeature('cogs.production.manage'))errors.push('Akun belum memiliki izin stok awal WIP.');
+ return [...new Set(errors)];
+}
+function opTOpenDialog(){
+ if(!clCanAccess())return toast('Approval Closing hanya tersedia untuk Developer dan Admin Divisi.','warn');
  if(!window.XLSX)return toast('Modul Excel belum siap. Muat ulang halaman lalu coba lagi.','warn');
- if(CL.period?.status==='approved')return toast('Closing sudah approved dan terkunci.','warn');
- if(count('daily_so',CL.division,CL.date)>0)return toast('Daily SO tanggal ini sudah tersimpan. Batalkan rekaman lama sebelum mengimpor ulang.','warn');
- const input=document.createElement('input');input.type='file';input.accept='.xlsx,.xls';
- input.onchange=()=>{const file=input.files&&input.files[0];if(file)clReadDailySOImport(file)};
- input.click();
+ if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
+ if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Closing sudah final atau memerlukan rekonsiliasi. Template untuk tanggal ini dikunci.','warn');
+ modal('<h3>Template Operasional Barapp</h3><p class="mu">Satu file Excel dengan satu sheet utama untuk ITEM, SUPPLIES, Pengeluaran, Penjualan Menu, Produksi WIP, stok awal WIP, dan Retur. Jenis Master serta satuan diambil dari master Barapp.</p><p class="mu"><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'</p><div class="btns"><button class="btn" type="button" onclick="window.__clDownloadOperationalTemplate()">Export Template Operasional</button><label class="btn s" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">Import Template Operasional<input id="op_template_file" type="file" accept=".xlsx,.xls" style="display:none" onchange="window.__clPreviewOperationalImport(this)"></label></div><p class="mu" style="font-size:12px">Isi hanya kolom jumlah yang diperlukan. Jangan mengubah nama item, ID tersembunyi, struktur, outlet, divisi, atau tanggal. Sistem memvalidasi semua bagian lebih dulu dan menyimpan semua transaksi dalam satu transaksi database; bila satu bagian gagal, semuanya dibatalkan.</p>');
 }
-async function clReadDailySOImport(file){
+async function opTDownload(){
+ if(!clCanAccess())return toast('Akses ditolak.','warn');
+ if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
+ if(!CL.division||!CL.date)return toast('Pilih divisi dan tanggal closing terlebih dahulu.','warn');
+ if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Tanggal closing terkunci.','warn');
  try{
-  const bytes=await file.arrayBuffer(),wb=XLSX.read(bytes,{type:'array',cellDates:true});
-  const ws=wb.Sheets['DAILY SO'];if(!ws)throw new Error('Sheet DAILY SO tidak ditemukan.');
-  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-  if(String(raw?.[1]?.[1]||'').trim()!=='BARAPP_DAILY_SO_V1')throw new Error('Format template tidak dikenali. Unduh ulang template dari halaman Approval.');
-  const meta=raw[2]||[];
-  const fileOutlet=String(meta[1]||'').trim(),fileDivision=String(meta[5]||'').trim(),fileDate=String(meta[7]||'').trim();
-  if(fileOutlet!==String(await outInit()))throw new Error('Template berasal dari outlet berbeda. Unduh template untuk outlet aktif.');
-  if(fileDivision!==String(CL.division))throw new Error('Divisi template berbeda dari divisi yang dipilih di Approval.');
-  if(fileDate!==String(CL.date))throw new Error('Tanggal template berbeda dari tanggal yang dipilih di Approval.');
-  if(CL.period?.status==='approved')throw new Error('Closing sudah approved dan terkunci.');
-  if(!CG.ready)await cgLoad(true);if(!INV.ready)await invLoad(true);
-  OPS.division=CL.division;OPS.date=CL.date;OPS.positionLoadedFor='';OPS.positionError='';
-  await opsLoadPosition(false,true);
-  const expectedKey=String(CL.division)+'|'+String(CL.date);
-  if(OPS.positionLoadedFor!==expectedKey||OPS.positionError)throw new Error(OPS.positionError||'Saldo Daily SO belum berhasil dimuat.');
-  if(count('daily_so',CL.division,CL.date)>0)throw new Error('Daily SO tanggal ini sudah tersimpan. Batalkan rekaman lama sebelum impor.');
-  const byKey=new Map(OPS.position.map(p=>[opsKey(p.component_type,p.component_id),p]));
-  const header=(raw[5]||[]).map(x=>String(x||'').trim());
-  const required=['ID Referensi','Nama Barang','Jenis Master','Satuan Dasar','Satuan Input','Faktor Konversi','Stok Fisik (Qty)'];
-  if(required.some((x,i)=>header[i]!==x))throw new Error('Kolom template berubah atau tidak lengkap. Gunakan template asli dari Approval.');
-  const dataRows=raw.slice(6).filter(row=>Array.isArray(row)&&row.some(x=>String(x??'').trim()!==''));
-  if(dataRows.length!==OPS.position.length)throw new Error('Jumlah baris item tidak sesuai master terbaru. Unduh template terbaru sebelum import.');
-  const seen=new Set(),lines=[];
-  for(let i=0;i<dataRows.length;i++){
-   const row=dataRows[i],key=String(row[0]||'').trim(),p=byKey.get(key);
-   const excelRow=i+7;
-   if(!p)throw new Error('Baris '+excelRow+': ID barang tidak dikenal atau tidak sesuai divisi.');
-   if(seen.has(key))throw new Error('Baris '+excelRow+': ID barang duplikat.');
-   seen.add(key);
-   if(String(row[1]||'').trim()!==String(p.component_name||'').trim())throw new Error('Baris '+excelRow+': Nama barang berbeda dari master.');
-   const type=clSoType(p),base=String((p.component_type==='material'&&typeof opsUnitItem==='function'?opsUnitItem(p)?.base_unit:null)||p.unit||'UNIT');
-   if(String(row[2]||'').trim()&&String(row[2]).trim()!==type)throw new Error('Baris '+excelRow+': Jenis Master tidak sesuai master Barapp.');
-   if(String(row[3]||'').trim()&&String(row[3]).trim().toUpperCase()!==base.toUpperCase())throw new Error('Baris '+excelRow+': Satuan Dasar tidak sesuai master Barapp.');
-   const units=typeof opsUnitList==='function'?opsUnitList(p):[{unit:base,factor:1}];
-   const requestedUnit=String(row[4]||'').trim()||clSoTemplateUnit(p);
-   const unit=units.find(u=>String(u.unit).trim().toUpperCase()===requestedUnit.toUpperCase());
-   if(!unit)throw new Error('Baris '+excelRow+': Satuan Input "'+requestedUnit+'" tidak terdaftar untuk barang ini.');
-   const qRaw=row[6];
-   if(qRaw===null||qRaw===undefined||String(qRaw).trim()==='')throw new Error('Baris '+excelRow+': Stok Fisik wajib diisi, gunakan 0 jika stok habis.');
-   const q=typeof qRaw==='number'?qRaw:Number(String(qRaw).trim());
-   if(!Number.isFinite(q)||q<0)throw new Error('Baris '+excelRow+': Stok Fisik harus angka 0 atau lebih.');
-   lines.push({type:p.component_type,id:p.component_id,counted_qty_base:q*Number(unit.factor||1)});
+  if(!CG.ready)await cgLoad(false);if(!INV.ready)await invLoad(false);
+  if(!CG.ready||!INV.ready)throw new Error('Master operasional belum berhasil dimuat.');
+  const c=opTCatalog(),ExcelJS=await opTEnsureExcelJS(),book=new ExcelJS.Workbook(),ws=book.addWorksheet('DAILY SO');
+  const rowMeta=[];
+  ws.getCell('A1').value='BARAPP — TEMPLATE OPERASIONAL DAILY SO';
+  ws.getCell('A2').value='FORMAT';ws.getCell('B2').value='BARAPP_OPERATIONAL_TEMPLATE_V2';
+  ws.getCell('A3').value='OUTLET_ID';ws.getCell('B3').value=c.outlet;ws.getCell('C3').value='DIVISI';ws.getCell('D3').value=String(c.div?.name||'');ws.getCell('E3').value='TANGGAL SO';ws.getCell('F3').value=String(CL.date);
+  ws.getCell('A4').value='CATATAN UMUM';ws.getCell('B4').value='';
+  ws.mergeCells('B4:G4');ws.getCell('B4').alignment={wrapText:true,vertical:'middle'};
+  const addSection=(title,headers)=>{
+   const sec=ws.addRow([title]);const r=sec.number;ws.mergeCells(r,1,r,headers.length);sec.height=22;
+   const head=ws.addRow(headers);head.height=30;return head.number+1;
+  };
+  const stockStart=addSection('1. STOCK OPNAME + BARANG MASUK — ITEM & SUPPLIES',['Nama Barang','Jenis Master','Satuan Input','Barang Masuk (Qty)','Total Invoice (Opsional)','Stok Fisik Akhir (Qty)','Catatan']);
+  const stockUnitOptions=[],unitSet=new Set();
+  c.items.forEach(x=>{
+   const pref=x.is_supply===true?{unit:String(x.base_unit||'UNIT'),factor:1,missing:false}:opTPreferredUnit(x);
+   const row=ws.addRow([x.name,x.is_supply===true?'Supplies':'Item',pref.unit,'','','','']);
+   rowMeta.push({section:'STOCK',row:row.number,id:String(x.id),type:x.is_supply===true?'supply':'material',name:x.name,unit:pref.unit,base_unit:String(x.base_unit||'UNIT'),factor:pref.factor,missing:pref.missing,created_at:x.created_at||''});
+   (Array.isArray(x.conversions)?x.conversions:[]).forEach(cv=>{const u=String(cv.unit||'').trim(),k=u.toLowerCase();if(u&&Number(cv.factor)>0&&!unitSet.has(k)){unitSet.add(k);stockUnitOptions.push(u)}});
+  });
+  const expenseStart=addSection('2. PENGELUARAN — 20 BARIS INPUT MANUAL',['Nama Barang / WIP','Jenis Master','Satuan','Jumlah','Kategori Pengeluaran','Divisi Tujuan (Move)','Catatan']);
+  const optionMap=[],labelCount=new Map();
+  c.expenseItems.forEach(x=>{const k=x.name.trim().toLocaleLowerCase();labelCount.set(k,(labelCount.get(k)||0)+1)});
+  c.expenseItems.forEach(x=>{
+   const duplicate=labelCount.get(x.name.trim().toLocaleLowerCase())>1;
+   const label=duplicate?x.name+' ['+x.labelType+']':x.name;
+   optionMap.push({label,id:x.id,rawType:x.rawType,labelType:x.labelType,unit:x.unit,division_id:x.division_id,name:x.name});
+  });
+  const expenseLast=expenseStart+19;
+  for(let r=expenseStart;r<=expenseLast;r++){
+   const row=ws.getRow(r);row.getCell(1).value='';
+   const lookupEnd=Math.max(2,optionMap.length+1);
+   row.getCell(2).value={formula:'IFERROR(VLOOKUP($A'+r+',$AQ$2:$AV$'+lookupEnd+',4,FALSE),\"\")',result:''};
+   row.getCell(3).value={formula:'IFERROR(VLOOKUP($A'+r+',$AQ$2:$AV$'+lookupEnd+',5,FALSE),\"\")',result:''};
+   row.getCell(4).value='';row.getCell(5).value='';row.getCell(6).value='';row.getCell(7).value='';
   }
-  if(seen.size!==byKey.size||Array.from(byKey.keys()).some(k=>!seen.has(k)))throw new Error('Ada item master yang hilang atau berubah. Unduh template terbaru.');
-  const notes=String(ws['B4']?.v??'').trim();
-  if(notes.length>500)throw new Error('Catatan SO maksimal 500 karakter.');
-  CL.pendingDailySOImport={outletId:String(await outInit()),division:String(CL.division),date:String(CL.date),notes,lines};
-  modal('<h3>Preview Import Daily SO</h3><p>File <b>'+esc(file.name)+'</b> lolos validasi untuk <b>'+esc(opsDivName(CL.division))+'</b> · '+esc(CL.date)+'.</p><p class="mu">'+lines.length+' baris siap disimpan. Jenis master, barang, dan satuan sudah dicocokkan dengan master Barapp; jumlah fisik dikonversi ke satuan dasar menggunakan faktor konversi master.</p><p class="mu">Setelah disimpan, Daily SO terkunci. Koreksi harus membatalkan rekaman lama terlebih dahulu.</p><div class="btns"><button class="btn" onclick="window.__clApplyDailySOImport()">Import & Simpan Daily SO</button><button class="btn s" onclick="window.__clCancelDailySOImport()">Batal</button></div>');
- }catch(e){toast('Import ditolak: '+(e.message||'Validasi file gagal.'),'err')}
+  const salesStart=addSection('3. PENJUALAN MENU',['Nama Menu','Qty Terjual','Harga Jual (Opsional)','Catatan']);
+  c.menus.forEach(x=>{
+   const row=ws.addRow([x.name,'','','']);
+   rowMeta.push({section:'SALES',row:row.number,id:String(x.id),type:'menu',name:x.name,unit:'',base_unit:'',factor:1});
+  });
+  const wipStart=addSection('4. PRODUKSI WIP + STOK AKHIR WIP',['Nama WIP','Satuan Hasil','Stok Awal WIP (Qty)','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']);
+  c.wips.forEach(x=>{
+   const row=ws.addRow([x.name,String(x.yield_unit||'UNIT'),'','','','']);
+   rowMeta.push({section:'WIP',row:row.number,id:String(x.id),type:'wip',name:x.name,unit:String(x.yield_unit||'UNIT'),base_unit:String(x.yield_unit||'UNIT'),factor:1,yield_qty:Number(x.yield_qty||0)});
+  });
+  const returnStart=addSection('5. RETUR KE SUPPLIER — QTY DALAM SATUAN DASAR',['Barang Masuk / Item','Tanggal Masuk','Sisa Bisa Diretur','Satuan Dasar','Qty Retur','Alasan']);
+  c.returns.forEach(x=>{
+   const r=x.receipt,it=x.item||invItem(r.item_id),row=ws.addRow([(it?.name||'Barang')+' · '+String(r.received_at||''),String(r.received_at||''),Number(x.remaining),String(it?.base_unit||'UNIT'),'','']);
+   rowMeta.push({section:'RETURNS',row:row.number,id:String(r.id),type:'return',name:it?.name||r.item_id,unit:String(it?.base_unit||'UNIT'),base_unit:String(it?.base_unit||'UNIT'),factor:1,aux_id:String(r.item_id),remaining:Number(x.remaining),received_at:String(r.received_at||'')});
+  });
+  const rowEnd=ws.rowCount;
+  const headerRows=[];
+  for(let r=1;r<=rowEnd;r++){
+   const first=String(ws.getCell(r,1).value||'');
+   if(/^\\d\\. /.test(first))headerRows.push(r);
+  }
+  ws.views=[{state:'frozen',ySplit:7}];
+  const widths=[34,18,16,19,22,21,32];widths.forEach((w,i)=>ws.getColumn(i+1).width=w);
+  ws.getColumn(8).hidden=true;
+  const thin={style:'thin',color:{argb:'FFBEBEBE'}},border={top:thin,bottom:thin,left:thin,right:thin};
+  ws.getRow(1).height=28;ws.getCell('A1').font={name:'Arial',size:14,bold:true,color:{argb:'FF111111'}};
+  for(const addr of ['A2','A3','C3','E3','A4'])ws.getCell(addr).font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};
+  for(let r=1;r<=rowEnd;r++){
+   if(headerRows.includes(r)){
+    for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FFFFFFFF'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF333333'}};cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};cell.border=border}
+    continue;
+   }
+   const isSection=r>1&&headerRows.includes(r+1);
+   if(isSection){for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF111111'}};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE7E7E7'}};cell.border=border}continue;}
+   if(r>=stockStart&&r<expenseStart-1||r>=expenseStart&&r<=expenseLast||r>=salesStart&&r<wipStart-1||r>=wipStart&&r<returnStart-1||r>=returnStart&&r<=rowEnd){
+    for(let col=1;col<=7;col++){const cell=ws.getCell(r,col);cell.border=border;cell.font={name:'Arial',size:10,color:{argb:'FF111111'}};cell.alignment={vertical:'middle',wrapText:col===1||col===6||col===7};if(r%2===0)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}}}
+   }
+  }
+  c.items.forEach((x,i)=>{
+   const rm=rowMeta.find(y=>y.section==='STOCK'&&y.id===String(x.id));if(rm){ws.getCell(rm.row,4).numFmt='0.####';ws.getCell(rm.row,5).numFmt='"Rp" #,##0.00';ws.getCell(rm.row,6).numFmt='0.####'}
+  });
+  for(let r=expenseStart;r<=expenseLast;r++)ws.getCell(r,4).numFmt='0.####';
+  for(const x of rowMeta.filter(x=>x.section==='WIP'))for(const col of [3,4,5])ws.getCell(x.row,col).numFmt='0.####';
+  for(const x of rowMeta.filter(x=>x.section==='SALES')){ws.getCell(x.row,2).numFmt='0.####';ws.getCell(x.row,3).numFmt='"Rp" #,##0.00'}
+  for(const x of rowMeta.filter(x=>x.section==='RETURNS')){ws.getCell(x.row,3).numFmt='0.####';ws.getCell(x.row,5).numFmt='0.####'}
+  const hiddenCols=['AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ','BA','BB'];
+  hiddenCols.forEach(col=>ws.getColumn(col).hidden=true);
+  [['AA','FORMAT'],['AB','BARAPP_OPERATIONAL_TEMPLATE_V2'],['AC','TEMPLATE_ID'],['AD',opTId()],['AE','OUTLET_ID'],['AF',c.outlet],['AG','DIVISION_ID'],['AH',String(CL.division)],['AI','TARGET_DATE'],['AJ',String(CL.date)],['AK','GENERATED_AT'],['AL',new Date().toISOString()]].forEach(([col,val],i)=>{ws.getCell(col+'1').value=val});
+  ['SECTION','ROW','ID','TYPE','NAME','UNIT','BASE_UNIT','FACTOR','YIELD_QTY','AUX_ID','REMAINING','RECEIVED_AT'].forEach((v,i)=>ws.getCell(1,30+i).value=v);
+  rowMeta.forEach((x,i)=>{
+   const r=i+2,vals=[x.section,x.row,x.id,x.type,x.name,x.unit,x.base_unit,x.factor??1,x.yield_qty??'',x.aux_id||'',x.remaining??'',x.received_at||''];
+   vals.forEach((v,j)=>ws.getCell(r,30+j).value=v);
+  });
+  const expHeaders=['LABEL','ID','RAW_TYPE','MASTER_TYPE','UNIT','DIVISION_ID','NAME'];
+  expHeaders.forEach((v,i)=>ws.getCell(1,43+i).value=v);
+  optionMap.forEach((x,i)=>[x.label,x.id,x.rawType,x.labelType,x.unit,x.division_id,x.name].forEach((v,j)=>ws.getCell(i+2,43+j).value=v));
+  c.categories.forEach((v,i)=>ws.getCell(i+2,50).value=v);
+  c.divisions.forEach((v,i)=>{ws.getCell(i+2,51).value=v.name;ws.getCell(i+2,52).value=v.id});
+  const allUnits=new Set();c.items.forEach(x=>{if(x.base_unit)allUnits.add(String(x.base_unit));(Array.isArray(x.conversions)?x.conversions:[]).forEach(v=>{if(v?.unit&&Number(v.factor)>0)allUnits.add(String(v.unit))})});c.expenseItems.forEach(x=>allUnits.add(x.unit));
+  [...allUnits].sort((a,b)=>invAlpha(a,b)).forEach((u,i)=>ws.getCell(i+2,53).value=u);
+  const optEnd=Math.max(2,optionMap.length+1),catEnd=Math.max(2,c.categories.length+1),targetEnd=Math.max(2,c.divisions.length+1),unitEnd=Math.max(2,allUnits.size+1);
+  if(optionMap.length)ws.dataValidations.add('A'+expenseStart+':A'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AQ$2:$AQ$'+optEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Barang tidak valid',error:'Pilih barang dari daftar Master Barapp.'});
+  if(c.categories.length)ws.dataValidations.add('E'+expenseStart+':E'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AX$2:$AX$'+catEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Kategori tidak valid',error:'Pilih kategori pengeluaran dari daftar.'});
+  if(c.divisions.length)ws.dataValidations.add('F'+expenseStart+':F'+expenseLast,{type:'list',allowBlank:true,formulae:['=$AY$2:$AY$'+targetEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Tujuan tidak valid',error:'Untuk Move, pilih divisi aktif dalam outlet yang sama.'});
+  if(allUnits.size)ws.dataValidations.add('C'+stockStart+':C'+(stockStart+c.items.length-1),{type:'list',allowBlank:true,formulae:['=$BA$2:$BA$'+unitEnd],showErrorMessage:true,errorStyle:'stop',errorTitle:'Satuan tidak valid',error:'Pilih satuan dari daftar; satuan akan diperiksa lagi berdasarkan master item.'});
+  ws.autoFilter={from:{row:stockStart-1,column:1},to:{row:stockStart+c.items.length-1,column:7}};
+  const buf=await book.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BARAPP_Template_Operasional_'+String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-')+'-'+CL.date+'.xlsx';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  const missing=rowMeta.filter(x=>x.section==='STOCK'&&x.missing).map(x=>x.name+' → '+(opTPreferredUnit(c.items.find(i=>String(i.id)===x.id))?.requested||''));
+  toast(missing.length?'Template operasional diunduh; default satuan belum tersedia di master untuk '+missing.join(', ')+'.':'Template operasional lengkap berhasil diunduh. Jenis Master dan satuan terisi dari master Barapp.','ok');
+ }catch(e){toast('Gagal membuat template operasional: '+String(e?.message||e),'err')}
 }
-async function clApplyDailySOImport(){
- const pending=CL.pendingDailySOImport;if(!pending)return toast('Tidak ada data import untuk disimpan.','warn');
- if(CL.busy)return;
- if(String(pending.division)!==String(CL.division)||String(pending.date)!==String(CL.date)||String(pending.outletId)!==String(await outInit())){CL.pendingDailySOImport=null;closeM();return toast('Outlet, divisi, atau tanggal berubah. Ulangi import dengan template yang sesuai.','err')}
- if(CL.period?.status==='approved'||count('daily_so',CL.division,CL.date)>0){CL.pendingDailySOImport=null;closeM();return toast('Daily SO tidak dapat ditimpa. Closing mungkin terkunci atau SO sudah tersimpan.','warn')}
- CL.busy='daily_so_import';
+function opTReadMeta(ws){
+ const out={};for(const colPair of [['AA','AB'],['AC','AD'],['AE','AF'],['AG','AH'],['AI','AJ'],['AK','AL']]){const k=String(ws[colPair[0]+'1']?.v||'').trim();if(k)out[k]=String(ws[colPair[1]+'1']?.v??'').trim()}
+ return out;
+}
+function opTMapRows(ws){
+ const range=XLSX.utils.decode_range(ws['!ref']||'A1:AP1'),out=[];
+ for(let r=2;r<=range.e.r+1;r++){
+  const section=String(ws['AD'+r]?.v||'').trim(),id=String(ws['AF'+r]?.v||'').trim();
+  if(!section||!id)continue;
+  out.push({section,row:Number(ws['AE'+r]?.v),id,type:String(ws['AG'+r]?.v||''),name:String(ws['AH'+r]?.v||''),unit:String(ws['AI'+r]?.v||''),base_unit:String(ws['AJ'+r]?.v||''),factor:Number(ws['AK'+r]?.v||1),yield_qty:Number(ws['AL'+r]?.v||0),aux_id:String(ws['AM'+r]?.v||''),remaining:Number(ws['AN'+r]?.v||0),received_at:String(ws['AO'+r]?.v||'')});
+ }
+ return out;
+}
+function opTExpenseOptions(ws){
+ const range=XLSX.utils.decode_range(ws['!ref']||'A1:BA1'),out=[];
+ for(let r=2;r<=range.e.r+1;r++){const label=String(ws['AQ'+r]?.v||'').trim(),id=String(ws['AR'+r]?.v||'').trim();if(!label||!id)continue;out.push({label,id,rawType:String(ws['AS'+r]?.v||''),masterType:String(ws['AT'+r]?.v||''),unit:String(ws['AU'+r]?.v||''),division_id:String(ws['AV'+r]?.v||''),name:String(ws['AW'+r]?.v||'')})}
+ return out;
+}
+function opTConflictErrors(p,c){
+ const e=[],d=String(CL.division),date=String(CL.date);
+ if(p.daily_so.length&&(CG.dailySO||[]).some(x=>String(x.division_id)===d&&String(x.so_date)===date&&x.status==='submitted'))e.push('Daily SO sudah tersimpan pada tanggal ini. Kosongkan semua kolom Stok Fisik untuk melewati bagian ini.');
+ if(p.supplies.length&&(INV.suppliesSO||[]).some(x=>String(x.division_id)===d&&String(x.so_date)===date&&x.status==='submitted'))e.push('Daily SO Supplies sudah tersimpan pada tanggal ini. Kosongkan seluruh Stok Fisik Supplies untuk melewati bagian ini.');
+ if(p.sales.length&&(CG.sales||[]).some(x=>String(x.division_id)===d&&String(x.sold_at)===date&&x.status==='posted'))e.push('Sudah ada Penjualan Menu pada tanggal ini. Kosongkan seluruh Qty Terjual agar tidak duplikat.');
+ if(p.stock_in.length&&(INV.ins||[]).some(x=>String(x.division_id)===d&&String(x.received_at)===date&&x.status==='posted'))e.push('Sudah ada Barang Masuk pada tanggal ini. Kosongkan seluruh Barang Masuk agar tidak duplikat.');
+ if(p.opening_wip.length&&(INV.productionBatches||[]).some(x=>String(x.division_id)===d&&String(x.produced_at)===date&&x.status==='posted'&&x.cost_source==='opening'))e.push('Sudah ada Stok Awal WIP pada tanggal ini. Kosongkan seluruh Stok Awal WIP agar tidak duplikat.');
+ if(p.stock_out.length&&(INV.stockOut||[]).some(x=>String(x.from_division_id)===d&&String(x.out_date)===date&&x.status==='posted'))e.push('Sudah ada Pengeluaran pada tanggal ini. Kosongkan seluruh Pengeluaran agar tidak duplikat.');
+ if(p.production.length&&(CG.productions||[]).some(x=>String(x.division_id)===d&&String(x.produced_at)===date&&x.status==='posted'&&x.cost_source!=='opening'))e.push('Sudah ada Produksi WIP pada tanggal ini. Kosongkan seluruh Produksi Aktual agar tidak duplikat.');
+ return e;
+}
+async function opTPreview(input){
+ const file=input&&input.files&&input.files[0];if(!file)return;
+ if(!clCanAccess())return toast('Akses ditolak.','warn');
+ if(!window.XLSX)return toast('Modul Excel belum siap.','warn');
+ if(file.size>15*1024*1024)return toast('Ukuran file terlalu besar. Maksimal 15 MB.','warn');
+ modal('<h3>Memvalidasi Template Operasional…</h3><p class="mu">Memeriksa master, satuan, penjualan, pengeluaran, produksi, supplies, retur, serta konflik transaksi. Belum ada data disimpan.</p>');
+ const errors=[];
  try{
-  const {data,error}=await sb().rpc('cogs_save_daily_so',{p_division_id:pending.division,p_so_date:pending.date,p_lines:pending.lines,p_notes:pending.notes||null});
-  if(error)throw error;
-  CL.pendingDailySOImport=null;closeM();
-  await Promise.all([cgLoad(true),invLoad(true)]);
-  CL.ready=false;await load(false);R();
-  toast('Import Daily SO berhasil disimpan ('+(data??pending.lines.length)+' baris). Periksa checklist lalu konfirmasi ulang sebelum approval.','ok');
- }catch(e){toast(clError(e),'err')}
- finally{CL.busy='';if(pg==='cogs_closing')R()}
+  await Promise.all([cgLoad(false),invLoad(false)]);
+  const {data:period,error:pe}=await sb().from('barapp_closing_periods').select('id,status').eq('division_id',CL.division).eq('closing_date',CL.date).maybeSingle();if(pe)throw pe;
+  CL.period=period?Object.assign({},CL.period||{},period):null;
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false}),ws=wb.Sheets['DAILY SO'];
+  if(!ws)errors.push('Sheet DAILY SO tidak ditemukan. Gunakan template operasional yang diekspor dari Approval.');
+  if(!ws)throw new Error('Sheet utama tidak ditemukan.');
+  const meta=opTReadMeta(ws);
+  if(String(ws['B2']?.v||'').trim()!=='BARAPP_OPERATIONAL_TEMPLATE_V2'||meta.FORMAT!=='BARAPP_OPERATIONAL_TEMPLATE_V2')errors.push('Format template lama atau tidak dikenali. Unduh template operasional terbaru.');
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(meta.TEMPLATE_ID||''))errors.push('ID template tidak valid. Unduh ulang template.');
+  if(String(meta.DIVISION_ID||'')!==String(CL.division))errors.push('Template dibuat untuk divisi berbeda.');
+  if(String(meta.TARGET_DATE||'')!==String(CL.date))errors.push('Tanggal template berbeda dari tanggal closing yang dipilih.');
+  if(String(meta.OUTLET_ID||'')!==String(clDivision(CL.division)?.outlet_id||''))errors.push('Template berasal dari outlet berbeda.');
+  if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))errors.push('Closing tanggal ini final atau memerlukan rekonsiliasi. Import ditolak.');
+  if(!CG.ready||!INV.ready)throw new Error(CG.err||INV.err||'Master operasional belum berhasil dimuat.');
+  const c=opTCatalog(),mapped=opTMapRows(ws),expenseOptions=opTExpenseOptions(ws);
+  const byKey=new Map(mapped.map(x=>[x.section+':'+x.id,x]));
+  if(byKey.size!==mapped.length)errors.push('Metadata template berisi ID duplikat.');
+  const requiredSections={
+   STOCK:c.items.map(x=>({id:String(x.id),name:String(x.name),type:x.is_supply===true?'supply':'material',unit:String(x.base_unit||'UNIT')})),
+   WIP:c.wips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
+   SALES:c.menus.map(x=>({id:String(x.id),name:String(x.name),type:'menu',unit:''})),
+   RETURNS:c.returns.map(x=>({id:String(x.receipt.id),name:String(x.item?.name||x.receipt.item_id),type:'return',unit:String(x.item?.base_unit||'UNIT')}))
+  };
+  for(const sec of Object.keys(requiredSections)){
+   const actual=mapped.filter(x=>x.section===sec),expected=requiredSections[sec];
+   if(actual.length!==expected.length||!opTSameSet(actual.map(x=>x.id+':'+x.type),expected.map(x=>x.id+':'+x.type)))errors.push(sec+': daftar master atau transaksi retur berubah. Unduh template baru.');
+   actual.forEach(x=>{
+    const ex=expected.find(y=>y.id===x.id);
+    if(!ex||x.name!==ex.name||x.type!==ex.type||x.unit!==ex.unit)errors.push(sec+' baris '+x.row+': nama, jenis, atau satuan tidak sesuai master terbaru.');
+   });
+  }
+  const p={daily_so:[],sales:[],stock_in:[],opening_wip:[],stock_out:[],production:[],supplies:[],stock_returns:[],daily_so_notes:'',sales_notes:'',production_notes:'',supplies_notes:''};
+  const globalNote=String(ws['B4']?.v??'').trim();
+  if(globalNote.length>500)errors.push('Catatan umum maksimal 500 karakter.');
+  p.daily_so_notes=globalNote;p.sales_notes=globalNote;p.production_notes=globalNote;p.supplies_notes=globalNote;
+  const dailyRows=[],supplyRows=[],stockSeen=new Set();let dailyTouched=false,supplyTouched=false;
+  mapped.filter(x=>x.section==='STOCK').forEach(x=>{
+   const row=x.row,name=String(ws['A'+row]?.v??'').trim(),type=String(ws['B'+row]?.v??'').trim(),unit=String(ws['C'+row]?.v??'').trim();
+   const item=(INV.items||[]).find(y=>String(y.id)===x.id);
+   if(!item||item.active!==true||String(item.division_id)!==String(CL.division)||String(item.name)!==x.name||name!==x.name) {errors.push('STOCK baris '+row+': item berubah, tidak aktif, atau bukan milik divisi ini.');return}
+   const expectedType=item.is_supply===true?'Supplies':'Item';
+   if(type!==expectedType)errors.push('STOCK baris '+row+': Jenis Master tidak sesuai master Barapp.');
+   const unitOption=[{unit:item.base_unit,factor:1},...(Array.isArray(item.conversions)?item.conversions:[])].find(cv=>String(cv.unit||'').trim().toLowerCase()===unit.toLowerCase()&&Number(cv.factor||0)>0);
+   if(!unitOption)errors.push('STOCK baris '+row+': Satuan "'+unit+'" tidak tersedia untuk item ini.');
+   const factor=Number(unitOption?.factor||1);
+   const qtyIn=opTNum(ws['D'+row]?.v),invoice=opTNum(ws['E'+row]?.v),actual=opTNum(ws['F'+row]?.v),note=String(ws['G'+row]?.v??'').trim();
+   if(!opTBlank(ws['D'+row]?.v)){
+    if(qtyIn===null||!Number.isFinite(qtyIn)||qtyIn<0)errors.push('STOCK baris '+row+': Barang Masuk harus angka 0 atau lebih.');
+    else if(qtyIn>0&&unitOption){
+     if(stockSeen.has(x.id))errors.push('Barang Masuk: item yang sama muncul lebih dari sekali.');else{stockSeen.add(x.id);if(invoice!==null&&(!Number.isFinite(invoice)||invoice<0))errors.push('STOCK baris '+row+': total invoice harus 0 atau lebih.');else p.stock_in.push({item_id:x.id,qty:qtyIn,unit:unit,invoice_total:invoice===null?null:invoice,notes:note})}
+    }
+   }else if(!opTBlank(ws['E'+row]?.v))errors.push('STOCK baris '+row+': Total Invoice harus kosong jika Barang Masuk tidak diisi.');
+   if(!opTBlank(ws['F'+row]?.v)){
+    if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('STOCK baris '+row+': Stok Fisik harus angka 0 atau lebih.');
+    else if(item.is_supply===true){supplyTouched=true;supplyRows.push({item_id:x.id,qty:actual*factor,actual_qty_base:actual*factor})}
+    else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'material',qty:actual*factor})}
+   }
+  });
+  if(dailyTouched){
+   if(!c.dailyOn)errors.push('Daily SO tidak aktif untuk divisi ini, tetapi kolom Stok Fisik ITEM diisi.');
+   const expected=c.dailyMaterials.map(x=>String(x.id)),got=dailyRows.filter(x=>x.item_type==='material').map(x=>String(x.item_id));
+   if(!opTSameSet(got,expected))errors.push('Daily SO: jika Stok Fisik ITEM diisi, isi semua ITEM aktif non-Supplies termasuk angka 0.');
+  }
+  if(supplyTouched){
+   if(!c.suppliesOn)errors.push('Modul SUPPLIES tidak aktif untuk divisi ini.');
+   const expected=c.supplies.map(x=>String(x.id)),got=supplyRows.map(x=>String(x.item_id));
+   if(!opTSameSet(got,expected))errors.push('SUPPLIES: jika Stok Fisik supplies diisi, isi semua supplies aktif termasuk angka 0.');
+   p.supplies=supplyRows;
+  }
+  if(dailyTouched)p.daily_so=dailyRows;
+  mapped.filter(x=>x.section==='WIP').forEach(x=>{
+   const r=x.row,w=(CG.wips||[]).find(y=>String(y.id)===x.id);
+   const name=String(ws['A'+r]?.v??'').trim(),unit=String(ws['B'+r]?.v??'').trim();
+   if(!w||w.active!==true||String(w.division_id)!==String(CL.division)||name!==x.name||unit!==String(w.yield_unit||'UNIT')){errors.push('WIP baris '+r+': WIP atau satuan hasil tidak cocok dengan master.');return}
+   const opening=opTNum(ws['C'+r]?.v),produced=opTNum(ws['D'+r]?.v),actual=opTNum(ws['E'+r]?.v),note=String(ws['F'+r]?.v??'').trim(),yieldQty=Number(w.yield_qty||0);
+   if(!opTBlank(ws['C'+r]?.v)){if(opening===null||!Number.isFinite(opening)||opening<0)errors.push('WIP baris '+r+': Stok Awal harus angka 0 atau lebih.');else if(opening>0)p.opening_wip.push({wip_id:x.id,qty:opening,notes:note||globalNote})}
+   if(!opTBlank(ws['D'+r]?.v)){if(produced===null||!Number.isFinite(produced)||produced<0)errors.push('WIP baris '+r+': Produksi Aktual harus angka 0 atau lebih.');else if(produced>0){if(!(yieldQty>0))errors.push('WIP baris '+r+': hasil per batch di master tidak valid.');else{const batches=produced/yieldQty,round=Math.round(batches);if(Math.abs(batches-round)>1e-8)errors.push('WIP baris '+r+': Produksi Aktual harus kelipatan '+yieldQty+' '+unit+' per batch.');else p.production.push({wip_id:x.id,batches:round})}}}
+   if(!opTBlank(ws['E'+r]?.v)){if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('WIP baris '+r+': Stok Fisik harus angka 0 atau lebih.');else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'wip',qty:actual})}}
+  });
+  if(dailyTouched){
+   const expected=c.dailyMaterials.map(x=>String(x.id)).concat(c.dailyWips.map(x=>String(x.id)));
+   const got=dailyRows.map(x=>String(x.item_id));
+   if(!c.dailyOn)errors.push('Daily SO tidak aktif untuk divisi ini, tetapi kolom Stok Fisik diisi.');
+   if(!opTSameSet(got,expected))errors.push('Daily SO: jika Stok Fisik WIP diisi, isi semua ITEM dan WIP aktif dalam daftar Daily SO, termasuk angka 0.');
+   p.daily_so=dailyRows;
+  }
+  mapped.filter(x=>x.section==='SALES').forEach(x=>{
+   const r=x.row,menu=(CG.menus||[]).find(y=>String(y.id)===x.id),name=String(ws['A'+r]?.v??'').trim(),q=opTNum(ws['B'+r]?.v),price=opTNum(ws['C'+r]?.v);
+   if(!menu||menu.active!==true||String(menu.division_id)!==String(CL.division)||name!==x.name){errors.push('SALES baris '+r+': menu berubah, tidak aktif, atau bukan milik divisi ini.');return}
+   if(!opTBlank(ws['B'+r]?.v)){if(q===null||!Number.isFinite(q)||q<=0)errors.push('SALES baris '+r+': Qty Terjual harus lebih dari 0.');else if(price!==null&&(!Number.isFinite(price)||price<0))errors.push('SALES baris '+r+': Harga Jual harus 0 atau lebih.');else p.sales.push({menu_id:x.id,qty:q,selling_price:price===null?null:price})}
+   else if(!opTBlank(ws['C'+r]?.v))errors.push('SALES baris '+r+': Harga Jual hanya boleh diisi jika Qty Terjual terisi.');
+  });
+  const options=opTExpenseOptions(ws),optionByLabel=new Map(options.map(x=>[x.label,x])),seenExpense=new Set();
+  const mappedExpenseRowStart=Number(ws['AC'+1]?.v||0),expenseStart=Number(ws['AD'+1]?.v||0),expenseLast=Number(ws['AE'+1]?.v||0);
+  if(!Number.isInteger(expenseStart)||!Number.isInteger(expenseLast)||expenseStart<1||expenseLast<expenseStart)errors.push('Rentang baris Pengeluaran pada metadata tidak valid.');
+  else for(let r=expenseStart;r<=expenseLast;r++){
+   const label=String(ws['A'+r]?.v??'').trim(),qtyRaw=ws['D'+r]?.v,cat=String(ws['E'+r]?.v??'').trim(),targetName=String(ws['F'+r]?.v??'').trim(),notes=String(ws['G'+r]?.v??'').trim();
+   if(!label&&opTBlank(qtyRaw)&&!cat&&!targetName&&!notes)continue;
+   if(!label){errors.push('PENGELUARAN baris '+r+': pilih Nama Barang/WIP.');continue}
+   const opt=optionByLabel.get(label);if(!opt){errors.push('PENGELUARAN baris '+r+': barang tidak dikenal. Pilih dari dropdown.');continue}
+   if(opTBlank(qtyRaw)){errors.push('PENGELUARAN baris '+r+': Jumlah wajib diisi.');continue}
+   const q=opTNum(qtyRaw);if(q===null||!Number.isFinite(q)||q<=0){errors.push('PENGELUARAN baris '+r+': jumlah harus lebih dari 0.');continue}
+   if(!c.categories.includes(cat)){errors.push('PENGELUARAN baris '+r+': kategori tidak valid.');continue}
+   const key=opt.rawType+':'+opt.id+':'+cat;if(seenExpense.has(key)){errors.push('PENGELUARAN: item dan kategori yang sama hanya boleh sekali dalam satu template; gabungkan jumlahnya.');continue}seenExpense.add(key);
+   let target=null;
+   if(cat==='Move'){const dest=c.divisions.filter(d=>String(d.name||'').trim().toLocaleLowerCase()===targetName.toLocaleLowerCase());if(dest.length!==1){errors.push('PENGELUARAN baris '+r+': TUJUAN wajib dipilih dari dropdown untuk kategori Move.');continue}target=dest[0].id}
+   else if(targetName){errors.push('PENGELUARAN baris '+r+': TUJUAN hanya boleh diisi untuk Move.');continue}
+   if(opt.rawType==='wip'){
+    const w=(CG.wips||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
+    if(!w||String(w.yield_unit||'').toLowerCase()!==opt.unit.toLowerCase()){errors.push('PENGELUARAN baris '+r+': WIP/satuan tidak sesuai master.');continue}
+    p.stock_out.push({item_type:'wip',item_id:null,wip_id:opt.id,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
+   }else{
+    const it=(INV.items||[]).find(y=>String(y.id)===opt.id&&y.active===true&&String(y.division_id)===String(CL.division));
+    const cv=it&&[{unit:it.base_unit,factor:1},...(Array.isArray(it.conversions)?it.conversions:[])].find(z=>String(z.unit||'').trim().toLowerCase()===opt.unit.toLowerCase()&&Number(z.factor||0)>0);
+    if(!it||!cv){errors.push('PENGELUARAN baris '+r+': item/satuan tidak sesuai master.');continue}
+    p.stock_out.push({item_type:'material',item_id:opt.id,wip_id:null,qty:q,unit:opt.unit,category:cat,target_division_id:target,notes:notes||null});
+   }
+  }
+  const returnRows=mapped.filter(x=>x.section==='RETURNS'),seenReturn=new Set();
+  returnRows.forEach(x=>{
+   const r=x.row,qty=opTNum(ws['E'+r]?.v),reason=String(ws['F'+r]?.v??'').trim();
+   if(opTBlank(ws['E'+r]?.v))return;
+   if(qty===null||!Number.isFinite(qty)||qty<=0){errors.push('RETUR baris '+r+': Qty Retur harus lebih dari 0.');return}
+   if(seenReturn.has(x.id)){errors.push('RETUR: transaksi Barang Masuk yang sama dipilih lebih dari sekali.');return}seenReturn.add(x.id);
+   const receipt=(INV.ins||[]).find(y=>String(y.id)===x.id&&String(y.division_id)===String(CL.division)&&y.status==='posted');
+   const returned=(INV.rets||[]).filter(y=>String(y.stock_in_id)===x.id&&y.status==='posted').reduce((a,y)=>a+Number(y.qty_base||0),0);
+   const remain=receipt?Number(receipt.qty_base||0)-returned:0;
+   if(!receipt||qty>remain+1e-8||Math.abs(remain-x.remaining)>1e-6){errors.push('RETUR baris '+r+': receipt tidak valid atau sisa retur sudah berubah. Unduh ulang template.');return}
+   p.stock_returns.push({stock_in_id:x.id,qty,reason:reason||null});
+  });
+  if(p.daily_so.length>1000||p.sales.length>200||p.stock_in.length>1000||p.opening_wip.length>500||p.stock_out.length>1000||p.production.length>200||p.supplies.length>1000||p.stock_returns.length>1000)errors.push('Jumlah baris transaksi melebihi batas impor salah satu bagian.');
+  if(!p.daily_so.length&&!p.sales.length&&!p.stock_in.length&&!p.opening_wip.length&&!p.stock_out.length&&!p.production.length&&!p.supplies.length&&!p.stock_returns.length)errors.push('Tidak ada jumlah yang diisi untuk diimpor.');
+  errors.push(...opTPermissions(p),...opTConflictErrors(p,c));
+  const counts=[
+   ['Stock opname ITEM',p.daily_so.filter(x=>x.item_type==='material').length,'jumlah akhir; satuan dikonversi dari master'],
+   ['Daily SO WIP',p.daily_so.filter(x=>x.item_type==='wip').length,'stok fisik akhir WIP'],
+   ['Barang Masuk',p.stock_in.length,'baris dengan qty masuk lebih dari 0'],
+   ['Retur',p.stock_returns.length,'retur supplier yang sudah divalidasi'],
+   ['Pengeluaran',p.stock_out.length,'baris pengeluaran yang valid'],
+   ['Penjualan Menu',p.sales.length,'menu yang terjual'],
+   ['Produksi WIP',p.production.length,'produksi aktual dikonversi menjadi batch'],
+   ['Stok Awal WIP',p.opening_wip.length,'stok awal tanpa pemakaian resep'],
+   ['SUPPLIES',p.supplies.length,'stok fisik supplies']
+  ];
+  CL.operationalTemplateDraft={templateId:meta.TEMPLATE_ID||'',payload:p,errors:[...new Set(errors)],counts,fileName:file.name,serverError:'',busy:false};opTRenderPreview();
+ }catch(e){CL.operationalTemplateDraft={templateId:'',payload:null,errors:['Gagal membaca template: '+String(e?.message||e)],counts:[],fileName:file.name,serverError:'',busy:false};opTRenderPreview()}
 }
-function clCancelDailySOImport(){CL.pendingDailySOImport=null;closeM()}
+function opTRenderPreview(){
+ const d=CL.operationalTemplateDraft;if(!d)return;
+ const errors=d.errors||[],summary=(d.counts||[]).map(x=>'<tr><td style="padding:7px;border-bottom:1px solid var(--line)">'+esc(x[0])+'</td><td style="padding:7px;text-align:right;border-bottom:1px solid var(--line)"><b>'+x[1]+'</b></td><td style="padding:7px;color:var(--mu);border-bottom:1px solid var(--line)">'+esc(x[2])+'</td></tr>').join('');
+ const errHtml=errors.length?'<div class="cl-callout" style="border-color:#c55"><b>Belum bisa diimpor ('+errors.length+' masalah)</b><ul style="margin:8px 0 0;padding-left:20px">'+errors.slice(0,25).map(x=>'<li>'+esc(x)+'</li>').join('')+(errors.length>25?'<li>Dan '+(errors.length-25)+' masalah lainnya.</li>':'')+'</ul></div>':'<div class="cl-callout"><b>Validasi awal lolos</b><p>Belum ada data disimpan. Supabase akan memvalidasi ulang semua bagian secara atomik.</p></div>';
+ const server=d.serverError?'<div class="cl-callout"><b>Impor tidak disimpan</b><p>'+esc(d.serverError)+'</p></div>':'';
+ modal('<h3>Preview Import Template Operasional</h3><p class="mu"><b>File:</b> '+esc(d.fileName||'File Excel')+'<br><b>Divisi:</b> '+esc(clDivision(CL.division)?.name||'Divisi')+'<br><b>Tanggal:</b> '+esc(CL.date)+'<br>Semua bagian diperiksa sebelum konfirmasi. Jika satu bagian gagal, seluruh impor dibatalkan.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:7px">Bagian</th><th style="text-align:right;padding:7px">Baris</th><th style="text-align:left;padding:7px">Keterangan</th></tr></thead><tbody>'+summary+'</tbody></table></div>'+errHtml+server+'<div class="btns" style="margin-top:14px"><button type="button" class="btn s" onclick="window.__clOpenOperationalTemplate()">Kembali</button><button type="button" class="btn" '+(errors.length||d.busy||!d.payload?'disabled':'')+' onclick="window.__clConfirmOperationalImport()">'+(d.busy?'Memproses…':'Konfirmasi & Import Semua')</button></div>');
+}
+function opTFriendlyError(e){
+ const m=String(e?.message||e||'Gagal import.'),u=m.toUpperCase(),map=[
+ ['BARAPP_TEMPLATE_CLOSING_LOCKED','Tanggal closing sudah disetujui atau memerlukan rekonsiliasi. Tidak ada data disimpan.'],
+ ['BARAPP_TEMPLATE_EXISTING_DAILY_SO','Daily SO tanggal ini sudah ada. Kosongkan bagian stok fisik ITEM/WIP.'],
+ ['BARAPP_TEMPLATE_EXISTING_SUPPLIES','Daily SO Supplies tanggal ini sudah ada. Kosongkan stok fisik SUPPLIES.'],
+ ['BARAPP_TEMPLATE_EXISTING_SALES','Sudah ada Penjualan Menu pada tanggal ini. Kosongkan bagian Qty Terjual.'],
+ ['BARAPP_TEMPLATE_EXISTING_STOCK_IN','Sudah ada Barang Masuk pada tanggal ini. Kosongkan bagian Barang Masuk.'],
+ ['BARAPP_TEMPLATE_EXISTING_EXPENSES','Sudah ada Pengeluaran pada tanggal ini. Kosongkan bagian Pengeluaran.'],
+ ['BARAPP_TEMPLATE_EXISTING_PRODUCTION','Sudah ada Produksi WIP pada tanggal ini. Kosongkan bagian Produksi Aktual.'],
+ ['BARAPP_TEMPLATE_EXISTING_OPENING_WIP','Sudah ada Stok Awal WIP pada tanggal ini. Kosongkan bagian Stok Awal WIP.'],
+ ['BARAPP_TEMPLATE_EXISTING_RETURNS','Receipt ini sudah diretur pada tanggal ini. Kosongkan baris retur tersebut.'],
+ ['BARAPP_TEMPLATE_INVALID_UNIT','Satuan tidak cocok dengan konversi Master Barang. Unduh template terbaru.'],
+ ['BARAPP_TEMPLATE_RETURN_EXCEEDS_REMAINING','Qty retur melebihi sisa yang masih dapat diretur. Unduh template baru dan periksa ulang.'],
+ ['BARAPP_TEMPLATE_INVALID_RETURN_RECEIPT','ID Barang Masuk untuk retur tidak valid atau tidak tersedia.'],
+ ['BARAPP_TEMPLATE_RETURNS_FORBIDDEN','Akun tidak memiliki izin untuk input retur.'],
+ ['BARAPP_TEMPLATE_TARGET_CLOSING_LOCKED','Divisi tujuan Move sudah closing final pada tanggal ini.'],
+ ['BARAPP_TEMPLATE_INVALID_MOVE_TARGET','Tujuan Move tidak valid atau di luar outlet yang sama.'],
+ ['BARAPP_TEMPLATE_DUPLICATE_EXPENSE_ITEM','Item dan kategori Pengeluaran sama muncul lebih dari sekali. Gabungkan kuantitas.'],
+ ['BARAPP_TEMPLATE_DAILY_SO_FORBIDDEN','Akun tidak memiliki izin untuk menyimpan Daily SO.'],
+ ['BARAPP_TEMPLATE_SALES_FORBIDDEN','Akun tidak memiliki izin untuk input Penjualan.'],
+ ['BARAPP_TEMPLATE_PRODUCTION_FORBIDDEN','Akun tidak memiliki izin untuk input Produksi WIP.'],
+ ['BARAPP_TEMPLATE_SUPPLIES_FORBIDDEN','Akun tidak memiliki izin untuk menyimpan SUPPLIES.'],
+ ['BARAPP_TEMPLATE_STOCK_IN_FORBIDDEN','Akun tidak memiliki izin Barang Masuk.'],
+ ['BARAPP_TEMPLATE_EXPENSES_FORBIDDEN','Akun tidak memiliki izin Pengeluaran.'],
+ ['BARAPP_TEMPLATE_EMPTY_IMPORT','Tidak ada nilai transaksi yang diisi.'],
+ ['BARAPP_TEMPLATE_TOO_MANY_ROWS','Jumlah baris melebihi batas impor salah satu bagian.'],
+ ['BARAPP_TEMPLATE_INVALID_DATE','Tanggal target tidak valid atau berada di masa depan.'],
+ ['BARAPP_TEMPLATE_INVALID_PAYLOAD','Payload template tidak valid. Unduh ulang template.'],
+ ['BARAPP_TEMPLATE_INVALID_SUPPLIES_ROW','Baris SUPPLIES tidak valid. Periksa jumlah aktual.'],
+ ['COGS_SO_ALREADY_SUBMITTED','Daily SO sudah tersimpan. Impor dibatalkan seluruhnya.'],
+ ['COGS_SO_MUST_COUNT_ALL_ITEMS','Daftar item Daily SO tidak lengkap. Impor dibatalkan seluruhnya.'],
+ ['SUPPLIES_SO_ALREADY_SUBMITTED','Daily SO SUPPLIES sudah tersimpan. Impor dibatalkan seluruhnya.']
+ ];
+ for(const [key,msg] of map)if(u.includes(key))return msg;
+ if(/UNIQUE|DUPLICATE KEY/.test(u))return 'File ini atau payload yang sama sudah pernah berhasil diimpor. Tidak ada perubahan baru.';
+ if(/42501|FORBIDDEN|ACCESS_DENIED|PERMISSION_DENIED/.test(u))return 'Akses tidak mencukupi untuk salah satu modul. Periksa izin akun dan modul divisi.';
+ if(/COGS_|SUPPLIES_|INVALID_STOCK|INVALID_|ITEM_NOT_FOUND/.test(u))return 'Validasi database gagal: '+m+'. Seluruh perubahan dibatalkan.';
+ return m;
+}
+async function opTConfirmImport(){
+ const d=CL.operationalTemplateDraft;if(!d||!d.payload||d.errors?.length||CL.busy||d.busy)return;
+ if(CL.period&&['approved','needs_reconciliation'].includes(CL.period.status))return toast('Tanggal closing sudah final atau terkunci.','warn');
+ if(!confirm('Import semua bagian Template Operasional untuk '+(clDivision(CL.division)?.name||'divisi')+' tanggal '+CL.date+'? Seluruh bagian disimpan atomik; jika satu bagian gagal, seluruh impor dibatalkan.'))return;
+ d.busy=true;CL.busy='operational-template-import';opTRenderPreview();
+ try{
+  const {data,error}=await sb().rpc('barapp_closing_import_operational_template_v2',{p_division_id:CL.division,p_target_date:CL.date,p_template_id:d.templateId,p_payload:d.payload});
+  if(error)throw error;
+  const z=data?.summary||{};CL.operationalTemplateDraft=null;CL.busy='';CL.ready=false;CG.ready=false;INV.ready=false;await load(true);
+  toast('Import berhasil secara atomik. Stock opname '+(z.daily_so||0)+', Barang Masuk '+(z.stock_in||0)+', Retur '+(z.stock_returns||0)+', Pengeluaran '+(z.stock_out||0)+', Sales '+(z.sales||0)+', Produksi WIP '+(z.production||0)+', Stok Awal WIP '+(z.opening_wip||0)+', Supplies '+(z.supplies||0)+'.','ok');
+ }catch(e){d.busy=false;CL.busy='';d.serverError=opTFriendlyError(e);opTRenderPreview()}
+}
+window.__clOpenOperationalTemplate=opTOpenDialog;
+window.__clDownloadOperationalTemplate=opTDownload;
+window.__clPreviewOperationalImport=opTPreview;
+window.__clConfirmOperationalImport=opTConfirmImport;
 
 function view(){
  if(!clCanAccess())return '<div class="card empty">Approval Closing hanya tersedia untuk Developer dan Admin Divisi.</div>';
@@ -271,7 +542,7 @@ function view(){
   return '<div class="card cl-module"><div class="cl-module-head"><div class="cl-status '+tone+'">'+(x.saved&&x.fresh?'✓':x.saved?'!':empty?'○':'•')+'</div><div class="cl-module-info"><b>'+esc(m.name)+'</b><small>'+esc(m.desc)+'</small><span class="cogs-pill '+(tone==='bad'?'bad':'')+'">'+esc(txt)+'</span></div></div><div class="cl-module-foot"><span class="mu">'+n+' transaksi/rekaman</span><div class="cl-actions"><button class="btn o x" onclick="go(\''+m.page+'\')">Detail</button>'+act+'</div></div></div>';
  }).join('');
  const history=CL.history.map(h=>'<tr><td><b>'+esc(h.closing_date)+'</b></td><td><span class="cogs-pill '+(h.status==='approved'?'':'bad')+'">'+esc(h.status==='approved'?'Approved':h.status==='needs_reconciliation'?'Perlu rekonsiliasi':h.status)+'</span></td><td>'+(h.approved_at?esc(new Date(h.approved_at).toLocaleString('id-ID')):'—')+'</td><td><div class="cl-actions"><button class="btn o x cl-history-detail" style="display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;min-width:68px;min-height:34px;position:relative;z-index:2" type="button" onclick="window.__clShowHistoryDetail(\''+esc(h.closing_date)+'\')">Detail</button><button class="ibtn cl-download-row" type="button" onclick="window.__clDownloadClosingExcelForDate(\''+esc(h.closing_date)+'\')" aria-label="Unduh rekap '+esc(h.closing_date)+'" title="Unduh rekap tanggal ini" style="width:34px;height:34px;min-width:34px;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m7 9 5 5 5-5"/><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg></button></div></td></tr>').join('');
- return '<div class="cogs-wrap"><style>.cl-top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0;max-width:100%}.cl-top-actions .btn{white-space:normal;min-width:0;max-width:100%;text-align:center;line-height:1.25;overflow-wrap:anywhere}.cl-filter{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-filter label{min-width:0}.cl-module{padding:14px;margin-bottom:10px}.cl-module-head{display:flex;align-items:flex-start;gap:12px}.cl-status{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;font-size:18px;font-weight:800;background:var(--in);border:1px solid var(--line)}.cl-status.good{color:#167443;background:#e0f4e7;border-color:#8bc9a0}.cl-status.warn{color:#946200;background:#fff2c7;border-color:#e3c45e}.cl-status.bad{color:#bd5549;background:#fde8e5;border-color:#e5a49c}.cl-actions .btn[disabled]{opacity:.78;cursor:not-allowed;background:#e0f4e7;color:#167443;border-color:#8bc9a0}.cl-module-info{min-width:0;flex:1;display:grid;gap:5px}.cl-module-info b{font-size:15px}.cl-module-info small{color:var(--mu);line-height:1.4}.cl-module-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.cl-actions{display:flex;gap:6px;flex-wrap:wrap}.cl-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-summary>div{background:var(--in);border:1px solid var(--line);border-radius:14px;padding:12px}.cl-summary small{display:block;color:var(--mu)}.cl-summary b{display:block;font-size:17px;margin-top:4px}.cl-callout{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--in);margin:12px 0}.cl-callout p{margin:4px 0 0;color:var(--mu);font-size:12px}@media(max-width:520px){.cogs-top:has(>.cl-top-actions){align-items:stretch;flex-direction:column}.cl-top-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px;justify-content:stretch;box-sizing:border-box}.cl-top-actions .btn{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:44px;padding:10px 8px;white-space:normal;overflow-wrap:anywhere;word-break:normal;flex:none}.cl-top-actions .btn:last-child{grid-column:1/-1}.cl-filter{grid-template-columns:1fr}.cl-module-foot{align-items:flex-start}.cl-actions{width:100%}.cl-actions .btn{flex:1}}</style><div class="card"><div class="cogs-top"><div><h3>Approval Closing</h3><p class="mu">Konfirmasi modul operasional yang aktif untuk divisi ini, rekonsiliasi data, lalu setujui snapshot closing harian.</p></div><div class="cl-top-actions"><button class="btn s" onclick="window.__clExportDailySOTemplate()">Export Template Daily SO</button><button class="btn s" onclick="window.__clImportDailySO()">Import Daily SO</button><button class="btn s" onclick="window.__clReload()">Muat ulang</button></div></div><div class="cl-filter"><label>Divisi<select onchange="window.__clFilter(\'division\',this.value)">'+divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(CL.division)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal closing<input type="date" max="'+clToday()+'" value="'+esc(CL.date)+'" onchange="window.__clFilter(\'date\',this.value)"></label></div><div class="cl-summary"><div><small>Divisi / periode</small><b>'+esc(divName)+'</b><small>'+esc(CL.date)+'</small></div><div><small>Status closing</small><b>'+esc(label)+'</b><small>'+activeModules.filter(m=>{const x=state(m);return x.saved&&x.fresh}).length+' / '+activeModules.length+' modul terkonfirmasi</small></div></div><div class="cl-callout"><b>Aturan closing</b><p>Modul kosong harus dikonfirmasi. Data yang berubah setelah konfirmasi wajib dikonfirmasi ulang. Approval memvalidasi snapshot modul aktif dan menghitung ulang saldo Daily SO bila modul itu aktif.</p></div></div><div class="card"><h3>Checklist modul</h3>'+cards+'</div><div class="card"><h3>Ringkasan sebelum approval</h3><p class="mu">Semua modul aktif harus dikonfirmasi dengan snapshot yang masih sama.</p><div class="cl-summary"><div><small>Rekaman Daily SO</small><b>'+(clModuleOn(CL.division,'cogs_daily_so')?count('daily_so',CL.division,CL.date):'Tidak digunakan')+'</b></div><div><small>Validasi</small><b>'+(approved?'Final':ready?'Siap diperiksa':'Belum lengkap')+'</b></div></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="window.__clReload()" '+(CL.busy?'disabled':'')+'>Validasi & muat ulang</button><button class="btn" onclick="window.__clApprove()" '+(!ready||approved||CL.busy?'disabled':'')+'>'+(CL.busy==='approve'?'Memproses…':approved?'Closing Approved':'Approval Closing')+'</button></div>'+(approved?'<p class="mu">Disetujui pada '+esc(new Date(CL.period.approved_at).toLocaleString('id-ID'))+'. Perubahan transaksi berikutnya harus melalui rekonsiliasi.</p>':'')+'</div><div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px"><h3 style="margin:0">Riwayat closing divisi</h3></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal</th><th>Status</th><th>Waktu approval</th><th>Detail / Unduh</th></tr></thead><tbody>'+(history||'<tr><td colspan="4" class="mu">Belum ada riwayat closing.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap"><style>.cl-top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0;max-width:100%}.cl-top-actions .btn{white-space:normal;min-width:0;max-width:100%;text-align:center;line-height:1.25;overflow-wrap:anywhere}.cl-filter{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-filter label{min-width:0}.cl-module{padding:14px;margin-bottom:10px}.cl-module-head{display:flex;align-items:flex-start;gap:12px}.cl-status{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:11px;font-size:18px;font-weight:800;background:var(--in);border:1px solid var(--line)}.cl-status.good{color:#167443;background:#e0f4e7;border-color:#8bc9a0}.cl-status.warn{color:#946200;background:#fff2c7;border-color:#e3c45e}.cl-status.bad{color:#bd5549;background:#fde8e5;border-color:#e5a49c}.cl-actions .btn[disabled]{opacity:.78;cursor:not-allowed;background:#e0f4e7;color:#167443;border-color:#8bc9a0}.cl-module-info{min-width:0;flex:1;display:grid;gap:5px}.cl-module-info b{font-size:15px}.cl-module-info small{color:var(--mu);line-height:1.4}.cl-module-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.cl-actions{display:flex;gap:6px;flex-wrap:wrap}.cl-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cl-summary>div{background:var(--in);border:1px solid var(--line);border-radius:14px;padding:12px}.cl-summary small{display:block;color:var(--mu)}.cl-summary b{display:block;font-size:17px;margin-top:4px}.cl-callout{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--in);margin:12px 0}.cl-callout p{margin:4px 0 0;color:var(--mu);font-size:12px}@media(max-width:520px){.cogs-top:has(>.cl-top-actions){align-items:stretch;flex-direction:column}.cl-top-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px;justify-content:stretch;box-sizing:border-box}.cl-top-actions .btn{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:44px;padding:10px 8px;white-space:normal;overflow-wrap:anywhere;word-break:normal;flex:none}.cl-top-actions .btn:last-child{grid-column:1/-1}.cl-filter{grid-template-columns:1fr}.cl-module-foot{align-items:flex-start}.cl-actions{width:100%}.cl-actions .btn{flex:1}}</style><div class="card"><div class="cogs-top"><div><h3>Approval Closing</h3><p class="mu">Konfirmasi modul operasional yang aktif untuk divisi ini, rekonsiliasi data, lalu setujui snapshot closing harian.</p></div><div class="cl-top-actions"><button class="btn s" onclick="window.__clOpenOperationalTemplate()">Template Operasional (Excel)</button><button class="btn s" onclick="window.__clReload()">Muat ulang</button></div></div><div class="cl-filter"><label>Divisi<select onchange="window.__clFilter(\'division\',this.value)">'+divs.map(d=>'<option value="'+d.id+'" '+(String(d.id)===String(CL.division)?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></label><label>Tanggal closing<input type="date" max="'+clToday()+'" value="'+esc(CL.date)+'" onchange="window.__clFilter(\'date\',this.value)"></label></div><div class="cl-summary"><div><small>Divisi / periode</small><b>'+esc(divName)+'</b><small>'+esc(CL.date)+'</small></div><div><small>Status closing</small><b>'+esc(label)+'</b><small>'+activeModules.filter(m=>{const x=state(m);return x.saved&&x.fresh}).length+' / '+activeModules.length+' modul terkonfirmasi</small></div></div><div class="cl-callout"><b>Aturan closing</b><p>Modul kosong harus dikonfirmasi. Data yang berubah setelah konfirmasi wajib dikonfirmasi ulang. Approval memvalidasi snapshot modul aktif dan menghitung ulang saldo Daily SO bila modul itu aktif.</p></div></div><div class="card"><h3>Checklist modul</h3>'+cards+'</div><div class="card"><h3>Ringkasan sebelum approval</h3><p class="mu">Semua modul aktif harus dikonfirmasi dengan snapshot yang masih sama.</p><div class="cl-summary"><div><small>Rekaman Daily SO</small><b>'+(clModuleOn(CL.division,'cogs_daily_so')?count('daily_so',CL.division,CL.date):'Tidak digunakan')+'</b></div><div><small>Validasi</small><b>'+(approved?'Final':ready?'Siap diperiksa':'Belum lengkap')+'</b></div></div><div class="btns" style="margin-top:14px"><button class="btn s" onclick="window.__clReload()" '+(CL.busy?'disabled':'')+'>Validasi & muat ulang</button><button class="btn" onclick="window.__clApprove()" '+(!ready||approved||CL.busy?'disabled':'')+'>'+(CL.busy==='approve'?'Memproses…':approved?'Closing Approved':'Approval Closing')+'</button></div>'+(approved?'<p class="mu">Disetujui pada '+esc(new Date(CL.period.approved_at).toLocaleString('id-ID'))+'. Perubahan transaksi berikutnya harus melalui rekonsiliasi.</p>':'')+'</div><div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px"><h3 style="margin:0">Riwayat closing divisi</h3></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal</th><th>Status</th><th>Waktu approval</th><th>Detail / Unduh</th></tr></thead><tbody>'+(history||'<tr><td colspan="4" class="mu">Belum ada riwayat closing.</td></tr>')+'</tbody></table></div></div></div>';
 }
 // Dashboard Operasional sengaja dibiarkan kosong untuk pembangunan ulang; notifikasi utama tetap ditampilkan oleh shell aplikasi.
 window.__clShowHistoryDetail=async(date)=>{
