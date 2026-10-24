@@ -61,6 +61,11 @@ assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-templ
 assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
 assert.equal(closingSource.includes('Stok Awal WIP (Qty)'), false, 'Operational template must not request opening WIP stock');
 assert.equal(closingSource.includes('returnStart'), false, 'Operational template export must not reference the removed supplier returns section');
+assert.ok(closingSource.includes("opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v)"), 'Blank stock physical quantities default to zero when the section is used');
+assert.ok(closingSource.includes("opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v)"), 'Blank WIP physical quantities default to zero when Daily SO is used');
+assert.ok(closingSource.includes("const dailyPhysicalTouched=mapped.some"), 'Daily SO zero-default is conditional on a physical-count entry');
+assert.ok(closingSource.includes("const supplyPhysicalTouched=mapped.some"), 'Supplies zero-default is conditional on a supplies-count entry');
+
 assert.equal(closingSource.includes('RETUR KE SUPPLIER'), false, 'Operational template must not expose supplier returns');
 assert.equal(closingSource.includes("section==='RETURNS'"), false, 'Operational template must not parse supplier return rows');
 assert.ok(closingSource.includes("['Nama WIP','Satuan Hasil','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']"), 'WIP template should contain production and physical ending stock only');
