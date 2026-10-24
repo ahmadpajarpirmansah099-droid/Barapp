@@ -284,7 +284,7 @@ async function opTDownload(){
   const buf=await book.xlsx.writeBuffer(),blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BARAPP_Template_Daily_SO_'+String(clDivision(CL.division)?.name||'Divisi').replace(/[^a-z0-9]+/gi,'-')+'-'+CL.date+'.xlsx';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
   const missing=rowMeta.filter(x=>x.section==='STOCK'&&x.missing).map(x=>x.name+' → '+(opTPreferredUnit(c.items.find(i=>String(i.id)===x.id))?.requested||''));
-  toast(missing.length?'Template Daily SO diunduh; default satuan belum tersedia di master untuk '+missing.join(', ')+'.':'Template Daily SO berhasil diunduh. Isi hanya kolom Stok Fisik Akhir.','ok');
+  toast('Telah Di Unduh, DAGOAN!','ok');
  }catch(e){toast('Gagal membuat template operasional: '+String(e?.message||e),'err')}
 }
 function opTReadMeta(ws){
