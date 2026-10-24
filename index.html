@@ -1240,6 +1240,26 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 }
 </style>
 
+/* Extra-tight spacing requested after mobile review. */
+<style id="daily-so-tight-spacing">
+@media(max-width:600px){
+ .daily-so-page .ops-daily-so-table{border-spacing:0 4px!important}
+ .daily-so-page .ops-daily-so-table tbody tr{gap:5px 8px!important;padding:8px!important;border-radius:12px!important}
+ .daily-so-page .ops-daily-so-table tbody td{font-size:11px!important;line-height:1.3}
+ .daily-so-page .ops-daily-so-table tbody td:first-child{padding-bottom:0!important}
+ .daily-so-page .ops-daily-so-table tbody td:first-child b{font-size:13px!important;line-height:1.25!important;margin-top:1px!important}
+ .daily-so-page .ops-daily-so-table tbody td:first-child small{font-size:9px!important;line-height:1.2}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(2),.daily-so-page .ops-daily-so-table tbody td:nth-child(3){gap:3px!important}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(2)::before,.daily-so-page .ops-daily-so-table tbody td:nth-child(3)::before{font-size:9px!important;line-height:1.2}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(2) input,.daily-so-page .ops-daily-so-table tbody td:nth-child(3) select{height:35px!important;min-height:35px!important;padding:5px 8px!important;border-radius:9px!important;font-size:13px!important}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(4){padding-top:5px!important}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(4)::before,.daily-so-page .ops-daily-so-table tbody td:nth-child(5)::before,.daily-so-page .ops-daily-so-table tbody td:nth-child(6)::before{font-size:9px!important}
+ .daily-so-page .ops-daily-so-table tbody td:nth-child(4),.daily-so-page .ops-daily-so-table tbody td:nth-child(5),.daily-so-page .ops-daily-so-table tbody td:nth-child(6){gap:3px!important;line-height:1.25!important}
+ .daily-so-page .daily-so-main-card .cogs-scroll{margin-top:2px!important}
+}
+</style>
+
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
