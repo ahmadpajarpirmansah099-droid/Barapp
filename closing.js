@@ -338,7 +338,10 @@ async function opTPreview(input){
   const globalNote=String(ws['B4']?.v??'').trim();
   if(globalNote.length>500)errors.push('Catatan umum maksimal 500 karakter.');
   p.daily_so_notes=globalNote;p.sales_notes=globalNote;p.production_notes=globalNote;p.supplies_notes=globalNote;
-  const dailyRows=[],supplyRows=[],stockSeen=new Set();let dailyTouched=false,supplyTouched=false;
+  const dailyRows=[],supplyRows=[],stockSeen=new Set();
+  const dailyPhysicalTouched=mapped.some(x=>(x.section==='STOCK'&&x.type==='material'&&!opTBlank(ws['F'+x.row]?.v))||(x.section==='WIP'&&!opTBlank(ws['D'+x.row]?.v)));
+  const supplyPhysicalTouched=mapped.some(x=>x.section==='STOCK'&&x.type==='supply'&&!opTBlank(ws['F'+x.row]?.v));
+  let dailyTouched=dailyPhysicalTouched,supplyTouched=supplyPhysicalTouched;
   mapped.filter(x=>x.section==='STOCK').forEach(x=>{
    const row=x.row,name=String(ws['A'+row]?.v??'').trim(),type=String(ws['B'+row]?.v??'').trim(),unit=String(ws['C'+row]?.v??'').trim();
    const item=(INV.items||[]).find(y=>String(y.id)===x.id);
@@ -348,17 +351,22 @@ async function opTPreview(input){
    const unitOption=[{unit:item.base_unit,factor:1},...(Array.isArray(item.conversions)?item.conversions:[])].find(cv=>String(cv.unit||'').trim().toLowerCase()===unit.toLowerCase()&&Number(cv.factor||0)>0);
    if(!unitOption)errors.push('STOCK baris '+row+': Satuan "'+unit+'" tidak tersedia untuk item ini.');
    const factor=Number(unitOption?.factor||1);
-   const qtyIn=opTNum(ws['D'+row]?.v),invoice=opTNum(ws['E'+row]?.v),actual=opTNum(ws['F'+row]?.v),note=String(ws['G'+row]?.v??'').trim();
+   const qtyIn=opTNum(ws['D'+row]?.v),invoice=opTNum(ws['E'+row]?.v),actual=opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v),note=String(ws['G'+row]?.v??'').trim();
    if(!opTBlank(ws['D'+row]?.v)){
     if(qtyIn===null||!Number.isFinite(qtyIn)||qtyIn<0)errors.push('STOCK baris '+row+': Barang Masuk harus angka 0 atau lebih.');
     else if(qtyIn>0&&unitOption){
      if(stockSeen.has(x.id))errors.push('Barang Masuk: item yang sama muncul lebih dari sekali.');else{stockSeen.add(x.id);if(invoice!==null&&(!Number.isFinite(invoice)||invoice<0))errors.push('STOCK baris '+row+': total invoice harus 0 atau lebih.');else p.stock_in.push({item_id:x.id,qty:qtyIn,unit:unit,invoice_total:invoice===null?null:invoice,notes:note})}
     }
    }else if(!opTBlank(ws['E'+row]?.v))errors.push('STOCK baris '+row+': Total Invoice harus kosong jika Barang Masuk tidak diisi.');
-   if(!opTBlank(ws['F'+row]?.v)){
+   if(!opTBlank(ws['F'+row]?.v)||(item.is_supply===true?supplyPhysicalTouched&&c.suppliesOn:dailyPhysicalTouched&&c.dailyOn)){
     if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('STOCK baris '+row+': Stok Fisik harus angka 0 atau lebih.');
-    else if(item.is_supply===true){supplyTouched=true;supplyRows.push({item_id:x.id,qty:actual*factor,actual_qty_base:actual*factor})}
-    else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'material',qty:actual*factor})}
+    else if(item.is_supply===true){
+     if(c.suppliesOn)supplyRows.push({item_id:x.id,qty:actual*factor,actual_qty_base:actual*factor});
+     else if(!opTBlank(ws['F'+row]?.v))errors.push('STOCK baris '+row+': Modul SUPPLIES tidak aktif untuk divisi ini.');
+    }else{
+     if(c.dailyOn)dailyRows.push({item_id:x.id,item_type:'material',qty:actual*factor});
+     else if(!opTBlank(ws['F'+row]?.v))errors.push('STOCK baris '+row+': Daily SO tidak aktif untuk divisi ini.');
+    }
    }
   });
   if(dailyTouched){
@@ -377,9 +385,9 @@ async function opTPreview(input){
    const r=x.row,w=(CG.wips||[]).find(y=>String(y.id)===x.id);
    const name=String(ws['A'+r]?.v??'').trim(),unit=String(ws['B'+r]?.v??'').trim();
    if(!w||w.active!==true||String(w.division_id)!==String(CL.division)||name!==x.name||unit!==String(w.yield_unit||'UNIT')){errors.push('WIP baris '+r+': WIP atau satuan hasil tidak cocok dengan master.');return}
-    const produced=opTNum(ws['C'+r]?.v),actual=opTNum(ws['D'+r]?.v),yieldQty=Number(w.yield_qty||0);
+    const produced=opTNum(ws['C'+r]?.v),actual=opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v),yieldQty=Number(w.yield_qty||0);
    if(!opTBlank(ws['C'+r]?.v)){if(produced===null||!Number.isFinite(produced)||produced<0)errors.push('WIP baris '+r+': Produksi Aktual harus angka 0 atau lebih.');else if(produced>0){if(!(yieldQty>0))errors.push('WIP baris '+r+': hasil per batch di master tidak valid.');else{const batches=produced/yieldQty,round=Math.round(batches);if(Math.abs(batches-round)>1e-8)errors.push('WIP baris '+r+': Produksi Aktual harus kelipatan '+yieldQty+' '+unit+' per batch.');else p.production.push({wip_id:x.id,batches:round})}}}
-   if(!opTBlank(ws['D'+r]?.v)){if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('WIP baris '+r+': Stok Fisik harus angka 0 atau lebih.');else{dailyTouched=true;dailyRows.push({item_id:x.id,item_type:'wip',qty:actual})}}
+   if(!opTBlank(ws['D'+r]?.v)||(dailyPhysicalTouched&&c.dailyOn)){if(actual===null||!Number.isFinite(actual)||actual<0)errors.push('WIP baris '+r+': Stok Fisik harus angka 0 atau lebih.');else if(c.dailyOn)dailyRows.push({item_id:x.id,item_type:'wip',qty:actual});else if(!opTBlank(ws['D'+r]?.v))errors.push('WIP baris '+r+': Daily SO tidak aktif untuk divisi ini.')}
   });
   if(dailyTouched){
    const expected=c.dailyMaterials.map(x=>String(x.id)).concat(c.dailyWips.map(x=>String(x.id)));
