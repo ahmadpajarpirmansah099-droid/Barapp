@@ -58,8 +58,12 @@ assert.ok(migrationSource.includes('revoke all on function public.barapp_closing
 assert.match(migrationSource, /\$function\$;\s*revoke all on function public\.barapp_closing_import_operational_template_v2/i, 'Function terminator must be complete before permissions are changed');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
 
-assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v6'), 'The app must load the new operational template script version');
-assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
+assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v7'), 'The app must load the auto-refresh and Daily SO template script version');
+assert.equal(closingSource.includes('Template Operasional (Excel)'), false, 'Approval Closing should not contain the operational template button');
+assert.ok(indexSource.includes('window.__clOpenOperationalTemplateFromDailySO()'), 'Daily SO should expose the operational template action');
+assert.ok(closingSource.includes('window.__clOpenOperationalTemplateFromDailySO=opTOpenFromDailySO'), 'Daily SO template opener should be wired to current division/date');
+assert.ok(closingSource.includes('await Promise.all([cgLoad(false),invLoad(false)])'), 'A successful import refreshes COGS and inventory caches');
+assert.ok(closingSource.includes('await opsLoadPosition(false,true)'), 'A successful import refreshes Daily SO stock position when applicable');
 assert.equal(closingSource.includes('Stok Awal WIP (Qty)'), false, 'Operational template must not request opening WIP stock');
 assert.equal(closingSource.includes('returnStart'), false, 'Operational template export must not reference the removed supplier returns section');
 assert.ok(closingSource.includes("opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v)"), 'Blank stock physical quantities default to zero when the section is used');
