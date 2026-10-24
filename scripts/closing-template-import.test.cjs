@@ -60,6 +60,10 @@ assert.ok(migrationSource.includes('grant execute on function public.barapp_clos
 
 assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v3'), 'The app must load the new operational template script version');
 assert.ok(closingSource.includes('Template Operasional (Excel)'), 'Approval UI should expose the single operational-template action');
+assert.equal(closingSource.includes('Stok Awal WIP (Qty)'), false, 'Operational template must not request opening WIP stock');
+assert.equal(closingSource.includes('RETUR KE SUPPLIER'), false, 'Operational template must not expose supplier returns');
+assert.equal(closingSource.includes("section==='RETURNS'"), false, 'Operational template must not parse supplier return rows');
+assert.ok(closingSource.includes("['Nama WIP','Satuan Hasil','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']"), 'WIP template should contain production and physical ending stock only');
 assert.equal(closingSource.includes('clExportDailySOTemplate'), false, 'Removed Daily SO-only template binding must not break registration');
 assert.equal(closingSource.includes('clImportDailySO'), false, 'Removed Daily SO-only importer must not remain referenced');
 assert.ok(closingSource.includes('window.__barappRegisterViews?.({cogs_closing:view})'), 'Closing view registration must remain reachable after function binding');
