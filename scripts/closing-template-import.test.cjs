@@ -35,6 +35,7 @@ for (const marker of [
   assert.ok(closingSource.includes(marker), 'Missing operational template marker: ' + marker);
 }
 
+assert.ok(closingSource.includes("unit:x.is_supply===true?String(x.base_unit||'UNIT'):String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')"), 'Import validates STOCK metadata against the same preferred unit used during export');
 assert.ok(closingSource.includes("'SKM':'CAN'"), 'SKM uses CAN default');
 assert.ok(closingSource.includes("'SKMCOKLAT':'PACK'"), 'SKM Coklat uses PACK default');
 assert.ok(closingSource.includes("'GALONAQUA':'GALON'"), 'Galon Aqua uses GALON default');
