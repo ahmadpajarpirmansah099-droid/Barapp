@@ -1260,6 +1260,32 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 </style>
 
 
+
+<style id="daily-so-wasted-space-fix">
+/* Tighten unused space in Daily SO header, controls, and form on mobile. */
+@media(max-width:600px){
+ .daily-so-page .daily-so-shortcut-grid>.btn:last-child:nth-child(odd){width:100%!important;grid-column:1/-1!important}
+ .daily-so-page .daily-so-main-card .cogs-top{gap:4px!important;margin-bottom:5px!important}
+ .daily-so-page .daily-so-main-card .cogs-top>div:first-child h3{margin:0 0 4px!important}
+ .daily-so-page .daily-so-main-card .cogs-top .mu{margin:0 0 3px!important;line-height:1.35!important}
+ .daily-so-page .daily-so-main-card .cogs-top .btns{gap:5px!important;margin:4px 0!important}
+ .daily-so-page .daily-so-main-card .cogs-top .btns>.btn:first-child,
+ .daily-so-page .daily-so-main-card .cogs-top .btns>.btn:nth-child(2){width:100%!important;max-width:none!important;justify-self:stretch!important;min-height:40px!important;padding:7px 10px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid{gap:5px!important;margin:5px 0!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid label{gap:3px!important;line-height:1.25!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid label>span,
+ .daily-so-page .daily-so-main-card .cogs-formgrid label{margin-bottom:0!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid input,
+ .daily-so-page .daily-so-main-card .cogs-formgrid select{min-height:39px!important;height:39px!important;padding:7px 10px!important}
+ .daily-so-page .daily-so-main-card .cogs-formgrid+.mu{margin:5px 0!important;line-height:1.35!important}
+ .daily-so-page .daily-so-main-card .cogs-scroll{margin-top:2px!important}
+ .daily-so-page .daily-so-main-card label{margin-top:3px!important;margin-bottom:3px!important}
+ .daily-so-page .daily-so-main-card>p.mu{margin:5px 0!important;line-height:1.35!important}
+ .daily-so-page .daily-so-shortcuts>.mu{margin-bottom:6px!important}
+ .daily-so-page .daily-so-shortcut-grid{gap:5px!important}
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
