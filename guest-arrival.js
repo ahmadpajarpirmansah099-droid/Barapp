@@ -264,10 +264,14 @@ const gaCss = String.raw`
 #app.in .ga-wrap .ga-dashboard-controls { margin:8px 0 10px; }
 #app.in .ga-wrap .ga-dashboard-actions { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:8px; align-items:end; }
 #app.in .ga-wrap .ga-dashboard-actions .ga-field { min-width:0; }
+#app.in .ga-wrap .ga-dashboard-actions { align-items:stretch!important; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-field { display:grid; grid-template-rows:16px 44px; align-content:end; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-field > span { display:block; line-height:16px; min-height:16px; font-size:10px; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-btn { height:44px!important; min-height:44px!important; max-height:44px; align-self:stretch; box-sizing:border-box; font-size:12px!important; line-height:1.15!important; white-space:nowrap!important; padding:6px 4px!important; }
 #app.in .ga-wrap .ga-dashboard-actions .ga-btn { width:100%; min-width:0; min-height:39px; padding:8px 7px!important; white-space:normal; }
 @media(min-width:520px) { #app.in .ga-wrap .ga-dashboard-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.8fr); gap:12px; align-items:end; } #app.in .ga-wrap .ga-dashboard-controls .ga-filters { margin:0!important; } #app.in .ga-wrap .ga-stat-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; } }
 @media(min-width:520px) { #app.in .ga-wrap .ga-stat-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; } }
-@media(max-width:380px) { #app.in .ga-wrap .ga-heading { display:block!important; } #app.in .ga-wrap .ga-date-pill { display:inline-flex; margin-top:7px; } #app.in .ga-wrap .ga-card-actions .ga-btn { font-size:10px!important; } }
+@media(max-width:380px) { #app.in .ga-wrap .ga-heading h2 { font-size:17px!important; letter-spacing:-.045em; } #app.in .ga-wrap .ga-date-pill { display:inline-flex; margin-top:1px; } #app.in .ga-wrap .ga-card-actions .ga-btn { font-size:10px!important; } }
 
 /* Guest Arrival contrast fix: prevent inherited opacity/low-contrast text. */
 .ga-wrap,.ga-wrap *{opacity:1}
@@ -335,7 +339,7 @@ function guestArrivalDashboardMarkup() {
     ['Waiting Time Terlama', guestArrivalSecondsStat(d.longest_waiting_seconds), 'selesai menunggu']
   ];
   const monthly = Array.isArray(d.monthly) ? d.monthly : [];
-  return '<div class="ga-dashboard-controls"><div class="ga-filters"><label class="ga-field">Dari tanggal<input type="date" value="' + gaEscape(GA.fromDate) + '" max="' + gaEscape(GA.toDate) + '" onchange="guestArrivalDashboardFilter(\'fromDate\',this.value)"></label><label class="ga-field">Sampai tanggal<input type="date" value="' + gaEscape(GA.toDate) + '" min="' + gaEscape(GA.fromDate) + '" onchange="guestArrivalDashboardFilter(\'toDate\',this.value)"></label></div><div class="ga-dashboard-actions"><label class="ga-field"><span>Periode</span><button class="ga-btn secondary" type="button" onclick="guestArrivalSetThisMonth()">Bulan ini</button></label><button type="button" class="ga-btn primary ga-export-btn" onclick="guestArrivalExport()" ' + (GA.busy==='export'?'disabled':'') + '>Ekspor Excel (.xlsx)</button></div></div>' +
+  return '<div class="ga-dashboard-controls"><div class="ga-filters"><label class="ga-field">Dari tanggal<input type="date" value="' + gaEscape(GA.fromDate) + '" max="' + gaEscape(GA.toDate) + '" onchange="guestArrivalDashboardFilter(\'fromDate\',this.value)"></label><label class="ga-field">Sampai tanggal<input type="date" value="' + gaEscape(GA.toDate) + '" min="' + gaEscape(GA.fromDate) + '" onchange="guestArrivalDashboardFilter(\'toDate\',this.value)"></label></div><div class="ga-dashboard-actions"><label class="ga-field"><span>Periode</span><button class="ga-btn secondary" type="button" onclick="guestArrivalSetThisMonth()">Bulan ini</button></label><label class="ga-field"><span>Ekspor laporan</span><button type="button" class="ga-btn primary ga-export-btn" onclick="guestArrivalExport()" ' + (GA.busy==='export'?'disabled':'') + '>Ekspor Excel (.xlsx)</button></label></div></div>' +
     '<div class="ga-stat-grid">' + stats.map(s => '<div class="ga-stat"><label>' + gaEscape(s[0]) + '</label><strong>' + gaEscape(s[1]) + '</strong><span class="ga-unit">' + gaEscape(s[2]) + '</span></div>').join('') + '</div>' +
     '<div class="ga-report-card"><h3>Rekap Bulanan</h3><p class="ga-muted">Mengikuti rentang tanggal yang dipilih.</p>' +
     (monthly.length ? '<div class="ga-month-list">' + monthly.map(m => '<div class="ga-month"><div><strong>' + gaEscape(m.month) + '</strong><div class="ga-muted">' + m.total_registrations + ' pendaftaran · ' + m.total_packs + ' pack</div></div><div style="text-align:right"><strong>' + m.completed_count + ' selesai</strong><div class="ga-muted">' + m.waiting_count + ' menunggu · ' + m.cancelled_count + ' batal</div></div></div>').join('') + '</div>' : '<div class="ga-empty">Belum ada data pada periode ini.</div>') + '</div>';
