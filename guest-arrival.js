@@ -450,7 +450,7 @@ function guestArrivalDiscardAndNavigate(nextPage) {
   GA.form=null; GA.edit=null; closeM(); pg=nextPage; R();
 }
 window.addEventListener('beforeunload', function(e) {
-  if (D && D.me && D.me.r==='G' && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
+  if (D && D.me && (D.me.r==='G'||pg==='guest_arrival') && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
 });
 async function guestArrivalExport() {
   if (GA.busy) return;
@@ -474,7 +474,7 @@ async function guestArrivalExport() {
 }
 V.guest_arrival = () => guestArrivalRender();
 setInterval(() => {
-  if (!D || !D.me || D.me.r!=='G' || pg!=='guest_arrival') return;
+  if (!D || !D.me || (D.me.r!=='G' && !isDeveloper()) || pg!=='guest_arrival') return;
   document.querySelectorAll('[data-ga-wait-id]').forEach(node => {
     const id=node.getAttribute('data-ga-wait-id'), row=[...GA.queue,...GA.pending,...GA.history].find(g=>g.id===id);
     if (row) node.textContent=gaDuration(gaWaitSeconds(row));
