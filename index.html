@@ -2301,7 +2301,7 @@ async function loadSharedSettings(silent=false){
     if(T.dbRole==='guest_arrival'&&!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false;
     const roleCheck=await sb().rpc('app_role');
     if(roleCheck.error)throw roleCheck.error;
-    if(roleCheck.data==='guest_arrival'){T.dbRole='guest_arrival';return false}
+    if(roleCheck.data==='guest_arrival'){T.dbRole='guest_arrival';if(!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false}
     const {data,error}=await sb().from('app_settings').select('data,updated_at').eq('id','global').maybeSingle();
     if(error)throw error;
     if(!data||!data.data)return false;
