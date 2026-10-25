@@ -193,6 +193,23 @@ const gaCss = String.raw`
 .ga-inline-summary{font-size:12px;color:var(--mu,#758078);margin-top:7px}
 @media(min-width:640px){.ga-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ga-month-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ga-card{padding:15px}.ga-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.ga-heading{align-items:flex-start}.ga-date-pill{font-size:10px;padding:6px 8px}.ga-tabs{gap:3px}.ga-tab{font-size:11px;padding:10px 2px}.ga-card-actions{gap:6px}.ga-card-actions .ga-btn{padding:8px 5px;font-size:11px}.ga-detail-grid{grid-template-columns:1fr}.ga-detail-wide{grid-column:auto}}
+/* Solid foundation card: keep the red dotted page as a frame, not behind the text. */
+#app.in .ga-wrap{
+  width:calc(100% - 20px)!important;
+  max-width:1050px!important;
+  margin:14px auto 24px!important;
+  padding:clamp(14px,3vw,24px)!important;
+  background:#fffaf5!important;
+  border:2px solid #3b211d!important;
+  border-radius:20px!important;
+  box-shadow:0 6px 0 #3b211d!important;
+  color:#351a16!important;
+  opacity:1!important;
+}
+#app.in .ga-wrap .ga-tabs{background:#f0e5dc!important;border:1px solid #cbb7ad}
+#app.in .ga-wrap .ga-tab{background:transparent}
+#app.in .ga-wrap .ga-tab.active{background:#fff!important;border:1px solid #cbb7ad;box-shadow:0 2px 0 rgba(59,33,29,.10)}
+#app.in .ga-wrap .ga-empty{background:#fff!important;border:1px solid #d9c9c0!important}
 /* High-specificity text contrast override for the red Guest Arrival theme. */
 #app.in .ga-wrap .ga-heading p.ga-muted,
 #app.in .ga-wrap .ga-count,
