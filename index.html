@@ -2270,7 +2270,7 @@ try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
 if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;if(!silent)R();return}
-if(session&&T.dbRole==='guest_arrival'){T.perms=[];D.emp=[];D.arc=[];D.att=[];D.ot=[];SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}
+if(session&&T.dbRole==='guest_arrival'){T.perms=[];D.emp=[];D.arc=[];D.att=[];D.ot=[];D.per=[];D.pin='';D.cur='';sv();idleSet();SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}
 T.perms=[];if(session&&['hr','div_admin','report_viewer'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
 if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
@@ -2372,7 +2372,7 @@ async function initAuth(){
       if(!D.me||D.me.uid!==session.user.id||D.me.r!==role)resetAcc();
       D.me={r:role,uid:session.user.id,email};sv();
       if(role==='G'){
-        resetAcc();
+        resetAcc();D.per=[];D.pin='';D.cur='';sv();idleSet();
         T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;
         SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
         try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
