@@ -473,6 +473,7 @@ async function guestArrivalExport() {
   finally { GA.busy=''; R(); }
 }
 V.guest_arrival = () => guestArrivalRender();
+if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
   if (!D || !D.me || (D.me.r!=='G' && !isDeveloper()) || pg!=='guest_arrival') return;
   document.querySelectorAll('[data-ga-wait-id]').forEach(node => {
