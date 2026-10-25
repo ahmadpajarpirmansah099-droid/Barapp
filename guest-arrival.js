@@ -117,7 +117,7 @@ function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
   return '<style>' + gaCss + '</style><section class="ga-wrap">' +
-    '<div class="ga-heading"><div><div class="ga-eyebrow">GUEST ARRIVAL</div><h2>Guest Arrival &amp; Waiting List</h2><p class="ga-muted">Kelola kedatangan tamu dan waktu tunggu.</p></div><span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div>' +
+    '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
     (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? guestArrivalQueueMarkup() : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
@@ -231,6 +231,10 @@ const gaCss = String.raw`
 /* Compact mobile-first layout: reduce vertical whitespace and balance columns. */
 #app.in .ga-wrap { padding:clamp(12px,2.2vw,18px)!important; }
 #app.in .ga-wrap .ga-heading { margin:0 0 12px!important; gap:8px!important; }
+#app.in .ga-wrap .ga-heading { display:flex!important; flex-direction:column!important; align-items:stretch!important; gap:4px!important; }
+#app.in .ga-wrap .ga-heading h2 { font-size:clamp(18px,5.1vw,24px)!important; line-height:1.16!important; white-space:nowrap; letter-spacing:-.035em; }
+#app.in .ga-wrap .ga-heading .ga-date-pill { align-self:flex-end; margin-top:1px; }
+@media(max-width:360px) { #app.in .ga-wrap .ga-heading h2 { font-size:17px!important; letter-spacing:-.045em; } }
 #app.in .ga-wrap .ga-heading p { margin:5px 0 0!important; line-height:1.4; }
 #app.in .ga-wrap .ga-heading h2 { font-size:clamp(20px,5.5vw,26px)!important; margin:3px 0 0!important; }
 #app.in .ga-wrap .ga-date-pill { padding:6px 9px!important; font-size:10px!important; }
