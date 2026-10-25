@@ -193,6 +193,16 @@ const gaCss = String.raw`
 .ga-inline-summary{font-size:12px;color:var(--mu,#758078);margin-top:7px}
 @media(min-width:640px){.ga-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ga-month-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ga-card{padding:15px}.ga-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.ga-heading{align-items:flex-start}.ga-date-pill{font-size:10px;padding:6px 8px}.ga-tabs{gap:3px}.ga-tab{font-size:11px;padding:10px 2px}.ga-card-actions{gap:6px}.ga-card-actions .ga-btn{padding:8px 5px;font-size:11px}.ga-detail-grid{grid-template-columns:1fr}.ga-detail-wide{grid-column:auto}}
+/* Guest Arrival contrast fix: prevent inherited opacity/low-contrast text. */
+.ga-wrap,.ga-wrap *{opacity:1}
+.ga-wrap .ga-muted,.ga-wrap .ga-count,.ga-wrap .ga-inline-summary,.ga-wrap .ga-load,.ga-wrap .ga-eyebrow{color:#49302b!important;opacity:1!important}
+.ga-wrap .ga-heading h2,.ga-wrap .ga-section-title h3,.ga-wrap .ga-empty strong,.ga-wrap .ga-tab,.ga-wrap .ga-card,.ga-wrap .ga-date-pill{opacity:1!important}
+.ga-wrap .ga-tab{color:#3b211d!important}
+.ga-wrap .ga-tab.active{color:#8b3f34!important}
+.ga-wrap .ga-empty{color:#654b45!important}
+.ga-wrap .ga-empty strong{color:#3b211d!important}
+.ga-wrap .ga-count{font-weight:650}
+.ga-wrap .ga-eyebrow{color:#71362d!important}
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
