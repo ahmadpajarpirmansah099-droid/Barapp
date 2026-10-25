@@ -2369,9 +2369,10 @@ async function initAuth(){
         setTimeout(()=>c.auth.signOut().catch(()=>{}),0);
         return;
       }
-      if(!D.me||D.me.uid!==session.user.id)resetAcc();
+      if(!D.me||D.me.uid!==session.user.id||D.me.r!==role)resetAcc();
       D.me={r:role,uid:session.user.id,email};sv();
       if(role==='G'){
+        resetAcc();
         T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;
         SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
         try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
@@ -2488,7 +2489,7 @@ const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('ba
  if(!t){idleSet();return}
  if(Date.now()-t>idleLimitMs()){if(T.dbRole==='guest_arrival'||pg==='guest_arrival'){toast('Sesi berakhir karena tidak aktif. Silakan login kembali.','warn');out(true)}else{toast('Sesi berakhir karena tidak aktif 3 menit. Silakan masuk lagi.','warn');out(true)}}};
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
-document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me&&T.dbRole!=='guest_arrival'&&pg!=='guest_arrival')idleSet()}else idleCheck()});
 setInterval(idleCheck,15000);
 async function out(force=false){
   if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&!force){modal('<h3>Konfirmasi</h3><p>Yakin ingin keluar?</p><div class="btns"><button class="btn d" onclick="out(true);closeM()">Ya</button><button class="btn s" onclick="closeM()">Tidak</button></div>');return}
