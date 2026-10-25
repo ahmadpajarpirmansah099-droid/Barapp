@@ -1759,7 +1759,33 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   #app.in.sidebar-collapsed .statusbar{left:calc(var(--side) + 28px)!important}
 }
 @media(prefers-reduced-motion:reduce){#app.in,#app.in .side,.sidebar-collapse-toggle{transition:none!important}}
-</style></head><body>
+</style>
+<style id="barapp-feature-card-polish">
+/* Feature menu card polish — UI only; preserve existing routes and access checks. */
+.mods-feature-grid{align-items:stretch!important}
+.mods-feature-grid>.mods-feature-card{
+  position:relative;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;
+  gap:9px!important;min-width:0!important;min-height:174px!important;padding:22px 9px 42px!important;
+  border:1.7px solid #34483b!important;border-radius:22px!important;background:#fffdf9!important;color:#38221f!important;
+  box-shadow:0 5px 0 rgba(49,75,59,.07),0 10px 22px rgba(47,39,29,.045)!important;
+  font-family:var(--fh,'Plus Jakarta Sans'),sans-serif!important;font-size:clamp(12px,3.3vw,16px)!important;font-weight:700!important;line-height:1.35!important;
+  white-space:normal!important;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important;
+}
+.mods-feature-grid>.mods-feature-card:not(:disabled):active{transform:scale(.975);box-shadow:0 2px 0 rgba(49,75,59,.08)!important}
+.mods-feature-icon{width:66px;height:66px;display:grid;place-items:center;flex:0 0 auto;color:var(--feature-accent,#315d4a)!important;margin:0 0 4px}
+.mods-feature-icon svg{width:60px!important;height:60px!important;max-width:100%;overflow:visible}
+.mods-feature-icon svg *{stroke:currentColor}
+.mods-feature-label{display:block;max-width:100%;overflow-wrap:anywhere;text-align:center}
+.mods-feature-arrow{position:absolute;right:10px;bottom:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e9eee3;color:#284a39;font-family:Arial,sans-serif;font-size:25px;font-weight:400;line-height:1}
+.mods-feature-locked{opacity:.66!important;background:#f6f4ef!important;border-color:#aab1a8!important;color:#777!important}
+.mods-feature-locked .mods-feature-icon{color:#8e9b91!important}
+.mods-feature-locked .mods-feature-arrow{background:#e9e9e3;color:#8a9089}
+.mods-feature-disabled{opacity:.58!important;background:#f3f1ec!important;border-color:#aab1a8!important;color:#85817d!important}
+.mods-feature-disabled .mods-feature-icon{color:#92918b!important}
+@media(max-width:380px){.mods-feature-grid{gap:8px!important}.mods-feature-grid>.mods-feature-card{min-height:150px!important;padding:17px 6px 38px!important;border-radius:18px!important}.mods-feature-icon{width:54px;height:54px}.mods-feature-icon svg{width:50px!important;height:50px!important}}
+@media(prefers-reduced-motion:reduce){.mods-feature-grid>.mods-feature-card{transition:none!important}}
+</style>
+</head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onload="window.__barappSupabaseLoaded=true;if(typeof sbLoad==='function'){sbLoad(true);initAuth();loadSharedSettings(true)}"></script>
@@ -2578,7 +2604,7 @@ try{BARAPP_DESKTOP_SIDEBAR_COLLAPSED=localStorage.getItem('barapp.desktopSidebar
 const desktopSidebarIcon=()=>'<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'m13 8 4 4-4 4':'m15 8-4 4 4 4')+'"/></svg>';
 function toggleDesktopSidebar(){BARAPP_DESKTOP_SIDEBAR_COLLAPSED=!BARAPP_DESKTOP_SIDEBAR_COLLAPSED;try{localStorage.setItem('barapp.desktopSidebarCollapsed',BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'1':'0')}catch(e){}R()}
 const go=p=>{if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
-function openMods(){modal(`<h3 class="mods-title">Fitur</h3><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${MODS.filter(m=>T.dbRole==='guest_arrival'?(!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)):T.dbRole==='report_viewer'?!!m.page&&allowed().includes(m.page):!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole=='hr'||hasDivMgr())&&(!m.cogs||adm())).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${lk?IC('lock',26):m.ic==='dashboard-png'?'<svg class="feature-dashboard-png" viewBox="0 0 512 512" role="img" aria-label="Dashboard"><g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M40 470V210H104V470M164 470V130H228V470M288 470V282H352V470M412 470V190H476V470"/><path d="M36 488H480M40 92L160 20L282 124L438 48"/><circle cx="40" cy="92" r="24" fill="var(--cd)"/><circle cx="160" cy="20" r="24" fill="var(--cd)"/><circle cx="282" cy="124" r="24" fill="var(--cd)"/><circle cx="438" cy="48" r="24" fill="var(--cd)"/><circle cx="364" cy="388" r="76" fill="var(--cd)"/><path d="M364 350V363M364 413V426M326 388H339M389 388H402M337 361L346 370M382 406L391 415M391 361L382 370M346 406L337 415M364 388L399 367L377 402Q364 414 364 388Z"/></g></svg>':IC(m.ic,26)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+function openMods(){modal(`<h3 class="mods-title">Fitur</h3><div class="grid mods-feature-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">${MODS.filter(m=>T.dbRole==='guest_arrival'?(!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)):T.dbRole==='report_viewer'?!!m.page&&allowed().includes(m.page):!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole=='hr'||hasDivMgr())&&(!m.cogs||adm())).map((m,i)=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'} mods-feature-card ${dis?'mods-feature-disabled':lk?'mods-feature-locked':''}" style="--feature-accent:${['#E8755D','#315D4A','#D68B48','#548A78','#D97867','#6D8D76'][i%6]}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div class="mods-feature-icon">${lk?IC('lock',30):m.ic==='dashboard-png'?'<svg class="feature-dashboard-png" viewBox="0 0 512 512" role="img" aria-label="Dashboard"><g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M40 470V210H104V470M164 470V130H228V470M288 470V282H352V470M412 470V190H476V470"/><path d="M36 488H480M40 92L160 20L282 124L438 48"/><circle cx="40" cy="92" r="24" fill="var(--cd)"/><circle cx="160" cy="20" r="24" fill="var(--cd)"/><circle cx="282" cy="124" r="24" fill="var(--cd)"/><circle cx="438" cy="48" r="24" fill="var(--cd)"/><circle cx="364" cy="388" r="76" fill="var(--cd)"/><path d="M364 350V363M364 413V426M326 388H339M389 388H402M337 361L346 370M382 406L391 415M391 361L382 370M346 406L337 415M364 388L399 367L377 402Q364 414 364 388Z"/></g></svg>':IC(m.ic,30)}</div><span class="mods-feature-label">${esc(m.name)}</span>${lk?' <small>· dibatasi</small>':''}<span class="mods-feature-arrow" aria-hidden="true">›</span></button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>{
