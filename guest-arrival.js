@@ -8,7 +8,7 @@ const GA = {
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   dashboard: null, busy: '', form: null, edit: null, detail: null,
-  cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0
+  cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null
 };
 const gaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
 const gaEscape = (v) => typeof esc === 'function' ? esc(String(v ?? '')) : String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -88,6 +88,7 @@ async function guestArrivalRefresh(silent) {
   GA.loading = true; GA.error = '';
   if (!silent) R();
   try {
+    GA.context = await gaRpc('guest_arrival_context', {});
     if (GA.tab === 'queue') await gaRefreshLists();
     else if (GA.tab === 'history') {
       const rows = await gaRpc('guest_arrival_list', { p_scope:'history', p_date:GA.historyDate });
@@ -117,7 +118,7 @@ function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
   return '<style>' + gaCss + '</style><section class="ga-wrap">' +
-    '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div>' +
+    '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
     (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? guestArrivalQueueMarkup() : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
@@ -328,6 +329,10 @@ const gaCss = String.raw`
 .ga-wrap .ga-count{font-weight:650}
 .ga-wrap .ga-eyebrow{color:#71362d!important}
 
+/* Outlet identity chip is compact and remains attached to the date in the header. */
+#app.in .ga-wrap .ga-heading-meta{display:flex!important;align-items:flex-start!important;justify-self:end!important;gap:5px!important;min-width:0!important;max-width:100%!important}
+#app.in .ga-wrap .ga-outlet-pill{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:24px;padding:4px 6px;border:1px solid #c8796d;border-radius:999px;background:#fff1e9;color:#71362d;font-size:9px;font-weight:850;line-height:1;letter-spacing:.035em}
+#app.in .ga-wrap .ga-heading-meta .ga-date-pill{flex:0 0 auto}
 /* Compact date badge: keep the date inside the heading row without adding a separate row. */
 #app.in .ga-wrap .ga-heading{
   display:grid!important;
