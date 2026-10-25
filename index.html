@@ -2492,6 +2492,7 @@ async function lgA(){
       throw new Error('Email '+(data.session.user.email||email)+' belum terdaftar sebagai developer atau admin aplikasi.');
     }
     D.me={r:role,uid:data.session.user.id,email:data.session.user.email||email};
+    idleSet(true);
     sv();
     await Promise.all([sbLoad(),loadSharedSettings(true)]);
     R();
@@ -2508,15 +2509,17 @@ async function lgA(){
 
 
 
-/* ===== LOGOUT OTOMATIS SETELAH 3 MENIT TIDAK AKTIF ===== */
-const IDLE_MS=3*60*1000;
-const idleLimitMs=()=>(T.dbRole==='guest_arrival'||pg==='guest_arrival')?2*60*60*1000:IDLE_MS;
-const idleSet=()=>{try{localStorage.setItem('bar_last',String(Date.now()))}catch(e){}};
+/* ===== GLOBAL AUTO-LOGOUT SETELAH 2 JAM TANPA AKTIVITAS ===== */
+const IDLE_MS=2*60*60*1000;
+const idleLimitMs=()=>IDLE_MS;
+const idleSet=(force=false)=>{try{if(force||Date.now()-(+localStorage.getItem('bar_last')||0)>=1000)localStorage.setItem('bar_last',String(Date.now()))}catch(e){}};
 const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('bar_last')||0}catch(e){}
- if(!t){idleSet();return}
- if(Date.now()-t>idleLimitMs()){if(T.dbRole==='guest_arrival'||pg==='guest_arrival'){toast('Sesi berakhir karena tidak aktif. Silakan login kembali.','warn');out(true)}else{toast('Sesi berakhir karena tidak aktif 3 menit. Silakan masuk lagi.','warn');out(true)}}};
-['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
-document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me&&T.dbRole!=='guest_arrival'&&pg!=='guest_arrival')idleSet()}else idleCheck()});
+ if(!t){idleSet(true);return}
+ if(Date.now()-t>=idleLimitMs()){toast('Sesi berakhir karena tidak aktif. Silakan login kembali.','warn');void out(true)}};
+['pointerdown','keydown','touchstart','scroll','input','change','wheel'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
+let idlePointerAt=0;
+document.addEventListener('pointermove',()=>{const now=Date.now();if(now-idlePointerAt>=1000){idlePointerAt=now;if(D&&D.me)idleSet()}},{passive:true});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)idleCheck()});
 setInterval(idleCheck,15000);
 async function out(force=false){
   if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&!force){modal('<h3>Konfirmasi</h3><p>Yakin ingin keluar?</p><div class="btns"><button class="btn d" onclick="out(true);closeM()">Ya</button><button class="btn s" onclick="closeM()">Tidak</button></div>');return}
