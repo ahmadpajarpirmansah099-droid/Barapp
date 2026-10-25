@@ -19,6 +19,12 @@ const gaRpc = async (name, params) => {
   if (error) throw error;
   return data;
 };
+const gaOutletParams = async () => {
+  if (typeof isDeveloper !== 'function' || !isDeveloper()) return { p_outlet_id: null };
+  const outletId = typeof outInit === 'function' ? await outInit() : (D && D.outId);
+  if (!outletId || outletId === 'ALL') throw new Error('Pilih outlet aktif pada header Barapp terlebih dahulu.');
+  return { p_outlet_id: String(outletId) };
+};
 const gaUuid = () => {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -73,10 +79,11 @@ const gaCaptureServerTime = (rows) => {
     if (Number.isFinite(serverMs)) GA.serverOffsetMs = serverMs - Date.now();
   }
 };
-const gaRefreshLists = async () => {
+const gaRefreshLists = async (outletParams) => {
+  const scopedParams = outletParams || await gaOutletParams();
   const [queue, pending] = await Promise.all([
-    gaRpc('guest_arrival_list', { p_scope:'today', p_date:GA.historyDate }),
-    gaRpc('guest_arrival_list', { p_scope:'pending', p_date:GA.historyDate })
+    gaRpc('guest_arrival_list', { p_scope:'today', p_date:GA.historyDate, ...scopedParams }),
+    gaRpc('guest_arrival_list', { p_scope:'pending', p_date:GA.historyDate, ...scopedParams })
   ]);
   GA.queue = Array.isArray(queue) ? queue : [];
   GA.pending = Array.isArray(pending) ? pending : [];
@@ -88,15 +95,16 @@ async function guestArrivalRefresh(silent) {
   GA.loading = true; GA.error = '';
   if (!silent) R();
   try {
-    GA.context = await gaRpc('guest_arrival_context', {});
-    if (GA.tab === 'queue') await gaRefreshLists();
+    const outletParams = await gaOutletParams();
+    GA.context = await gaRpc('guest_arrival_context', outletParams);
+    if (GA.tab === 'queue') await gaRefreshLists(outletParams);
     else if (GA.tab === 'history') {
-      const rows = await gaRpc('guest_arrival_list', { p_scope:'history', p_date:GA.historyDate });
+      const rows = await gaRpc('guest_arrival_list', { p_scope:'history', p_date:GA.historyDate, ...outletParams });
       GA.history = Array.isArray(rows) ? rows : [];
       gaCaptureServerTime(GA.history);
     } else if (GA.tab === 'dashboard') {
       if (GA.fromDate > GA.toDate) throw new Error('Tanggal mulai harus sebelum atau sama dengan tanggal akhir.');
-      GA.dashboard = await gaRpc('guest_arrival_dashboard', { p_from:GA.fromDate, p_to:GA.toDate });
+      GA.dashboard = await gaRpc('guest_arrival_dashboard', { p_from:GA.fromDate, p_to:GA.toDate, ...outletParams });
     }
     GA.ready = true;
   } catch (e) {
@@ -104,10 +112,30 @@ async function guestArrivalRefresh(silent) {
     if (typeof console !== 'undefined') console.error('Guest Arrival:', e);
   } finally {
     GA.loading = false;
+    if (GA.reloadAfterCurrent) {
+      GA.reloadAfterCurrent = false;
+      GA.ready = false;
+      GA.error = '';
+      GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
+      setTimeout(() => guestArrivalRefresh(true), 0);
+    }
     R();
     if (GA.showPending && document.querySelector('#m .ov')) guestArrivalRenderPendingModal();
     else if (!document.querySelector('#m .ov')) GA.showPending = false;
   }
+}
+function guestArrivalOutletChanged() {
+  GA.context = null;
+  GA.ready = false;
+  GA.error = '';
+  GA.search = '';
+  GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
+  if (GA.loading) {
+    GA.reloadAfterCurrent = true;
+    R();
+    return;
+  }
+  void guestArrivalRefresh(true);
 }
 function guestArrivalSetTab(tab) {
   if (!['queue','dashboard','history'].includes(tab)) return;
@@ -487,7 +515,8 @@ async function guestArrivalSaveForm() {
     const result = await gaRpc('guest_arrival_create', {
       p_name:String(f.name).trim(), p_packs:packs,
       p_whatsapp:String(f.whatsapp || '').trim() || null,
-      p_initial_status:f.status, p_request_id:f.requestId
+      p_initial_status:f.status, p_request_id:f.requestId,
+      ...(await gaOutletParams())
     });
     const code = result && result.queue_code ? result.queue_code : 'WL';
     GA.form = null; closeM();
@@ -516,7 +545,7 @@ async function guestArrivalSetStatus(id, status) {
   if (GA.busy) return;
   GA.busy = id;
   try {
-    await gaRpc('guest_arrival_set_status', { p_id:id, p_status:status, p_reason:null });
+    await gaRpc('guest_arrival_set_status', { p_id:id, p_status:status, p_reason:null, ...(await gaOutletParams()) });
     gaToast('Status antrean berhasil diubah menjadi Selesai.', 'ok');
     GA.ready = false; await guestArrivalRefresh();
   } catch (e) {
@@ -535,7 +564,7 @@ async function guestArrivalConfirmCancel() {
   const id = GA.cancelId, reason = String(GA.cancelReason || '').trim() || null, wasPending = GA.showPending;
   GA.busy = id; closeM();
   try {
-    await gaRpc('guest_arrival_set_status', { p_id:id, p_status:'Batalkan', p_reason:reason });
+    await gaRpc('guest_arrival_set_status', { p_id:id, p_status:'Batalkan', p_reason:reason, ...(await gaOutletParams()) });
     gaToast('Antrean berhasil dibatalkan.', 'ok');
     GA.showPending = wasPending;
     GA.ready = false; await guestArrivalRefresh();
@@ -543,7 +572,7 @@ async function guestArrivalConfirmCancel() {
   finally { GA.busy = ''; GA.cancelId = null; GA.cancelReason = ''; if (wasPending) { GA.showPending = true; guestArrivalRenderPendingModal(); } }
 }
 async function guestArrivalOpenDetail(id) {
-  try { GA.detail = await gaRpc('guest_arrival_detail', { p_id:id }); guestArrivalShowDetail(); }
+  try { GA.detail = await gaRpc('guest_arrival_detail', { p_id:id, ...(await gaOutletParams()) }); guestArrivalShowDetail(); }
   catch (e) { gaToast('Detail tamu gagal dimuat. ' + gaHumanError(e), 'err'); }
 }
 function guestArrivalShowDetail() {
@@ -608,10 +637,10 @@ async function guestArrivalSaveEdit() {
   f.saving=true; guestArrivalShowEdit();
   const reasonNode=document.getElementById('ga-edit-reason'); if(reasonNode) reasonNode.value=f.reason;
   try {
-    await gaRpc('guest_arrival_correct',{p_id:f.id,p_name:String(f.name).trim(),p_packs:packs,p_whatsapp:String(f.whatsapp||'').trim()||null,p_reason:String(f.reason).trim()});
+    await gaRpc('guest_arrival_correct',{p_id:f.id,p_name:String(f.name).trim(),p_packs:packs,p_whatsapp:String(f.whatsapp||'').trim()||null,p_reason:String(f.reason).trim(),...(await gaOutletParams())});
     gaToast('Koreksi tersimpan dan tercatat di Riwayat Perubahan.','ok');
     const id=f.id; GA.edit=null;
-    GA.detail=await gaRpc('guest_arrival_detail',{p_id:id});
+    GA.detail=await gaRpc('guest_arrival_detail',{p_id:id,...(await gaOutletParams())});
     GA.ready=false; await guestArrivalRefresh(); guestArrivalShowDetail();
   } catch(e) {
     f.saving=false; guestArrivalShowEdit();
@@ -638,7 +667,7 @@ async function guestArrivalExport() {
   if (typeof XLSX==='undefined'||!XLSX.utils) { gaToast('Library Excel belum tersedia. Muat ulang halaman dan coba lagi.','err'); return; }
   GA.busy='export'; R();
   try {
-    const data=await gaRpc('guest_arrival_export',{p_from:GA.fromDate,p_to:GA.toDate});
+    const data=await gaRpc('guest_arrival_export',{p_from:GA.fromDate,p_to:GA.toDate,...(await gaOutletParams())});
     const details=Array.isArray(data.details)?data.details:[], cancellations=Array.isArray(data.cancellations)?data.cancellations:[], summary=data.summary||{};
     const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Waktu Kedatangan','arrived_at'],['Status Akhir','status'],['Waktu Selesai Menunggu','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
     const makeRows=rows=>[columns.map(x=>x[0]),...rows.map(g=>columns.map(([label,key])=>g[key]==null?'':g[key]))];
