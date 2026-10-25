@@ -273,6 +273,30 @@ const gaCss = String.raw`
 @media(min-width:520px) { #app.in .ga-wrap .ga-stat-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; } }
 @media(max-width:380px) { #app.in .ga-wrap .ga-heading h2 { font-size:17px!important; letter-spacing:-.045em; } #app.in .ga-wrap .ga-date-pill { display:inline-flex; margin-top:1px; } #app.in .ga-wrap .ga-card-actions .ga-btn { font-size:10px!important; } }
 
+
+/* Desktop-only polish: denser history controls and clearer separation between guests. */
+@media(min-width:768px) {
+  #app.in .ga-wrap { padding:16px 20px!important; }
+  #app.in .ga-wrap .ga-heading { margin-bottom:10px!important; }
+  #app.in .ga-wrap .ga-tabs { margin-bottom:8px!important; }
+  #app.in .ga-wrap .ga-filters { display:grid!important; grid-template-columns:minmax(180px,.7fr) minmax(280px,1.3fr); gap:10px!important; align-items:end; margin:8px 0!important; }
+  #app.in .ga-wrap .ga-filters .ga-field { min-width:0; }
+  #app.in .ga-wrap .ga-filters .ga-field input,
+  #app.in .ga-wrap .ga-filters .ga-field select { height:38px!important; min-height:38px!important; }
+  #app.in .ga-wrap .ga-section-title { margin:10px 0 7px!important; }
+  #app.in .ga-wrap .ga-card-list { gap:9px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card { padding:10px 13px!important; border:1.5px solid #c8796d!important; border-left:4px solid #c75e50!important; border-radius:12px!important; background:#fffaf6!important; box-shadow:0 2px 0 rgba(83,43,35,.10),0 4px 10px rgba(83,43,35,.07)!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card + .ga-card { margin-top:0!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card-top { align-items:center!important; gap:12px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-queue-code { font-size:15px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-name { font-size:13px!important; margin:2px 0!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card-meta { margin-top:5px!important; gap:4px 10px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-inline-summary { margin-top:4px!important; line-height:1.35!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card-actions { display:flex!important; justify-content:flex-end!important; gap:7px!important; margin-top:7px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card-actions .ga-btn { width:auto!important; min-width:100px!important; min-height:30px!important; padding:6px 12px!important; font-size:11px!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card-actions .ga-btn.wide { width:auto!important; }
+}
+
 /* Guest Arrival contrast fix: prevent inherited opacity/low-contrast text. */
 .ga-wrap,.ga-wrap *{opacity:1}
 .ga-wrap .ga-muted,.ga-wrap .ga-count,.ga-wrap .ga-inline-summary,.ga-wrap .ga-load,.ga-wrap .ga-eyebrow{color:#49302b!important;opacity:1!important}
