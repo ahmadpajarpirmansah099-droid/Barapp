@@ -3,6 +3,7 @@ const GA = {
   tab: 'queue', ready: false, loading: false, error: '',
   queue: [], pending: [], history: [],
   historyDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
+  lastOperationalDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   search: '',
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
@@ -27,7 +28,7 @@ const gaUuid = () => {
 };
 const gaStatusClass = (s) => s === 'Selesai' ? 'done' : s === 'Batalkan' ? 'cancelled' : 'waiting';
 const gaPhoneDigits = (value) => String(value || '').replace(/\D/g, '');
-const gaPhoneValid = (value) => /^08\d{8,11}$/.test(gaPhoneDigits(value));
+const gaPhoneValid = (value) => /^[\d\s()+.-]+$/.test(String(value || '').trim()) && /^08\d{8,11}$/.test(gaPhoneDigits(value));
 const gaPhoneHref = (value) => gaPhoneValid(value) ? 'https://wa.me/62' + gaPhoneDigits(value).slice(1) : '';
 const gaPhoneMarkup = (value) => {
   if (!value) return '<span class="ga-muted">—</span>';
@@ -55,7 +56,7 @@ const gaDuration = (seconds) => {
   const minutes = Math.floor(n / 60); const secs = n % 60;
   if (days) return days + 'h ' + hours + 'j ' + minutes + 'm';
   if (hours) return hours + 'j ' + minutes + 'm';
-  if (minutes) return minutes + 'm ' + secs + 'd';
+  if (minutes) return minutes + 'm ' + secs + 'dtk';
   return secs + ' dtk';
 };
 const gaWaitSeconds = (g) => {
@@ -359,7 +360,7 @@ async function guestArrivalConfirmCancel() {
     GA.showPending = wasPending;
     GA.ready = false; await guestArrivalRefresh();
   } catch (e) { gaToast('Pembatalan belum berhasil. ' + gaHumanError(e), 'err'); }
-  finally { GA.busy = ''; GA.cancelId = null; GA.cancelReason = ''; }
+  finally { GA.busy = ''; GA.cancelId = null; GA.cancelReason = ''; if (wasPending) { GA.showPending = true; guestArrivalRenderPendingModal(); } }
 }
 async function guestArrivalOpenDetail(id) {
   try { GA.detail = await gaRpc('guest_arrival_detail', { p_id:id }); guestArrivalShowDetail(); }
@@ -476,6 +477,11 @@ V.guest_arrival = () => guestArrivalRender();
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
   if (!D || !D.me || (D.me.r!=='G' && !isDeveloper()) || pg!=='guest_arrival') return;
+  const today = gaToday();
+  if (today !== GA.lastOperationalDate && !GA.loading) {
+    GA.lastOperationalDate = today;
+    if (GA.tab === 'queue') { GA.ready = false; guestArrivalRefresh(true); }
+  }
   document.querySelectorAll('[data-ga-wait-id]').forEach(node => {
     const id=node.getAttribute('data-ga-wait-id'), row=[...GA.queue,...GA.pending,...GA.history].find(g=>g.id===id);
     if (row) node.textContent=gaDuration(gaWaitSeconds(row));
