@@ -2270,6 +2270,7 @@ try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
 if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;if(!silent)R();return}
+if(session&&T.dbRole==='guest_arrival'){T.perms=[];D.emp=[];D.arc=[];D.att=[];D.ot=[];SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}
 T.perms=[];if(session&&['hr','div_admin','report_viewer'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
 if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
@@ -2297,6 +2298,10 @@ let SHARED_SETTINGS_SIG='';
 function mergeTheme(x){return {...THEME,...x,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
 async function loadSharedSettings(silent=false){
   try{
+    if(T.dbRole==='guest_arrival')return false;
+    const roleCheck=await sb().rpc('app_role');
+    if(roleCheck.error)throw roleCheck.error;
+    if(roleCheck.data==='guest_arrival'){T.dbRole='guest_arrival';return false}
     const {data,error}=await sb().from('app_settings').select('data,updated_at').eq('id','global').maybeSingle();
     if(error)throw error;
     if(!data||!data.data)return false;
