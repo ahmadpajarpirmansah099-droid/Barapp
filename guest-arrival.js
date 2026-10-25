@@ -228,6 +228,37 @@ const gaCss = String.raw`
 #app.in .ga-wrap .ga-card,
 #app.in .ga-wrap .ga-date-pill,
 #app.in .ga-wrap .ga-empty { opacity:1 !important; }
+/* Compact mobile-first layout: reduce vertical whitespace and balance columns. */
+#app.in .ga-wrap { padding:clamp(12px,2.2vw,18px)!important; }
+#app.in .ga-wrap .ga-heading { margin:0 0 12px!important; gap:8px!important; }
+#app.in .ga-wrap .ga-heading p { margin:5px 0 0!important; line-height:1.4; }
+#app.in .ga-wrap .ga-heading h2 { font-size:clamp(20px,5.5vw,26px)!important; margin:3px 0 0!important; }
+#app.in .ga-wrap .ga-date-pill { padding:6px 9px!important; font-size:10px!important; }
+#app.in .ga-wrap .ga-tabs { margin-bottom:10px!important; padding:4px!important; gap:4px!important; }
+#app.in .ga-wrap .ga-tab { padding:9px 4px!important; }
+#app.in .ga-wrap .ga-actions { gap:8px!important; margin-bottom:8px!important; }
+#app.in .ga-wrap .ga-section-title { margin:12px 0 8px!important; }
+#app.in .ga-wrap .ga-card-list { gap:8px!important; }
+#app.in .ga-wrap .ga-card { padding:11px!important; }
+#app.in .ga-wrap .ga-card-meta { gap:4px 9px!important; margin-top:7px!important; }
+#app.in .ga-wrap .ga-card-actions { grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:6px!important; margin-top:9px!important; }
+#app.in .ga-wrap .ga-card-actions .ga-btn { padding:7px 5px!important; font-size:11px!important; }
+#app.in .ga-wrap .ga-empty { padding:20px 11px!important; }
+#app.in .ga-wrap .ga-filters { gap:8px!important; margin:8px 0 10px!important; }
+#app.in .ga-wrap .ga-field { gap:4px!important; }
+#app.in .ga-wrap .ga-field input, #app.in .ga-wrap .ga-field select, #app.in .ga-wrap .ga-field textarea { min-height:39px!important; padding:8px 9px!important; }
+#app.in .ga-wrap .ga-stat-grid { gap:8px!important; margin:8px 0!important; }
+#app.in .ga-wrap .ga-stat { padding:10px!important; }
+#app.in .ga-wrap .ga-stat label { font-size:10px!important; line-height:1.3!important; }
+#app.in .ga-wrap .ga-stat strong { margin-top:4px!important; font-size:clamp(19px,5vw,23px)!important; }
+#app.in .ga-wrap .ga-stat .ga-unit { display:block; margin-top:2px; font-size:10px!important; }
+#app.in .ga-wrap .ga-report-card { margin-top:8px!important; padding:11px!important; }
+#app.in .ga-wrap .ga-report-card > p { margin:4px 0 8px!important; }
+#app.in .ga-wrap .ga-month-list { gap:6px!important; }
+#app.in .ga-wrap .ga-month { padding:8px!important; gap:8px!important; }
+#app.in .ga-wrap .ga-btn-row { margin-top:8px!important; gap:7px!important; }
+@media(min-width:520px) { #app.in .ga-wrap .ga-stat-grid { grid-template-columns:repeat(3,minmax(0,1fr))!important; } }
+@media(max-width:380px) { #app.in .ga-wrap .ga-heading { display:block!important; } #app.in .ga-wrap .ga-date-pill { display:inline-flex; margin-top:7px; } #app.in .ga-wrap .ga-card-actions .ga-btn { font-size:10px!important; } }
 
 /* Guest Arrival contrast fix: prevent inherited opacity/low-contrast text. */
 .ga-wrap,.ga-wrap *{opacity:1}
