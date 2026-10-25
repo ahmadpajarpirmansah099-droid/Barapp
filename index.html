@@ -2270,8 +2270,8 @@ try{
 const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;
 if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;if(!silent)R();return}
-if(session&&T.dbRole==='guest_arrival'){T.perms=[];D.emp=[];D.arc=[];D.att=[];D.ot=[];D.per=[];D.pin='';D.cur='';sv();idleSet();SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}
-T.perms=[];if(session&&['hr','div_admin','report_viewer'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
+if(session&&T.dbRole==='guest_arrival'){T.perms=[];try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}if(!guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){D.emp=[];D.arc=[];D.att=[];D.ot=[];D.per=[];D.pin='';D.cur='';sv();idleSet();SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}}
+T.perms=[];if(session&&['hr','div_admin','report_viewer','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
 if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
 const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
@@ -2298,7 +2298,7 @@ let SHARED_SETTINGS_SIG='';
 function mergeTheme(x){return {...THEME,...x,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
 async function loadSharedSettings(silent=false){
   try{
-    if(T.dbRole==='guest_arrival')return false;
+    if(T.dbRole==='guest_arrival'&&!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false;
     const roleCheck=await sb().rpc('app_role');
     if(roleCheck.error)throw roleCheck.error;
     if(roleCheck.data==='guest_arrival'){T.dbRole='guest_arrival';return false}
@@ -2374,9 +2374,10 @@ async function initAuth(){
       if(role==='G'){
         resetAcc();D.per=[];D.pin='';D.cur='';sv();idleSet();
         T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;
+        try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}
         SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
         try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
-        R();return;
+        R();if(guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){await Promise.all([sbLoad(),loadSharedSettings(true)]);R()}return;
       }
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
       R();
