@@ -653,6 +653,16 @@ async function guestArrivalExport() {
   } catch(e) { gaToast('Ekspor gagal. '+gaHumanError(e),'err'); }
   finally { GA.busy=''; R(); }
 }
+window.guestArrivalResetSession = function() {
+  const today = gaToday();
+  GA.tab='queue'; GA.ready=false; GA.loading=false; GA.error='';
+  GA.queue=[]; GA.pending=[]; GA.history=[]; GA.search='';
+  GA.historyDate=today; GA.lastOperationalDate=today;
+  GA.fromDate=today.slice(0,7)+'-01'; GA.toDate=today;
+  GA.dashboard=null; GA.context=null; GA.busy='';
+  GA.form=null; GA.edit=null; GA.detail=null;
+  GA.cancelId=null; GA.cancelReason=''; GA.showPending=false; GA.serverOffsetMs=0;
+};
 V.guest_arrival = () => guestArrivalRender();
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
