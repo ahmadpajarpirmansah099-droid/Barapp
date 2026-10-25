@@ -274,6 +274,26 @@ const gaCss = String.raw`
 @media(max-width:380px) { #app.in .ga-wrap .ga-heading h2 { font-size:17px!important; letter-spacing:-.045em; } #app.in .ga-wrap .ga-date-pill { display:inline-flex; margin-top:1px; } #app.in .ga-wrap .ga-card-actions .ga-btn { font-size:10px!important; } }
 
 
+
+/* Prevent date filters and report actions from visually merging on narrow desktop viewports. */
+#app.in .ga-wrap .ga-dashboard-controls { display:flex!important; flex-direction:column!important; gap:10px!important; min-width:0!important; }
+#app.in .ga-wrap .ga-dashboard-controls .ga-filters { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:10px!important; width:100%!important; min-width:0!important; margin:0!important; }
+#app.in .ga-wrap .ga-dashboard-controls .ga-filters .ga-field { min-width:0!important; width:100%!important; }
+#app.in .ga-wrap .ga-dashboard-controls .ga-filters input,
+#app.in .ga-wrap .ga-dashboard-controls .ga-filters select { width:100%!important; min-width:0!important; max-width:100%!important; box-sizing:border-box!important; }
+#app.in .ga-wrap .ga-dashboard-actions { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:10px!important; width:100%!important; min-width:0!important; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-field { min-width:0!important; width:100%!important; grid-template-rows:16px 42px!important; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-field > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#app.in .ga-wrap .ga-dashboard-actions .ga-btn { width:100%!important; min-width:0!important; max-width:100%!important; height:42px!important; min-height:42px!important; max-height:42px!important; box-sizing:border-box!important; white-space:nowrap!important; font-size:clamp(10px,1.1vw,12px)!important; padding:5px 3px!important; }
+@media(min-width:768px) {
+  #app.in .ga-wrap .ga-dashboard-controls { display:grid!important; grid-template-columns:minmax(0,1fr) minmax(190px,.9fr)!important; gap:12px!important; align-items:end!important; }
+  #app.in .ga-wrap .ga-dashboard-controls .ga-filters { gap:10px!important; }
+}
+@media(max-width:420px) {
+  #app.in .ga-wrap .ga-dashboard-controls .ga-filters { gap:7px!important; }
+  #app.in .ga-wrap .ga-dashboard-actions { gap:7px!important; }
+}
+
 /* Desktop-only polish: denser history controls and clearer separation between guests. */
 @media(min-width:768px) {
   #app.in .ga-wrap { padding:16px 20px!important; }
