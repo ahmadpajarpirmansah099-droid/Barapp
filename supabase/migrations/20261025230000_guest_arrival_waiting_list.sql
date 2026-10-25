@@ -283,6 +283,7 @@ AS $function$
 DECLARE
   v_today date := (now() AT TIME ZONE 'Asia/Jakarta')::date;
   v_date date := COALESCE(p_date, (now() AT TIME ZONE 'Asia/Jakarta')::date);
+  v_server_now timestamptz := clock_timestamp();
   v_result jsonb;
 BEGIN
   PERFORM public.guest_arrival_assert_access();
@@ -293,7 +294,7 @@ BEGIN
   END IF;
 
   SELECT COALESCE(
-    jsonb_agg(public.guest_arrival_row_json(g) ORDER BY g.operational_date, g.queue_number),
+    jsonb_agg(public.guest_arrival_row_json(g) || jsonb_build_object('server_now', v_server_now) ORDER BY g.operational_date, g.queue_number),
     '[]'::jsonb
   )
   INTO v_result
