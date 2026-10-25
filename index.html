@@ -2399,7 +2399,7 @@ async function initAuth(){
       D.me={r:role,uid:session.user.id,email};sv();
       if(role==='G'){
         resetAcc();D.per=[];D.pin='';D.cur='';sv();idleSet();
-        T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;
+        T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;if(typeof window.guestArrivalResetSession==='function')window.guestArrivalResetSession();
         try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}
         SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
         try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
@@ -5082,5 +5082,5 @@ window.cgRemoveLine=function(type,i){
 </script>
 <script>window.__barappStockOutCategories=['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];</script>
 <script src="./closing.js?v=20261024-approval-operational-template-v7"></script>
-<script src="./guest-arrival.js?v=20261026-guest-arrival-v9"></script>
+<script src="./guest-arrival.js?v=20261026-guest-arrival-v10"></script>
 </body></html>
