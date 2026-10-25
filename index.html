@@ -1753,7 +1753,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 const K='absensi_bar_v1',STAFF_SESSION_KEY='barapp_staff_session_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
-const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return r=='dev'?'D':(['div_admin','hr','legacy_admin','report_viewer'].includes(r))?'A':null};
+const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);return r=='dev'?'D':r==='guest_arrival'?'G':(['div_admin','hr','legacy_admin','report_viewer'].includes(r))?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');if(persisted&&persisted.me&&persisted.me.r==='K'){delete persisted.me;localStorage.setItem(K,JSON.stringify(persisted))}}catch(e){}
@@ -2257,6 +2257,7 @@ function outMenuHtml(){
   const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div>`}
 async function sbLoad(silent){
+if(T.dbRole==='guest_arrival'){if(typeof guestArrivalRefresh==='function')guestArrivalRefresh(true);return}
 if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
 await sbLoad0(silent);
 if(SB.pend){const m=SB.pend;SB.pend=null;setTimeout(()=>sbLoad(m=='silent'),0)}
@@ -2365,17 +2366,23 @@ async function initAuth(){
       }
       if(!D.me||D.me.uid!==session.user.id)resetAcc();
       D.me={r:role,uid:session.user.id,email};sv();
+      if(role==='G'){
+        T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;
+        SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
+        try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
+        R();return;
+      }
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
       R();
     };
     await applySession(data.session);
     c.auth.onAuthStateChange((event,session)=>{
-      if(event=='SIGNED_IN'){if(session&&D.me&&D.me.uid===session.user.id&&(D.me.r=='A'||D.me.r=='D'))return;setTimeout(()=>applySession(session),0)}
-      else if(event=='SIGNED_OUT'){if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}R()}
+      if(event=='SIGNED_IN'){if(session&&D.me&&D.me.uid===session.user.id&&(D.me.r=='A'||D.me.r=='D'||D.me.r=='G'))return;setTimeout(()=>applySession(session),0)}
+      else if(event=='SIGNED_OUT'){if(D.me&&(D.me.r=='A'||D.me.r=='D'||D.me.r=='G')){D.me=null;sv()}R()}
     });
   }catch(e){
     console.warn('Supabase Auth:',e);
-    if(D.me&&(D.me.r=='A'||D.me.r=='D')){D.me=null;sv()}
+    if(D.me&&(D.me.r=='A'||D.me.r=='D'||D.me.r=='G')){D.me=null;sv()}
     R();
   }
 }
@@ -2470,26 +2477,26 @@ async function lgA(){
 
 /* ===== LOGOUT OTOMATIS SETELAH 3 MENIT TIDAK AKTIF ===== */
 const IDLE_MS=3*60*1000;
+const idleLimitMs=()=>T.dbRole==='guest_arrival'?2*60*60*1000:IDLE_MS;
 const idleSet=()=>{try{localStorage.setItem('bar_last',String(Date.now()))}catch(e){}};
 const idleCheck=()=>{if(!D||!D.me)return;let t=0;try{t=+localStorage.getItem('bar_last')||0}catch(e){}
  if(!t){idleSet();return}
- if(Date.now()-t>IDLE_MS){toast('Sesi berakhir karena tidak aktif 3 menit. Silakan masuk lagi.','warn');out()}};
+ if(Date.now()-t>idleLimitMs()){if(T.dbRole==='guest_arrival'){toast('Sesi berakhir karena tidak aktif. Silakan login kembali.','warn');out(true)}else{toast('Sesi berakhir karena tidak aktif 3 menit. Silakan masuk lagi.','warn');out(true)}}};
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(D&&D.me)idleSet()},{passive:true}));
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(D&&D.me)idleSet()}else idleCheck()});
 setInterval(idleCheck,15000);
-async function out(){try{sessionStorage.removeItem('bar_pg')}catch(e){}
+async function out(force=false){
+  if(T.dbRole==='guest_arrival'&&!force){modal('<h3>Konfirmasi</h3><p>Yakin ingin keluar?</p><div class="btns"><button class="btn d" onclick="out(true);closeM()">Ya</button><button class="btn s" onclick="closeM()">Tidak</button></div>');return}
+  try{sessionStorage.removeItem('bar_pg')}catch(e){}
   try{localStorage.removeItem('bar_last')}catch(e){}
-    try{await sb().auth.signOut()}catch(e){console.warn('Auth signOut:',e)}
-  resetAcc();
-  D.me=null;
-  sv();
-  R();
+  try{await sb().auth.signOut()}catch(e){console.warn('Auth signOut:',e)}
+  resetAcc();D.me=null;sv();R();
 }
 
 /* ---------- Shell ---------- */
 /* ===== MODUL / FITUR (developer): tambah objek baru di MODS. page = kunci halaman di objek V & PAGES; page:null = tampil "Segera hadir" ===== */
-const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard',ic:'dashboard-png',page:'ops_dashboard',adm:true},{name:'Dashboard COGS',ic:'chart-no-axes-combined',page:'cogs_dashboard',adm:true,cogs:true},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Approval',ic:'approval',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-list',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'user-cog',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Segera hadir',ic:'lock',page:null}];
-const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',cogs_dashboard:'Dashboard COGS',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
+const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard',ic:'dashboard-png',page:'ops_dashboard',adm:true},{name:'Dashboard COGS',ic:'chart-no-axes-combined',page:'cogs_dashboard',adm:true,cogs:true},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Approval',ic:'approval',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-list',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'user-cog',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Guest Arrival',ic:'users',page:'guest_arrival',adm:true},{name:'Segera hadir',ic:'lock',page:null}];
+const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',cogs_dashboard:'Dashboard COGS',guest_arrival:'Guest Arrival',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
 const DIV_MODULE_FIELDS=[
  {key:'supplies',label:'Daily SO SUPLIES',desc:'Stok guest supplies dan perlengkapan service'},
  {key:'cogs_materials',label:'Master Bahan',desc:'Master bahan untuk perhitungan COGS'},
@@ -2525,11 +2532,11 @@ const cogsPageFeature={cogs_dashboard:['inventory.view','cogs.wip.view','cogs.wi
 const cogsPageOK=k=>T.dbRole==='report_viewer'
  ? ((k==='cogs_daily_so'&&hasFeature('cogs.daily_so.edit'))||(k==='cogs_production'&&hasFeature('cogs.production.manage'))||(k==='cogs_sales'&&hasFeature('cogs.sales.manage')))
  : k==='cogs_closing'?(isDeveloper()||T.dbRole==='div_admin'):k==='cogs_materials'?(isDeveloper()||hasFeature('inventory.view')||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature)):k==='cogs_dashboard'?(isDeveloper()||['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature)):(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature));
-const allowed=()=>{const p=T.dbRole==='report_viewer'?['dash','cogs_daily_so','pengeluaran','cogs_production','masuk','cogs_sales','supplies']:adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(k!='dash'||T.dbRole!=='report_viewer'||(hasFeature('attendance.view')&&hasFeature('employees.view')))&&(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!=='barang'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!=='masuk'||hasFeature('inventory.view')||hasFeature('inventory.inbound.view')||hasFeature('inventory.manage')||hasFeature('inventory.inbound.manage'))&&(k!=='pengeluaran'||hasFeature('inventory.manage')||hasFeature('inventory.outbound.manage'))&&(k!=='supplies'||hasFeature('inventory.manage')||hasFeature('inventory.supplies.manage'))&&(k!='ops_dashboard'||(adm()&&(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature))))&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||(T.dbRole==='report_viewer'?(hasFeature('employees.view')&&hasFeature('employees.directory.view')):(hasFeature('employees.view')||hasFeature('employees.manage'))))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||(T.dbRole==='report_viewer'?(hasFeature('attendance.view')&&hasFeature('attendance.report.view')):(hasFeature('attendance.view')||payOK())))&&(k!='unit'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!='div'||isDeveloper()||(T.dbRole==='div_admin'&&hasDivMgr()))&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper())&&(!k.startsWith('cogs_')||cogsPageOK(k)))};
-const GRP=k=>k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk'||k=='pengeluaran'||k=='supplies')?'inventory':'abs';
+const allowed=()=>{if(T.dbRole==='guest_arrival')return ['guest_arrival'];const p=T.dbRole==='report_viewer'?['dash','cogs_daily_so','pengeluaran','cogs_production','masuk','cogs_sales','supplies']:adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(k!='dash'||T.dbRole!=='report_viewer'||(hasFeature('attendance.view')&&hasFeature('employees.view')))&&(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!=='barang'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!=='masuk'||hasFeature('inventory.view')||hasFeature('inventory.inbound.view')||hasFeature('inventory.manage')||hasFeature('inventory.inbound.manage'))&&(k!=='pengeluaran'||hasFeature('inventory.manage')||hasFeature('inventory.outbound.manage'))&&(k!=='supplies'||hasFeature('inventory.manage')||hasFeature('inventory.supplies.manage'))&&(k!='ops_dashboard'||(adm()&&(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature))))&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||(T.dbRole==='report_viewer'?(hasFeature('employees.view')&&hasFeature('employees.directory.view')):(hasFeature('employees.view')||hasFeature('employees.manage'))))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||(T.dbRole==='report_viewer'?(hasFeature('attendance.view')&&hasFeature('attendance.report.view')):(hasFeature('attendance.view')||payOK())))&&(k!='unit'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!='div'||isDeveloper()||(T.dbRole==='div_admin'&&hasDivMgr()))&&(k!='audit'||isDeveloper())&&(k!='divdet'||isDeveloper())&&(!k.startsWith('cogs_')||cogsPageOK(k))&&(k!=='guest_arrival'||isDeveloper()))};
+const GRP=k=>k==='guest_arrival'?'guest':k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='div'||k=='divdet'||k=='audit')?'dev':(k=='barang'||k=='masuk'||k=='pengeluaran'||k=='supplies')?'inventory':'abs';
 const HIDE_NAV=['abs','unit','masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales','cogs_production'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang'],MOVED=SHEET_ABS.concat(SHEET_PAY);
-const go=p=>{if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
-function openMods(){modal(`<h3 class="mods-title">Fitur</h3><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${MODS.filter(m=>T.dbRole==='report_viewer'?!!m.page&&allowed().includes(m.page):!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole=='hr'||hasDivMgr())&&(!m.cogs||adm())).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${m.ic==='dashboard-png'?'<svg class="feature-dashboard-png" viewBox="0 0 512 512" role="img" aria-label="Dashboard"><g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M40 470V210H104V470M164 470V130H228V470M288 470V282H352V470M412 470V190H476V470"/><path d="M36 488H480M40 92L160 20L282 124L438 48"/><circle cx="40" cy="92" r="24" fill="var(--cd)"/><circle cx="160" cy="20" r="24" fill="var(--cd)"/><circle cx="282" cy="124" r="24" fill="var(--cd)"/><circle cx="438" cy="48" r="24" fill="var(--cd)"/><circle cx="364" cy="388" r="76" fill="var(--cd)"/><path d="M364 350V363M364 413V426M326 388H339M389 388H402M337 361L346 370M382 406L391 415M391 361L382 370M346 406L337 415M364 388L399 367L377 402Q364 414 364 388Z"/></g></svg>':IC(lk?'lock':m.ic,26)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
+const go=p=>{if(T.dbRole==='guest_arrival'&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
+function openMods(){modal(`<h3 class="mods-title">Fitur</h3><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${MODS.filter(m=>T.dbRole==='guest_arrival'?m.page==='guest_arrival':T.dbRole==='report_viewer'?!!m.page&&allowed().includes(m.page):!['masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales'].includes(m.page)&&(!m.dev||isDeveloper()||T.dbRole=='hr'||hasDivMgr())&&(!m.cogs||adm())).map(m=>{const lk=!!m.page&&!allowed().includes(m.page);const dis=!m.page;return `<button class="btn ${m.page?'s':'o'}" style="${dis?'opacity:.55':lk?'opacity:.6':''}" ${dis?'disabled':lk?'onclick="lockTip()"':`onclick="closeM();go('${m.page}')"`}><div style="display:grid;place-items:center;margin-bottom:4px">${m.ic==='dashboard-png'?'<svg class="feature-dashboard-png" viewBox="0 0 512 512" role="img" aria-label="Dashboard"><g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M40 470V210H104V470M164 470V130H228V470M288 470V282H352V470M412 470V190H476V470"/><path d="M36 488H480M40 92L160 20L282 124L438 48"/><circle cx="40" cy="92" r="24" fill="var(--cd)"/><circle cx="160" cy="20" r="24" fill="var(--cd)"/><circle cx="282" cy="124" r="24" fill="var(--cd)"/><circle cx="438" cy="48" r="24" fill="var(--cd)"/><circle cx="364" cy="388" r="76" fill="var(--cd)"/><path d="M364 350V363M364 413V426M326 388H339M389 388H402M337 361L346 370M382 406L391 415M391 361L382 370M346 406L337 415M364 388L399 367L377 402Q364 414 364 388Z"/></g></svg>':IC(lk?'lock':m.ic,26)}</div>${esc(m.name)}${lk?' <small>· dibatasi</small>':''}</button>`}).join('')}</div><br><button class="btn s" onclick="closeM()">Tutup</button>`)}
 const lockTip=()=>toast('Fitur ini dibatasi untuk akun kamu','warn');
 const clk=()=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit'}).format(new Date());
 const cmn=()=>{
@@ -2623,12 +2630,12 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
 
 window.__barappRefreshUI=()=>{if(D.me)R()};
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
-if(!T.pgInit){T.pgInit=1;let restored=false;try{const lp=localStorage.getItem('bar_pg_last');if(lp&&PAGES[lp]){pg=lp;restored=true}}catch(e){}if(!restored)try{const sp=sessionStorage.getItem('bar_pg');if(sp&&PAGES[sp]){pg=sp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='div'}
+if(!T.pgInit){T.pgInit=1;let restored=false;if(T.dbRole==='guest_arrival'){pg='guest_arrival';restored=true}if(!restored)try{const lp=localStorage.getItem('bar_pg_last');if(lp&&PAGES[lp]){pg=lp;restored=true}}catch(e){}if(!restored)try{const sp=sessionStorage.getItem('bar_pg');if(sp&&PAGES[sp]){pg=sp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='div'}
 a.className='in';if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
-if(!allowed().includes(pg))pg='dash';
+if(!allowed().includes(pg))pg=allowed()[0]||'dash';
 try{sessionStorage.setItem('bar_pg',pg)}catch(e){}try{localStorage.setItem('bar_pg_last',pg)}catch(e){}
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
-const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>allowed().includes(k)&&k!='divdet'&&(!HIDE_NAV.includes(k)||(T.dbRole==='report_viewer'&&['masuk','pengeluaran','supplies','cogs_production','cogs_sales'].includes(k)))&&(!MOVED.includes(k)||k==='pay_data')&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())).sort((a,b)=>{const order=['cogs_dashboard','cogs_daily_so','cogs_closing','dash','ops_dashboard','barang','pay_data','div','audit'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?order.length:ai)-(bi<0?order.length:bi)}),pic=k=>({dash:'dashboard',ops_dashboard:'chart-no-axes-combined',cogs_dashboard:'chart-no-axes-combined',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid',barang:'box',masuk:'truck',pengeluaran:'refresh',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar',cogs_closing:'approval'})[k]||k;
+const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=D.me.r==='G'?'GUEST ARRIVAL':isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='guest'?'guest_arrival':gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'div':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>allowed().includes(k)&&k!='divdet'&&(!HIDE_NAV.includes(k)||(T.dbRole==='report_viewer'&&['masuk','pengeluaran','supplies','cogs_production','cogs_sales'].includes(k)))&&(!MOVED.includes(k)||k==='pay_data')&&(k!='audit'||isDeveloper())&&(k!='div'||hasDivMgr())).sort((a,b)=>{const order=['cogs_dashboard','cogs_daily_so','cogs_closing','dash','ops_dashboard','barang','pay_data','div','audit'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?order.length:ai)-(bi<0?order.length:bi)}),pic=k=>({guest_arrival:'calendar-clock',dash:'dashboard',ops_dashboard:'chart-no-axes-combined',cogs_dashboard:'chart-no-axes-combined',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',div:'grid',audit:'doc',divdet:'grid',barang:'box',masuk:'truck',pengeluaran:'refresh',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar',cogs_closing:'approval'})[k]||k;
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
@@ -5036,4 +5043,5 @@ window.cgRemoveLine=function(type,i){
 </script>
 <script>window.__barappStockOutCategories=['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];</script>
 <script src="./closing.js?v=20261024-approval-operational-template-v7"></script>
+<script src="./guest-arrival.js?v=20261025-guest-arrival-v1"></script>
 </body></html>
