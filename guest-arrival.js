@@ -117,7 +117,7 @@ async function guestArrivalRefresh(silent) {
       GA.ready = false;
       GA.error = '';
       GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
-      setTimeout(() => guestArrivalRefresh(true), 0);
+      if (pg === 'guest_arrival') setTimeout(() => guestArrivalRefresh(true), 0);
     }
     R();
     if (GA.showPending && document.querySelector('#m .ov')) guestArrivalRenderPendingModal();
@@ -132,10 +132,10 @@ function guestArrivalOutletChanged() {
   GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
   if (GA.loading) {
     GA.reloadAfterCurrent = true;
-    R();
+    if (pg === 'guest_arrival') R();
     return;
   }
-  void guestArrivalRefresh(true);
+  if (pg === 'guest_arrival') void guestArrivalRefresh(true);
 }
 function guestArrivalSetTab(tab) {
   if (!['queue','dashboard','history'].includes(tab)) return;
