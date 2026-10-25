@@ -543,4 +543,6 @@ GRANT EXECUTE ON FUNCTION public.guest_arrival_detail(uuid,uuid) TO authenticate
 GRANT EXECUTE ON FUNCTION public.guest_arrival_set_status(uuid,text,text,uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.guest_arrival_correct(uuid,text,integer,text,text,uuid) TO authenticated, service_role;
 
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
