@@ -327,6 +327,48 @@ const gaCss = String.raw`
 .ga-wrap .ga-empty strong{color:#3b211d!important}
 .ga-wrap .ga-count{font-weight:650}
 .ga-wrap .ga-eyebrow{color:#71362d!important}
+
+/* Compact date badge: keep the date inside the heading row without adding a separate row. */
+#app.in .ga-wrap .ga-heading{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:start!important;
+  gap:clamp(6px,1.4vw,12px)!important;
+  position:relative!important;
+  min-width:0!important;
+  margin:0 0 10px!important;
+}
+#app.in .ga-wrap .ga-heading h2{
+  min-width:0!important;
+  margin:2px 0 0!important;
+  font-size:clamp(17px,3.2vw,24px)!important;
+  line-height:1.14!important;
+  letter-spacing:-.035em!important;
+  white-space:normal!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+#app.in .ga-wrap .ga-heading .ga-date-pill{
+  justify-self:end!important;
+  align-self:start!important;
+  position:static!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:5px 7px!important;
+  font-size:clamp(8px,1.25vw,10px)!important;
+  line-height:1.15!important;
+  letter-spacing:-.01em!important;
+  white-space:nowrap!important;
+  box-sizing:border-box!important;
+}
+#app.in .ga-wrap .ga-tabs{margin-top:0!important}
+@media(max-width:380px){
+  #app.in .ga-wrap .ga-heading{gap:5px!important}
+  #app.in .ga-wrap .ga-heading h2{font-size:16px!important;letter-spacing:-.04em!important}
+  #app.in .ga-wrap .ga-heading .ga-date-pill{font-size:8px!important;padding:4px 5px!important}
+}
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
