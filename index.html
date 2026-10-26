@@ -2453,7 +2453,7 @@ SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return 
    The app_settings row stores only public presentation settings (theme, title, logo).
    Read is public so employee-name sessions see the same theme; writes are restricted by RLS to the developer email. */
 let SHARED_SETTINGS_SIG='';
-function mergeTheme(x){return {...THEME,...x,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
+function mergeTheme(x){return {...THEME,...x,v:THEME.v,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
 async function loadSharedSettings(silent=false){
   try{
     if(T.dbRole==='guest_arrival'&&!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false;
@@ -2470,7 +2470,7 @@ async function loadSharedSettings(silent=false){
     const sig=String(data.updated_at||JSON.stringify(remote));
     if(sig===SHARED_SETTINGS_SIG)return true;
     if(T.bk)return true;
-    if(remote.v!==THEME.v)return false;
+    /* Tema global DEV adalah sumber utama. Versi skema tema lama tetap digabung dengan default saat ini agar perangkat yang belum seragam tidak menolak tema bersama. */
     TH=mergeTheme(remote);D.th=JSON.parse(JSON.stringify(TH));SHARED_SETTINGS_SIG=sig;
     applyTheme();sv();R();
     return true;
