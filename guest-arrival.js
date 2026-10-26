@@ -402,6 +402,20 @@ const gaCss = String.raw`
   #app.in .ga-wrap .ga-heading h2{font-size:16px!important;letter-spacing:-.04em!important}
   #app.in .ga-wrap .ga-heading .ga-date-pill{font-size:8px!important;padding:4px 5px!important}
 }
+
+/* Keep Guest Arrival on its dedicated terracotta-red theme, independent of the account accent. */
+body:has(#app.in .ga-wrap){
+  background-color:#B4533F!important;
+  background-image:radial-gradient(rgba(255,232,225,.58) 2px,transparent 2px)!important;
+  background-size:32px 32px!important;
+}
+#app.in .ga-wrap{
+  --ac:#B4533F;
+  --tint:rgba(180,83,63,.14);
+  --br:#D9A69B;
+  --line:#3B211D;
+  --onac:#FFFFFF;
+}
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
