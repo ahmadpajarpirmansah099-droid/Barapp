@@ -3571,7 +3571,7 @@ function adminFeatureToggle(uid,featureName,on){
 
 function adminRefreshPermissionUI(uid){
  const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d)return;
- const account=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(uid));
+ const account=(T.accs||[]).find(a=>String(a.user_id)===String(uid));
  ADMIN_FEATURES.forEach(feature=>{
   const node=[...document.querySelectorAll('.ad-feature')].find(el=>el.dataset.featureName===feature.name);if(!node)return;
   const perms=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p)),enabled=perms.filter(p=>d.selected.includes(p)).length;
@@ -3592,7 +3592,7 @@ async function adminPermSave(uid){
  if(!isDeveloper())return toast('Hanya Dev yang dapat menyimpan izin.','err');
  const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d||!adminPermDirty(d))return toast('Belum ada perubahan izin.','warn');
  const allowed=ADMIN_PERMISSION_CATALOG.map(p=>p.key);
- const target=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(uid));
+ const target=(T.accs||[]).find(a=>String(a.user_id)===String(uid));
  if(!target||!target.active||target.role==='dev')return toast('Izin hanya dapat diubah untuk akun aktif non-Dev.','err');
  const changes=allowed.map(permission=>({permission,enabled:d.selected.includes(permission)}));
  const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perms_bulk',{p_user:uid,p_changes:changes})});
@@ -3614,7 +3614,7 @@ V.div=()=>{
  if(!isDeveloper())return '<div class="card"><h3>Admin & Divisi</h3><p class="mu">Pengelolaan akun dan hak akses hanya tersedia untuk Dev.</p></div>';
  if(!T.accs||!T.outlets||!T.allDivs){if(!T.adminDivLoading){T.adminDivLoading=true;setTimeout(async()=>{try{await divLoad()}finally{T.adminDivLoading=false}},0)}return '<div class="card"><h3>Memuat Admin & Divisi…</h3><p class="mu">Mengambil akun, scope outlet/divisi, dan izin dari Supabase.</p></div>'}
  if(T.adminDivError)return '<div class="card"><h3>Admin & Divisi belum bisa dimuat</h3><p class="mu">'+esc(T.adminDivError)+'</p><button class="btn s" onclick="T.accs=null;T.outlets=null;T.allDivs=null;divLoad()">Coba lagi</button></div>';
- const outlet=adminCurrentOutlet(),accounts=adminAccountsFiltered(),selected=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(T.adminSelectedId)),tab=T.adminDetailTab||'permissions';
+ const outlet=adminCurrentOutlet(),accounts=adminAccountsFiltered(),selected=(T.accs||[]).find(a=>String(a.user_id)===String(T.adminSelectedId)),tab=T.adminDetailTab||'permissions';
  const roles={all:'Semua',admin_outlet:'Admin Outlet',div_admin:'Admin Divisi',other:'Lainnya'};
  const stats=[{label:'Total akun',value:(T.adminVisibleAccounts||[]).length,icon:'users'},{label:'Admin Outlet',value:(T.adminVisibleAccounts||[]).filter(a=>a.role==='legacy_admin').length,icon:'shield'},{label:'Admin Divisi',value:(T.adminVisibleAccounts||[]).filter(a=>a.role==='div_admin').length,icon:'layers'},{label:'Lainnya',value:(T.adminVisibleAccounts||[]).filter(a=>!['legacy_admin','div_admin'].includes(a.role)).length,icon:'users-round'}];
  const statHtml=stats.map(s=>'<div class="ad-stat"><span class="ad-stat-icon">'+s.icon+'</span><div><small>'+s.label+'</small><b>'+s.value+'</b></div></div>').join('');
@@ -3640,7 +3640,7 @@ V.div=()=>{
   else detail+='<div class="ad-scope-list">'+scopeHtml+'</div><p class="ad-feature-note">Pemilihan outlet hanya mengubah konteks tampilan. Scope akun tidak dipindahkan atau diubah otomatis.</p>';
  }
  const outletOpts=(T.outlets||[]).map(o=>'<option value="'+o.id+'" '+(String(o.id)===String(T.adminOutletId)?'selected':'')+'>'+esc(o.name)+'</option>').join('');
- const orphanHtml=(T.adminOrphans||[]).length?'<details class="ad-orphans"><summary>Perlu pemeriksaan · '+T.adminOrphans.length+' akun tanpa scope valid</summary><div>'+T.adminOrphans.map(a=>'<div class="ad-orphan-row"><span>'+esc(a.email||'(email tidak tersedia)')+'</span><small>'+esc(adminRoleLabel(a.role))+' · scope belum valid</small></div>').join('')+'</div></details>':'';
+ const orphanHtml=(T.adminOrphans||[]).length?'<details class="ad-orphans"><summary>Perlu pemeriksaan · '+T.adminOrphans.length+' akun tanpa scope valid</summary><div>'+T.adminOrphans.map(a=>'<div class="ad-orphan-row"><span>'+esc(a.email||'(email tidak tersedia)')+'</span><small>'+esc(adminRoleLabel(a.role))+' · scope belum valid</small><button type="button" class="btn s" onclick="adminSelectAccount(\\''+a.user_id+'\\')">Atur izin</button></div>').join('')+'</div></details>':'';
  return '<div class="ad-page '+(T.adminPermissionsPopup?'ad-popup-open':'')+'"><header class="ad-page-head"><div><div class="ad-eyebrow">PENGATURAN AKUN</div><h2>Admin & Divisi</h2><p>Kelola akun, hak akses fitur, dan cakupan outlet secara terpusat.</p></div><div class="ad-dev-chip"><span class="ad-dev-dot"></span><div><small>Masuk sebagai Dev</small><b>'+esc(T.authEmail||D.me?.email||'Developer')+'</b></div></div></header><section class="ad-context"><label>Outlet aktif<select aria-label="Outlet aktif Admin & Divisi" onchange="adminOutletChange(this.value)">'+outletOpts+'</select></label><span class="ad-context-note">Daftar akun hanya menampilkan scope valid di outlet terpilih.</span></section><section class="ad-stats">'+statHtml+'</section><div class="ad-workspace ad-workspace-list-only"><section class="ad-panel ad-list-panel"><div class="ad-panel-head"><div><h3>Daftar akun</h3><small>'+(T.adminVisibleAccounts||[]).length+' akun pada '+esc(outlet?.name||'outlet aktif')+'</small></div><button class="btn s x" onclick="divLoad()">Muat ulang</button></div><input class="ad-search" type="search" value="'+esc(T.adminSearch||'')+'" placeholder="Cari nama atau email…" oninput="adminSearchSet(this.value)" aria-label="Cari nama atau email"><div class="ad-role-filters">'+Object.keys(roles).map(k=>'<button class="'+((T.adminRoleFilter||'all')===k?'on':'')+'" onclick="adminSetRoleFilter(\''+k+'\')">'+roles[k]+'</button>').join('')+'</div><div class="ad-account-list">'+cards+'<div class="ad-empty-list" '+(accounts.length?'hidden':'')+'>Tidak ada akun yang cocok di outlet ini.</div>'+'</div>'+orphanHtml+'</section></div>'+(T.adminPermissionsPopup&&selected?'<div class="ad-modal-backdrop" onclick="if(event.target===this)adminClosePermissions()"><section class="ad-modal" role="dialog" aria-modal="true" aria-label="Izin akses '+esc(selected.email||'akun')+'"><div class="ad-modal-top"><div><small>DETAIL AKUN</small><h3>Izin Akses</h3><p>'+esc(selected.email||'')+'</p></div><button type="button" class="ad-modal-close" aria-label="Tutup" onclick="adminClosePermissions()">×</button></div><div class="ad-detail-panel">'+detail+'</div><div class="ad-modal-bottom"><button type="button" class="btn s" onclick="adminClosePermissions()">Tutup</button></div></section></div>':'')+'</div>'
 };
 async function adminOutletChange(id){
