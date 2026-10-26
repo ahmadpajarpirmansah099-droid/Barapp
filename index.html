@@ -765,6 +765,65 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
   .side .brand{gap:0!important}
 }
 
+
+/* ===== Divisi & Admin: compact mobile cards (presentation only) ===== */
+.division-manager-card,.account-manager-card{padding:clamp(14px,2.4vw,22px)}
+.admin-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.admin-section-heading>div:first-child{min-width:0;flex:1 1 180px}
+.admin-section-heading b{display:block;font-size:clamp(18px,2.5vw,23px);line-height:1.3}
+.admin-section-heading .mu{margin:4px 0 0;line-height:1.55}
+.section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-count{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;padding:6px 10px;background:var(--tint);font-weight:700;white-space:nowrap}
+.division-list,.admin-account-list{display:flex;flex-direction:column;gap:8px;min-width:0}
+.division-item{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;padding:10px;border:1.5px solid var(--br);border-radius:16px;background:color-mix(in srgb,var(--cd) 96%,var(--ac))}
+.division-avatar{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:var(--tint);color:var(--tx);font-weight:800;font-size:17px}
+.division-item-info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.division-item-info>b{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.division-item-info>small,.division-item-meta{font-size:11px;line-height:1.45;color:var(--mu);overflow-wrap:anywhere}
+.division-item-actions{grid-column:2;display:flex;gap:6px;align-items:center;justify-content:flex-start;flex-wrap:wrap}
+.division-item-actions .btn{min-height:34px;padding:6px 10px;margin:0}
+.account-search-wrap{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:0 12px;border:1.5px solid var(--br);border-radius:14px;background:var(--tint);color:var(--tx)}
+.account-search-wrap>span{font-size:23px;line-height:1;color:var(--ac)}
+.account-search-wrap input{width:100%;min-width:0;max-width:none!important;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:12px 0!important}
+.admin-account-row{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;padding:12px;border:1.5px solid var(--br);border-radius:16px;background:color-mix(in srgb,var(--cd) 96%,var(--ac))}
+.admin-account-row[hidden]{display:none!important}
+.account-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.account-avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--ac) 22%,var(--cd));font-size:18px;font-weight:800;color:var(--tx)}
+.admin-account-row:nth-child(even) .account-avatar{background:color-mix(in srgb,#E8755D 23%,var(--cd))}
+.account-identity-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.account-identity-text>b{font-size:13px;line-height:1.4;overflow-wrap:anywhere;word-break:break-word}
+.account-identity-text>small{font-size:11px;line-height:1.4;color:var(--mu);overflow-wrap:anywhere}
+.account-controls{display:grid;grid-template-columns:minmax(105px,1fr) auto auto;align-items:center;gap:7px;min-width:0}
+.account-role-field{display:block;margin:0!important;min-width:0}
+.account-role-field>span{display:none}
+.account-role-field select{width:100%;max-width:none!important;min-width:0;font-size:12px!important;padding:8px 9px!important}
+.account-active{display:flex!important;align-items:center;justify-content:center;gap:5px;margin:0!important;font-size:11px!important;white-space:nowrap}
+.account-active input{margin:0;width:16px!important;height:16px;flex:0 0 16px}
+.account-password{min-width:0;margin:0!important;padding:7px 8px!important;font-size:11px!important;white-space:nowrap}
+.account-permissions{grid-column:1/-1;border-top:1px solid var(--br);padding-top:7px;min-width:0}
+.account-permissions>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 2px;font-size:12px;font-weight:700;list-style:none}
+.account-permissions>summary::-webkit-details-marker{display:none}
+.account-permissions>summary:after{content:'⌄';font-size:18px;color:var(--ac);line-height:1}
+.account-permissions[open]>summary:after{content:'⌃'}
+.account-permissions-body{padding:8px 10px;border:1px solid var(--br);border-radius:12px;background:var(--in);min-width:0}
+.account-permissions-groups{max-height:360px;overflow:auto;overscroll-behavior:contain}
+.account-permissions-body>p{font-size:11px;margin:8px 0}
+.account-empty{padding:14px;border:1px dashed var(--br);border-radius:14px}
+@media(min-width:620px){
+ .division-item{grid-template-columns:40px minmax(0,1fr) auto}
+ .division-item-actions{grid-column:auto;justify-content:flex-end}
+ .admin-account-row{grid-template-columns:minmax(0,1fr) minmax(270px,auto)}
+ .account-controls{min-width:270px}
+ .account-permissions{grid-column:1/-1}
+}
+@media(max-width:380px){
+ .admin-account-row{padding:10px}
+ .account-controls{grid-template-columns:minmax(100px,1fr) auto;gap:6px}
+ .account-password{grid-column:2;grid-row:1}
+ .account-role-field{grid-column:1;grid-row:1}
+ .account-active{grid-column:1/-1;justify-content:flex-start;padding-top:2px}
+}
+
 </style>
 
 <style id="cogs-ui">
@@ -3313,8 +3372,8 @@ async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await
 V.div=()=>{if(!isDeveloper()){if(T.dbRole==='div_admin'&&hasDivMgr())return divMgrPermissionsCard()+'<div class="card"><b>Catatan akses</b><p class="mu">Izin Admin & Divisi hanya untuk mengatur izin fitur milik Admin Divisi lain. Pembuatan divisi, perubahan nama divisi, penentuan role, dan scope tetap khusus Developer.</p></div>';return '<div class="card empty">Akses Divisi & Admin hanya tersedia untuk Developer atau Admin Divisi yang diberi izin kelola akses.</div>'}if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin belum diberikan oleh developer.</div>';
  if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
  const ds=T.divs||[];const __oc=outCardHtml();
- const rows=ds.map(d=>{const enabled=DIV_MODULE_FIELDS.filter(m=>divisionModuleOn(d,m.key)).map(m=>m.label);return `<tr><td>${esc(d.name)}<br><span class="mu">${esc(d.code)} · ${esc(((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'')}</span></td><td style="word-break:break-all">${d.admins.map(esc).join(', ')||'<span class="mu">belum ada</span>'}</td><td><small>${esc(enabled.join(', ')||'Tidak ada modul COGS/SUPLIES aktif')}</small></td><td style="white-space:nowrap"><button class="btn s x" onclick="divOpen('${d.id}')">Lihat</button> <button class="btn s x" onclick="divEdit('${d.id}')">Edit modul</button></td></tr>`}).join('');
- return __oc+`<div class="card"><b>Divisi</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px;min-width:520px"><tr><th>Divisi</th><th>Admin</th><th>Modul aktif</th><th></th></tr>${rows||'<tr><td colspan="4">Belum ada divisi.</td></tr>'}</table></div></div>`+
+ const rows=ds.map(d=>{const enabled=DIV_MODULE_FIELDS.filter(m=>divisionModuleOn(d,m.key));const outlet=((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'—';return '<article class="division-item"><div class="division-avatar">'+esc((d.code||d.name||'D').trim().charAt(0).toUpperCase())+'</div><div class="division-item-info"><b>'+esc(d.name)+'</b><small>'+esc(d.code||'Tanpa kode')+' · '+esc(outlet)+'</small><span class="division-item-meta">'+d.admins.length+' admin · '+enabled.length+' modul aktif</span></div><div class="division-item-actions"><button class="btn s x" onclick="divOpen(\''+d.id+'\')">Lihat</button><button class="btn s" onclick="divEdit(\''+d.id+'\')">Edit modul</button></div></article>'}).join('');
+ return __oc+`<div class="card division-manager-card"><div class="admin-section-heading"><div><b>Divisi</b><p class="mu">Kelola data divisi yang ada di outlet ini.</p></div><div class="section-actions"><span class="admin-count">${ds.length} divisi</span><button class="btn s" type="button" onclick="document.getElementById('dv_c')&&document.getElementById('dv_c').focus()"><span aria-hidden="true">+</span> Tambah</button></div></div><div class="division-list">`+(rows||'<div class="mu account-empty">Belum ada divisi.</div>')+'</div></div>'+
  `${isDeveloper()?accsCard():(T.dbRole==='div_admin'&&hasDivMgr()?divMgrPermissionsCard():'')}${isDeveloper()?'<div class="card"><b>Aktifkan akun Viewer · Lazy Jennie</b><p class="mu">Buat user <code>crew@div.bar</code> terlebih dahulu di Supabase Authentication → Users, lalu tekan tombol ini untuk memberi akses terbatas ke Rekap dan Dashboard COGS outlet LJN.</p><button class="btn" onclick="assignCrewReportViewer()">Atur akses Viewer Lazy Jennie</button></div>':''}<div class="card"><b>Tambah divisi</b><p class="mu">Divisi baru otomatis mendapat Master Barang dan SUPLIES. Modul COGS tidak aktif sampai Developer mengaturnya melalui Edit modul.</p><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
  `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
 async function divMgrPermLoad(){
@@ -3408,10 +3467,17 @@ function accsCard(){
  const grantHtml=grantGroups.map((g,i)=>{const on=groupOn(g);const partial=g.perms.some(hasSelected)&&!on;return '<label style="display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px;font-weight:600"><input type="checkbox" '+(on?'checked':'')+' '+(partial?'data-partial="true"':'')+' '+dis+' '+(!g.perms.length?'disabled':'')+' onchange="accFeaturePermGroupStage(\''+a.user_id+'\','+i+',this.checked)" style="width:auto;flex:0 0 auto">'+g.label+(partial?' · sebagian':'')+'</label>'+(g.perms.length?'<div style="font-size:11px;color:var(--muted,#777);margin:-6px 0 8px 26px">'+g.perms.length+' izin terkait digabung</div>':'<div class="mu" style="font-size:11px;margin:-6px 0 8px 26px">'+(a.role==='div_admin'?'Otomatis aktif untuk Admin Divisi; tidak bisa dimatikan dari sini.':a.role==='hr'?'Tidak aktif untuk HR.':'Otomatis mengikuti role akun.')+'</div>')}).join('');
  const selectedCount=grantGroups.filter(groupOn).length;
  const dirty=a.role!=='dev'&&accFeaturePermDirty(draft);
- return '<tr><td style="word-break:break-all">'+esc(a.email)+'</td><td><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></td><td>'+esc(dv)+'</td><td><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"></td><td colspan="4"><details><summary id="ac_perm_summary_'+a.user_id+'" style="cursor:pointer;font-weight:600;padding:8px">Atur akses fitur · '+selectedCount+' izin aktif</summary><div style="padding:8px 10px;min-width:220px;max-height:360px;overflow:auto;border:1px solid var(--line,#ddd);border-radius:10px">'+grantHtml+'<p class="mu" id="ac_perm_status_'+a.user_id+'" style="font-size:11px">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</p><button class="btn s" id="ac_perm_save_'+a.user_id+'" '+(dirty?'':'disabled')+' onclick="accFeaturePermSave(\''+a.user_id+'\')">Simpan Perubahan</button></div></details></td><td><button class="btn s x" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></td></tr>';
+ return '<article class="admin-account-row"><div class="account-identity"><div class="account-avatar">'+esc((a.email||'?').charAt(0).toUpperCase())+'</div><div class="account-identity-text"><b>'+esc(a.email)+'</b><small>'+esc(dv)+'</small></div></div><div class="account-controls"><label class="account-role-field"><span>Role</span><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></label><label class="account-active"><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"><span>Aktif</span></label><button type="button" class="btn s x account-password" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></div><details class="account-permissions"><summary id="ac_perm_summary_'+a.user_id+'">Atur akses fitur · '+selectedCount+' kategori aktif</summary><div class="account-permissions-body"><div class="account-permissions-groups">'+grantHtml+'</div><p class="mu" id="ac_perm_status_'+a.user_id+'">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</p><button class="btn s" id="ac_perm_save_'+a.user_id+'" '+(dirty?'':'disabled')+' onclick="accFeaturePermSave(\''+a.user_id+'\')">'+(dirty?'Simpan Perubahan':'Tersimpan')+'</button></div></details></article>';
  }).join('');
- return '<div class="card"><b>Akun aplikasi</b><p class="mu" style="margin:6px 0 10px">Atur role, status, dan akses fitur tiap akun. Tekan “Atur akses fitur” untuk memilih izin yang diberikan. Developer selalu memiliki akses penuh. Reset password dilakukan di Supabase → Authentication.</p><div class="account-table-wrap"><table style="font-size:12px"><tr><th>Email</th><th>Role</th><th>Divisi</th><th>Aktif</th><th colspan="4">Izin fitur</th><th></th></tr>'+(rows||'<tr><td colspan="9">Belum ada akun.</td></tr>')+'</table></div></div>';
+ return '<div class="card account-manager-card"><div class="admin-section-heading"><div><b>Akun aplikasi</b><p class="mu">Atur role, status, dan akses fitur setiap akun. Developer selalu memiliki akses penuh. Reset password dilakukan di Supabase → Authentication.</p></div><span class="admin-count">'+as.length+' akun</span></div><label class="account-search-wrap"><span aria-hidden="true">⌕</span><input id="acSearch" type="search" placeholder="Cari email atau divisi" oninput="accFilterCards(this.value)" autocomplete="off"></label><div class="admin-account-list">'+(rows||'<div class="mu account-empty">Belum ada akun.</div>')+'</div></div>';
 }
+function accFilterCards(value){
+ const q=String(value||'').trim().toLocaleLowerCase('id');
+ document.querySelectorAll('.admin-account-row').forEach(row=>{
+  row.hidden=!row.textContent.toLocaleLowerCase('id').includes(q);
+ });
+}
+
 function accFeaturePermDraft(uid,permissions){
  T.featurePermDrafts=T.featurePermDrafts||{};
  if(!T.featurePermDrafts[uid]){
