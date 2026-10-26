@@ -824,6 +824,11 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .account-active{grid-column:1/-1;justify-content:flex-start;padding-top:2px}
 }
 
+
+/* ===== Admin & Divisi — compact, theme-aware redesign ===== */
+.ad-page{display:flex;flex-direction:column;gap:14px;min-width:0}.ad-page-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:2px 2px 4px}.ad-eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--ac);margin-bottom:3px}.ad-page-head h2{font-size:clamp(22px,3vw,28px);line-height:1.2}.ad-page-head p{margin:5px 0 0;color:var(--mu);font-size:12px}.ad-dev-chip{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--cd);border:1.5px solid var(--line);border-radius:14px;max-width:100%;min-width:0}.ad-dev-dot{width:9px;height:9px;border-radius:50%;background:#2e9b68;flex:none}.ad-dev-chip div{display:flex;flex-direction:column;min-width:0}.ad-dev-chip small,.ad-dev-chip b{overflow-wrap:anywhere}.ad-dev-chip small{font-size:10px;color:var(--mu)}.ad-dev-chip b{font-size:12px}.ad-context{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;background:var(--cd);border:1.5px solid var(--line);border-radius:15px}.ad-context label{display:flex;align-items:center;gap:10px;margin:0;min-width:min(100%,260px);font-size:12px}.ad-context select{margin:0;min-width:180px;max-width:100%;min-height:38px;padding:7px 32px 7px 10px}.ad-context-note{font-size:11px;color:var(--mu)}.ad-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.ad-stat{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;background:var(--cd);border:1.5px solid var(--line);border-radius:15px}.ad-stat-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:11px;background:var(--tint);color:var(--ac);font-size:13px;font-weight:800}.ad-stat>div{display:flex;flex-direction:column;min-width:0}.ad-stat small{font-size:10px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ad-stat b{font:600 22px/1.1 var(--fh),'Fredoka',sans-serif}.ad-workspace{display:grid;grid-template-columns:minmax(270px,.82fr) minmax(0,1.45fr);align-items:start;gap:12px;min-width:0}.ad-panel{min-width:0;overflow:hidden;background:var(--cd);border:1.5px solid var(--line);border-radius:18px;padding:14px}.ad-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.ad-panel-head h3{font-size:16px}.ad-panel-head small{font-size:10px;color:var(--mu)}.ad-search{margin:0 0 10px;min-height:40px;padding:9px 12px}.ad-role-filters{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}.ad-role-filters button{min-height:31px;padding:5px 9px;border-radius:10px;border:1px solid var(--br);background:var(--in);color:var(--tx);font-size:10px;font-weight:700;transition:none}.ad-role-filters button.on{background:var(--tint);border-color:var(--ac);color:var(--ac)}.ad-account-list{display:flex;flex-direction:column;gap:6px;max-height:680px;overflow-y:auto;overscroll-behavior:contain}.ad-account{display:flex;align-items:center;gap:9px;width:100%;min-width:0;text-align:left;padding:10px;border:1.5px solid var(--br);border-radius:13px;background:transparent;color:var(--tx);transition:background .12s,border-color .12s;cursor:pointer}.ad-account.selected{background:var(--tint);border-color:var(--ac)}.ad-account:focus-visible{outline:2px solid var(--ac);outline-offset:2px}.ad-avatar{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;background:var(--tint);border:1px solid var(--br);color:var(--ac);font-weight:800}.ad-avatar.large{width:42px;height:42px;border-radius:14px}.ad-account-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.ad-account-main b{font-size:11px;overflow-wrap:anywhere;line-height:1.35}.ad-account-main span{font-size:10px;font-weight:700;color:var(--ac)}.ad-account-main small{font-size:10px;color:var(--mu);overflow-wrap:anywhere}.ad-status{display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:8px;padding:4px 7px;font-size:9px;font-weight:800;white-space:nowrap}.ad-status.active{color:#24764e;background:color-mix(in srgb,#36a76c 13%,var(--cd))}.ad-status.inactive{color:var(--terra);background:color-mix(in srgb,var(--terra) 13%,var(--cd))}.ad-detail-empty{min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}.ad-empty-icon{font-size:28px;color:var(--ac);margin-bottom:8px}.ad-detail-empty b{font-size:14px}.ad-detail-empty p{max-width:260px;font-size:11px}.ad-detail-head{display:flex;align-items:center;gap:10px;min-width:0;padding:2px 0 13px}.ad-detail-identity{min-width:0;flex:1}.ad-detail-identity h3{font-size:14px;overflow-wrap:anywhere;line-height:1.35}.ad-detail-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}.ad-role-chip{font-size:9px;font-weight:800;padding:4px 7px;border-radius:8px;background:var(--tint);color:var(--ac)}.ad-tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--br);padding-bottom:7px;margin-bottom:12px}.ad-tabs button{flex:none;min-height:34px;padding:7px 10px;background:transparent;border:1px solid transparent;border-radius:10px;color:var(--mu);font-size:10px;font-weight:800;white-space:nowrap}.ad-tabs button.on{background:var(--tint);border-color:var(--br);color:var(--ac)}.ad-permissions-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.ad-permissions-toolbar div{display:flex;flex-direction:column;min-width:0}.ad-permissions-toolbar b{font-size:13px}.ad-permissions-toolbar small{font-size:10px;color:var(--mu)}.ad-permissions-toolbar>span{flex:none;font-size:10px;font-weight:800;color:var(--ac);background:var(--tint);padding:5px 8px;border-radius:9px}.ad-feature-list{display:flex;flex-direction:column;gap:7px}.ad-feature{border:1px solid var(--br);border-radius:13px;padding:10px 11px;min-width:0}.ad-feature-head{display:flex;align-items:center;gap:9px;min-width:0}.ad-feature-icon{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:10px;background:var(--tint);color:var(--ac);font-size:13px;font-weight:800}.ad-feature-title{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.ad-feature-title b{font-size:11px}.ad-feature-title small{font-size:10px;color:var(--mu);line-height:1.35}.ad-feature-state{font-size:9px;font-weight:800;padding:4px 7px;border-radius:8px;background:var(--in);color:var(--mu);white-space:nowrap}.ad-feature-state.on{background:color-mix(in srgb,#36a76c 13%,var(--cd));color:#24764e}.ad-permission-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:9px 0 0 39px}.ad-permission{display:flex;align-items:flex-start;gap:7px;min-width:0;margin:0;padding:7px 8px;border:1px solid var(--br);border-radius:10px;background:var(--in);cursor:pointer}.ad-permission input{width:17px;min-width:17px;height:17px;min-height:17px;margin:1px 0 0;accent-color:var(--ac);flex:none}.ad-permission span{display:flex;flex-direction:column;gap:2px;min-width:0}.ad-permission b{font-size:10px;line-height:1.3}.ad-permission small{font-size:9px;color:var(--mu);line-height:1.35}.ad-feature-note{margin:8px 0 0 39px;font-size:10px;line-height:1.5;color:var(--mu)}.ad-savebar{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px -14px -14px;padding:11px 14px calc(11px + var(--sf));background:var(--cd);border-top:1.5px solid var(--line)}.ad-savebar .mu{font-size:10px}.ad-savebar>div{display:flex;gap:6px}.ad-savebar .btn{margin:0;min-height:36px;padding:6px 12px;font-size:12px}.ad-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ad-info-grid>div{display:flex;flex-direction:column;gap:4px;min-width:0;padding:11px;border:1px solid var(--br);border-radius:12px}.ad-info-grid small{font-size:10px;color:var(--mu)}.ad-info-grid b{font-size:11px;overflow-wrap:anywhere}.ad-id{font-size:9px!important}.ad-scope-list{display:flex;flex-direction:column;gap:7px}.ad-scope-row{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid var(--br);border-radius:12px}.ad-scope-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);flex:none}.ad-scope-row div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.ad-scope-row b{font-size:11px}.ad-scope-row small{font-size:10px;color:var(--mu)}.ad-scope-state{font-size:9px;color:var(--mu);font-weight:800}.ad-warning{padding:10px;border-radius:11px;background:color-mix(in srgb,var(--terra) 12%,var(--cd));color:var(--terra);font-size:11px}.ad-orphans{margin-top:10px;border-top:1px solid var(--br);padding-top:10px}.ad-orphans summary{cursor:pointer;font-size:10px;font-weight:800;color:var(--terra);padding:4px 0}.ad-orphan-row{display:flex;flex-direction:column;gap:2px;padding:7px 0;border-bottom:1px solid var(--br)}.ad-orphan-row span{font-size:10px;overflow-wrap:anywhere}.ad-orphan-row small{font-size:9px;color:var(--mu)}.ad-empty-list{padding:24px 10px;text-align:center;color:var(--mu);font-size:11px}
+@media(max-width:850px){.ad-workspace{grid-template-columns:minmax(0,1fr)}.ad-account-list{max-height:340px}.ad-detail-panel{min-height:220px}.ad-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.ad-page{gap:10px}.ad-page-head{align-items:flex-start}.ad-dev-chip{width:100%}.ad-context{align-items:stretch;gap:7px}.ad-context label{width:100%;justify-content:space-between}.ad-context select{flex:1;min-width:0}.ad-context-note{font-size:10px}.ad-stats{gap:7px}.ad-stat{padding:9px;gap:7px;border-radius:12px}.ad-stat-icon{width:29px;height:29px;border-radius:9px}.ad-stat small{font-size:9px}.ad-stat b{font-size:19px}.ad-panel{padding:11px;border-radius:15px}.ad-panel-head h3{font-size:15px}.ad-account{padding:9px;gap:7px}.ad-avatar{width:32px;height:32px}.ad-account-main b{font-size:10px}.ad-account-main small{font-size:9px}.ad-permission-list{grid-template-columns:minmax(0,1fr);margin-left:0}.ad-feature-note{margin-left:0}.ad-feature{padding:9px}.ad-feature-title small{font-size:9px}.ad-savebar{margin-left:-11px;margin-right:-11px;margin-bottom:-11px;padding-left:11px;padding-right:11px}.ad-savebar .mu{width:100%}.ad-info-grid{grid-template-columns:minmax(0,1fr)}.ad-tabs button{padding:7px 8px;font-size:9px}}
 </style>
 
 <style id="cogs-ui">
@@ -3368,12 +3373,161 @@ V.supplies=()=>{
  return '<div class="cogs-wrap ops-feature-page ops-supplies-page"><div class="card ops-entry-card"><div class="cogs-top"><div><h3>SUPLIES · Daily SO</h3></div><div class="btns"><button class="btn s daily-so-back" onclick="go(\'cogs_daily_so\')">← Kembali ke Daily SO</button><button class="btn s" onclick="invLoad(true)">Muat ulang</button></div></div><div class="cogs-formgrid"><label>Divisi<select id="sup_division" onchange="suppliesSetDivision(this.value)">'+divisionOptions+'</select></label><label>Tanggal Daily SO<input id="sup_date" type="date" value="'+esc(date)+'" max="'+today()+'" onchange="suppliesSetDate(this.value)"></label></div>'+(SUPS.positionError?'<p class="cogs-pill bad">'+esc(SUPS.positionError)+'</p>':'')+(active?'<p class="mu">Daily SO ini sudah disimpan dan stok aktualnya dikunci. Batalkan lewat riwayat untuk koreksi.</p>':'')+'<label>Catatan<input id="sup_note" maxlength="500" '+(active?'disabled':'')+' placeholder="Opsional"></label><div class="cogs-scroll"><table class="cogs-table ops-supplies-entry-table"><thead><tr><th>Item</th><th>Masuk</th><th>Keluar</th><th>Stok Sistem</th><th>Stok Aktual</th><th>Selisih</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="mu">Belum ada item SUPLIES di divisi ini.</td></tr>')+'</tbody></table></div><div class="btns"><button class="btn s" onclick="SUPS.positionLoadedFor=\'\';suppliesLoadPosition(true)">Muat saldo</button><button class="btn" '+(active||!rows?'disabled':'')+' onclick="suppliesSaveSO()">Simpan Daily SO</button></div></div><div class="card ops-history-card"><div class="cogs-top"><h3>Riwayat Daily SO Suplies</h3><button class="btn s" onclick="rOpen(\'U\')">📅 '+(SUPS.historyPicked?fdp(suppliesHistoryFrom)+' s/d '+fdp(suppliesHistoryTo):'Pilih rentang tanggal')+'</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Tanggal</th><th>Item</th><th>Selisih</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+(history||'<tr><td colspan="5" class="mu">Belum ada riwayat Daily SO SUPLIES.</td></tr>')+'</tbody></table></div></div><button class="fab" style="right:24px;bottom:calc(88px + env(safe-area-inset-bottom,0px))" onclick="exportSuppliesSOExcel()" aria-label="Unduh rekap Excel Suplies" title="Unduh rekap Excel Suplies">'+IC('arrow-down',26)+'</button></div>';
 };
 
-/* ===== DIVISI & ADMIN (dev, tersimpan di database) ===== */
-async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await Promise.all([payQ('divisions','*',q=>OID?q.eq('outlet_id',OID).order('name'):q.order('name')),(isDeveloper()?payQ('user_scopes','user_id,division_id'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,division_id:x.division_id})))),(isDeveloper()?payQ('user_profiles','user_id,email,role,active'):payRpc('dev_list_division_admins').then(r=>r.map(x=>({user_id:x.user_id,email:x.email,role:'div_admin',active:true})))),payQ('divisions','id,name,outlet_id')]);T.allDivs=al;
- const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
- if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.featurePerms=up;T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
- T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
-V.div=()=>'<div class="card"><b>Admin & Divisi — pembangunan ulang</b><p class="mu">Fitur Admin & Divisi versi lama telah dinonaktifkan. Sistem baru akan dibuat terpisah. Data divisi dan akun yang ada belum dihapus.</p></div>';
+/* ===== ADMIN & DIVISI — akun dan izin aktual, khusus Dev ===== */
+const ADMIN_PERMISSION_CATALOG=[
+ {key:'attendance.view',label:'Lihat absensi',group:'Absensi',desc:'Melihat data absensi'},
+ {key:'attendance.input',label:'Input absensi',group:'Absensi',desc:'Mencatat absensi'},
+ {key:'attendance.manage',label:'Kelola absensi',group:'Absensi',desc:'Mengubah data absensi'},
+ {key:'attendance.approve',label:'Approve absensi',group:'Absensi',desc:'Menyetujui absensi'},
+ {key:'attendance.correct',label:'Koreksi absensi',group:'Absensi',desc:'Mengoreksi data absensi'},
+ {key:'attendance.report.view',label:'Lihat laporan absensi',group:'Laporan',desc:'Membuka laporan absensi'},
+ {key:'employees.view',label:'Lihat data karyawan',group:'Karyawan & Gaji',desc:'Melihat data karyawan'},
+ {key:'employees.directory.view',label:'Lihat direktori karyawan',group:'Karyawan & Gaji',desc:'Membuka direktori karyawan'},
+ {key:'employees.manage',label:'Kelola data karyawan',group:'Karyawan & Gaji',desc:'Menambah atau mengubah data karyawan'},
+ {key:'payroll.view',label:'Lihat gaji',group:'Karyawan & Gaji',desc:'Melihat data penggajian'},
+ {key:'payroll.run',label:'Proses gaji',group:'Karyawan & Gaji',desc:'Menjalankan proses gaji'},
+ {key:'payroll.finalize',label:'Finalisasi gaji',group:'Karyawan & Gaji',desc:'Mengunci atau menyelesaikan proses gaji'},
+ {key:'payroll.correct',label:'Koreksi gaji',group:'Karyawan & Gaji',desc:'Mengoreksi hasil penggajian'},
+ {key:'salary.manage',label:'Kelola gaji',group:'Karyawan & Gaji',desc:'Mengelola komponen gaji'},
+ {key:'allowance.manage',label:'Kelola tunjangan',group:'Karyawan & Gaji',desc:'Mengelola tunjangan'},
+ {key:'kasbon.manage',label:'Kelola kasbon',group:'Karyawan & Gaji',desc:'Mengelola kasbon'},
+ {key:'payslip.release',label:'Rilis slip gaji',group:'Karyawan & Gaji',desc:'Merilis slip gaji'},
+ {key:'inventory.view',label:'Lihat master barang & stok',group:'Inventori',desc:'Membuka master barang dan data stok'},
+ {key:'inventory.manage',label:'Kelola master barang',group:'Inventori',desc:'Mengelola data master barang'},
+ {key:'inventory.inbound.view',label:'Lihat barang masuk',group:'Inventori',desc:'Melihat transaksi barang masuk'},
+ {key:'inventory.inbound.manage',label:'Kelola barang masuk',group:'Inventori',desc:'Mencatat atau mengubah barang masuk'},
+ {key:'inventory.outbound.manage',label:'Kelola pengeluaran',group:'Inventori',desc:'Mengelola transaksi pengeluaran stok'},
+ {key:'inventory.supplies.manage',label:'Kelola Supplies',group:'Inventori',desc:'Mengelola Daily SO Supplies'},
+ {key:'cogs.daily_so.system',label:'Lihat stok sistem Daily SO',group:'Operasional stok',desc:'Melihat angka stok sistem'},
+ {key:'cogs.daily_so.difference',label:'Lihat selisih Daily SO',group:'Operasional stok',desc:'Melihat hasil selisih stok'},
+ {key:'cogs.daily_so.edit',label:'Kelola Daily SO',group:'Operasional stok',desc:'Input atau koreksi Daily SO'},
+ {key:'cogs.wip.view',label:'Lihat Resep WIP',group:'Produksi & Menu',desc:'Melihat resep WIP'},
+ {key:'cogs.wip.manage',label:'Kelola Resep WIP',group:'Produksi & Menu',desc:'Mengelola resep WIP'},
+ {key:'cogs.production.view',label:'Lihat Produksi WIP',group:'Produksi & Menu',desc:'Melihat data produksi'},
+ {key:'cogs.production.manage',label:'Kelola Produksi WIP',group:'Produksi & Menu',desc:'Mengelola produksi WIP'},
+ {key:'cogs.menu.view',label:'Lihat menu',group:'Produksi & Menu',desc:'Melihat data menu'},
+ {key:'cogs.menu.manage',label:'Kelola menu',group:'Produksi & Menu',desc:'Mengelola data menu'},
+ {key:'cogs.sales.view',label:'Lihat penjualan menu',group:'Produksi & Menu',desc:'Melihat input penjualan menu'},
+ {key:'cogs.sales.manage',label:'Kelola penjualan menu',group:'Produksi & Menu',desc:'Mengelola input penjualan menu'},
+ {key:'division.manage',label:'Kelola Admin & Divisi',group:'Administrasi',desc:'Mengelola akses Admin & Divisi'},
+ {key:'audit.view',label:'Lihat audit log',group:'Administrasi',desc:'Melihat riwayat perubahan'}
+];
+const ADMIN_FEATURES=[
+ {name:'Absensi',icon:'◷',desc:'Input, lihat, koreksi, dan persetujuan absensi',perms:['attendance.view','attendance.input','attendance.manage','attendance.approve','attendance.correct']},
+ {name:'Gaji',icon:'Rp',desc:'Penggajian, tunjangan, kasbon, dan slip gaji',perms:['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage','payslip.release']},
+ {name:'Master Barang',icon:'▤',desc:'Master barang dan pengaturan stok',perms:['inventory.view','inventory.manage']},
+ {name:'Daily SO',icon:'☷',desc:'Stok sistem, selisih, dan pengelolaan opname',perms:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit']},
+ {name:'Approval',icon:'✓',desc:'Approval mengikuti aturan modul yang tersedia',perms:[],note:'Belum ada izin Approval umum yang terpisah di skema izin.'},
+ {name:'Master Bahan',icon:'▥',desc:'Belum memiliki izin granular khusus di user_permissions',perms:[],note:'Akses belum dapat diatur terpisah melalui checklist.'},
+ {name:'Resep WIP',icon:'◫',desc:'Lihat dan kelola resep WIP',perms:['cogs.wip.view','cogs.wip.manage']},
+ {name:'Supplies',icon:'▧',desc:'Pengelolaan Daily SO Supplies',perms:['inventory.supplies.manage']},
+ {name:'Produksi WIP',icon:'⚙',desc:'Lihat dan kelola produksi WIP',perms:['cogs.production.view','cogs.production.manage']},
+ {name:'Penjualan Menu',icon:'↗',desc:'Lihat dan kelola input penjualan menu',perms:['cogs.sales.view','cogs.sales.manage']},
+ {name:'Pengeluaran',icon:'↘',desc:'Pengelolaan transaksi keluar stok',perms:['inventory.outbound.manage']},
+ {name:'Barang Masuk',icon:'↙',desc:'Lihat dan kelola transaksi barang masuk',perms:['inventory.inbound.view','inventory.inbound.manage']},
+ {name:'Guest Arrival',icon:'⌂',desc:'Akses mengikuti role dan scope; belum ada izin granular terpisah',perms:[],note:'Tidak ada permission Guest Arrival khusus pada skema user_permissions saat ini.'},
+ {name:'Dashboard & Laporan',icon:'▦',desc:'Izin laporan yang memang terdaftar',perms:['attendance.report.view','employees.view','employees.directory.view','audit.view']}
+];
+async function divLoad(){
+ try{
+  if(!isDeveloper()){T.adminDivError='Halaman ini khusus akun Dev.';R();return}
+  const OID=await outInit();
+  const [profiles,scopes,permissions,outlets,divisions]=await Promise.all([
+   payQ('user_profiles','user_id,email,role,active',q=>q.order('email')),
+   payQ('user_scopes','user_id,outlet_id,division_id'),
+   payQ('user_permissions','user_id,permission'),
+   payQ('outlets','id,code,name,active',q=>q.order('name')),
+   payQ('divisions','id,name,code,outlet_id,active,module_config',q=>q.order('name'))
+  ]);
+  T.accs=profiles||[];T.scopes=scopes||[];T.featurePerms=permissions||[];T.outlets=outlets||[];T.allDivs=divisions||[];
+  T.adminOutletId=OID||D.outId||null;T.adminDivError='';
+  const validScope=(s)=>!!s.outlet_id&&T.outlets.some(o=>String(o.id)===String(s.outlet_id))&&(!s.division_id||T.allDivs.some(d=>String(d.id)===String(s.division_id)&&String(d.outlet_id)===String(s.outlet_id)));
+  T.adminOrphans=T.accs.filter(a=>!T.scopes.some(s=>String(s.user_id)===String(a.user_id)&&validScope(s)));
+  T.adminVisibleAccounts=T.accs.filter(a=>T.scopes.some(s=>String(s.user_id)===String(a.user_id)&&validScope(s)&&String(s.outlet_id)===String(T.adminOutletId)));
+  const selected=T.adminSelectedId;
+  if(!T.adminVisibleAccounts.some(a=>String(a.user_id)===String(selected)))T.adminSelectedId=T.adminVisibleAccounts[0]?.user_id||null;
+  if(!T.adminRoleFilter)T.adminRoleFilter='all';
+ }catch(e){T.adminDivError=errText(e);toast('Admin & Divisi gagal dimuat: '+errText(e),'err')}
+ R()
+}
+function adminRoleLabel(role){return ({dev:'Developer',hr:'HR',div_admin:'Admin Divisi',legacy_admin:'Admin Outlet (role lama)',report_viewer:'Report Viewer',guest_arrival:'Guest Arrival'})[role]||role||'Role tidak diketahui'}
+function adminCurrentOutlet(){return (T.outlets||[]).find(o=>String(o.id)===String(T.adminOutletId))}
+function adminAccountScopes(uid){
+ return (T.scopes||[]).filter(s=>String(s.user_id)===String(uid)&&String(s.outlet_id)===String(T.adminOutletId)).map(s=>({scope:s,division:(T.allDivs||[]).find(d=>String(d.id)===String(s.division_id))})).filter(x=>!x.scope.division_id||x.division)
+}
+function adminSelectAccount(uid){T.adminSelectedId=uid;T.adminDetailTab='permissions';R()}
+function adminSetRoleFilter(role){T.adminRoleFilter=role;R()}
+function adminSearchSet(value){T.adminSearch=String(value||'');R()}
+function adminFeaturePerms(uid){return (T.featurePerms||[]).filter(p=>String(p.user_id)===String(uid)).map(p=>p.permission)}
+function adminPermissionDraft(uid){
+ T.adminPermDrafts=T.adminPermDrafts||{};
+ if(!T.adminPermDrafts[uid]){const current=adminFeaturePerms(uid);T.adminPermDrafts[uid]={base:current.slice(),selected:current.slice()}}
+ return T.adminPermDrafts[uid]
+}
+function adminPermDirty(d){if(!d)return false;const a=[...d.base].sort(),b=[...d.selected].sort();return a.length!==b.length||a.some((x,i)=>x!==b[i])}
+function adminPermStage(uid,permission,on){
+ const d=adminPermissionDraft(uid);d.selected=d.selected.filter(x=>x!==permission);if(on)d.selected.push(permission);
+ R()
+}
+function adminPermReset(uid){if(T.adminPermDrafts)delete T.adminPermDrafts[uid];R()}
+async function adminPermSave(uid){
+ if(!isDeveloper())return toast('Hanya Dev yang dapat menyimpan izin.','err');
+ const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d||!adminPermDirty(d))return toast('Belum ada perubahan izin.','warn');
+ const allowed=ADMIN_PERMISSION_CATALOG.map(p=>p.key);
+ const changes=allowed.map(permission=>({permission,enabled:d.selected.includes(permission)}));
+ const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perms_bulk',{p_user:uid,p_changes:changes})});
+ if(ok){delete T.adminPermDrafts[uid];toast('Izin tersimpan dari backend.');await divLoad()}
+}
+function adminTabSet(tab){T.adminDetailTab=tab;R()}
+function adminAccountsFiltered(){
+ const q=String(T.adminSearch||'').trim().toLocaleLowerCase('id'),role=T.adminRoleFilter||'all';
+ return (T.adminVisibleAccounts||[]).filter(a=>{
+  if(role==='admin_outlet'&&a.role!=='legacy_admin')return false;
+  if(role==='div_admin'&&a.role!=='div_admin')return false;
+  if(role==='other'&&!['legacy_admin','div_admin'].includes(a.role))return true;
+  if(role==='other')return false;
+  if(role!=='all'&&role!=='admin_outlet'&&role!=='div_admin')return false;
+  const scopes=adminAccountScopes(a.user_id).map(x=>x.division?.name||'Tanpa divisi');
+  return [a.email||'',adminRoleLabel(a.role),...scopes].join(' ').toLocaleLowerCase('id').includes(q)
+ })
+}
+V.div=()=>{
+ if(!isDeveloper())return '<div class="card"><h3>Admin & Divisi</h3><p class="mu">Pengelolaan akun dan hak akses hanya tersedia untuk Dev.</p></div>';
+ if(!T.accs||!T.outlets||!T.allDivs){if(!T.adminDivLoading){T.adminDivLoading=true;setTimeout(async()=>{try{await divLoad()}finally{T.adminDivLoading=false}},0)}return '<div class="card"><h3>Memuat Admin & Divisi…</h3><p class="mu">Mengambil akun, scope outlet/divisi, dan izin dari Supabase.</p></div>'}
+ if(T.adminDivError)return '<div class="card"><h3>Admin & Divisi belum bisa dimuat</h3><p class="mu">'+esc(T.adminDivError)+'</p><button class="btn s" onclick="T.accs=null;T.outlets=null;T.allDivs=null;divLoad()">Coba lagi</button></div>';
+ const outlet=adminCurrentOutlet(),accounts=adminAccountsFiltered(),selected=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(T.adminSelectedId)),tab=T.adminDetailTab||'permissions';
+ const roles={all:'Semua',admin_outlet:'Admin Outlet',div_admin:'Admin Divisi',other:'Lainnya'};
+ const stats=[{label:'Total akun',value:(T.adminVisibleAccounts||[]).length,icon:'users'},{label:'Admin Outlet',value:(T.adminVisibleAccounts||[]).filter(a=>a.role==='legacy_admin').length,icon:'shield'},{label:'Admin Divisi',value:(T.adminVisibleAccounts||[]).filter(a=>a.role==='div_admin').length,icon:'layers'},{label:'Lainnya',value:(T.adminVisibleAccounts||[]).filter(a=>!['legacy_admin','div_admin'].includes(a.role)).length,icon:'users-round'}];
+ const statHtml=stats.map(s=>'<div class="ad-stat"><span class="ad-stat-icon">'+s.icon+'</span><div><small>'+s.label+'</small><b>'+s.value+'</b></div></div>').join('');
+ const cards=accounts.map(a=>{
+  const scopes=adminAccountScopes(a.user_id),divs=scopes.map(x=>x.division?.name||'Tanpa divisi').join(', ')||'Scope divisi tidak valid';
+  const isSelected=String(a.user_id)===String(T.adminSelectedId);
+  return '<button type="button" class="ad-account '+(isSelected?'selected':'')+'" onclick="adminSelectAccount(\''+a.user_id+'\')"><span class="ad-avatar">'+esc((a.email||'?').slice(0,1).toUpperCase())+'</span><span class="ad-account-main"><b>'+esc(a.email||'(email tidak tersedia)')+'</b><span>'+esc(adminRoleLabel(a.role))+'</span><small>'+esc(divs)+'</small></span><span class="ad-status '+(a.active?'active':'inactive')+'">'+(a.active?'Aktif':'Nonaktif')+'</span></button>'
+ }).join('');
+ let detail='<div class="ad-detail-empty"><span class="ad-empty-icon">◎</span><b>Pilih akun untuk melihat detail</b><p class="mu">Pilih akun di panel kiri untuk mengatur izin dan memeriksa scope.</p></div>';
+ if(selected){
+  const scopes=adminAccountScopes(selected.user_id),draft=adminPermissionDraft(selected.user_id),dirty=adminPermDirty(draft),current=new Set(draft.selected);
+  const permissionGroups=ADMIN_FEATURES.map(feature=>{
+   const available=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p));
+   const enabled=available.filter(p=>current.has(p)).length;
+   const status=available.length?(enabled===available.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(selected.user_id).length?'Tidak diizinkan':'Belum dikonfigurasi')):'Tidak tersedia';
+   return '<section class="ad-feature"><div class="ad-feature-head"><span class="ad-feature-icon">'+feature.icon+'</span><div class="ad-feature-title"><b>'+feature.name+'</b><small>'+feature.desc+'</small></div><span class="ad-feature-state '+(enabled?'on':'')+'">'+status+'</span></div>'+(available.length?'<div class="ad-permission-list">'+available.map(key=>{const meta=ADMIN_PERMISSION_CATALOG.find(p=>p.key===key),checked=current.has(key);return '<label class="ad-permission"><input type="checkbox" '+(checked?'checked':'')+' onchange="adminPermStage(\''+selected.user_id+'\',\''+key+'\',this.checked)"><span><b>'+meta.label+'</b><small>'+meta.desc+'</small></span></label>'}).join('')+'</div>':'<p class="ad-feature-note">'+(feature.note||'Tidak tersedia dalam skema izin saat ini.')+'</p>')+'</section>'
+  }).join('');
+  const scopeHtml=scopes.length?scopes.map(x=>'<div class="ad-scope-row"><span class="ad-scope-dot"></span><div><b>'+esc(outlet?.name||'Outlet aktif')+'</b><small>'+(x.division?esc(x.division.name):'Semua divisi di outlet ini')+'</small></div><span class="ad-scope-state">'+(x.division?'Divisi':'Outlet')+'</span></div>').join(''):'<div class="ad-warning">Akun ini tidak memiliki scope valid pada outlet aktif. Scope tidak diubah otomatis.</div>';
+  detail='<div class="ad-detail-head"><div class="ad-avatar large">'+esc((selected.email||'?').slice(0,1).toUpperCase())+'</div><div class="ad-detail-identity"><h3>'+esc(selected.email||'(email tidak tersedia)')+'</h3><div class="ad-detail-meta"><span class="ad-role-chip">'+esc(adminRoleLabel(selected.role))+'</span><span class="ad-status '+(selected.active?'active':'inactive')+'">'+(selected.active?'Aktif':'Nonaktif')+'</span></div></div></div><div class="ad-tabs"><button class="'+(tab==='permissions'?'on':'')+'" onclick="adminTabSet(\'permissions\')">Izin Akses Fitur</button><button class="'+(tab==='info'?'on':'')+'" onclick="adminTabSet(\'info\')">Informasi Akun</button><button class="'+(tab==='scope'?'on':'')+'" onclick="adminTabSet(\'scope\')">Scope & Divisi</button></div>';
+  if(tab==='permissions')detail+='<div class="ad-permissions-toolbar"><div><b>Izin Akses Fitur</b><small>Checklist mengikuti permission yang sudah terdaftar di database.</small></div><span>'+draft.selected.length+' izin aktif</span></div><div class="ad-feature-list">'+permissionGroups+'</div><div class="ad-savebar"><span class="mu">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</span><div><button class="btn s" '+(dirty?'':'disabled')+' onclick="adminPermReset(\''+selected.user_id+'\')">Batal</button><button class="btn" '+(dirty?'':'disabled')+' onclick="adminPermSave(\''+selected.user_id+'\')">Simpan izin</button></div></div>';
+  else if(tab==='info')detail+='<div class="ad-info-grid"><div><small>Email</small><b>'+esc(selected.email||'Tidak tersedia')+'</b></div><div><small>Role database</small><b>'+esc(selected.role)+'</b></div><div><small>Status</small><b>'+(selected.active?'Aktif':'Nonaktif')+'</b></div><div><small>ID akun</small><b class="ad-id">'+esc(selected.user_id)+'</b></div></div><p class="ad-feature-note">Perubahan role, status, dan password tidak dilakukan dari panel ini. Tidak ada akun yang dibuat atau dihapus.</p>';
+  else detail+='<div class="ad-scope-list">'+scopeHtml+'</div><p class="ad-feature-note">Pemilihan outlet hanya mengubah konteks tampilan. Scope akun tidak dipindahkan atau diubah otomatis.</p>';
+ }
+ const outletOpts=(T.outlets||[]).map(o=>'<option value="'+o.id+'" '+(String(o.id)===String(T.adminOutletId)?'selected':'')+'>'+esc(o.name)+'</option>').join('');
+ const orphanHtml=(T.adminOrphans||[]).length?'<details class="ad-orphans"><summary>Perlu pemeriksaan · '+T.adminOrphans.length+' akun tanpa scope valid</summary><div>'+T.adminOrphans.map(a=>'<div class="ad-orphan-row"><span>'+esc(a.email||'(email tidak tersedia)')+'</span><small>'+esc(adminRoleLabel(a.role))+' · scope belum valid</small></div>').join('')+'</div></details>':'';
+ return '<div class="ad-page"><header class="ad-page-head"><div><div class="ad-eyebrow">PENGATURAN AKUN</div><h2>Admin & Divisi</h2><p>Kelola akun, hak akses fitur, dan cakupan outlet secara terpusat.</p></div><div class="ad-dev-chip"><span class="ad-dev-dot"></span><div><small>Masuk sebagai Dev</small><b>'+esc(T.authEmail||D.me?.email||'Developer')+'</b></div></div></header><section class="ad-context"><label>Outlet aktif<select aria-label="Outlet aktif Admin & Divisi" onchange="adminOutletChange(this.value)">'+outletOpts+'</select></label><span class="ad-context-note">Daftar akun hanya menampilkan scope valid di outlet terpilih.</span></section><section class="ad-stats">'+statHtml+'</section><div class="ad-workspace"><section class="ad-panel ad-list-panel"><div class="ad-panel-head"><div><h3>Daftar akun</h3><small>'+(T.adminVisibleAccounts||[]).length+' akun pada '+esc(outlet?.name||'outlet aktif')+'</small></div><button class="btn s x" onclick="divLoad()">Muat ulang</button></div><input class="ad-search" type="search" value="'+esc(T.adminSearch||'')+'" placeholder="Cari nama atau email…" oninput="adminSearchSet(this.value)" aria-label="Cari nama atau email"><div class="ad-role-filters">'+Object.keys(roles).map(k=>'<button class="'+((T.adminRoleFilter||'all')===k?'on':'')+'" onclick="adminSetRoleFilter(\''+k+'\')">'+roles[k]+'</button>').join('')+'</div><div class="ad-account-list">'+(cards||'<div class="ad-empty-list">Tidak ada akun yang cocok di outlet ini.</div>')+'</div>'+orphanHtml+'</section><section class="ad-panel ad-detail-panel">'+detail+'</section></div></div>'
+};
+async function adminOutletChange(id){
+ if(!isDeveloper()||!id||!T.outlets?.some(o=>String(o.id)===String(id)))return;
+ if(String(D.outId)!==String(id))await outSwitch(id);
+ T.adminOutletId=id;T.accs=null;T.scopes=null;T.featurePerms=null;T.allDivs=null;T.adminVisibleAccounts=null;T.adminPermDrafts={};await divLoad()
+}
 
 /* ===== AUDIT LOG (dev, baca saja) ===== */
 async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
