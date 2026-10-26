@@ -428,6 +428,25 @@ body:has(#app.in .ga-wrap){
 .ga-note-field textarea{min-height:66px!important;resize:vertical}
 .ga-status-field{margin-top:8px!important}
 .ga-preference-chip{display:inline-flex;align-items:center;padding:4px 7px;border-radius:8px;background:#f7e8e2;color:#8b3f34;font-size:11px;font-weight:750}
+/* Lift the add-guest card above the mobile keyboard while entering Note. */
+#app.in .ov.ga-keyboard-open{
+  align-items:flex-start!important;
+  justify-content:center!important;
+  padding:8px 0 10px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+}
+#app.in .ov.ga-keyboard-open .md{
+  max-height:calc(var(--ga-visual-height, 100dvh) - 18px)!important;
+  overflow-y:auto!important;
+  margin:0 auto!important;
+  flex-shrink:0!important;
+  scroll-padding-bottom:24px;
+}
+#app.in .ov.ga-keyboard-open .ga-note-field textarea{
+  scroll-margin-top:18px;
+  scroll-margin-bottom:24px;
+}
 /* Compact detail modal: two balanced columns with clear separators. */
 .ga-detail-grid{
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
@@ -542,6 +561,45 @@ function guestArrivalOpenForm() {
   GA.form = { name:'', packs:'1', whatsapp:'', smoking_preference:'Non Smoking', note:'', status:'Menunggu', requestId:gaUuid(), dirty:false, saving:false };
   guestArrivalShowForm();
 }
+function guestArrivalSyncKeyboardLayout() {
+  const overlay = document.querySelector('#m .ov');
+  if (!overlay || !overlay.querySelector('#ga-form-note')) return;
+  const vv = window.visualViewport;
+  const visualHeight = vv && vv.height ? vv.height : window.innerHeight;
+  const active = document.activeElement;
+  const editingField = !!(active && active.matches && active.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status'));
+  const keyboardLikelyOpen = editingField && (window.innerHeight - visualHeight > 100 || (vv && vv.scale > 1.05));
+  overlay.classList.toggle('ga-keyboard-open', keyboardLikelyOpen);
+  overlay.style.setProperty('--ga-visual-height', Math.round(visualHeight) + 'px');
+  if (keyboardLikelyOpen && active && active.id === 'ga-form-note') {
+    requestAnimationFrame(() => {
+      const currentOverlay = document.querySelector('#m .ov.ga-keyboard-open');
+      const note = document.querySelector('#ga-form-note');
+      if (!currentOverlay || !note) return;
+      const r = note.getBoundingClientRect();
+      const vh = window.visualViewport && window.visualViewport.height ? window.visualViewport.height : window.innerHeight;
+      if (r.bottom > vh - 22 || r.top < 8) {
+        note.scrollIntoView({ block: r.bottom > vh - 22 ? 'end' : 'start', behavior: 'smooth' });
+      }
+    });
+  }
+}
+if (!window.__gaKeyboardLayoutBound) {
+  window.__gaKeyboardLayoutBound = true;
+  document.addEventListener('focusin', e => {
+    if (e.target && e.target.matches && e.target.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status')) {
+      setTimeout(guestArrivalSyncKeyboardLayout, 60);
+      setTimeout(guestArrivalSyncKeyboardLayout, 240);
+    }
+  });
+  document.addEventListener('focusout', () => setTimeout(guestArrivalSyncKeyboardLayout, 100));
+  window.addEventListener('resize', guestArrivalSyncKeyboardLayout, {passive:true});
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', guestArrivalSyncKeyboardLayout, {passive:true});
+    window.visualViewport.addEventListener('scroll', guestArrivalSyncKeyboardLayout, {passive:true});
+  }
+}
+
 function guestArrivalFormInput(key, value) {
   if (!GA.form) return;
   GA.form[key] = value; GA.form.dirty = true;
