@@ -507,9 +507,15 @@ function guestArrivalHistoryCards() {
     .filter(g => String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle))
     .slice()
     .sort((a, b) => {
-      const at = Date.parse(a.arrived_at || '') || 0;
-      const bt = Date.parse(b.arrived_at || '') || 0;
-      return bt - at;
+      const aFinal = a.status === 'Selesai' || a.status === 'Batalkan';
+      const bFinal = b.status === 'Selesai' || b.status === 'Batalkan';
+      if (aFinal !== bFinal) return aFinal ? -1 : 1;
+
+      // For completed/cancelled guests, the action time (finished_at) determines order.
+      // Guests still waiting remain below finalized entries and are ordered by arrival time.
+      const aTime = Date.parse((aFinal && a.finished_at) || a.arrived_at || '') || 0;
+      const bTime = Date.parse((bFinal && b.finished_at) || b.arrived_at || '') || 0;
+      return bTime - aTime;
     });
   if (!rows.length) return '<div class="ga-empty"><strong>Tamu tidak ditemukan</strong>Coba nama lain atau pilih tanggal yang berbeda.</div>';
   return rows.map(g => '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
