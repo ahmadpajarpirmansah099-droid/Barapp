@@ -3489,6 +3489,10 @@ const ADMIN_PERMISSION_CATALOG=[
  {key:'cogs.menu.manage',label:'Kelola menu',group:'Produksi & Menu',desc:'Mengelola data menu'},
  {key:'cogs.sales.view',label:'Lihat penjualan menu',group:'Produksi & Menu',desc:'Melihat input penjualan menu'},
  {key:'cogs.sales.manage',label:'Kelola penjualan menu',group:'Produksi & Menu',desc:'Mengelola input penjualan menu'},
+ {key:'payslip.release',label:'Rilis slip gaji',group:'Karyawan & Gaji',desc:'Merilis slip gaji'},
+ {key:'feature.approval.access',label:'Akses Approval',group:'Operasional',desc:'Mengakses modul Approval'},
+ {key:'feature.master_bahan.access',label:'Akses Master Bahan',group:'Operasional',desc:'Mengakses Master Bahan'},
+ {key:'feature.guest_arrival.access',label:'Akses Guest Arrival',group:'Operasional',desc:'Mengakses Guest Arrival sesuai scope outlet'},
  {key:'division.manage',label:'Kelola Admin & Divisi',group:'Administrasi',desc:'Mengelola akses Admin & Divisi'},
 ];
 const ADMIN_FEATURES=[
@@ -3496,15 +3500,15 @@ const ADMIN_FEATURES=[
  {name:'Gaji',icon:'Rp',desc:'Penggajian, tunjangan, kasbon, dan slip gaji',perms:['payroll.view','payroll.run','payroll.finalize','payroll.correct','salary.manage','allowance.manage','kasbon.manage','payslip.release']},
  {name:'Master Barang',icon:'▤',desc:'Master barang dan pengaturan stok',perms:['inventory.view','inventory.manage']},
  {name:'Daily SO',icon:'☷',desc:'Stok sistem, selisih, dan pengelolaan opname',perms:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit']},
- {name:'Approval',icon:'✓',desc:'Approval mengikuti aturan modul yang tersedia',perms:[],note:'Belum ada izin Approval umum yang terpisah di skema izin.'},
- {name:'Master Bahan',icon:'▥',desc:'Belum memiliki izin granular khusus di user_permissions',perms:[],note:'Akses belum dapat diatur terpisah melalui checklist.'},
+ {name:'Approval',icon:'✓',desc:'Akses modul Approval',perms:['feature.approval.access']},
+ {name:'Master Bahan',icon:'▥',desc:'Akses modul Master Bahan',perms:['feature.master_bahan.access']},
  {name:'Resep WIP',icon:'◫',desc:'Lihat dan kelola resep WIP',perms:['cogs.wip.view','cogs.wip.manage']},
  {name:'Supplies',icon:'▧',desc:'Pengelolaan Daily SO Supplies',perms:['inventory.supplies.manage']},
  {name:'Produksi WIP',icon:'⚙',desc:'Lihat dan kelola produksi WIP',perms:['cogs.production.view','cogs.production.manage']},
  {name:'Penjualan Menu',icon:'↗',desc:'Lihat dan kelola input penjualan menu',perms:['cogs.sales.view','cogs.sales.manage']},
  {name:'Pengeluaran',icon:'↘',desc:'Pengelolaan transaksi keluar stok',perms:['inventory.outbound.manage']},
  {name:'Barang Masuk',icon:'↙',desc:'Lihat dan kelola transaksi barang masuk',perms:['inventory.inbound.view','inventory.inbound.manage']},
- {name:'Guest Arrival',icon:'⌂',desc:'Akses mengikuti role dan scope; belum ada izin granular terpisah',perms:[],note:'Tidak ada permission Guest Arrival khusus pada skema user_permissions saat ini.'},
+ {name:'Guest Arrival',icon:'⌂',desc:'Akses Guest Arrival sesuai scope outlet',perms:['feature.guest_arrival.access']},
  {name:'Dashboard & Laporan',icon:'▦',desc:'Izin laporan yang memang terdaftar',perms:['attendance.report.view','employees.view','employees.directory.view']}
 ];
 async function divLoad(){
