@@ -153,7 +153,7 @@ function guestArrivalRender() {
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     '</div>' +
     '<button type="button" class="ga-btn secondary ga-seated-shortcut ' + (GA.showSeated?'active':'') + '" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>' + (GA.showSeated ? 'Kembali ke Antrean Menunggu' : 'Tamu yang Telah Duduk (' + GA.seated.length + ')') + '</span></button>' +
-    (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '')
+    (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
     (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? (GA.showSeated ? guestArrivalSeatedMarkup() : guestArrivalQueueMarkup()) : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
     '</section>';
 }
