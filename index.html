@@ -2472,9 +2472,9 @@ async function outInit(){
   }
   if(!multi){
     if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
-    if(T.scopeOut){if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut;}
-    if(T.dbRole!='div_admin')return D.ljId||null;
-    return (D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||null)}
+    if(T.scopeOut){if(!validUuid(T.scopeOut)){T.scopeOut=null}else{if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut}}
+    if(T.dbRole!='div_admin')return validUuid(D.ljId)?D.ljId:null;
+    return validUuid(D.outId)&&D.outId!=='ALL'?D.outId:(validUuid(D.ljId)?D.ljId:null)}
   const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
   if(!T.outlets.length)return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null);
   if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
@@ -2790,7 +2790,7 @@ function cgModuleGate(key,label){
  return '<div class="card"><h3>Modul '+esc(label)+' nonaktif pada divisi ini</h3><p class="mu">Pilih divisi lain yang mengaktifkan modul, atau minta Developer mengaktifkannya untuk divisi ini.</p><label>Divisi<select onchange="cgModuleChoose(this.value)">'+options+'</select></label></div>';
 }
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
- const isLazyJennieHr=()=>T.dbRole==='hr'&&T.authEmail==='admin@lazy.jennie';
+ const isLazyJennieHr=()=>T.dbRole==='hr'&&String(T.authEmail||'').trim().toLowerCase()==='admin@lazy.jennie';
 const cogsPageFeature={cogs_dashboard:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_materials:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.production.view','cogs.production.manage','cogs.sales.view','cogs.sales.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_wip:['cogs.wip.view','cogs.wip.manage'],cogs_menu:['cogs.menu.view','cogs.menu.manage'],cogs_production:['cogs.production.view','cogs.production.manage'],cogs_daily_so:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_sales:['cogs.sales.view','cogs.sales.manage']};
 const cogsPageOK=k=>T.dbRole==='report_viewer'
  ? ((k==='cogs_daily_so'&&hasFeature('cogs.daily_so.edit'))||(k==='cogs_production'&&hasFeature('cogs.production.manage'))||(k==='cogs_sales'&&hasFeature('cogs.sales.manage')))
