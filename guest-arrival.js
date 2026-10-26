@@ -65,6 +65,20 @@ const gaDuration = (seconds) => {
   if (minutes) return minutes + 'm ' + secs + 'dtk';
   return secs + ' dtk';
 };
+const GA_SITTING_LIMIT_SECONDS = 9000;
+const gaSittingRemaining = (g) => {
+  const seated = Date.parse(g && g.seated_at || '');
+  if (!Number.isFinite(seated)) return GA_SITTING_LIMIT_SECONDS;
+  return GA_SITTING_LIMIT_SECONDS - Math.floor((Date.now() + GA.serverOffsetMs - seated) / 1000);
+};
+const gaSittingCountdown = (g) => {
+  const remainingRaw = gaSittingRemaining(g);
+  const remaining = Math.max(0, remainingRaw);
+  const hh = String(Math.floor(remaining / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
+  const ss = String(remaining % 60).padStart(2, '0');
+  return remainingRaw < 0 ? '00:00:00 · Melebihi waktu' : hh + ':' + mm + ':' + ss;
+};
 const gaWaitSeconds = (g) => {
   if (g.status !== 'Menunggu') return Math.max(0, Number(g.waiting_seconds) || 0);
   const arrived = new Date(g.arrived_at).getTime();
@@ -167,7 +181,7 @@ const gaCss = String.raw`
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
-.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-back{width:100%;justify-content:flex-start;margin:0 0 12px;font-weight:800}.ga-move-table-panel{margin:14px 0;padding:14px;border:2px solid #b4533f;border-radius:15px;background:#f9e8e2;color:#873a2d}.ga-move-table-panel label{display:block;margin-bottom:8px;font-size:13px;font-weight:900;letter-spacing:.03em}.ga-move-table-panel input{width:100%;min-height:54px;padding:13px 14px;border:2px solid #b4533f;border-radius:12px;background:#fffdfb;color:#452a25;font:800 17px/1.3 var(--fn,'Plus Jakarta Sans',sans-serif);box-sizing:border-box}.ga-move-table-panel input:focus{outline:3px solid rgba(180,83,63,.22);outline-offset:2px}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
+.ga-sitting-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border:1.5px solid #b4533f;border-radius:11px;background:#fff0e8;color:#873a2d;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.ga-sitting-chip strong{font-size:14px;letter-spacing:.04em}.ga-sitting-chip.expired{background:#fde2df;border-color:#bd3434;color:#a32020}.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-back{width:100%;justify-content:flex-start;margin:0 0 12px;font-weight:800}.ga-move-table-panel{margin:14px 0;padding:14px;border:2px solid #b4533f;border-radius:15px;background:#f9e8e2;color:#873a2d}.ga-move-table-panel label{display:block;margin-bottom:8px;font-size:13px;font-weight:900;letter-spacing:.03em}.ga-move-table-panel input{width:100%;min-height:54px;padding:13px 14px;border:2px solid #b4533f;border-radius:12px;background:#fffdfb;color:#452a25;font:800 17px/1.3 var(--fn,'Plus Jakarta Sans',sans-serif);box-sizing:border-box}.ga-move-table-panel input:focus{outline:3px solid rgba(180,83,63,.22);outline-offset:2px}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
 .ga-seated-shortcut.active{background:var(--ac,#b4533f);border-color:var(--ac,#b4533f);color:var(--onac,#fff)}
 .ga-seated-shortcut-icon{display:grid;place-items:center;flex:none;width:26px;height:26px;border:1.5px solid currentColor;border-radius:8px;font-size:17px;line-height:1}
 .ga-table-chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:9px;background:#f8e7e1;color:#8b3f34;font-size:12px;font-weight:850}
@@ -504,7 +518,7 @@ function guestArrivalCard(g, pending) {
       ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalFinishSeated(\'' + g.id + '\')">Selesai</button>'
       : '';
   return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
-    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span>' + (g.table_name ? '<span class="ga-table-chip">Meja: ' + gaEscape(g.table_name) + '</span>' : '') + '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span></div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
+    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span>' + (g.table_name ? '<span class="ga-table-chip">Meja: ' + gaEscape(g.table_name) + '</span>' : '') + (g.status==='Duduk' ? '<span class="ga-sitting-chip' + (gaSittingRemaining(g)<=0?' expired':'') + '">Sitting time <strong data-ga-sitting-id="' + gaEscape(g.id) + '">' + gaSittingCountdown(g) + '</strong></span>' : '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span>') + '</div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
     '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + (g.seated_at ? ' · Duduk ' + gaEscape(gaFormatDateTime(g.seated_at)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
 }
 function guestArrivalQueueCards() {
@@ -1023,5 +1037,13 @@ setInterval(() => {
   document.querySelectorAll('[data-ga-wait-id]').forEach(node => {
     const id=node.getAttribute('data-ga-wait-id'), row=[...GA.queue,...GA.pending,...GA.history].find(g=>g.id===id);
     if (row) node.textContent=gaDuration(gaWaitSeconds(row));
+  });
+  document.querySelectorAll('[data-ga-sitting-id]').forEach(node => {
+    const id=node.getAttribute('data-ga-sitting-id'), row=(GA.seated||[]).find(g=>g.id===id);
+    if (row) {
+      node.textContent=gaSittingCountdown(row);
+      const chip=node.closest('.ga-sitting-chip');
+      if (chip) chip.classList.toggle('expired',gaSittingRemaining(row)<=0);
+    }
   });
 },1000);
