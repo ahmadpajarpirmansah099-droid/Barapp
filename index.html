@@ -1789,6 +1789,41 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 @media(max-width:380px){.mods-feature-grid{gap:8px!important;grid-auto-rows:142px!important}.mods-feature-grid>.mods-feature-card{box-sizing:border-box!important;width:100%!important;height:142px!important;min-height:142px!important;max-height:142px!important;padding:9px 5px 30px!important;border-radius:18px!important}.mods-feature-icon{width:48px;height:48px}.mods-feature-icon svg{width:44px!important;height:44px!important}}
 @media(prefers-reduced-motion:reduce){.mods-feature-grid>.mods-feature-card{transition:none!important}}
 </style>
+
+<style id="mobile-range-date-top-aligned">
+/* Put the attendance date-range control in the empty space on the mobile header row. */
+.hd-range-mobile,.hd-range-reset{display:none!important}
+@media(max-width:600px){
+  .app-top .hd-r>.hd-range-mobile{
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;
+    flex:1 1 150px!important;width:auto!important;min-width:0!important;max-width:none!important;
+    height:38px!important;min-height:38px!important;box-sizing:border-box!important;margin:0 2px 0 0!important;
+    padding:0 8px!important;border:2px solid var(--line,#34483b)!important;border-radius:12px!important;
+    background:var(--cd,#fffdf9)!important;color:var(--tx,#38221f)!important;
+    font-family:var(--fn,'Plus Jakarta Sans'),sans-serif!important;font-size:clamp(9px,2.6vw,12px)!important;
+    font-weight:750!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;
+    box-shadow:none!important;
+  }
+  .app-top .hd-r>.hd-range-mobile .ic{width:15px!important;height:15px!important;flex:0 0 15px!important;color:var(--ac,#d96c5d)!important}
+  .app-top .hd-r>.hd-range-mobile span{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  .app-top .hd-r>.hd-range-reset{
+    display:grid!important;place-items:center!important;flex:0 0 26px!important;width:26px!important;min-width:26px!important;
+    height:30px!important;padding:0!important;border:1px solid var(--line,#34483b)!important;border-radius:9px!important;
+    background:var(--cd,#fffdf9)!important;color:var(--tx,#38221f)!important;font-size:20px!important;line-height:1!important;
+  }
+  .app-top>.toolbar{display:none!important}
+  .app-top .hd-r>.hd-desktop-actions{margin-left:auto!important;flex:0 0 auto!important}
+}
+@media(max-width:380px){
+  .app-top .hd-r>.hd-range-mobile{gap:4px!important;padding:0 5px!important;font-size:9px!important;border-radius:10px!important}
+  .app-top .hd-r>.hd-range-mobile .ic{width:13px!important;height:13px!important;flex-basis:13px!important}
+  .app-top .hd-r>.hd-desktop-actions{gap:3px!important}
+  .app-top .hd-r>.hd-desktop-actions>.hd-refresh,
+  .app-top .hd-r>.hd-desktop-actions>.settings-mn,
+  .app-top .hd-r>.hd-desktop-actions>button[aria-label="Keluar"],
+  .app-top .hd-r>.hd-desktop-actions>button[aria-label="Exit"]{flex-basis:32px!important;width:32px!important;min-width:32px!important}
+}
+</style>
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -2740,7 +2775,7 @@ const nh=`<aside class="side"><div class="side-brand-row"><button class="brand" 
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" title="${lab(k)}" aria-label="${lab(k)}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
 <div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
-<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span><div class="hd-desktop-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div></div>
+<div class="app-top"><div class="hd"><button class="tile brand-m" onclick="openMods()" aria-label="Buka menu fitur" title="Buka menu fitur">${IC('menu',22)}</button><div class="hd-t"><h1>${lab(pg)}</h1><small>${px?'GAJI':esc(TH.name)} · ${esc(TH.sub)} · <b>${esc(outLabel())}</b></small></div><div class="hd-r">${outMenuHtml()}<span class="hd-date" aria-label="Tanggal hari ini">${IC('cal',16)}<span>${new Intl.DateTimeFormat('id-ID',{day:'2-digit',month:'short',year:'numeric'}).format(new Date())}</span></span>${gr==='abs'?\`<button type="button" class="hd-range-mobile" onclick="rOpen('F')" aria-label="Pilih rentang tanggal" title="Pilih rentang tanggal">${IC('cal',16)}<span>${fd(rg.f)} – ${fd(rg.t)}</span></button>${F.f||F.t?\`<button type="button" class="hd-range-reset" onclick="F.f=F.t='';R()" aria-label="Reset filter tanggal">×</button>\`:''}\`:''}<div class="hd-desktop-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div></div></div>
 ${gr!='abs'?'':`<div class="toolbar"><button class="btn s x" onclick="rOpen('F')">${IC('cal',16)} ${fd(rg.f)} – ${fd(rg.t)}</button>${F.f||F.t?`<button class="btn x" onclick="F.f=F.t='';R()">Reset</button>`:''}</div>`}
 </div>
 <main class="${an?'in':''}">${sbBanner()}${(SB.state=='loading'&&!SB.loaded&&!D.emp.length&&!D.att.length)?sbLoadCard():(V[pg]||window.__barappPendingViews?.[pg]||(()=>'<div class="card empty">Fitur belum siap dimuat. Muat ulang halaman.</div>'))()}</main>
