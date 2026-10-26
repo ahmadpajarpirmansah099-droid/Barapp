@@ -1880,6 +1880,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 
 <style id="desktop-sidebar-collapse">
 .side-brand-row{display:flex;align-items:center;gap:6px;flex:0 0 auto;border-bottom:1px solid var(--br);background:var(--cd)}
+.side-brand-row.no-brand{justify-content:flex-end;min-height:54px;padding:8px 0}
 .side-brand-row .brand{flex:1 1 auto;min-width:0;border-bottom:0!important}
 .sidebar-collapse-toggle{flex:0 0 38px;width:38px;height:38px;display:grid;place-items:center;padding:0;margin-right:10px;border:1.5px solid var(--br);border-radius:11px;background:var(--in);color:var(--tx);transition:background .18s,border-color .18s,transform .18s}
 .sidebar-collapse-toggle:hover{background:var(--tint);border-color:var(--ac)}
@@ -2675,7 +2676,6 @@ function login(){
   return `<section class="lgs">${scene}
     <div class="lgc">
       ${lg}
-      <div class="brand-wave brand-wave-art" role="img" aria-label="BARAPP">${logoHtml(60)}</div>
       <p class="sub">${esc(TH.sub)} · ${L('Pilih cara masuk ke aplikasi.','Choose how to enter the application.')}</p>
       ${st}
       <div class="lgf">
@@ -2924,7 +2924,7 @@ const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=D.me.r==='G'?'GUEST ARRIVAL'
 const lg=(c,t)=>`<button onclick="setLang('${c}')">${IC('globe')}${LANG==c?'✓ ':'\u00a0\u00a0\u00a0'}${t}</button>`;
 const mnu=[[L('Berkas','File'),pgs.map(k=>`<button onclick="go('${k}')">${IC(pic(k))}${lab(k)}</button>`).join('')+`<button onclick="cmn();sbLoad()">${IC('pc')}${L('Muat ulang data','Reload data')}</button>`+`<hr><button onclick="out()">${IC('err')}${L('Keluar','Exit')}</button>`],
 [L('Alat','Tools'),(adm()?`<button onclick="go('lap')">${IC('lap')}${lab('lap')}</button><button onclick="go('lap');setTimeout(openExcelImport,0)">${IC('xls')}Import / Export Excel</button>${isDeveloper()?`<button onclick="openSb()">${IC('database')}${L('Sambungan Supabase...','Supabase connection...')}</button><button onclick="migrateLocal()">${IC('upload')}${L('Salin data lokal lama ke Supabase...','Copy old local data to Supabase...')}</button>`:''}${isDeveloper()?`<button onclick="cmn();openTheme()">${IC('palette')}${L('Edit tema...','Edit theme...')}</button>`:''}<hr>`:'')+lg('id','Bahasa Indonesia')+lg('en','English')]];
-const nh=`<aside class="side"><div class="side-brand-row"><button class="brand" onclick="go('${home}')"><span class="brand-wordmark">${px?'<b>GAJI</b>':logoHtml(16)}</span></button><button class="sidebar-collapse-toggle" type="button" onclick="toggleDesktopSidebar()" title="${BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'Buka sidebar':'Tutup sidebar'}" aria-label="${BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'Buka sidebar':'Tutup sidebar'}" aria-expanded="${!BARAPP_DESKTOP_SIDEBAR_COLLAPSED}">${desktopSidebarIcon()}</button></div>
+const nh=`<aside class="side"><div class="side-brand-row no-brand"><button class="sidebar-collapse-toggle" type="button" onclick="toggleDesktopSidebar()" title="${BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'Buka sidebar':'Tutup sidebar'}" aria-label="${BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'Buka sidebar':'Tutup sidebar'}" aria-expanded="${!BARAPP_DESKTOP_SIDEBAR_COLLAPSED}">${desktopSidebarIcon()}</button></div>
 <div class="nvl">${L('Menu','Menu')}</div><nav class="nv">${pgs.map(k=>`<button class="nvb ${pg==k?'on':''}" title="${lab(k)}" aria-label="${lab(k)}" ${pg==k?'aria-current="page"':''} onclick="go(\'${k}\')">${IC(pic(k),18)}<span>${lab(k)}</span></button>`).join('')}</nav>
 
 <div class="hd-sidebar-actions"><button class="ibtn hd-refresh" onclick="cmn();sbLoad()" aria-label="Muat ulang data" title="Muat ulang data">${IC('refresh',19)}</button><div class="mn settings-mn"><button class="ibtn settings-btn" onclick="omn(this,event)" aria-label="Pengaturan" title="Pengaturan">${IC('settings',20)}</button><div class="dd settings-dd">${mnu[1][1]}<hr></div></div><button class="ibtn" onclick="out()" title="${L('Keluar','Exit')}" aria-label="${L('Keluar','Exit')}">${IC('out',20)}</button></div><div class="sidew"><div class="sw-r">${IC('database',16)}<span>${sbLabel()}</span></div><div class="sw-r">${IC('user',16)}<span>${role}</span></div></div></aside>
