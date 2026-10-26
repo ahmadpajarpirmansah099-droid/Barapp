@@ -162,7 +162,7 @@ function guestArrivalSetTab(tab) {
 function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
-  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : GA.tab==='queue' ? ' ga-wrap-queue' : '') + '">' +
+  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : GA.tab==='queue' ? ' ga-wrap-queue' : GA.tab==='history' ? ' ga-wrap-history' : '') + '">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
@@ -524,6 +524,45 @@ body:has(#app.in .ga-wrap){
   #app.in .ga-wrap.ga-wrap-queue .ga-tabs{margin:0 0 7px!important;padding:3px!important;gap:3px!important}
   #app.in .ga-wrap.ga-wrap-queue .ga-tab{min-height:36px!important;padding:7px 3px!important;font-size:11px!important}
   #app.in .ga-wrap.ga-wrap-queue .ga-seated-shortcut{margin-bottom:7px!important}
+}
+
+/* Match Riwayat to the compact, solid shell used by Antrean and Dashboard. */
+@media(max-width:600px){
+  #app.in .ga-wrap.ga-wrap-history{
+    width:calc(100% - 12px)!important;
+    margin:8px auto 14px!important;
+    padding:10px!important;
+    background:#fffaf5!important;
+    background-image:none!important;
+    border:2px solid #3b211d!important;
+    border-radius:16px!important;
+    box-shadow:0 4px 0 #3b211d!important;
+    color:#351a16!important;
+    opacity:1!important;
+  }
+  #app.in .ga-wrap.ga-wrap-history .ga-heading{margin:0 0 7px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-heading h2{font-size:clamp(17px,4.7vw,21px)!important;line-height:1.12!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-tabs{margin:0 0 7px!important;padding:3px!important;gap:3px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-tab{min-height:36px!important;padding:7px 3px!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-filters{gap:6px!important;margin:5px 0 8px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-field{gap:4px!important;font-size:11px!important;line-height:1.2!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-field input{
+    min-height:38px!important;height:38px!important;padding:7px 8px!important;font-size:12px!important;border-radius:9px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-history .ga-section-title{margin:9px 0 5px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-section-title h3{font-size:15px!important;line-height:1.2!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-count{font-size:10px!important;white-space:nowrap}
+  #app.in .ga-wrap.ga-wrap-history .ga-card-list{gap:7px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-card{padding:9px!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(30,50,35,.035)!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-card-top{gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-queue-code{font-size:16px!important;line-height:1.1!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-name{font-size:14px!important;line-height:1.22!important;margin:3px 0!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-card-meta{gap:5px 7px!important;margin-top:6px!important;line-height:1.2!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-preference-chip,
+  #app.in .ga-wrap.ga-wrap-history .ga-wait{padding:4px 6px!important;font-size:10px!important;border-radius:7px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-inline-summary{font-size:11px!important;line-height:1.3!important;margin-top:4px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-card-actions{gap:6px!important;margin-top:8px!important}
+  #app.in .ga-wrap.ga-wrap-history .ga-card-actions .ga-btn{min-height:35px!important;padding:6px 7px!important;font-size:11px!important;border-radius:9px!important}
 }
 
 /* Compact, space-efficient dashboard layout for mobile screens. */
