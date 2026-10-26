@@ -3457,7 +3457,13 @@ function adminAccountScopes(uid){
 }
 function adminSelectAccount(uid){T.adminSelectedId=uid;T.adminDetailTab='permissions';R()}
 function adminSetRoleFilter(role){T.adminRoleFilter=role;R()}
-function adminSearchSet(value){T.adminSearch=String(value||'');R()}
+function adminSearchSet(value){
+ T.adminSearch=String(value||'');const q=T.adminSearch.trim().toLocaleLowerCase('id');
+ document.querySelectorAll('.ad-account').forEach(card=>{card.hidden=!card.textContent.toLocaleLowerCase('id').includes(q)});
+ const visible=[...document.querySelectorAll('.ad-account')].some(card=>!card.hidden);
+ const empty=document.querySelector('.ad-account-list .ad-empty-list');
+ if(empty)empty.hidden=visible;
+}
 function adminFeaturePerms(uid){return (T.featurePerms||[]).filter(p=>String(p.user_id)===String(uid)).map(p=>p.permission)}
 function adminPermissionDraft(uid){
  T.adminPermDrafts=T.adminPermDrafts||{};
@@ -3467,7 +3473,22 @@ function adminPermissionDraft(uid){
 function adminPermDirty(d){if(!d)return false;const a=[...d.base].sort(),b=[...d.selected].sort();return a.length!==b.length||a.some((x,i)=>x!==b[i])}
 function adminPermStage(uid,permission,on){
  const d=adminPermissionDraft(uid);d.selected=d.selected.filter(x=>x!==permission);if(on)d.selected.push(permission);
- R()
+ adminRefreshPermissionUI(uid)
+}
+function adminRefreshPermissionUI(uid){
+ const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d)return;
+ const account=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(uid));
+ ADMIN_FEATURES.forEach(feature=>{
+  const node=[...document.querySelectorAll('.ad-feature')].find(el=>el.dataset.featureName===feature.name);if(!node)return;
+  const perms=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p)),enabled=perms.filter(p=>d.selected.includes(p)).length;
+  const state=node.querySelector('[data-feature-status]');if(!state)return;
+  state.textContent=!perms.length?'Tidak tersedia':enabled===perms.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(uid).some(p=>perms.includes(p))?'Tidak diizinkan':'Belum dikonfigurasi');
+  state.classList.toggle('on',enabled>0)
+ });
+ const dirty=adminPermDirty(d),status=document.querySelector('.ad-savebar .mu'),buttons=document.querySelectorAll('.ad-savebar button');
+ if(status)status.textContent=dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru';
+ if(buttons.length>=2){buttons[0].disabled=!dirty;buttons[1].disabled=!dirty}
+ const count=document.querySelector('.ad-permissions-toolbar>span');if(count)count.textContent=d.selected.length+' izin aktif';
 }
 function adminPermReset(uid){if(T.adminPermDrafts)delete T.adminPermDrafts[uid];R()}
 async function adminPermSave(uid){
@@ -3510,7 +3531,7 @@ V.div=()=>{
    const available=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p));
    const enabled=available.filter(p=>current.has(p)).length;
    const status=available.length?(enabled===available.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(selected.user_id).length?'Tidak diizinkan':'Belum dikonfigurasi')):'Tidak tersedia';
-   return '<section class="ad-feature"><div class="ad-feature-head"><span class="ad-feature-icon">'+feature.icon+'</span><div class="ad-feature-title"><b>'+feature.name+'</b><small>'+feature.desc+'</small></div><span class="ad-feature-state '+(enabled?'on':'')+'">'+status+'</span></div>'+(available.length?'<div class="ad-permission-list">'+available.map(key=>{const meta=ADMIN_PERMISSION_CATALOG.find(p=>p.key===key),checked=current.has(key);return '<label class="ad-permission"><input type="checkbox" '+(checked?'checked':'')+' onchange="adminPermStage(\''+selected.user_id+'\',\''+key+'\',this.checked)"><span><b>'+meta.label+'</b><small>'+meta.desc+'</small></span></label>'}).join('')+'</div>':'<p class="ad-feature-note">'+(feature.note||'Tidak tersedia dalam skema izin saat ini.')+'</p>')+'</section>'
+   return '<section class="ad-feature" data-feature-name="'+feature.name+'"><div class="ad-feature-head"><span class="ad-feature-icon">'+feature.icon+'</span><div class="ad-feature-title"><b>'+feature.name+'</b><small>'+feature.desc+'</small></div><span class="ad-feature-state '+(enabled?'on':'')+'">'+status+'</span></div>'+(available.length?'<div class="ad-permission-list">'+available.map(key=>{const meta=ADMIN_PERMISSION_CATALOG.find(p=>p.key===key),checked=current.has(key);return '<label class="ad-permission"><input type="checkbox" '+(checked?'checked':'')+' onchange="adminPermStage(\''+selected.user_id+'\',\''+key+'\',this.checked)"><span><b>'+meta.label+'</b><small>'+meta.desc+'</small></span></label>'}).join('')+'</div>':'<p class="ad-feature-note">'+(feature.note||'Tidak tersedia dalam skema izin saat ini.')+'</p>')+'</section>'
   }).join('');
   const scopeHtml=scopes.length?scopes.map(x=>'<div class="ad-scope-row"><span class="ad-scope-dot"></span><div><b>'+esc(outlet?.name||'Outlet aktif')+'</b><small>'+(x.division?esc(x.division.name):'Semua divisi di outlet ini')+'</small></div><span class="ad-scope-state">'+(x.division?'Divisi':'Outlet')+'</span></div>').join(''):'<div class="ad-warning">Akun ini tidak memiliki scope valid pada outlet aktif. Scope tidak diubah otomatis.</div>';
   detail='<div class="ad-detail-head"><div class="ad-avatar large">'+esc((selected.email||'?').slice(0,1).toUpperCase())+'</div><div class="ad-detail-identity"><h3>'+esc(selected.email||'(email tidak tersedia)')+'</h3><div class="ad-detail-meta"><span class="ad-role-chip">'+esc(adminRoleLabel(selected.role))+'</span><span class="ad-status '+(selected.active?'active':'inactive')+'">'+(selected.active?'Aktif':'Nonaktif')+'</span></div></div></div><div class="ad-tabs"><button class="'+(tab==='permissions'?'on':'')+'" onclick="adminTabSet(\'permissions\')">Izin Akses Fitur</button><button class="'+(tab==='info'?'on':'')+'" onclick="adminTabSet(\'info\')">Informasi Akun</button><button class="'+(tab==='scope'?'on':'')+'" onclick="adminTabSet(\'scope\')">Scope & Divisi</button></div>';
