@@ -7,7 +7,7 @@ const GA = {
   search: '',
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
-  dashboard: null, busy: '', form: null, edit: null, detail: null, showSeated: false, seat: null,
+  dashboard: null, busy: '', form: null, edit: null, detail: null, showSeated: false, seat: null, tableMove: null,
   cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null
 };
 const gaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
@@ -167,7 +167,7 @@ const gaCss = String.raw`
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
-.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-back{width:100%;justify-content:flex-start;margin:0 0 12px;font-weight:800}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
+.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-back{width:100%;justify-content:flex-start;margin:0 0 12px;font-weight:800}.ga-move-table-panel{margin:14px 0;padding:14px;border:2px solid #b4533f;border-radius:15px;background:#f9e8e2;color:#873a2d}.ga-move-table-panel label{display:block;margin-bottom:8px;font-size:13px;font-weight:900;letter-spacing:.03em}.ga-move-table-panel input{width:100%;min-height:54px;padding:13px 14px;border:2px solid #b4533f;border-radius:12px;background:#fffdfb;color:#452a25;font:800 17px/1.3 var(--fn,'Plus Jakarta Sans',sans-serif);box-sizing:border-box}.ga-move-table-panel input:focus{outline:3px solid rgba(180,83,63,.22);outline-offset:2px}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
 .ga-seated-shortcut.active{background:var(--ac,#b4533f);border-color:var(--ac,#b4533f);color:var(--onac,#fff)}
 .ga-seated-shortcut-icon{display:grid;place-items:center;flex:none;width:26px;height:26px;border:1.5px solid currentColor;border-radius:8px;font-size:17px;line-height:1}
 .ga-table-chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:9px;background:#f8e7e1;color:#8b3f34;font-size:12px;font-weight:850}
@@ -826,6 +826,68 @@ async function guestArrivalOpenDetail(id) {
   try { GA.detail = await gaRpc('guest_arrival_detail', { p_id:id, ...(await gaOutletParams()) }); guestArrivalShowDetail(); }
   catch (e) { gaToast('Detail tamu gagal dimuat. ' + gaHumanError(e), 'err'); }
 }
+function guestArrivalOpenMoveTable() {
+  const g = GA.detail;
+  if (!g || g.status !== 'Duduk') {
+    gaToast('Pindah meja hanya tersedia untuk tamu yang sedang Duduk.', 'warn');
+    return;
+  }
+  GA.tableMove = { id:g.id, queue_code:g.queue_code, guest_name:g.guest_name, old_table:g.table_name || '', table_name:'', dirty:false, saving:false };
+  guestArrivalShowMoveTable();
+}
+function guestArrivalMoveTableInput(value) {
+  if (!GA.tableMove || GA.tableMove.saving) return;
+  GA.tableMove.table_name = value;
+  GA.tableMove.dirty = true;
+}
+function guestArrivalShowMoveTable() {
+  if (!GA.tableMove) return;
+  const f = GA.tableMove;
+  modal('<h3 class="ga-modal-heading">Pindah Meja Tamu</h3><p class="ga-modal-intro">' + gaEscape(f.queue_code) + ' · ' + gaEscape(f.guest_name) + '<br>Pastikan meja tujuan benar sebelum konfirmasi.</p>' +
+    '<div class="ga-move-table-panel"><div style="margin-bottom:13px"><label>MEJA SAAT INI</label><div class="ga-table-value">' + gaEscape(f.old_table || '—') + '</div></div>' +
+    '<label for="ga-move-table-input">PINDAH KE MEJA *</label><input id="ga-move-table-input" maxlength="80" autocomplete="off" value="' + gaEscape(f.table_name) + '" placeholder="Contoh: Meja 05, VIP 2, Teras A" oninput="guestArrivalMoveTableInput(this.value)" ' + (f.saving?'disabled':'') + '>' +
+    '<div style="font-size:11px;line-height:1.45;margin-top:8px">Wajib diisi · Maksimal 80 karakter</div></div>' +
+    '<div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalConfirmMoveTable()" ' + (f.saving?'disabled':'') + '>' + (f.saving?'<span class="ga-spinner"></span>Menyimpan…':'Konfirmasi Pindah Meja') + '</button><button type="button" class="ga-btn secondary" onclick="guestArrivalCancelMoveTable()" ' + (f.saving?'disabled':'') + '>Kembali</button></div>');
+  const input=document.getElementById('ga-move-table-input');
+  if(input) input.value=f.table_name;
+}
+function guestArrivalCancelMoveTable() {
+  if (GA.tableMove && GA.tableMove.saving) {
+    gaToast('Perpindahan meja sedang disimpan. Tunggu sampai selesai.', 'warn');
+    return;
+  }
+  GA.tableMove=null;
+  guestArrivalShowDetail();
+}
+async function guestArrivalConfirmMoveTable() {
+  if (!GA.tableMove || GA.tableMove.saving || GA.busy) return;
+  const f=GA.tableMove, tableName=String(f.table_name||'').trim();
+  if(!tableName) {
+    gaToast('Nomor atau nama meja baru wajib diisi.','err');
+    const input=document.getElementById('ga-move-table-input'); if(input) input.focus();
+    return;
+  }
+  if(tableName.length>80) { gaToast('Nomor atau nama meja maksimal 80 karakter.','err'); return; }
+  if(tableName===String(f.old_table||'').trim()) { gaToast('Meja baru harus berbeda dari meja saat ini.','err'); return; }
+  f.table_name=tableName; f.saving=true; GA.busy=f.id;
+  guestArrivalShowMoveTable();
+  try {
+    await gaRpc('guest_arrival_move_table',{p_id:f.id,p_table_name:tableName,...(await gaOutletParams())});
+    const id=f.id;
+    GA.tableMove=null; GA.busy='';
+    gaToast('Meja berhasil dipindahkan ke ' + tableName + '.','ok');
+    GA.ready=false;
+    await guestArrivalRefresh();
+    GA.detail=await gaRpc('guest_arrival_detail',{p_id:id,...(await gaOutletParams())});
+    guestArrivalShowDetail();
+  } catch(e) {
+    if(GA.tableMove) { GA.tableMove.saving=false; guestArrivalShowMoveTable(); }
+    GA.busy='';
+    gaToast('Pindah meja belum berhasil disimpan. ' + gaHumanError(e),'err');
+  } finally {
+    if(GA.busy===f.id) GA.busy='';
+  }
+}
 function guestArrivalShowDetail() {
   const g = GA.detail; if (!g) return;
   const changes = Array.isArray(g.changes) ? g.changes : [];
@@ -845,10 +907,12 @@ function guestArrivalShowDetail() {
     (g.cancellation_reason ? info('Alasan pembatalan',gaEscape(g.cancellation_reason),true) : '') +
     (Number(g.correction_count || 0) ? info('Koreksi',Number(g.correction_count)+' kali · terakhir '+gaEscape(g.last_correction_at?gaFormatDateTime(g.last_correction_at):'—'),true) : '') +
     '</div><details style="margin-top:15px"><summary style="cursor:pointer;font-weight:750">Riwayat Perubahan (' + changes.length + ')</summary>' +
-    (changes.length ? '<div class="ga-change-list">' + changes.map(c => '<div class="ga-change"><strong>' + (c.change_type==='CORRECTION'?'Koreksi data':'Perubahan status') + '</strong><div class="ga-muted">' + gaEscape(gaFormatDateTime(c.changed_at)) + ' · ' + gaEscape(c.actor_email || '—') + '</div>' +
+    (changes.length ? '<div class="ga-change-list">' + changes.map(c => '<div class="ga-change"><strong>' + (c.change_type==='CORRECTION'?'Koreksi data':c.change_type==='TABLE_MOVE'?'Pindah meja':'Perubahan status') + '</strong><div class="ga-muted">' + gaEscape(gaFormatDateTime(c.changed_at)) + ' · ' + gaEscape(c.actor_email || '—') + '</div>' +
       (c.reason?'<div>Alasan: '+gaEscape(c.reason)+'</div>':'') +
       '<details style="margin-top:6px"><summary style="cursor:pointer">Lihat nilai sebelum/sesudah</summary><pre>Sebelum:\n' + gaEscape(JSON.stringify(c.old_data||{},null,2)) + '\n\nSesudah:\n' + gaEscape(JSON.stringify(c.new_data||{},null,2)) + '</pre></details></div>').join('') : '<div class="ga-inline-summary">Belum ada perubahan data</div>') +
-    '</details><div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenEdit()">Edit data</button><button type="button" class="ga-btn secondary" onclick="closeM()">Tutup</button></div>');
+    '</details><div class="ga-btn-row">' +
+    (g.status==='Duduk' ? '<button type="button" class="ga-btn primary" onclick="guestArrivalOpenMoveTable()">Pindah meja</button>' : '') +
+    '<button type="button" class="ga-btn primary" onclick="guestArrivalOpenEdit()">Edit data</button><button type="button" class="ga-btn secondary" onclick="closeM()">Tutup</button></div>');
 }
 function guestArrivalOpenEdit() {
   if (!GA.detail) return;
@@ -903,16 +967,16 @@ async function guestArrivalSaveEdit() {
   }
 }
 function guestArrivalHasUnsaved() {
-  return !!((GA.form && GA.form.dirty && !GA.form.saving) || (GA.edit && GA.edit.dirty && !GA.edit.saving) || (GA.seat && GA.seat.dirty && !GA.seat.saving));
+  return !!((GA.form && GA.form.dirty && !GA.form.saving) || (GA.edit && GA.edit.dirty && !GA.edit.saving) || (GA.seat && GA.seat.dirty && !GA.seat.saving) || (GA.tableMove && GA.tableMove.dirty && !GA.tableMove.saving));
 }
 window.guestArrivalHandleNavigation = function(nextPage) {
   if (!guestArrivalHasUnsaved()) return true;
   modal('<h3 class="ga-modal-heading">Perubahan belum disimpan</h3><p class="ga-modal-intro">Ada input yang belum tersimpan. Pilih tetap mengedit atau tinggalkan halaman dan buang perubahan.</p><div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalResumeEditing()">Tetap mengedit</button><button type="button" class="ga-btn danger" onclick="guestArrivalDiscardAndNavigate(\'' + gaEscape(nextPage) + '\')">Tinggalkan halaman</button></div>');
   return false;
 };
-function guestArrivalResumeEditing() { if (GA.seat) guestArrivalShowSeatModal(); else if (GA.edit) guestArrivalShowEdit(); else if (GA.form) guestArrivalShowForm(); }
+function guestArrivalResumeEditing() { if (GA.tableMove) guestArrivalShowMoveTable(); else if (GA.seat) guestArrivalShowSeatModal(); else if (GA.edit) guestArrivalShowEdit(); else if (GA.form) guestArrivalShowForm(); }
 function guestArrivalDiscardAndNavigate(nextPage) {
-  GA.form=null; GA.edit=null; GA.seat=null; closeM(); pg=nextPage; R();
+  GA.form=null; GA.edit=null; GA.seat=null; GA.tableMove=null; closeM(); pg=nextPage; R();
 }
 window.addEventListener('beforeunload', function(e) {
   if (D && D.me && (D.me.r==='G'||pg==='guest_arrival') && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
@@ -944,7 +1008,7 @@ window.guestArrivalResetSession = function() {
   GA.historyDate=today; GA.lastOperationalDate=today;
   GA.fromDate=today.slice(0,7)+'-01'; GA.toDate=today;
   GA.dashboard=null; GA.context=null; GA.busy='';
-  GA.form=null; GA.edit=null; GA.detail=null; GA.seat=null;
+  GA.form=null; GA.edit=null; GA.detail=null; GA.seat=null; GA.tableMove=null;
   GA.cancelId=null; GA.cancelReason=''; GA.showPending=false; GA.serverOffsetMs=0;
 };
 if (typeof window.__barappRegisterViews === 'function') {
