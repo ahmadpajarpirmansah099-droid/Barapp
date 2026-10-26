@@ -880,6 +880,36 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .ad-modal .ad-savebar{flex:none}
 @media(max-width:600px){.ad-modal{height:auto;max-height:92dvh}.ad-modal .ad-detail-panel{flex:1 1 auto;min-height:0;overflow-y:auto}}
 
+
+/* Compact feature checklist with more readable typography */
+.ad-modal .ad-feature-list{gap:7px}
+.ad-modal .ad-feature-compact{display:flex;align-items:center;gap:11px;padding:10px 12px;min-height:60px;border-radius:12px}
+.ad-modal .ad-feature-compact .ad-feature-icon{width:34px;height:34px;flex:none;font-size:14px}
+.ad-modal .ad-feature-compact .ad-feature-title{flex:1;min-width:0;gap:3px}
+.ad-modal .ad-feature-compact .ad-feature-title b{font-size:14px;line-height:1.3}
+.ad-modal .ad-feature-compact .ad-feature-title small{font-size:12px;line-height:1.4}
+.ad-modal .ad-feature-compact .ad-feature-state{font-size:11px;white-space:nowrap}
+.ad-feature-toggle{display:inline-flex;align-items:center;flex:none;cursor:pointer;margin:0}
+.ad-feature-toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.ad-toggle-track{position:relative;display:block;width:40px;height:23px;border-radius:20px;background:var(--br);border:1px solid var(--line);transition:background .15s}
+.ad-toggle-track:after{content:"";position:absolute;left:2px;top:2px;width:17px;height:17px;border-radius:50%;background:var(--cd);box-shadow:0 1px 3px #0002;transition:transform .15s}
+.ad-feature-toggle input:checked+.ad-toggle-track{background:var(--ac)}
+.ad-feature-toggle input:checked+.ad-toggle-track:after{transform:translateX(17px)}
+.ad-feature-toggle input:disabled+.ad-toggle-track{opacity:.45;cursor:not-allowed}
+.ad-feature-toggle input:focus-visible+.ad-toggle-track{outline:2px solid var(--ac);outline-offset:2px}
+.ad-modal .ad-permission-list{gap:6px}
+.ad-modal .ad-permission{padding:9px 10px}
+.ad-modal .ad-permission b{font-size:12px}
+.ad-modal .ad-permission small{font-size:11px}
+@media(max-width:600px){
+ .ad-modal .ad-feature-compact{gap:8px;padding:9px;min-height:56px}
+ .ad-modal .ad-feature-compact .ad-feature-title b{font-size:13px}
+ .ad-modal .ad-feature-compact .ad-feature-title small{font-size:11px}
+ .ad-modal .ad-feature-compact .ad-feature-state{font-size:10px}
+ .ad-toggle-track{width:36px;height:21px}
+ .ad-toggle-track:after{width:15px;height:15px}
+ .ad-feature-toggle input:checked+.ad-toggle-track:after{transform:translateX(15px)}
+}
 </style>
 
 <style id="cogs-ui">
@@ -3525,6 +3555,16 @@ function adminPermStage(uid,permission,on){
  const d=adminPermissionDraft(uid);d.selected=d.selected.filter(x=>x!==permission);if(on)d.selected.push(permission);
  adminRefreshPermissionUI(uid)
 }
+function adminFeatureToggle(uid,featureName,on){
+ const feature=ADMIN_FEATURES.find(f=>f.name===featureName);if(!feature)return;
+ const available=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p));
+ if(!available.length)return toast('Fitur ini belum memiliki izin backend yang dapat disimpan.','warn');
+ const d=adminPermissionDraft(uid);
+ d.selected=d.selected.filter(p=>!available.includes(p));
+ if(on)d.selected.push(...available);
+ adminRefreshPermissionUI(uid)
+}
+
 function adminRefreshPermissionUI(uid){
  const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d)return;
  const account=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(uid));
@@ -3582,8 +3622,9 @@ V.div=()=>{
   const permissionGroups=ADMIN_FEATURES.map(feature=>{
    const available=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p));
    const enabled=available.filter(p=>current.has(p)).length;
-   const status=available.length?(enabled===available.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(selected.user_id).length?'Tidak diizinkan':'Belum dikonfigurasi')):'Tidak tersedia';
-   return '<section class="ad-feature" data-feature-name="'+feature.name+'"><div class="ad-feature-head"><span class="ad-feature-icon">'+feature.icon+'</span><div class="ad-feature-title"><b>'+feature.name+'</b><small>'+feature.desc+'</small></div><span class="ad-feature-state '+(enabled?'on':'')+'">'+status+'</span></div>'+(available.length?'<div class="ad-permission-list">'+available.map(key=>{const meta=ADMIN_PERMISSION_CATALOG.find(p=>p.key===key),checked=current.has(key);return '<label class="ad-permission"><input type="checkbox" '+(checked?'checked':'')+' '+(selected.active&&selected.role!=='dev'?'':'disabled')+' onchange="adminPermStage(\''+selected.user_id+'\',\''+key+'\',this.checked)"><span><b>'+meta.label+'</b><small>'+meta.desc+'</small></span></label>'}).join('')+'</div>':'<p class="ad-feature-note">'+(feature.note||'Tidak tersedia dalam skema izin saat ini.')+'</p>')+'</section>'
+   const status=available.length?(enabled===available.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(selected.user_id).length?'Tidak diizinkan':'Belum dikonfigurasi')):'Belum didukung';
+   const allOn=available.length>0&&enabled===available.length;
+   return '<section class="ad-feature ad-feature-compact" data-feature-name="'+feature.name+'"><span class="ad-feature-icon">'+feature.icon+'</span><div class="ad-feature-title"><b>'+feature.name+'</b><small>'+feature.desc+'</small></div><span data-feature-status class="ad-feature-state '+(allOn?'on':'')+'">'+status+'</span><label class="ad-feature-toggle" title="'+(available.length?'Aktifkan atau nonaktifkan semua izin fitur ini':'Izin fitur belum didukung backend')+'"><input type="checkbox" '+(allOn?'checked':'')+' '+(available.length&&selected.active&&selected.role!=='dev'?'':'disabled')+' onchange="adminFeatureToggle(\''+selected.user_id+'\',\''+feature.name+'\',this.checked)"><span class="ad-toggle-track"></span></label></section>'
   }).join('');
   const scopeHtml=scopes.length?scopes.map(x=>'<div class="ad-scope-row"><span class="ad-scope-dot"></span><div><b>'+esc(outlet?.name||'Outlet aktif')+'</b><small>'+(x.division?esc(x.division.name):'Semua divisi di outlet ini')+'</small></div><span class="ad-scope-state">'+(x.division?'Divisi':'Outlet')+'</span></div>').join(''):'<div class="ad-warning">Akun ini tidak memiliki scope valid pada outlet aktif. Scope tidak diubah otomatis.</div>';
   detail='<div class="ad-detail-head"><div class="ad-avatar large">'+esc((selected.email||'?').slice(0,1).toUpperCase())+'</div><div class="ad-detail-identity"><h3>'+esc(selected.email||'(email tidak tersedia)')+'</h3><div class="ad-detail-meta"><span class="ad-role-chip">'+esc(adminRoleLabel(selected.role))+'</span><span class="ad-status '+(selected.active?'active':'inactive')+'">'+(selected.active?'Aktif':'Nonaktif')+'</span></div></div></div><div class="ad-tabs"><button class="'+(tab==='permissions'?'on':'')+'" onclick="adminTabSet(\'permissions\')">Izin Akses Fitur</button><button class="'+(tab==='info'?'on':'')+'" onclick="adminTabSet(\'info\')">Informasi Akun</button><button class="'+(tab==='scope'?'on':'')+'" onclick="adminTabSet(\'scope\')">Scope & Divisi</button></div>';
