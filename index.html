@@ -2522,7 +2522,7 @@ if(session&&T.dbRole==='guest_arrival'){T.perms=[];try{const {data,error}=await 
 T.perms=[];if(session&&['hr','div_admin','report_viewer','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
 if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
-const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!oid||x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId);
+const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId));
 let dIds=null;if(session&&T.dbRole=='div_admin'){try{const sc=await payQ('user_scopes','division_id');dIds=sc.map(x=>String(x.division_id));const md=dIds.length?await payQ('divisions','id,module_config',q=>q.in('id',dIds)):[];T.gaModuleEnabled=md.some(d=>d.module_config&&d.module_config.guest_arrival===true)}catch(e){dIds=[];T.gaModuleEnabled=false}}else{T.gaModuleEnabled=false}
 const inD=x=>!dIds||dIds.includes(String(x.division_id));
 const eSet=new Set(er.filter(inO).filter(inD).map(x=>String(x.id)));
@@ -3040,7 +3040,7 @@ async function invLoad(show=false){
   // Do not treat "ALL" or a missing outlet_id as permission to mix outlets.
   const activeOutletId=await outInit();
   if(!activeOutletId||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(activeOutletId)))throw new Error('OUTLET_ACTIVE_REQUIRED');
-  const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').order('name');
+  const activeOutletId=await outInit();if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
   if(de)throw de;
   let divs=(allDivs||[]).filter(d=>String(d.outlet_id)===String(activeOutletId));
   if(!invCanAll()&&invRole()==='div_admin'){
@@ -4116,7 +4116,7 @@ const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer da
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
 
-async function otLoad(){const oid=await outInit();const rows=await payQ('overtime_entries','*');const emps=await payQ('employees','id,outlet_id');const ok=new Set(emps.filter(e=>!oid||e.outlet_id==oid||(!e.outlet_id&&oid==D.ljId)).map(e=>String(e.id)));D.ot=rows.filter(r=>ok.has(String(r.employee_id))).map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
+async function otLoad(){const oid=await outInit();if(!oid)return;const rows=await payQ('overtime_entries','*');const emps=await payQ('employees','id,outlet_id');const ok=new Set(emps.filter(e=>e.outlet_id==oid||(!e.outlet_id&&oid==D.ljId)).map(e=>String(e.id)));D.ot=rows.filter(r=>ok.has(String(r.employee_id))).map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
 /* Periode payroll (sama dengan fungsi payroll_period_for di database) */
 const mkd=(y,m,d)=>{const q=new Date(Date.UTC(y,m,1)),yy=q.getUTCFullYear(),mm=q.getUTCMonth(),dim=new Date(Date.UTC(yy,mm+1,0)).getUTCDate();return iso(Date.UTC(yy,mm,Math.min(d,dim)))};
 const payNext=()=>{const [,pt]=perFor(today());return iso(U(pt)+864e5)};
