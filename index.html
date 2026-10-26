@@ -2456,10 +2456,13 @@ let SHARED_SETTINGS_SIG='';
 function mergeTheme(x){return {...THEME,...x,v:THEME.v,nav:{...THEME.nav,...(x.nav||{})},light:{...THEME.light,...(x.light||{})},dark:{...THEME.dark,...(x.dark||{})}}}
 async function loadSharedSettings(silent=false){
   try{
-    if(T.dbRole==='guest_arrival'&&!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false;
-    const roleCheck=await sb().rpc('app_role');
-    if(roleCheck.error)throw roleCheck.error;
-    if(roleCheck.data==='guest_arrival'){T.dbRole='guest_arrival';if(!guestArrivalAllowedPages().some(k=>k!=='guest_arrival'))return false}
+    /* Tema global boleh dibaca dari baris global yang memang tersedia untuk anon/authenticated; jangan jadikan RPC role sebagai penghalang tampilan login. */
+    const {data:sessionInfo}=await sb().auth.getSession();
+    if(sessionInfo&&sessionInfo.session){
+      const roleCheck=await sb().rpc('app_role');
+      if(roleCheck.error)throw roleCheck.error;
+      if(roleCheck.data==='guest_arrival')T.dbRole='guest_arrival';
+    }
     const {data,error}=await sb().from('app_settings').select('data,updated_at').eq('id','global').maybeSingle();
     if(error)throw error;
     if(!data||!data.data)return false;
