@@ -3,6 +3,7 @@
 const clToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
 const CL={division:'',date:clToday(),period:null,modules:[],history:[],snapshots:{},loading:false,ready:false,error:'',busy:''};
 function clCanAccess(){return (typeof isDeveloper==='function'&&isDeveloper())||(typeof T!=='undefined'&&(T.dbRole==='div_admin'||(T.dbRole==='hr'&&typeof hasFeature==='function'&&hasFeature('feature.approval.access'))))}
+function clValidUuid(value){return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim())}
 const MODS=[
  {key:'daily_so',name:'Daily SO',desc:'Stok fisik, saldo harapan, dan selisih',page:'cogs_daily_so',config:'cogs_daily_so'},
  {key:'pengeluaran',name:'Pengeluaran',desc:'Waste, QC, R&D, Kalibrasi, Move, Lainnya',page:'pengeluaran',config:null},
@@ -57,9 +58,11 @@ async function load(show=true){
   if(!INV.ready)await invLoad(false);
   if(!CG.ready)throw new Error(CG.err||'Data operasional belum selesai dimuat.');
   if(!INV.ready)throw new Error(INV.err||'Data inventori belum selesai dimuat.');
-  const divs=INV.divs.length?INV.divs:CG.divs;
-  if(!CL.division||!divs.some(d=>String(d.id)===String(CL.division)))CL.division=divs[0]?.id||'';
-  if(!CL.division)throw new Error('Tidak ada divisi yang bisa diakses pada outlet aktif.');
+  const sourceDivs=INV.divs.length?INV.divs:CG.divs;
+  const divs=sourceDivs.filter(d=>d&&clValidUuid(String(d.id||''))&&clValidUuid(String(d.outlet_id||'')));
+  if(!CL.division||!clValidUuid(String(CL.division))||!divs.some(d=>String(d.id)===String(CL.division)))CL.division=divs[0]?.id||'';
+  if(!CL.division)throw new Error('Tidak ada divisi dengan ID/outlet UUID valid pada outlet aktif. Periksa scope outlet akun HR.');
+  if(!clValidUuid(String(CL.division)))throw new Error('ID divisi tidak valid; permintaan Supabase dihentikan agar tidak mengirim UUID "null".');
   const {data:period,error:pe}=await sb().from('barapp_closing_periods').select('*').eq('division_id',CL.division).eq('closing_date',CL.date).maybeSingle();
   if(pe)throw pe;CL.period=period||null;CL.modules=[];CL.snapshots={};
   const activeModules=clModulesForDivision(CL.division);
