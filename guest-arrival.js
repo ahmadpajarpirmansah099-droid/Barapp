@@ -551,14 +551,9 @@ function guestArrivalHistoryCards() {
     .filter(g => String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle))
     .slice()
     .sort((a, b) => {
-      const aFinal = a.status === 'Selesai' || a.status === 'Batalkan' || a.status === 'Duduk';
-      const bFinal = b.status === 'Selesai' || b.status === 'Batalkan' || b.status === 'Duduk';
-      if (aFinal !== bFinal) return aFinal ? -1 : 1;
-
-      // For completed/cancelled guests, the action time (finished_at) determines order.
-      // Guests still waiting remain below finalized entries and are ordered by arrival time.
-      const aTime = Date.parse((a.status === 'Duduk' && a.seated_at) || (aFinal && a.finished_at) || a.arrived_at || '') || 0;
-      const bTime = Date.parse((b.status === 'Duduk' && b.seated_at) || (bFinal && b.finished_at) || b.arrived_at || '') || 0;
+      // Riwayat hanya menampilkan status final: Selesai atau Batalkan.
+      const aTime = Date.parse(a.finished_at || a.arrived_at || '') || 0;
+      const bTime = Date.parse(b.finished_at || b.arrived_at || '') || 0;
       return bTime - aTime;
     });
   if (!rows.length) return '<div class="ga-empty"><strong>Tamu tidak ditemukan</strong>Coba nama lain atau pilih tanggal yang berbeda.</div>';
