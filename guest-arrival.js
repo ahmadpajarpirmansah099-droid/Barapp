@@ -428,6 +428,34 @@ body:has(#app.in .ga-wrap){
 .ga-note-field textarea{min-height:66px!important;resize:vertical}
 .ga-status-field{margin-top:8px!important}
 .ga-preference-chip{display:inline-flex;align-items:center;padding:4px 7px;border-radius:8px;background:#f7e8e2;color:#8b3f34;font-size:11px;font-weight:750}
+/* Compact detail modal: two balanced columns with clear separators. */
+.ga-detail-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:0 12px!important;
+  align-items:stretch!important;
+}
+.ga-detail-item{
+  min-width:0!important;
+  padding:8px 0 9px!important;
+  border-bottom:1px solid #ead5ce!important;
+}
+.ga-detail-item:nth-child(odd):not(.ga-detail-wide){
+  padding-right:8px!important;
+  border-right:1px solid #ead5ce!important;
+}
+.ga-detail-item label{
+  margin:0 0 3px!important;
+  font-size:10px!important;
+  line-height:1.25!important;
+}
+.ga-detail-item>div{
+  min-width:0!important;
+  font-size:12px!important;
+  line-height:1.35!important;
+  overflow-wrap:anywhere!important;
+}
+.ga-detail-wide{grid-column:1/-1!important;padding-right:0!important;border-right:0!important}
+.ga-detail-item .ga-status{vertical-align:top}
 @media(max-width:380px){.ga-preference-btn{gap:4px;font-size:10px;padding:7px 3px}.ga-preference-btn svg{width:17px;height:17px}}
 
 `;
@@ -638,11 +666,12 @@ function guestArrivalShowDetail() {
     '<div class="ga-detail-grid">' +
     info('Nomor antrean',gaEscape(g.queue_code)) + info('Status akhir',gaStatusBadge(g.status)) +
     info('Jumlah pack',gaEscape(g.packs)+' pack') + info('WhatsApp',gaPhoneMarkup(g.whatsapp)) +
-    info('Preferensi',gaEscape(g.smoking_preference || 'Non Smoking')) + (g.note ? info('Note',gaEscape(g.note),true) : '') +
+    info('Preferensi',gaEscape(g.smoking_preference || 'Non Smoking')) +
     info('Tanggal antrean',gaEscape(gaFormatDate(g.operational_date))) + info('Waktu kedatangan',gaEscape(gaFormatDateTime(g.arrived_at))) +
     info('Waktu akhir',gaEscape(g.finished_at?gaFormatDateTime(g.finished_at):'Belum selesai menunggu')) +
     info('Waiting Time',gaEscape(gaDuration(gaWaitSeconds(g)))) +
-    info('Didaftarkan oleh',gaEscape(g.created_by_email || '—'),true) +
+    info('Didaftarkan oleh',gaEscape(g.created_by_email || '—')) +
+    (g.note ? info('Note',gaEscape(g.note),true) : '') +
     (g.cancellation_reason ? info('Alasan pembatalan',gaEscape(g.cancellation_reason),true) : '') +
     (Number(g.correction_count || 0) ? info('Koreksi',Number(g.correction_count)+' kali · terakhir '+gaEscape(g.last_correction_at?gaFormatDateTime(g.last_correction_at):'—'),true) : '') +
     '</div><details style="margin-top:15px"><summary style="cursor:pointer;font-weight:750">Riwayat Perubahan (' + changes.length + ')</summary>' +
