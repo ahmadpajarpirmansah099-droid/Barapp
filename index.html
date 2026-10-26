@@ -3391,7 +3391,6 @@ const ADMIN_PERMISSION_CATALOG=[
  {key:'salary.manage',label:'Kelola gaji',group:'Karyawan & Gaji',desc:'Mengelola komponen gaji'},
  {key:'allowance.manage',label:'Kelola tunjangan',group:'Karyawan & Gaji',desc:'Mengelola tunjangan'},
  {key:'kasbon.manage',label:'Kelola kasbon',group:'Karyawan & Gaji',desc:'Mengelola kasbon'},
- {key:'payslip.release',label:'Rilis slip gaji',group:'Karyawan & Gaji',desc:'Merilis slip gaji'},
  {key:'inventory.view',label:'Lihat master barang & stok',group:'Inventori',desc:'Membuka master barang dan data stok'},
  {key:'inventory.manage',label:'Kelola master barang',group:'Inventori',desc:'Mengelola data master barang'},
  {key:'inventory.inbound.view',label:'Lihat barang masuk',group:'Inventori',desc:'Melihat transaksi barang masuk'},
@@ -3410,7 +3409,6 @@ const ADMIN_PERMISSION_CATALOG=[
  {key:'cogs.sales.view',label:'Lihat penjualan menu',group:'Produksi & Menu',desc:'Melihat input penjualan menu'},
  {key:'cogs.sales.manage',label:'Kelola penjualan menu',group:'Produksi & Menu',desc:'Mengelola input penjualan menu'},
  {key:'division.manage',label:'Kelola Admin & Divisi',group:'Administrasi',desc:'Mengelola akses Admin & Divisi'},
- {key:'audit.view',label:'Lihat audit log',group:'Administrasi',desc:'Melihat riwayat perubahan'}
 ];
 const ADMIN_FEATURES=[
  {name:'Absensi',icon:'◷',desc:'Input, lihat, koreksi, dan persetujuan absensi',perms:['attendance.view','attendance.input','attendance.manage','attendance.approve','attendance.correct']},
@@ -3426,7 +3424,7 @@ const ADMIN_FEATURES=[
  {name:'Pengeluaran',icon:'↘',desc:'Pengelolaan transaksi keluar stok',perms:['inventory.outbound.manage']},
  {name:'Barang Masuk',icon:'↙',desc:'Lihat dan kelola transaksi barang masuk',perms:['inventory.inbound.view','inventory.inbound.manage']},
  {name:'Guest Arrival',icon:'⌂',desc:'Akses mengikuti role dan scope; belum ada izin granular terpisah',perms:[],note:'Tidak ada permission Guest Arrival khusus pada skema user_permissions saat ini.'},
- {name:'Dashboard & Laporan',icon:'▦',desc:'Izin laporan yang memang terdaftar',perms:['attendance.report.view','employees.view','employees.directory.view','audit.view']}
+ {name:'Dashboard & Laporan',icon:'▦',desc:'Izin laporan yang memang terdaftar',perms:['attendance.report.view','employees.view','employees.directory.view']}
 ];
 async function divLoad(){
  try{
@@ -3495,6 +3493,8 @@ async function adminPermSave(uid){
  if(!isDeveloper())return toast('Hanya Dev yang dapat menyimpan izin.','err');
  const d=T.adminPermDrafts&&T.adminPermDrafts[uid];if(!d||!adminPermDirty(d))return toast('Belum ada perubahan izin.','warn');
  const allowed=ADMIN_PERMISSION_CATALOG.map(p=>p.key);
+ const target=(T.adminVisibleAccounts||[]).find(a=>String(a.user_id)===String(uid));
+ if(!target||!target.active||target.role==='dev')return toast('Izin hanya dapat diubah untuk akun aktif non-Dev.','err');
  const changes=allowed.map(permission=>({permission,enabled:d.selected.includes(permission)}));
  const ok=await sbRun(async()=>{await payRpc('dev_set_feature_perms_bulk',{p_user:uid,p_changes:changes})});
  if(ok){delete T.adminPermDrafts[uid];toast('Izin tersimpan dari backend.');await divLoad()}
