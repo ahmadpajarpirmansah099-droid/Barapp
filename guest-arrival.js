@@ -90,7 +90,8 @@ const gaRefreshLists = async (outletParams) => {
   gaCaptureServerTime(GA.queue.concat(GA.pending));
 };
 async function guestArrivalRefresh(silent) {
-  if (T.dbRole !== 'guest_arrival' && !isDeveloper() && !(typeof isLazyJennieHr === 'function' && isLazyJennieHr())) return;
+  // Users granted the Guest Arrival feature may have roles such as div_admin.
+  // Do not skip fetching data based only on role name; Supabase RPCs enforce actual access.
   if (GA.loading) return;
   GA.loading = true; GA.error = '';
   if (!silent) R();
