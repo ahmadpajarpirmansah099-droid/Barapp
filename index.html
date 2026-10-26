@@ -2457,7 +2457,7 @@ const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.clos
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
-  if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
+  if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];D.ljId=l&&l.id}
   const lazyJennieRestricted=isLazyJennieHr();
   const multi=isDeveloper()||(T.dbRole=='hr'&&!lazyJennieRestricted)||T.dbRole=='legacy_admin';
   if(lazyJennieRestricted){
