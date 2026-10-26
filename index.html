@@ -2669,6 +2669,7 @@ async function out(force=false){
 const MODS=[{name:'Absensi',ic:'cal',page:'dash'},{name:'Dashboard',ic:'dashboard-png',page:'ops_dashboard',adm:true},{name:'Dashboard COGS',ic:'chart-no-axes-combined',page:'cogs_dashboard',adm:true,cogs:true},{name:'Master Barang',ic:'package',page:'barang',adm:true,perm:'inventory.view'},{name:'Gaji',ic:'kar',page:'pay_data',adm:true,pay:true},{name:'Approval',ic:'approval',page:'cogs_closing',adm:true,cogs:true},{name:'Daily SO',ic:'clipboard-list',page:'cogs_daily_so',adm:true,cogs:true},{name:'Suplies',ic:'clipboard-list',page:'supplies',adm:true,perm:'inventory.manage'},{name:'Pengeluaran',ic:'arrow-left-right',page:'pengeluaran',adm:true,perm:'inventory.manage'},{name:'Divisi & Admin',ic:'user-cog',page:'div',dev:true},{name:'Barang Masuk',ic:'truck',page:'masuk',adm:true,perm:'inventory.view'},{name:'Master Bahan',ic:'leaf',page:'cogs_materials',adm:true,cogs:true},{name:'Resep WIP',ic:'soup',page:'cogs_wip',adm:true,cogs:true},{name:'Menu',ic:'utensils',page:'cogs_menu',adm:true,cogs:true},{name:'Penjualan Menu',ic:'receipt-text',page:'cogs_sales',adm:true,cogs:true},{name:'Guest Arrival',ic:'users',page:'guest_arrival',adm:true},{name:'Segera hadir',ic:'lock',page:null}];
 const PAGES={dash:'Rekap',ops_dashboard:'Dashboard Operasional',cogs_dashboard:'Dashboard COGS',guest_arrival:'Guest Arrival',abs:'Input Harian',kar:'Karyawan',ot:'Lembur / Extend',lap:'Atur & Laporan',barang:'Master Barang',masuk:'Barang Masuk',pengeluaran:'Pengeluaran',supplies:'Suplies',unit:'Konversi Unit',pay_data:'Gaji',pay_lap:'Laporan Gaji',pay_kas:'Kasbon',pay_set:'Pengaturan Gaji',div:'Divisi & Admin',audit:'Audit Log',divdet:'Detail Divisi',cogs_materials:'Master Bahan',cogs_wip:'Resep WIP',cogs_menu:'Menu',cogs_production:'Produksi WIP',cogs_daily_so:'Daily SO',cogs_sales:'Penjualan Menu',cogs_closing:'Approval Closing'};
 const DIV_MODULE_FIELDS=[
+ {key:'guest_arrival',label:'Guest Arrival',desc:'Guest arrival dan waiting list untuk outlet ini'},
  {key:'supplies',label:'Daily SO SUPLIES',desc:'Stok guest supplies dan perlengkapan service'},
  {key:'cogs_materials',label:'Master Bahan',desc:'Master bahan untuk perhitungan COGS'},
  {key:'cogs_dashboard',label:'Dashboard COGS',desc:'Tampilan baca-saja untuk HPP, cost, persentase, dan ingredient'},
@@ -2680,7 +2681,7 @@ const DIV_MODULE_FIELDS=[
 ];
 function divisionModuleConfig(d){
  const c=!!(d&&d.has_cogs);
- return Object.assign({inventory:true,supplies:true,cogs_dashboard:c,cogs_materials:c,cogs_daily_so:c,cogs_wip:c,cogs_menu:c,cogs_production:c,cogs_sales:c,closing:true},
+ return Object.assign({inventory:true,guest_arrival:false,supplies:true,cogs_dashboard:c,cogs_materials:c,cogs_daily_so:c,cogs_wip:c,cogs_menu:c,cogs_production:c,cogs_sales:c,closing:true},
   d&&d.module_config&&typeof d.module_config==='object'?d.module_config:{});
 }
 function divisionModuleOn(d,key){return key==='inventory'||divisionModuleConfig(d)[key]!==false}
