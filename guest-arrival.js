@@ -442,7 +442,14 @@ function guestArrivalHistoryMarkup() {
 }
 function guestArrivalHistoryCards() {
   const needle = String(GA.search || '').trim().toLocaleLowerCase('id-ID');
-  const rows = GA.history.filter(g => String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle));
+  const rows = GA.history
+    .filter(g => String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle))
+    .slice()
+    .sort((a, b) => {
+      const at = Date.parse(a.arrived_at || '') || 0;
+      const bt = Date.parse(b.arrived_at || '') || 0;
+      return bt - at;
+    });
   if (!rows.length) return '<div class="ga-empty"><strong>Tamu tidak ditemukan</strong>Coba nama lain atau pilih tanggal yang berbeda.</div>';
   return rows.map(g => '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
     '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-wait">Waiting ' + gaDuration(gaWaitSeconds(g)) + '</span></div>' +
