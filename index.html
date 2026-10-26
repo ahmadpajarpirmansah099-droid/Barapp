@@ -3039,7 +3039,7 @@ async function invLoad(show=false){
   // Every inventory screen must be scoped to one explicitly active outlet.
   // Do not treat "ALL" or a missing outlet_id as permission to mix outlets.
   const activeOutletId=await outInit();
-  if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
+  if(!activeOutletId||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(activeOutletId)))throw new Error('OUTLET_ACTIVE_REQUIRED');
   const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').order('name');
   if(de)throw de;
   let divs=(allDivs||[]).filter(d=>String(d.outlet_id)===String(activeOutletId));
@@ -4902,7 +4902,7 @@ async function opsLoadUnitMaster(){
  if(INV.ready)return;
  // Daily SO needs only item units/conversions, not the full inventory history.
  const activeOutletId=await outInit();
- if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');
+ if(!activeOutletId||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(activeOutletId)))throw new Error('OUTLET_ACTIVE_REQUIRED');
  const outletKey=String(activeOutletId);
  // Reuse the lightweight Master Barang cache for this outlet; INV.ready remains reserved for the full inventory load.
  if(INV.unitMasterOutletId===outletKey)return;
