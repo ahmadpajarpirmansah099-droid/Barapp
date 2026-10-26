@@ -2800,7 +2800,7 @@ let BARAPP_DESKTOP_SIDEBAR_COLLAPSED=false;
 try{BARAPP_DESKTOP_SIDEBAR_COLLAPSED=localStorage.getItem('barapp.desktopSidebarCollapsed')==='1'}catch(e){}
 const desktopSidebarIcon=()=>'<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'m13 8 4 4-4 4':'m15 8-4 4 4 4')+'"/></svg>';
 function toggleDesktopSidebar(){BARAPP_DESKTOP_SIDEBAR_COLLAPSED=!BARAPP_DESKTOP_SIDEBAR_COLLAPSED;try{localStorage.setItem('barapp.desktopSidebarCollapsed',BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'1':'0')}catch(e){}R()}
-const go=p=>{if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
+const go=p=>{if(p==='div'||p==='divdet'){toast('Fitur Divisi & Admin sudah dinonaktifkan. Pengaturan akses dilakukan melalui backend.','warn');return}if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
 function featureMenuIcon(m,lk){
  if(lk||!m.page)return IC('lock',30);
  const common='viewBox="0 0 64 64" width="60" height="60" fill="none" stroke-linecap="round" stroke-linejoin="round"';
@@ -2911,7 +2911,7 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
 
 window.__barappRefreshUI=()=>{if(D.me)R()};
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
-if(!T.pgInit){T.pgInit=1;let restored=false;if(T.dbRole==='guest_arrival'){pg='guest_arrival';restored=true}if(!restored)try{const lp=localStorage.getItem('bar_pg_last');if(lp&&PAGES[lp]){pg=lp;restored=true}}catch(e){}if(!restored)try{const sp=sessionStorage.getItem('bar_pg');if(sp&&PAGES[sp]){pg=sp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='div'}
+if(!T.pgInit){T.pgInit=1;let restored=false;if(T.dbRole==='guest_arrival'){pg='guest_arrival';restored=true}if(!restored)try{const lp=localStorage.getItem('bar_pg_last');if(lp&&PAGES[lp]){pg=lp;restored=true}}catch(e){}if(!restored)try{const sp=sessionStorage.getItem('bar_pg');if(sp&&PAGES[sp]){pg=sp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='dash'}
 a.className='in'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?' sidebar-collapsed':'');if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
 if(!allowed().includes(pg))pg=allowed()[0]||'dash';
 try{sessionStorage.setItem('bar_pg',pg)}catch(e){}try{localStorage.setItem('bar_pg_last',pg)}catch(e){}
@@ -3610,7 +3610,6 @@ function adminAccountsFiltered(){
   return [a.email||'',adminRoleLabel(a.role),...scopes].join(' ').toLocaleLowerCase('id').includes(q)
  })
 }
-V.div=()=>'<div class="card"><b>Admin & Divisi dinonaktifkan</b><p class="mu">Pengaturan akses admin saat ini dikelola langsung melalui backend. Halaman frontend ini dinonaktifkan sementara. Struktur akun, outlet, divisi, dan izin di database tidak dihapus. Pengelolaan izin melalui frontend dapat dibangun kembali nanti sebagai fitur terpisah.</p></div>';
 
 V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa melihat audit log.</div>';
  if(!T.audInit){T.audInit=1;setTimeout(audLoad,0)}
@@ -3715,7 +3714,6 @@ async function accSet(uid){const r=document.getElementById('ac_r_'+uid),a=docume
 
 /* ===== DASHBOARD DEV: DETAIL & EDIT DIVISI ===== */
 async function accDivPerm(uid,on){const ok=await sbRun(async()=>{await payRpc('dev_set_hr_division_perm',{p_user:uid,p_on:on})});if(ok){toast(on?'Akses Divisi & Admin diberikan':'Akses Divisi & Admin dicabut');divLoad()}}
-function divOpen(id){T.dvSel=id;go('divdet')}
 function divEdit(id){
  const d=(T.divs||[]).find(x=>x.id==id);if(!d)return;const cfg=divisionModuleConfig(d);
  const fields=DIV_MODULE_FIELDS.map(m=>'<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)"><input type="checkbox" id="dvm_'+m.key+'" '+(cfg[m.key]?'checked':'')+' style="width:auto;flex:0 0 auto;margin-top:3px"><span><b>'+esc(m.label)+'</b><small class="mu" style="display:block;margin-top:3px">'+esc(m.desc)+'</small></span></label>').join('');
@@ -3730,9 +3728,6 @@ async function divModulesSave(id){
  const ok=await sbRun(async()=>{await payRpc('dev_update_division_modules',{p_id:id,p_modules:cfg})});
  if(ok){toast('Modul divisi berhasil diperbarui');closeM();CG.ready=false;CG.err='';INV.ready=false;SUPS.positionLoading=false;SUPS.positionError='';SUPS.positionLoadedFor='';SUPS.position=[];OPS.positionLoading=false;OPS.positionError='';OPS.positionErrorFor='';OPS.positionLoadedFor='';OPS.position=[];await divLoad();try{await cgLoad(false)}catch(e){}try{await invLoad(false)}catch(e){}R()}
 }
-async function divDetLoad(id){try{const [em]=await Promise.all([payQ('employees','id,name,active,division_id')]);
- T.dvDet={id,emps:em.filter(e=>e.division_id==id),loaded:true}}catch(e){toast(errText(e),'err')}R()}
-V.divdet=()=>'<div class="card"><b>Detail Divisi — dinonaktifkan</b><p class="mu">Halaman detail versi lama dinonaktifkan bersama fitur Admin & Divisi. Data dasarnya tetap dipertahankan untuk pembangunan ulang.</p><button class="btn s" onclick="go(\'div\')">Kembali</button></div>';
 
 /* ===== GANTI PASSWORD AKUN (dev, lewat Edge Function set-password) ===== */
 function pwOpen(uid,email){modal(`<h3>Ganti password</h3><p class="mu" style="word-break:break-all">${esc(email)}</p><label>Password baru (minimal 8 karakter)<input id="pwn" type="password" autocomplete="new-password"></label><label>Ulangi password<input id="pwr" type="password" autocomplete="new-password"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="pwSave('${uid}')">Simpan password</button></div>`)}
