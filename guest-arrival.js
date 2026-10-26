@@ -162,7 +162,7 @@ function guestArrivalSetTab(tab) {
 function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
-  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : '') + '">' +
+  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : '') + '">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
@@ -505,6 +505,56 @@ body:has(#app.in .ga-wrap){
 .ga-detail-item .ga-status{vertical-align:top}
 @media(max-width:380px){.ga-preference-btn{gap:4px;font-size:10px;padding:7px 3px}.ga-preference-btn svg{width:17px;height:17px}}
 
+/* Compact, space-efficient dashboard layout for mobile screens. */
+@media(max-width:600px){
+  #app.in .ga-wrap.ga-wrap-dashboard{
+    width:calc(100% - 12px)!important;
+    margin:8px auto 14px!important;
+    padding:10px!important;
+    border-radius:16px!important;
+    box-shadow:0 4px 0 #3b211d!important;
+  }
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-heading{margin:0 0 7px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-heading h2{font-size:clamp(17px,4.7vw,21px)!important;line-height:1.12!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-tabs{margin:0 0 7px!important;padding:3px!important;gap:3px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-tab{min-height:36px!important;padding:7px 3px!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-controls{gap:7px!important;margin:5px 0 7px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-controls>.ga-filters{gap:6px!important;margin:0!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-controls .ga-field{gap:3px!important;font-size:11px!important;line-height:1.2!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-controls input[type="date"]{
+    min-height:38px!important;height:38px!important;padding:6px 7px!important;font-size:12px!important;border-radius:9px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-actions{gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-actions .ga-field{grid-template-rows:14px 38px!important;gap:3px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-actions .ga-field>span{min-height:14px!important;height:14px!important;line-height:14px!important;font-size:10px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-dashboard-actions .ga-btn{
+    min-height:38px!important;height:38px!important;max-height:38px!important;padding:5px 4px!important;font-size:11px!important;border-radius:9px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat-grid{gap:6px!important;margin:7px 0!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat{
+    min-height:0!important;padding:8px!important;border-radius:11px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;
+  }
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat label{font-size:10px!important;line-height:1.25!important;min-height:0!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat strong{font-size:clamp(18px,4.5vw,22px)!important;line-height:1.12!important;margin-top:3px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat .ga-unit{font-size:10px!important;line-height:1.15!important;margin-top:2px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat:last-child{
+    grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-rows:auto auto;align-items:center;gap:2px 10px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat:last-child label{grid-column:1;grid-row:1}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat:last-child strong{grid-column:2;grid-row:1/3;margin:0!important;text-align:right}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat:last-child .ga-unit{grid-column:1;grid-row:2;margin:0!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-report-card{margin-top:7px!important;padding:9px!important;border-radius:11px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-report-card h3{font-size:15px!important;line-height:1.2!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-report-card>p{margin:3px 0 6px!important;font-size:10px!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-month-list{gap:5px!important;grid-template-columns:1fr!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-month{padding:7px!important;gap:7px!important;font-size:11px!important;border-radius:8px!important}
+}
+@media(min-width:601px){
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #app.in .ga-wrap.ga-wrap-dashboard .ga-stat:last-child{grid-column:auto!important}
+}
+
 /* Mobile-first compact layout only for Tamu yang Telah Duduk. */
 @media(max-width:600px){
   #app.in .ga-wrap.ga-wrap-seated{
@@ -637,9 +687,7 @@ function guestArrivalDashboardMarkup() {
   const stats = [
     ['Total Pendaftaran', d.total_registrations || 0, 'tamu'], ['Total Pack Terdaftar', d.total_packs || 0, 'pack'],
     ['Tamu Selesai', d.completed_count || 0, 'tamu'], ['Tamu Menunggu', d.waiting_count || 0, 'tamu'],
-    ['Tamu Dibatalkan', d.cancelled_count || 0, 'tamu'], ['Pack Selesai', d.completed_packs || 0, 'pack'],
-    ['Pack Menunggu', d.waiting_packs || 0, 'pack'], ['Pack Dibatalkan', d.cancelled_packs || 0, 'pack'],
-    ['Tamu Duduk', d.seated_count || 0, 'tamu'], ['Pack Duduk', d.seated_packs || 0, 'pack'],
+    ['Tamu Dibatalkan', d.cancelled_count || 0, 'tamu'],
     ['Rata-rata Waiting Time', guestArrivalSecondsStat(d.avg_waiting_seconds), 'selesai menunggu'],
     ['Waiting Time Terlama', guestArrivalSecondsStat(d.longest_waiting_seconds), 'selesai menunggu']
   ];
