@@ -162,7 +162,7 @@ function guestArrivalSetTab(tab) {
 function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
-  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : '') + '">' +
+  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : GA.tab==='queue' ? ' ga-wrap-queue' : '') + '">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
@@ -504,6 +504,27 @@ body:has(#app.in .ga-wrap){
 .ga-detail-wide{grid-column:1/-1!important;padding-right:0!important;border-right:0!important}
 .ga-detail-item .ga-status{vertical-align:top}
 @media(max-width:380px){.ga-preference-btn{gap:4px;font-size:10px;padding:7px 3px}.ga-preference-btn svg{width:17px;height:17px}}
+
+/* Make Antrean Hari Ini use the same compact, solid top shell as Dashboard. */
+@media(max-width:600px){
+  #app.in .ga-wrap.ga-wrap-queue{
+    width:calc(100% - 12px)!important;
+    margin:8px auto 14px!important;
+    padding:10px!important;
+    background:#fffaf5!important;
+    background-image:none!important;
+    border:2px solid #3b211d!important;
+    border-radius:16px!important;
+    box-shadow:0 4px 0 #3b211d!important;
+    color:#351a16!important;
+    opacity:1!important;
+  }
+  #app.in .ga-wrap.ga-wrap-queue .ga-heading{margin:0 0 7px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-queue .ga-heading h2{font-size:clamp(17px,4.7vw,21px)!important;line-height:1.12!important}
+  #app.in .ga-wrap.ga-wrap-queue .ga-tabs{margin:0 0 7px!important;padding:3px!important;gap:3px!important}
+  #app.in .ga-wrap.ga-wrap-queue .ga-tab{min-height:36px!important;padding:7px 3px!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-queue .ga-seated-shortcut{margin-bottom:7px!important}
+}
 
 /* Compact, space-efficient dashboard layout for mobile screens. */
 @media(max-width:600px){
