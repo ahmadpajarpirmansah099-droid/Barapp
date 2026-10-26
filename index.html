@@ -3575,9 +3575,12 @@ function adminRefreshPermissionUI(uid){
  ADMIN_FEATURES.forEach(feature=>{
   const node=[...document.querySelectorAll('.ad-feature')].find(el=>el.dataset.featureName===feature.name);if(!node)return;
   const perms=feature.perms.filter(p=>ADMIN_PERMISSION_CATALOG.some(c=>c.key===p)),enabled=perms.filter(p=>d.selected.includes(p)).length;
-  const state=node.querySelector('[data-feature-status]');if(!state)return;
-  state.textContent=!perms.length?'Tidak tersedia':enabled===perms.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(uid).some(p=>perms.includes(p))?'Tidak diizinkan':'Belum dikonfigurasi');
-  state.classList.toggle('on',enabled>0)
+  const state=node.querySelector('[data-feature-status]');
+  if(state){
+   state.textContent=!perms.length?'Belum didukung':enabled===perms.length?'Diizinkan':enabled?'Sebagian diizinkan':(adminFeaturePerms(uid).some(p=>perms.includes(p))?'Tidak diizinkan':'Belum dikonfigurasi');
+   state.classList.toggle('on',perms.length>0&&enabled===perms.length)
+  }
+  const toggle=node.querySelector('.ad-feature-toggle input');if(toggle){toggle.checked=perms.length>0&&enabled===perms.length;toggle.disabled=!perms.length||!account||!account.active||account.role==='dev'}
  });
  const dirty=adminPermDirty(d),status=document.querySelector('.ad-savebar .mu'),buttons=document.querySelectorAll('.ad-savebar button');
  if(status)status.textContent=dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru';
