@@ -2278,7 +2278,14 @@ const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.clos
 async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
   if(!D.ljId&&T.outlets.length){const l=T.outlets.find(x=>x.code=='LJ')||T.outlets[0];D.ljId=l&&l.id}
-  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  const lazyJennieRestricted=isLazyJennieHr();
+  const multi=isDeveloper()||(T.dbRole=='hr'&&!lazyJennieRestricted)||T.dbRole=='legacy_admin';
+  if(lazyJennieRestricted){
+    D.outId=D.ljId||null;
+    try{if(D.ljId)localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),D.ljId)}catch(e){}
+    sv();
+    return D.ljId||null;
+  }
   if(!multi){
     if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
     if(T.scopeOut){if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut;}
@@ -2305,7 +2312,7 @@ async function outSwitch(id){
   catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
 }
 function outMenuHtml(){
-  if(!(isDeveloper()||T.dbRole=='hr'))return '';
+  if(!(isDeveloper()||(T.dbRole=='hr'&&!isLazyJennieHr())))return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
     if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
     return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
