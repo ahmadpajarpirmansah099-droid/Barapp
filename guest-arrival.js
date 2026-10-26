@@ -841,7 +841,12 @@ window.guestArrivalResetSession = function() {
   GA.form=null; GA.edit=null; GA.detail=null;
   GA.cancelId=null; GA.cancelReason=''; GA.showPending=false; GA.serverOffsetMs=0;
 };
-V.guest_arrival = () => guestArrivalRender();
+if (typeof window.__barappRegisterViews === 'function') {
+  window.__barappRegisterViews({guest_arrival: () => guestArrivalRender()});
+} else {
+  window.__barappPendingViews = window.__barappPendingViews || {};
+  window.__barappPendingViews.guest_arrival = () => guestArrivalRender();
+}
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
   if (!D || !D.me || (D.me.r!=='G' && !isDeveloper() && !(typeof isLazyJennieHr === 'function' && isLazyJennieHr())) || pg!=='guest_arrival') return;
