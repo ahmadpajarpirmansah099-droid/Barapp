@@ -162,7 +162,7 @@ function guestArrivalSetTab(tab) {
 function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
   const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
-  return '<style>' + gaCss + '</style><section class="ga-wrap">' +
+  return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : '') + '">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
@@ -505,6 +505,50 @@ body:has(#app.in .ga-wrap){
 .ga-detail-item .ga-status{vertical-align:top}
 @media(max-width:380px){.ga-preference-btn{gap:4px;font-size:10px;padding:7px 3px}.ga-preference-btn svg{width:17px;height:17px}}
 
+/* Mobile-first compact layout only for Tamu yang Telah Duduk. */
+@media(max-width:600px){
+  #app.in .ga-wrap.ga-wrap-seated{
+    width:calc(100% - 12px)!important;
+    margin:8px auto 14px!important;
+    padding:10px!important;
+    border-radius:16px!important;
+    box-shadow:0 4px 0 #3b211d!important;
+  }
+  #app.in .ga-wrap.ga-wrap-seated .ga-heading{margin:0 0 7px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-heading h2{font-size:clamp(17px,4.7vw,21px)!important;line-height:1.12!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-tabs{margin:0 0 7px!important;padding:3px!important;gap:3px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-tab{min-height:36px!important;padding:7px 3px!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-seated-back{
+    min-height:36px!important;padding:7px 10px!important;margin:0 0 7px!important;
+    border-radius:10px!important;font-size:12px!important;gap:6px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-seated .ga-section-title{margin:9px 0 5px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-section-title h3{font-size:15px!important;line-height:1.2!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-count{font-size:10px!important;white-space:nowrap}
+  #app.in .ga-wrap.ga-wrap-seated .ga-filters{margin:5px 0 8px!important;gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-field{gap:4px!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-field input{
+    min-height:38px!important;padding:7px 9px!important;font-size:13px!important;border-radius:9px!important;
+  }
+  #app.in .ga-wrap.ga-wrap-seated .ga-card-list{gap:7px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-card{
+    padding:9px!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(30,50,35,.035)!important;
+  }
+  #app.in .ga-wrap.ga-wrap-seated .ga-card-top{gap:6px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-queue-code{font-size:16px!important;line-height:1.1!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-name{font-size:14px!important;line-height:1.22!important;margin:3px 0!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-card-meta{gap:5px 7px!important;margin-top:6px!important;line-height:1.2!important;font-size:11px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-preference-chip,
+  #app.in .ga-wrap.ga-wrap-seated .ga-table-chip{padding:4px 6px!important;font-size:10px!important;border-radius:7px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-sitting-chip{gap:5px!important;padding:5px 7px!important;font-size:10px!important;border-radius:9px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-sitting-chip strong{font-size:12px!important;letter-spacing:.015em!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-wait{padding:4px 6px!important;font-size:10px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-inline-summary{font-size:11px!important;line-height:1.3!important;margin-top:4px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-card-actions{gap:6px!important;margin-top:8px!important}
+  #app.in .ga-wrap.ga-wrap-seated .ga-card-actions .ga-btn{
+    min-height:35px!important;padding:6px 7px!important;font-size:11px!important;border-radius:9px!important;
+  }
+}
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
