@@ -862,6 +862,17 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .ad-modal .ad-savebar>div{width:100%}
  .ad-modal .ad-savebar>div .btn{flex:1}
 }
+
+/* Fix desktop popup scrolling: keep modal bounded and make content the scroll container */
+.ad-modal-backdrop{overflow-y:auto;overscroll-behavior:contain;align-items:center}
+.ad-modal{height:min(88vh,900px);max-height:88vh;min-height:0}
+.ad-modal .ad-detail-panel{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.ad-modal .ad-tabs{top:0}
+@media(max-width:600px){
+ .ad-modal-backdrop{overflow:hidden;align-items:flex-end}
+ .ad-modal{height:auto;max-height:92dvh;min-height:0}
+ .ad-modal .ad-detail-panel{min-height:0;max-height:none}
+}
 </style>
 
 <style id="cogs-ui">
