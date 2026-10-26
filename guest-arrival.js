@@ -1,13 +1,13 @@
 /* Guest Arrival & Waiting List — Barapp module */
 const GA = {
   tab: 'queue', ready: false, loading: false, error: '',
-  queue: [], pending: [], history: [],
+  queue: [], pending: [], seated: [], history: [],
   historyDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   lastOperationalDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   search: '',
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
-  dashboard: null, busy: '', form: null, edit: null, detail: null,
+  dashboard: null, busy: '', form: null, edit: null, detail: null, showSeated: false, seat: null,
   cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null
 };
 const gaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
@@ -32,7 +32,7 @@ const gaUuid = () => {
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
   });
 };
-const gaStatusClass = (s) => s === 'Selesai' ? 'done' : s === 'Batalkan' ? 'cancelled' : 'waiting';
+const gaStatusClass = (s) => s === 'Selesai' ? 'done' : s === 'Duduk' ? 'seated' : s === 'Batalkan' ? 'cancelled' : 'waiting';
 const gaPhoneDigits = (value) => String(value || '').replace(/\D/g, '');
 const gaPhoneValid = (value) => /^[\d\s()+.-]+$/.test(String(value || '').trim()) && /^08\d{8,11}$/.test(gaPhoneDigits(value));
 const gaPhoneHref = (value) => gaPhoneValid(value) ? 'https://wa.me/62' + gaPhoneDigits(value).slice(1) : '';
@@ -81,13 +81,15 @@ const gaCaptureServerTime = (rows) => {
 };
 const gaRefreshLists = async (outletParams) => {
   const scopedParams = outletParams || await gaOutletParams();
-  const [queue, pending] = await Promise.all([
+  const [queue, pending, seated] = await Promise.all([
     gaRpc('guest_arrival_list', { p_scope:'today', p_date:GA.historyDate, ...scopedParams }),
-    gaRpc('guest_arrival_list', { p_scope:'pending', p_date:GA.historyDate, ...scopedParams })
+    gaRpc('guest_arrival_list', { p_scope:'pending', p_date:GA.historyDate, ...scopedParams }),
+    gaRpc('guest_arrival_seated_list', scopedParams)
   ]);
   GA.queue = Array.isArray(queue) ? queue : [];
   GA.pending = Array.isArray(pending) ? pending : [];
-  gaCaptureServerTime(GA.queue.concat(GA.pending));
+  GA.seated = Array.isArray(seated) ? seated : [];
+  gaCaptureServerTime(GA.queue.concat(GA.pending, GA.seated));
 };
 async function guestArrivalRefresh(silent) {
   // Users granted the Guest Arrival feature may have roles such as div_admin.
@@ -117,7 +119,7 @@ async function guestArrivalRefresh(silent) {
       GA.reloadAfterCurrent = false;
       GA.ready = false;
       GA.error = '';
-      GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
+      GA.queue = []; GA.pending = []; GA.seated = []; GA.history = []; GA.dashboard = null; GA.showSeated = false;
       if (pg === 'guest_arrival') setTimeout(() => guestArrivalRefresh(true), 0);
     }
     R();
@@ -130,7 +132,7 @@ function guestArrivalOutletChanged() {
   GA.ready = false;
   GA.error = '';
   GA.search = '';
-  GA.queue = []; GA.pending = []; GA.history = []; GA.dashboard = null;
+  GA.queue = []; GA.pending = []; GA.seated = []; GA.history = []; GA.dashboard = null; GA.showSeated = false;
   if (GA.loading) {
     GA.reloadAfterCurrent = true;
     if (pg === 'guest_arrival') R();
@@ -140,7 +142,7 @@ function guestArrivalOutletChanged() {
 }
 function guestArrivalSetTab(tab) {
   if (!['queue','dashboard','history'].includes(tab)) return;
-  GA.tab = tab; GA.ready = false; GA.error = ''; GA.search = '';
+  GA.tab = tab; GA.showSeated = false; GA.ready = false; GA.error = ''; GA.search = '';
   R(); guestArrivalRefresh();
 }
 function guestArrivalRender() {
@@ -149,8 +151,10 @@ function guestArrivalRender() {
   return '<style>' + gaCss + '</style><section class="ga-wrap">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
-    (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
-    (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? guestArrivalQueueMarkup() : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
+    '</div>' +
+    '<button type="button" class="ga-btn secondary ga-seated-shortcut ' + (GA.showSeated?'active':'') + '" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>' + (GA.showSeated ? 'Kembali ke Antrean Menunggu' : 'Tamu yang Telah Duduk (' + GA.seated.length + ')') + '</span></button>' +
+    (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '')
+    (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? (GA.showSeated ? guestArrivalSeatedMarkup() : guestArrivalQueueMarkup()) : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
     '</section>';
 }
 const gaCss = String.raw`
@@ -164,6 +168,15 @@ const gaCss = String.raw`
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
+.ga-seated-shortcut.active{background:var(--ac,#b4533f);border-color:var(--ac,#b4533f);color:var(--onac,#fff)}
+.ga-seated-shortcut-icon{display:grid;place-items:center;flex:none;width:26px;height:26px;border:1.5px solid currentColor;border-radius:8px;font-size:17px;line-height:1}
+.ga-table-chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:9px;background:#f8e7e1;color:#8b3f34;font-size:12px;font-weight:850}
+.ga-seating-highlight{margin:14px 0;padding:14px;border:2px solid #b4533f;border-radius:15px;background:#f9e8e2;color:#873a2d}
+.ga-seating-highlight label{display:block;margin-bottom:8px;font-size:13px;font-weight:900;letter-spacing:.03em}
+.ga-seating-highlight input{width:100%;min-height:54px;padding:13px 14px;border:2px solid #b4533f;border-radius:12px;background:#fffdfb;color:#452a25;font:800 17px/1.3 var(--fn,'Plus Jakarta Sans',sans-serif);box-sizing:border-box}
+.ga-seating-highlight input:focus{outline:3px solid rgba(180,83,63,.22);outline-offset:2px}
+.ga-table-value{display:inline-flex;padding:7px 10px;border-radius:9px;background:#f8e7e1;color:#8b3f34;font-size:15px;font-weight:900}
 .ga-btn{display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:43px;padding:10px 13px;border:1px solid var(--line,var(--br,#cbd6c8));border-radius:12px;background:var(--cd,#fff);color:var(--tx,#26332a);font-weight:750;font-size:13px;text-decoration:none;cursor:pointer}
 .ga-btn:disabled{opacity:.58;cursor:wait}
 .ga-btn.primary{background:var(--ac,#6e9b57);color:var(--onac,#fff);border-color:var(--ac,#6e9b57)}
@@ -184,6 +197,7 @@ const gaCss = String.raw`
 .ga-wait{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;background:var(--tint,rgba(100,140,95,.13));border-radius:9px;font-variant-numeric:tabular-nums;font-size:12px;font-weight:800}
 .ga-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
 .ga-status.waiting{background:#fff3d5;color:#825b00}
+.ga-status.seated{background:#f8e5df;color:#8b3f34}
 .ga-status.done{background:#e3f3e3;color:#28623a}
 .ga-status.cancelled{background:#fbe6e3;color:#a6372b}
 .ga-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}
@@ -486,11 +500,13 @@ function guestArrivalQueueMarkup() {
 function guestArrivalCard(g, pending) {
   const detail = '<button type="button" class="ga-btn secondary small" onclick="guestArrivalOpenDetail(\'' + g.id + '\')">Detail</button>';
   const actions = g.status === 'Menunggu'
-    ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalSetStatus(\'' + g.id + '\',\'Selesai\')">Selesai</button><button type="button" class="ga-btn danger small" onclick="guestArrivalCancel(\'' + g.id + '\')">Batalkan</button>'
-    : '';
+    ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalOpenSeatModal(\'' + g.id + '\')">Duduk</button><button type="button" class="ga-btn danger small" onclick="guestArrivalCancel(\'' + g.id + '\')">Batalkan</button>'
+    : g.status === 'Duduk'
+      ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalFinishSeated(\'' + g.id + '\')">Selesai</button>'
+      : '';
   return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
-    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span><span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span></div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
-    '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
+    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span>' + (g.table_name ? '<span class="ga-table-chip">Meja: ' + gaEscape(g.table_name) + '</span>' : '') + '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span></div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
+    '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + (g.seated_at ? ' · Duduk ' + gaEscape(gaFormatDateTime(g.seated_at)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
 }
 function guestArrivalQueueCards() {
   return GA.queue.length ? GA.queue.map(g => guestArrivalCard(g,false)).join('') : '<div class="ga-empty"><strong>Belum ada tamu menunggu</strong>Antrean baru akan muncul setelah tamu didaftarkan.</div>';
@@ -498,6 +514,33 @@ function guestArrivalQueueCards() {
 function guestArrivalRenderQueueCards() {
   const node = document.getElementById('ga-queue-cards');
   if (node) node.innerHTML = guestArrivalQueueCards();
+}
+function guestArrivalToggleSeatedView() {
+  if (GA.showSeated) {
+    GA.showSeated = false; GA.tab = 'queue'; GA.search = ''; GA.ready = true; R();
+    return;
+  }
+  GA.tab = 'queue'; GA.showSeated = true; GA.search = ''; GA.ready = false; GA.error = '';
+  void guestArrivalRefresh();
+}
+function guestArrivalSeatedCards() {
+  const needle = String(GA.search || '').trim().toLocaleLowerCase('id-ID');
+  const rows = (GA.seated || []).filter(g =>
+    String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle) ||
+    String(g.table_name || '').toLocaleLowerCase('id-ID').includes(needle) ||
+    String(g.queue_code || '').toLocaleLowerCase('id-ID').includes(needle)
+  ).slice().sort((a,b) => (Date.parse(b.seated_at || '') || 0) - (Date.parse(a.seated_at || '') || 0));
+  if (!rows.length) return '<div class="ga-empty"><strong>Belum ada tamu yang telah duduk</strong>Tamu akan muncul di sini setelah status diubah menjadi Duduk.</div>';
+  return rows.map(g => guestArrivalCard(g,false)).join('');
+}
+function guestArrivalSeatedMarkup() {
+  return '<div class="ga-filters"><label class="ga-field">Cari nama tamu atau meja<input type="search" value="' + gaEscape(GA.search) + '" placeholder="Nama tamu, nomor antrean, atau meja…" oninput="GA.search=this.value;guestArrivalRenderSeatedCards()"></label></div>' +
+    '<div class="ga-section-title"><h3>Tamu yang Telah Duduk</h3><span class="ga-count">' + (GA.seated || []).length + ' tamu aktif</span></div>' +
+    '<div id="ga-seated-cards" class="ga-card-list">' + guestArrivalSeatedCards() + '</div>';
+}
+function guestArrivalRenderSeatedCards() {
+  const node = document.getElementById('ga-seated-cards');
+  if (node) node.innerHTML = guestArrivalSeatedCards();
 }
 function guestArrivalHistoryMarkup() {
   return '<div class="ga-filters"><label class="ga-field">Tanggal riwayat<input type="date" value="' + gaEscape(GA.historyDate) + '" max="' + gaEscape(gaToday()) + '" onchange="guestArrivalHistoryDate(this.value)"></label><label class="ga-field">Cari nama tamu<input type="search" value="' + gaEscape(GA.search) + '" placeholder="Ketik nama tamu…" oninput="GA.search=this.value;guestArrivalRenderHistoryCards()"></label></div><div class="ga-section-title"><h3>Riwayat Tamu</h3><span class="ga-count">' + GA.history.length + ' pendaftaran</span></div><div id="ga-history-cards" class="ga-card-list">' + guestArrivalHistoryCards() + '</div>';
@@ -508,14 +551,14 @@ function guestArrivalHistoryCards() {
     .filter(g => String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle))
     .slice()
     .sort((a, b) => {
-      const aFinal = a.status === 'Selesai' || a.status === 'Batalkan';
-      const bFinal = b.status === 'Selesai' || b.status === 'Batalkan';
+      const aFinal = a.status === 'Selesai' || a.status === 'Batalkan' || a.status === 'Duduk';
+      const bFinal = b.status === 'Selesai' || b.status === 'Batalkan' || b.status === 'Duduk';
       if (aFinal !== bFinal) return aFinal ? -1 : 1;
 
       // For completed/cancelled guests, the action time (finished_at) determines order.
       // Guests still waiting remain below finalized entries and are ordered by arrival time.
-      const aTime = Date.parse((aFinal && a.finished_at) || a.arrived_at || '') || 0;
-      const bTime = Date.parse((bFinal && b.finished_at) || b.arrived_at || '') || 0;
+      const aTime = Date.parse((a.status === 'Duduk' && a.seated_at) || (aFinal && a.finished_at) || a.arrived_at || '') || 0;
+      const bTime = Date.parse((b.status === 'Duduk' && b.seated_at) || (bFinal && b.finished_at) || b.arrived_at || '') || 0;
       return bTime - aTime;
     });
   if (!rows.length) return '<div class="ga-empty"><strong>Tamu tidak ditemukan</strong>Coba nama lain atau pilih tanggal yang berbeda.</div>';
@@ -543,6 +586,7 @@ function guestArrivalDashboardMarkup() {
     ['Tamu Selesai', d.completed_count || 0, 'tamu'], ['Tamu Menunggu', d.waiting_count || 0, 'tamu'],
     ['Tamu Dibatalkan', d.cancelled_count || 0, 'tamu'], ['Pack Selesai', d.completed_packs || 0, 'pack'],
     ['Pack Menunggu', d.waiting_packs || 0, 'pack'], ['Pack Dibatalkan', d.cancelled_packs || 0, 'pack'],
+    ['Tamu Duduk', d.seated_count || 0, 'tamu'], ['Pack Duduk', d.seated_packs || 0, 'pack'],
     ['Rata-rata Waiting Time', guestArrivalSecondsStat(d.avg_waiting_seconds), 'selesai menunggu'],
     ['Waiting Time Terlama', guestArrivalSecondsStat(d.longest_waiting_seconds), 'selesai menunggu']
   ];
@@ -550,7 +594,7 @@ function guestArrivalDashboardMarkup() {
   return '<div class="ga-dashboard-controls"><div class="ga-filters"><label class="ga-field">Dari tanggal<input type="date" value="' + gaEscape(GA.fromDate) + '" max="' + gaEscape(GA.toDate) + '" onchange="guestArrivalDashboardFilter(\'fromDate\',this.value)"></label><label class="ga-field">Sampai tanggal<input type="date" value="' + gaEscape(GA.toDate) + '" min="' + gaEscape(GA.fromDate) + '" onchange="guestArrivalDashboardFilter(\'toDate\',this.value)"></label></div><div class="ga-dashboard-actions"><label class="ga-field"><span>Periode</span><button class="ga-btn secondary" type="button" onclick="guestArrivalSetThisMonth()">Bulan ini</button></label><label class="ga-field"><span>Ekspor laporan</span><button type="button" class="ga-btn primary ga-export-btn" onclick="guestArrivalExport()" ' + (GA.busy==='export'?'disabled':'') + '>Ekspor Excel (.xlsx)</button></label></div></div>' +
     '<div class="ga-stat-grid">' + stats.map(s => '<div class="ga-stat"><label>' + gaEscape(s[0]) + '</label><strong>' + gaEscape(s[1]) + '</strong><span class="ga-unit">' + gaEscape(s[2]) + '</span></div>').join('') + '</div>' +
     '<div class="ga-report-card"><h3>Rekap Bulanan</h3><p class="ga-muted">Mengikuti rentang tanggal yang dipilih.</p>' +
-    (monthly.length ? '<div class="ga-month-list">' + monthly.map(m => '<div class="ga-month"><div><strong>' + gaEscape(m.month) + '</strong><div class="ga-muted">' + m.total_registrations + ' pendaftaran · ' + m.total_packs + ' pack</div></div><div style="text-align:right"><strong>' + m.completed_count + ' selesai</strong><div class="ga-muted">' + m.waiting_count + ' menunggu · ' + m.cancelled_count + ' batal</div></div></div>').join('') + '</div>' : '<div class="ga-empty">Belum ada data pada periode ini.</div>') + '</div>';
+    (monthly.length ? '<div class="ga-month-list">' + monthly.map(m => '<div class="ga-month"><div><strong>' + gaEscape(m.month) + '</strong><div class="ga-muted">' + m.total_registrations + ' pendaftaran · ' + m.total_packs + ' pack</div></div><div style="text-align:right"><strong>' + m.completed_count + ' selesai</strong><div class="ga-muted">' + (m.seated_count || 0) + ' duduk · ' + m.waiting_count + ' menunggu · ' + m.cancelled_count + ' batal</div></div></div>').join('') + '</div>' : '<div class="ga-empty">Belum ada data pada periode ini.</div>') + '</div>';
 }
 async function guestArrivalDashboardFilter(key, value) {
   if (key !== 'fromDate' && key !== 'toDate') return;
@@ -687,6 +731,65 @@ function guestArrivalRenderPendingModal() {
     (rows.length ? '<div class="ga-card-list">' + rows.map(g => guestArrivalCard(g,true)).join('') + '</div>' : '<div class="ga-empty"><strong>Tidak ada antrean tertunda</strong>Semua antrean dari hari sebelumnya sudah ditangani.</div>') +
     '<div class="ga-btn-row"><button type="button" class="ga-btn secondary wide" onclick="guestArrivalClosePendingModal()">Tutup</button></div>');
 }
+function guestArrivalOpenSeatModal(id) {
+  const row = [...GA.queue, ...GA.pending].find(g => g.id === id);
+  if (!row || row.status !== 'Menunggu') { gaToast('Tamu ini tidak lagi berstatus Menunggu. Muat ulang daftar terlebih dahulu.', 'warn'); return; }
+  GA.seat = { id, queue_code:row.queue_code, guest_name:row.guest_name, table_name:'', dirty:false, saving:false };
+  guestArrivalShowSeatModal();
+}
+function guestArrivalSeatInput(value) {
+  if (!GA.seat || GA.seat.saving) return;
+  GA.seat.table_name = value;
+  GA.seat.dirty = true;
+}
+function guestArrivalShowSeatModal() {
+  if (!GA.seat) return;
+  const f = GA.seat;
+  modal('<h3 class="ga-modal-heading">Konfirmasi Tamu Duduk</h3><p class="ga-modal-intro">' + gaEscape(f.queue_code) + ' · ' + gaEscape(f.guest_name) + '<br>Isi meja tempat tamu duduk. Status belum berubah sampai kamu menekan konfirmasi.</p>' +
+    '<div class="ga-seating-highlight"><label for="ga-seat-table">NOMOR / NAMA MEJA *</label><input id="ga-seat-table" maxlength="80" autocomplete="off" value="' + gaEscape(f.table_name) + '" placeholder="Contoh: Meja 05, VIP 2, Teras A" oninput="guestArrivalSeatInput(this.value)" ' + (f.saving?'disabled':'') + '><div style="font-size:11px;line-height:1.45;margin-top:8px">Wajib diisi · Maksimal 80 karakter</div></div>' +
+    '<div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalConfirmSeated()" ' + (f.saving?'disabled':'') + '>' + (f.saving?'<span class="ga-spinner"></span>Menyimpan…':'Konfirmasi Duduk') + '</button><button type="button" class="ga-btn secondary" onclick="guestArrivalCancelSeatModal()" ' + (f.saving?'disabled':'') + '>Batal</button></div>');
+  const input = document.getElementById('ga-seat-table');
+  if (input) input.value = f.table_name;
+}
+function guestArrivalCancelSeatModal() {
+  if (GA.seat && GA.seat.saving) { gaToast('Konfirmasi duduk sedang disimpan. Tunggu sampai selesai.', 'warn'); return; }
+  GA.seat = null; closeM();
+}
+async function guestArrivalConfirmSeated() {
+  if (!GA.seat || GA.seat.saving || GA.busy) return;
+  const f = GA.seat, tableName = String(f.table_name || '').trim();
+  if (!tableName) { gaToast('Nomor atau nama meja wajib diisi.', 'err'); const input=document.getElementById('ga-seat-table'); if(input) input.focus(); return; }
+  if (tableName.length > 80) { gaToast('Nomor atau nama meja maksimal 80 karakter.', 'err'); return; }
+  f.table_name = tableName; f.saving = true; GA.busy = f.id;
+  guestArrivalShowSeatModal();
+  try {
+    await gaRpc('guest_arrival_set_seated', { p_id:f.id, p_table_name:tableName, ...(await gaOutletParams()) });
+    GA.seat = null; GA.busy = ''; closeM();
+    gaToast('Tamu dipindahkan ke Tamu yang Telah Duduk · Meja ' + tableName, 'ok');
+    GA.ready = false; await guestArrivalRefresh();
+  } catch (e) {
+    f.saving = false; GA.busy = ''; guestArrivalShowSeatModal();
+    gaToast('Status Duduk belum berhasil disimpan. Input meja tetap dipertahankan. ' + gaHumanError(e), 'err');
+  } finally { if (GA.busy === f.id) GA.busy = ''; }
+}
+async function guestArrivalFinishSeated(id) {
+  if (GA.busy) return;
+  const row = (GA.seated || []).find(g => g.id === id);
+  if (!row || row.status !== 'Duduk') { gaToast('Tamu ini tidak lagi berstatus Duduk. Muat ulang daftar terlebih dahulu.', 'warn'); return; }
+  modal('<h3 class="ga-modal-heading">Selesaikan pelayanan tamu?</h3><p class="ga-modal-intro">' + gaEscape(row.queue_code) + ' · ' + gaEscape(row.guest_name) + '<br>Meja: <strong>' + gaEscape(row.table_name || '—') + '</strong><br>Tamu akan dipindahkan ke Riwayat dengan status Selesai.</p>' +
+    '<div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalConfirmFinishSeated(\'' + id + '\')">Ya, selesai</button><button type="button" class="ga-btn secondary" onclick="closeM()">Kembali</button></div>');
+}
+async function guestArrivalConfirmFinishSeated(id) {
+  if (GA.busy) return;
+  GA.busy = id; closeM();
+  try {
+    await gaRpc('guest_arrival_finish_seated', { p_id:id, ...(await gaOutletParams()) });
+    gaToast('Pelayanan selesai. Tamu masuk ke Riwayat.', 'ok');
+    GA.ready = false; await guestArrivalRefresh();
+  } catch (e) {
+    gaToast('Status Selesai belum berhasil disimpan. ' + gaHumanError(e), 'err');
+  } finally { GA.busy = ''; }
+}
 async function guestArrivalSetStatus(id, status) {
   if (!['Selesai','Batalkan'].includes(status)) return;
   if (status === 'Batalkan') { guestArrivalCancel(id); return; }
@@ -729,11 +832,13 @@ function guestArrivalShowDetail() {
   const info = (label,value,wide) => '<div class="ga-detail-item ' + (wide?'ga-detail-wide':'') + '"><label>' + gaEscape(label) + '</label><div>' + value + '</div></div>';
   modal('<h3 class="ga-modal-heading">' + gaEscape(g.queue_code) + ' · ' + gaEscape(g.guest_name) + '</h3><p class="ga-modal-intro">Detail pendaftaran tamu. Koreksi data tidak dapat mengubah status atau waktu kedatangan.</p>' +
     '<div class="ga-detail-grid">' +
-    info('Nomor antrean',gaEscape(g.queue_code)) + info('Status akhir',gaStatusBadge(g.status)) +
+    info('Nomor antrean',gaEscape(g.queue_code)) + info('Status',gaStatusBadge(g.status)) +
+    (g.table_name ? info('Meja','<span class="ga-table-value">' + gaEscape(g.table_name) + '</span>',true) : '') +
+    (g.seated_at ? info('Waktu duduk',gaEscape(gaFormatDateTime(g.seated_at))) : '') +
     info('Jumlah pack',gaEscape(g.packs)+' pack') + info('WhatsApp',gaPhoneMarkup(g.whatsapp)) +
     info('Preferensi',gaEscape(g.smoking_preference || 'Non Smoking')) +
     info('Tanggal antrean',gaEscape(gaFormatDate(g.operational_date))) + info('Waktu kedatangan',gaEscape(gaFormatDateTime(g.arrived_at))) +
-    info('Waktu akhir',gaEscape(g.finished_at?gaFormatDateTime(g.finished_at):'Belum selesai menunggu')) +
+    info('Waktu akhir',gaEscape(g.finished_at ? gaFormatDateTime(g.finished_at) : (g.status==='Duduk' ? 'Masih duduk' : 'Belum selesai menunggu'))) +
     info('Waiting Time',gaEscape(gaDuration(gaWaitSeconds(g)))) +
     info('Didaftarkan oleh',gaEscape(g.created_by_email || '—')) +
     (g.note ? info('Note',gaEscape(g.note),true) : '') +
@@ -798,16 +903,16 @@ async function guestArrivalSaveEdit() {
   }
 }
 function guestArrivalHasUnsaved() {
-  return !!((GA.form && GA.form.dirty && !GA.form.saving) || (GA.edit && GA.edit.dirty && !GA.edit.saving));
+  return !!((GA.form && GA.form.dirty && !GA.form.saving) || (GA.edit && GA.edit.dirty && !GA.edit.saving) || (GA.seat && GA.seat.dirty && !GA.seat.saving));
 }
 window.guestArrivalHandleNavigation = function(nextPage) {
   if (!guestArrivalHasUnsaved()) return true;
   modal('<h3 class="ga-modal-heading">Perubahan belum disimpan</h3><p class="ga-modal-intro">Ada input yang belum tersimpan. Pilih tetap mengedit atau tinggalkan halaman dan buang perubahan.</p><div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalResumeEditing()">Tetap mengedit</button><button type="button" class="ga-btn danger" onclick="guestArrivalDiscardAndNavigate(\'' + gaEscape(nextPage) + '\')">Tinggalkan halaman</button></div>');
   return false;
 };
-function guestArrivalResumeEditing() { if (GA.edit) guestArrivalShowEdit(); else if (GA.form) guestArrivalShowForm(); }
+function guestArrivalResumeEditing() { if (GA.seat) guestArrivalShowSeatModal(); else if (GA.edit) guestArrivalShowEdit(); else if (GA.form) guestArrivalShowForm(); }
 function guestArrivalDiscardAndNavigate(nextPage) {
-  GA.form=null; GA.edit=null; closeM(); pg=nextPage; R();
+  GA.form=null; GA.edit=null; GA.seat=null; closeM(); pg=nextPage; R();
 }
 window.addEventListener('beforeunload', function(e) {
   if (D && D.me && (D.me.r==='G'||pg==='guest_arrival') && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
@@ -819,13 +924,13 @@ async function guestArrivalExport() {
   try {
     const data=await gaRpc('guest_arrival_export',{p_from:GA.fromDate,p_to:GA.toDate,...(await gaOutletParams())});
     const details=Array.isArray(data.details)?data.details:[], cancellations=Array.isArray(data.cancellations)?data.cancellations:[], summary=data.summary||{};
-    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Preferensi','smoking_preference'],['Note','note'],['Waktu Kedatangan','arrived_at'],['Status Akhir','status'],['Waktu Selesai Menunggu','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
+    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Preferensi','smoking_preference'],['Note','note'],['Waktu Kedatangan','arrived_at'],['Status','status'],['Meja','table_name'],['Waktu Duduk','seated_at'],['Waktu Akhir','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
     const makeRows=rows=>[columns.map(x=>x[0]),...rows.map(g=>columns.map(([label,key])=>g[key]==null?'':g[key]))];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(makeRows(details)),'Detail Tamu');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(makeRows(cancellations)),'Pembatalan');
-    const summaryRows=[['Ringkasan Guest Arrival','Nilai'],['Dari tanggal',GA.fromDate],['Sampai tanggal',GA.toDate],['Total Pendaftaran',summary.total_registrations||0],['Total Pack Terdaftar',summary.total_packs||0],['Tamu Selesai',summary.completed_count||0],['Tamu Menunggu',summary.waiting_count||0],['Tamu Dibatalkan',summary.cancelled_count||0],['Pack Selesai',summary.completed_packs||0],['Pack Menunggu',summary.waiting_packs||0],['Pack Dibatalkan',summary.cancelled_packs||0],['Rata-rata Waiting Time (detik)',summary.avg_waiting_seconds||0],['Waiting Time Terlama (detik)',summary.longest_waiting_seconds||0],[],['Rekap Bulanan','Total Pendaftaran','Total Pack','Selesai','Menunggu','Dibatalkan','Pack Selesai','Pack Menunggu','Pack Dibatalkan']];
-    (summary.monthly||[]).forEach(m=>summaryRows.push([m.month,m.total_registrations,m.total_packs,m.completed_count,m.waiting_count,m.cancelled_count,m.completed_packs,m.waiting_packs,m.cancelled_packs]));
+    const summaryRows=[['Ringkasan Guest Arrival','Nilai'],['Dari tanggal',GA.fromDate],['Sampai tanggal',GA.toDate],['Total Pendaftaran',summary.total_registrations||0],['Total Pack Terdaftar',summary.total_packs||0],['Tamu Selesai',summary.completed_count||0],['Tamu Menunggu',summary.waiting_count||0],['Tamu Duduk',summary.seated_count||0],['Tamu Dibatalkan',summary.cancelled_count||0],['Pack Selesai',summary.completed_packs||0],['Pack Menunggu',summary.waiting_packs||0],['Pack Duduk',summary.seated_packs||0],['Pack Dibatalkan',summary.cancelled_packs||0],['Rata-rata Waiting Time (detik)',summary.avg_waiting_seconds||0],['Waiting Time Terlama (detik)',summary.longest_waiting_seconds||0],[],['Rekap Bulanan','Total Pendaftaran','Total Pack','Selesai','Menunggu','Duduk','Dibatalkan','Pack Selesai','Pack Menunggu','Pack Duduk','Pack Dibatalkan']];
+    (summary.monthly||[]).forEach(m=>summaryRows.push([m.month,m.total_registrations,m.total_packs,m.completed_count,m.waiting_count,m.seated_count||0,m.cancelled_count,m.completed_packs,m.waiting_packs,m.seated_packs||0,m.cancelled_packs]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summaryRows),'Ringkasan');
     XLSX.writeFile(wb,'Guest-Arrival-'+GA.fromDate+'-sd-'+GA.toDate+'.xlsx');
     gaToast('Ekspor Excel berhasil dibuat.','ok');
@@ -835,11 +940,11 @@ async function guestArrivalExport() {
 window.guestArrivalResetSession = function() {
   const today = gaToday();
   GA.tab='queue'; GA.ready=false; GA.loading=false; GA.error='';
-  GA.queue=[]; GA.pending=[]; GA.history=[]; GA.search='';
+  GA.queue=[]; GA.pending=[]; GA.seated=[]; GA.history=[]; GA.search=''; GA.showSeated=false; GA.seat=null;
   GA.historyDate=today; GA.lastOperationalDate=today;
   GA.fromDate=today.slice(0,7)+'-01'; GA.toDate=today;
   GA.dashboard=null; GA.context=null; GA.busy='';
-  GA.form=null; GA.edit=null; GA.detail=null;
+  GA.form=null; GA.edit=null; GA.detail=null; GA.seat=null;
   GA.cancelId=null; GA.cancelReason=''; GA.showPending=false; GA.serverOffsetMs=0;
 };
 if (typeof window.__barappRegisterViews === 'function') {
