@@ -3373,34 +3373,7 @@ async function divLoad(){try{const OID=await outInit();const [ds,ou,ps,al]=await
  const em={};ps.forEach(x=>em[x.user_id]=x.email);T.accs=ps;T.scopes=ou;
  if(isDeveloper()){const up=await payQ('user_permissions','user_id,permission');T.featurePerms=up;T.hrDiv=up.filter(x=>x.permission=='division.manage').map(x=>x.user_id)}
  T.divs=ds.map(d=>({...d,admins:ou.filter(x=>x.division_id==d.id).map(x=>em[x.user_id]||'?')}))}catch(e){toast(errText(e),'err')}R()}
-V.div=()=>{if(!isDeveloper()){if(T.dbRole==='div_admin')return '<div class="card"><b>Pengaturan akses Admin Divisi</b><p class="mu">Daftar pemilihan izin lama telah dinonaktifkan sementara. Sistem akses sedang disusun ulang oleh Developer.</p></div>';return '<div class="card empty">Akses Divisi & Admin hanya tersedia untuk Developer.</div>'}if(!hasDivMgr())return '<div class="card empty">Akses Divisi & Admin belum diberikan oleh developer.</div>';
- if(!T.divInit){T.divInit=1;setTimeout(divLoad,0)}
- const ds=T.divs||[];const __oc=outCardHtml();
- const rows=ds.map(d=>{const enabled=DIV_MODULE_FIELDS.filter(m=>divisionModuleOn(d,m.key));const outlet=((T.outlets||[]).find(o=>o.id==d.outlet_id)||{}).code||'—';return '<article class="division-item"><div class="division-avatar">'+esc((d.code||d.name||'D').trim().charAt(0).toUpperCase())+'</div><div class="division-item-info"><b>'+esc(d.name)+'</b><small>'+esc(d.code||'Tanpa kode')+' · '+esc(outlet)+'</small><span class="division-item-meta">'+d.admins.length+' admin · '+enabled.length+' modul aktif</span></div><div class="division-item-actions"><button class="btn s x" onclick="divOpen(\''+d.id+'\')">Lihat</button><button class="btn s" onclick="divEdit(\''+d.id+'\')">Edit modul</button></div></article>'}).join('');
- return __oc+`<div class="card division-manager-card"><div class="admin-section-heading"><div><b>Divisi</b><p class="mu">Kelola data divisi yang ada di outlet ini.</p></div><div class="section-actions"><span class="admin-count">${ds.length} divisi</span><button class="btn s" type="button" onclick="document.getElementById('dv_c')&&document.getElementById('dv_c').focus()"><span aria-hidden="true">+</span> Tambah</button></div></div><div class="division-list">`+(rows||'<div class="mu account-empty">Belum ada divisi.</div>')+'</div></div>'+
- `${isDeveloper()?accsCard():(T.dbRole==='div_admin'&&hasDivMgr()?divMgrPermissionsCard():'')}${isDeveloper()?'<div class="card"><b>Aktifkan akun Viewer · Lazy Jennie</b><p class="mu">Buat user <code>crew@div.bar</code> terlebih dahulu di Supabase Authentication → Users, lalu tekan tombol ini untuk memberi akses terbatas ke Rekap dan Dashboard COGS outlet LJN.</p><button class="btn" onclick="assignCrewReportViewer()">Atur akses Viewer Lazy Jennie</button></div>':''}<div class="card"><b>Tambah divisi</b><p class="mu">Divisi baru otomatis mendapat Master Barang dan SUPLIES. Modul COGS tidak aktif sampai Developer mengaturnya melalui Edit modul.</p><label style="margin-top:8px">Kode<input id="dv_c" autocomplete="off" placeholder="contoh: SERVICE"></label><label>Nama<input id="dv_n" autocomplete="off" placeholder="contoh: Service"></label><button class="btn" style="margin-top:10px" onclick="divAdd()">Simpan divisi</button></div>`+
- `<div class="card"><b>Admin divisi</b><label style="margin-top:8px">Email akun<input id="dv_e" autocomplete="off" placeholder="contoh: admin@div.service"></label><label>Divisi<select id="dv_d">${ds.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label><p class="mu" style="margin:8px 0">Buat dulu akunnya di Supabase → Authentication → Users (Auto Confirm).</p><button class="btn" onclick="divSetAdmin()">Jadikan admin divisi</button></div>`};
-async function divAdd(){const c=v('dv_c').trim(),n=v('dv_n').trim();
- if(!c||!n)return toast('Kode dan nama divisi wajib diisi','err');
- const ok=await sbRun(async()=>{const oid=await outInit();if(!oid)throw new Error('Outlet belum ada');await payRpc('dev_add_division',{p_outlet_id:oid,p_code:c,p_name:n})});
- if(ok){toast('Divisi ditambahkan');divLoad()}}
-async function divSetAdmin(){const e=v('dv_e').trim(),d=v('dv_d');if(!e||!d)return toast('Email dan divisi wajib diisi','err');
- const ok=await sbRun(async()=>{await payRpc('dev_set_division_admin',{p_email:e,p_division:d})});
- if(ok){toast('Admin divisi diatur');divLoad()}}
-async function assignCrewReportViewer(){
- if(!isDeveloper())return toast('Fitur ini hanya untuk Developer.','err');
- try{
-  const result=await payRpc('dev_assign_report_viewer',{p_email:'crew@div.bar'});
-  if(!result||result.ok!==true)throw new Error('Konfirmasi role Viewer tidak diterima.');
-  toast('Akun crew@div.bar sekarang menjadi Viewer untuk Lazy Jennie.','ok');
-  await divLoad();
- }catch(e){
-  const m=String(e&&e.message||e);
-  if(/REPORT_VIEWER_AUTH_USER_NOT_FOUND/i.test(m))return toast('User Auth crew@div.bar belum dibuat. Tambahkan dulu di Supabase → Authentication → Users, lalu ulangi.','warn');
-  if(/CANNOT_DOWNGRADE_DEVELOPER/i.test(m))return toast('Email ini terdaftar sebagai Developer dan tidak bisa diubah ke Viewer.','err');
-  toast('Gagal mengatur akses Viewer: '+errText(e),'err');
- }
-}
+V.div=()=>'<div class="card"><b>Admin & Divisi — pembangunan ulang</b><p class="mu">Fitur Admin & Divisi versi lama telah dinonaktifkan. Sistem baru akan dibuat terpisah. Data divisi dan akun yang ada belum dihapus.</p></div>';
 
 /* ===== AUDIT LOG (dev, baca saja) ===== */
 async function audLoad(){try{const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);if(error)throw error;T.aud=data||[]}catch(e){toast(errText(e),'err')}R()}
@@ -3524,18 +3497,7 @@ async function divModulesSave(id){
 }
 async function divDetLoad(id){try{const [em]=await Promise.all([payQ('employees','id,name,active,division_id')]);
  T.dvDet={id,emps:em.filter(e=>e.division_id==id),loaded:true}}catch(e){toast(errText(e),'err')}R()}
-V.divdet=()=>{if(!isDeveloper())return '<div class="card empty">Detail divisi hanya tersedia untuk Developer.</div>';
- const id=T.dvSel,d=(T.divs||[]).find(x=>x.id==id);
- if(!d)return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button></div><div class="card empty">Pilih divisi dari daftar Divisi &amp; Admin.</div>`;
- if(!T.dvDet||T.dvDet.id!=id){setTimeout(()=>divDetLoad(id),0)}
- const det=T.dvDet&&T.dvDet.id==id?T.dvDet:{emps:[]};
- const ids=det.emps.map(e=>String(e.id));
- const [pf,pt]=payDefRange(),f=T.rf||pf,t=T.rt||pt;
- const att=D.att.filter(a=>ids.includes(String(a.e))&&a.d>=f&&a.d<=t),cnt={M:0,L:0,PH:0,S:0,I:0};att.forEach(a=>{if(cnt[a.s]!=null)cnt[a.s]++});
- const ot=D.ot.filter(o=>ids.includes(String(o.e))&&o.d>=f&&o.d<=t).reduce((n,o)=>n+hrs(o),0);
- return `<div class="card"><button class="btn s x" onclick="go('div')">‹ Kembali</button> <b style="margin-left:8px">${esc(d.name)}</b><p class="mu" style="margin:8px 0 0">Admin: ${d.admins.map(esc).join(', ')||'belum ada'}</p></div>`+
- `<div class="card"><b>Karyawan (${det.emps.length})</b><div style="overflow-x:auto;margin-top:8px"><table style="font-size:12px"><tr><th>Nama</th><th>Aktif</th></tr>${det.emps.map(e=>`<tr><td>${esc(e.name)}</td><td>${e.active?'Ya':'Tidak'}</td></tr>`).join('')||'<tr><td colspan="2">Belum ada karyawan.</td></tr>'}</table></div></div>`+
- `<div class="card"><b>Absensi ${fdp(f)} s/d ${fdp(t)}</b><p class="mu" style="margin:8px 0 0">M ${cnt.M} · L ${cnt.L} · PH ${cnt.PH} · S ${cnt.S} · I ${cnt.I} · Lembur ${ot} jam</p></div>`};
+V.divdet=()=>'<div class="card"><b>Detail Divisi — dinonaktifkan</b><p class="mu">Halaman detail versi lama dinonaktifkan bersama fitur Admin & Divisi. Data dasarnya tetap dipertahankan untuk pembangunan ulang.</p><button class="btn s" onclick="go(\'div\')">Kembali</button></div>';
 
 /* ===== GANTI PASSWORD AKUN (dev, lewat Edge Function set-password) ===== */
 function pwOpen(uid,email){modal(`<h3>Ganti password</h3><p class="mu" style="word-break:break-all">${esc(email)}</p><label>Password baru (minimal 8 karakter)<input id="pwn" type="password" autocomplete="new-password"></label><label>Ulangi password<input id="pwr" type="password" autocomplete="new-password"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="pwSave('${uid}')">Simpan password</button></div>`)}
