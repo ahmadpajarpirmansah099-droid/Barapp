@@ -151,7 +151,7 @@ function guestArrivalRender() {
   return '<style>' + gaCss + '</style><section class="ga-wrap">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
-    (GA.tab==='queue' ? '<button type="button" class="ga-btn secondary ga-seated-shortcut ' + (GA.showSeated?'active':'') + '" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>' + (GA.showSeated ? 'Kembali ke Antrean Menunggu' : 'Tamu yang Telah Duduk (' + GA.seated.length + ')') + '</span></button>' : '') +
+    (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
     (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
     (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? (GA.showSeated ? guestArrivalSeatedMarkup() : guestArrivalQueueMarkup()) : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
     '</section>';
@@ -167,7 +167,7 @@ const gaCss = String.raw`
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
-.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
+.ga-seated-filter-wrap>.ga-field{grid-column:1/-1}.ga-seated-back{width:100%;justify-content:flex-start;margin:0 0 12px;font-weight:800}.ga-seated-shortcut{width:100%;justify-content:flex-start;gap:10px;margin:0 0 14px;min-height:48px;padding:12px 15px;background:#f8e7e1;border-color:#dfb5ab;color:#8b3f34;font-weight:850;text-align:left}
 .ga-seated-shortcut.active{background:var(--ac,#b4533f);border-color:var(--ac,#b4533f);color:var(--onac,#fff)}
 .ga-seated-shortcut-icon{display:grid;place-items:center;flex:none;width:26px;height:26px;border:1.5px solid currentColor;border-radius:8px;font-size:17px;line-height:1}
 .ga-table-chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:9px;background:#f8e7e1;color:#8b3f34;font-size:12px;font-weight:850}
@@ -533,8 +533,9 @@ function guestArrivalSeatedCards() {
   return rows.map(g => guestArrivalCard(g,false)).join('');
 }
 function guestArrivalSeatedMarkup() {
-  return '<div class="ga-filters ga-seated-filter-wrap"><label class="ga-field">Cari nama tamu atau meja<input type="search" value="' + gaEscape(GA.search) + '" placeholder="Nama tamu, nomor antrean, atau meja…" oninput="GA.search=this.value;guestArrivalRenderSeatedCards()"></label></div>' +
+  return '<button type="button" class="ga-btn secondary ga-seated-back" onclick="guestArrivalToggleSeatedView()"><span aria-hidden="true">←</span> Kembali ke Antrean Hari Ini</button>' +
     '<div class="ga-section-title"><h3>Tamu yang Telah Duduk</h3><span class="ga-count">' + (GA.seated || []).length + ' tamu aktif</span></div>' +
+    '<div class="ga-filters ga-seated-filter-wrap"><label class="ga-field">Cari nama tamu atau meja<input type="search" value="' + gaEscape(GA.search) + '" placeholder="Nama tamu, nomor antrean, atau meja…" oninput="GA.search=this.value;guestArrivalRenderSeatedCards()"></label></div>' +
     '<div id="ga-seated-cards" class="ga-card-list">' + guestArrivalSeatedCards() + '</div>';
 }
 function guestArrivalRenderSeatedCards() {
