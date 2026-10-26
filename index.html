@@ -3484,9 +3484,8 @@ function adminAccountsFiltered(){
  return (T.adminVisibleAccounts||[]).filter(a=>{
   if(role==='admin_outlet'&&a.role!=='legacy_admin')return false;
   if(role==='div_admin'&&a.role!=='div_admin')return false;
-  if(role==='other'&&!['legacy_admin','div_admin'].includes(a.role))return true;
-  if(role==='other')return false;
-  if(role!=='all'&&role!=='admin_outlet'&&role!=='div_admin')return false;
+  if(role==='other'&&['legacy_admin','div_admin'].includes(a.role))return false;
+  if(!['all','admin_outlet','div_admin','other'].includes(role))return false;
   const scopes=adminAccountScopes(a.user_id).map(x=>x.division?.name||'Tanpa divisi');
   return [a.email||'',adminRoleLabel(a.role),...scopes].join(' ').toLocaleLowerCase('id').includes(q)
  })
