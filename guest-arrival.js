@@ -90,7 +90,7 @@ const gaRefreshLists = async (outletParams) => {
   gaCaptureServerTime(GA.queue.concat(GA.pending));
 };
 async function guestArrivalRefresh(silent) {
-  if (T.dbRole !== 'guest_arrival' && !isDeveloper()) return;
+  if (T.dbRole !== 'guest_arrival' && !isDeveloper() && !(typeof isLazyJennieHr === 'function' && isLazyJennieHr())) return;
   if (GA.loading) return;
   GA.loading = true; GA.error = '';
   if (!silent) R();
@@ -695,7 +695,7 @@ window.guestArrivalResetSession = function() {
 V.guest_arrival = () => guestArrivalRender();
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
-  if (!D || !D.me || (D.me.r!=='G' && !isDeveloper()) || pg!=='guest_arrival') return;
+  if (!D || !D.me || (D.me.r!=='G' && !isDeveloper() && !(typeof isLazyJennieHr === 'function' && isLazyJennieHr())) || pg!=='guest_arrival') return;
   const today = gaToday();
   if (today !== GA.lastOperationalDate && !GA.loading) {
     GA.lastOperationalDate = today;
