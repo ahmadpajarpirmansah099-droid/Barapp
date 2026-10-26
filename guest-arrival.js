@@ -1028,7 +1028,7 @@ if (typeof window.__barappRegisterViews === 'function') {
 }
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
-  if (!D || !D.me || (D.me.r!=='G' && !isDeveloper() && !(typeof isLazyJennieHr === 'function' && isLazyJennieHr())) || pg!=='guest_arrival') return;
+  if (!D || !D.me || pg!=='guest_arrival') return;
   const today = gaToday();
   if (today !== GA.lastOperationalDate && !GA.loading) {
     GA.lastOperationalDate = today;
