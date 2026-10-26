@@ -3040,7 +3040,7 @@ async function invLoad(show=false){
   // Do not treat "ALL" or a missing outlet_id as permission to mix outlets.
   const activeOutletId=await outInit();
   if(!activeOutletId||! /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(activeOutletId)))throw new Error('OUTLET_ACTIVE_REQUIRED');
-  const activeOutletId=await outInit();if(!activeOutletId)throw new Error('OUTLET_ACTIVE_REQUIRED');const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
+  const {data:allDivs,error:de}=await sb().from('divisions').select('id,name,outlet_id,code,active,has_cogs,module_config').eq('outlet_id',activeOutletId).order('name');
   if(de)throw de;
   let divs=(allDivs||[]).filter(d=>String(d.outlet_id)===String(activeOutletId));
   if(!invCanAll()&&invRole()==='div_admin'){
