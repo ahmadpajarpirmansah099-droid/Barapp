@@ -618,7 +618,7 @@ function guestArrivalSetThisMonth() {
   GA.ready = false; guestArrivalRefresh();
 }
 function guestArrivalOpenForm() {
-  GA.form = { name:'', packs:'1', whatsapp:'', smoking_preference:'Non Smoking', note:'', status:'Menunggu', requestId:gaUuid(), dirty:false, saving:false };
+  GA.form = { name:'', packs:'1', whatsapp:'', smoking_preference:'Non Smoking', note:'', status:'Menunggu', table_name:'', requestId:gaUuid(), dirty:false, saving:false };
   guestArrivalShowForm();
 }
 function guestArrivalSyncKeyboardLayout() {
@@ -627,7 +627,7 @@ function guestArrivalSyncKeyboardLayout() {
   const vv = window.visualViewport;
   const visualHeight = vv && vv.height ? vv.height : window.innerHeight;
   const active = document.activeElement;
-  const editingField = !!(active && active.matches && active.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status'));
+  const editingField = !!(active && active.matches && active.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status,#ga-form-table-name'));
   const keyboardLikelyOpen = editingField && (window.innerHeight - visualHeight > 100 || (vv && vv.scale > 1.05));
   overlay.classList.toggle('ga-keyboard-open', keyboardLikelyOpen);
   overlay.style.setProperty('--ga-visual-height', Math.round(visualHeight) + 'px');
@@ -647,7 +647,7 @@ function guestArrivalSyncKeyboardLayout() {
 if (!window.__gaKeyboardLayoutBound) {
   window.__gaKeyboardLayoutBound = true;
   document.addEventListener('focusin', e => {
-    if (e.target && e.target.matches && e.target.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status')) {
+    if (e.target && e.target.matches && e.target.matches('#ga-form-name,#ga-form-packs,#ga-form-wa,#ga-form-note,#ga-form-status,#ga-form-table-name')) {
       setTimeout(guestArrivalSyncKeyboardLayout, 60);
       setTimeout(guestArrivalSyncKeyboardLayout, 240);
     }
@@ -667,6 +667,12 @@ function guestArrivalFormInput(key, value) {
     const note = document.getElementById('ga-form-wa-note');
     if (note) note.textContent = value && !gaPhoneValid(value) ? 'Nomor tidak valid. Pendaftaran tetap boleh disimpan, tetapi tautan WhatsApp tidak akan aktif.' : 'Format lokal Indonesia, contoh 0812xxxxxxxx. Nomor tidak dikirim otomatis.';
   }
+}
+function guestArrivalSetInitialStatus(value) {
+  if (!GA.form || !['Menunggu','Duduk'].includes(value) || GA.form.saving) return;
+  GA.form.status = value;
+  GA.form.dirty = true;
+  guestArrivalShowForm();
 }
 function guestArrivalSetSmokingPreference(value) {
   if (!GA.form || !['Non Smoking','Smoking'].includes(value)) return;
@@ -693,7 +699,8 @@ function guestArrivalShowForm() {
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15h18v4H3zM19 15V9m0 0c-2 0-3-1.5-2.2-3M14 15v-3m0 0c-2 0-3-1.5-2.2-3"></path></svg><span>Smoking</span></button>' +
     '</div>' +
     '<div class="ga-field ga-note-field"><label for="ga-form-note">Note (opsional)</label><textarea id="ga-form-note" rows="2" maxlength="1000" placeholder="Catatan tambahan..." oninput="guestArrivalFormInput(\'note\',this.value)">' + gaEscape(f.note || '') + '</textarea></div>' +
-    '<div class="ga-field ga-status-field"><label for="ga-form-status">Status</label><select id="ga-form-status" onchange="guestArrivalFormInput(\'status\',this.value)"><option value="Menunggu" ' + (f.status==='Menunggu'?'selected':'') + '>Menunggu</option><option value="Selesai" ' + (f.status==='Selesai'?'selected':'') + '>Selesai</option></select></div>' +
+    '<div class="ga-field ga-status-field"><label for="ga-form-status">Status awal</label><select id="ga-form-status" onchange="guestArrivalSetInitialStatus(this.value)" ' + (f.saving?'disabled':'') + '><option value="Menunggu" ' + (f.status==='Menunggu'?'selected':'') + '>Menunggu</option><option value="Duduk" ' + (f.status==='Duduk'?'selected':'') + '>Duduk</option></select></div>' +
+    (f.status==='Duduk' ? '<div class="ga-seating-highlight"><label for="ga-form-table-name">NOMOR / NAMA MEJA *</label><input id="ga-form-table-name" maxlength="80" autocomplete="off" value="' + gaEscape(f.table_name || '') + '" placeholder="Contoh: Meja 05, VIP 2, Teras A" oninput="guestArrivalFormInput(\'table_name\',this.value)" ' + (f.saving?'disabled':'') + ' required><div style="font-size:11px;line-height:1.45;margin-top:8px">Wajib diisi. Sitting time 2 jam 30 menit dimulai setelah pendaftaran disimpan.</div></div>' : '') +
     '<div class="ga-btn-row"><button id="ga-save-btn" class="ga-btn primary" style="flex:1" type="button" onclick="guestArrivalSaveForm()" ' + (f.saving?'disabled':'') + '>' + (f.saving?'<span class="ga-spinner"></span>Menyimpan…':'Simpan') + '</button><button class="ga-btn secondary" type="button" onclick="guestArrivalRequestCloseForm()" ' + (f.saving?'disabled':'') + '>Tutup</button></div>');
 }
 function guestArrivalRequestCloseForm() {
@@ -708,7 +715,10 @@ async function guestArrivalSaveForm() {
   const f = GA.form, packs = Number(f.packs);
   if (!String(f.name || '').trim()) { gaToast('Nama tamu wajib diisi.', 'err'); return; }
   if (!Number.isInteger(packs) || packs < 1) { gaToast('Jumlah pack harus bilangan bulat minimal 1.', 'err'); return; }
-  if (!['Menunggu','Selesai'].includes(f.status)) { gaToast('Status awal tidak valid.', 'err'); return; }
+  if (!['Menunggu','Duduk'].includes(f.status)) { gaToast('Status awal tidak valid.', 'err'); return; }
+  const tableName = String(f.table_name || '').trim();
+  if (f.status==='Duduk' && !tableName) { gaToast('Nomor atau nama meja wajib diisi untuk status Duduk.', 'err'); const input=document.getElementById('ga-form-table-name'); if(input) input.focus(); return; }
+  if (f.status==='Duduk' && tableName.length>80) { gaToast('Nomor atau nama meja maksimal 80 karakter.', 'err'); return; }
   f.saving = true; guestArrivalShowForm();
   try {
     const result = await gaRpc('guest_arrival_create', {
@@ -717,12 +727,14 @@ async function guestArrivalSaveForm() {
       p_initial_status:f.status, p_request_id:f.requestId,
       p_smoking_preference:f.smoking_preference || 'Non Smoking',
       p_note:String(f.note || '').trim() || null,
+      p_table_name:f.status==='Duduk' ? tableName : null,
       ...(await gaOutletParams())
     });
     const code = result && result.queue_code ? result.queue_code : 'WL';
+    const startSeated = f.status==='Duduk';
     GA.form = null; closeM();
-    gaToast('Tamu berhasil didaftarkan — ' + code, 'ok');
-    GA.ready = false; await guestArrivalRefresh();
+    gaToast('Tamu berhasil didaftarkan — ' + code + (startSeated ? ' · langsung berstatus Duduk' : ''), 'ok');
+    GA.tab = 'queue'; GA.showSeated = startSeated; GA.search = ''; GA.ready = false; await guestArrivalRefresh();
   } catch (e) {
     f.saving = false; f.dirty = true; guestArrivalShowForm();
     gaToast('Pendaftaran belum dapat dipastikan tersimpan. Input dipertahankan; coba Simpan lagi agar server memeriksa permintaan yang sama. ' + gaHumanError(e), 'err');
