@@ -416,6 +416,20 @@ body:has(#app.in .ga-wrap){
   --line:#3B211D;
   --onac:#FFFFFF;
 }
+/* Compact WhatsApp helper and the new guest preference/note fields. */
+.ga-form-tight{margin-top:8px!important}
+.ga-wa-field{gap:4px!important}
+.ga-wa-help{display:block;margin-top:-1px!important;font-size:11px!important;line-height:1.25!important}
+.ga-preference-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 0}
+.ga-preference-btn{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:44px;padding:8px 6px;border:2px solid #3b211d;border-radius:12px;background:#fff5ef;color:#351a16;font:750 12px/1.2 var(--fn,'Plus Jakarta Sans',sans-serif);cursor:pointer}
+.ga-preference-btn svg{width:20px;height:20px;flex:none}
+.ga-preference-btn.active{background:#c96759;border-color:#304235;color:#fff}
+.ga-note-field{margin-top:8px!important}
+.ga-note-field textarea{min-height:66px!important;resize:vertical}
+.ga-status-field{margin-top:8px!important}
+.ga-preference-chip{display:inline-flex;align-items:center;padding:4px 7px;border-radius:8px;background:#f7e8e2;color:#8b3f34;font-size:11px;font-weight:750}
+@media(max-width:380px){.ga-preference-btn{gap:4px;font-size:10px;padding:7px 3px}.ga-preference-btn svg{width:17px;height:17px}}
+
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
@@ -427,7 +441,7 @@ function guestArrivalCard(g, pending) {
     ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalSetStatus(\'' + g.id + '\',\'Selesai\')">Selesai</button><button type="button" class="ga-btn danger small" onclick="guestArrivalCancel(\'' + g.id + '\')">Batalkan</button>'
     : '';
   return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
-    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span></div>' +
+    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span><span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span></div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
     '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
 }
 function guestArrivalQueueCards() {
@@ -452,7 +466,7 @@ function guestArrivalHistoryCards() {
     });
   if (!rows.length) return '<div class="ga-empty"><strong>Tamu tidak ditemukan</strong>Coba nama lain atau pilih tanggal yang berbeda.</div>';
   return rows.map(g => '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
-    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-wait">Waiting ' + gaDuration(gaWaitSeconds(g)) + '</span></div>' +
+    '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span><span class="ga-wait">Waiting ' + gaDuration(gaWaitSeconds(g)) + '</span></div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
     '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (g.finished_at ? ' · Selesai menunggu ' + gaEscape(gaFormatDateTime(g.finished_at)) : '') + '</div>' +
     (g.cancellation_reason ? '<div class="ga-inline-summary">Alasan pembatalan: ' + gaEscape(g.cancellation_reason) + '</div>' : '') +
     (Number(g.correction_count || 0) ? '<div class="ga-inline-summary">Pernah dikoreksi ' + Number(g.correction_count) + ' kali</div>' : '') +
@@ -497,7 +511,7 @@ function guestArrivalSetThisMonth() {
   GA.ready = false; guestArrivalRefresh();
 }
 function guestArrivalOpenForm() {
-  GA.form = { name:'', packs:'1', whatsapp:'', status:'Menunggu', requestId:gaUuid(), dirty:false, saving:false };
+  GA.form = { name:'', packs:'1', whatsapp:'', smoking_preference:'Non Smoking', note:'', status:'Menunggu', requestId:gaUuid(), dirty:false, saving:false };
   guestArrivalShowForm();
 }
 function guestArrivalFormInput(key, value) {
@@ -508,14 +522,32 @@ function guestArrivalFormInput(key, value) {
     if (note) note.textContent = value && !gaPhoneValid(value) ? 'Nomor tidak valid. Pendaftaran tetap boleh disimpan, tetapi tautan WhatsApp tidak akan aktif.' : 'Format lokal Indonesia, contoh 0812xxxxxxxx. Nomor tidak dikirim otomatis.';
   }
 }
+function guestArrivalSetSmokingPreference(value) {
+  if (!GA.form || !['Non Smoking','Smoking'].includes(value)) return;
+  GA.form.smoking_preference = value;
+  GA.form.dirty = true;
+  document.querySelectorAll('.ga-preference-btn').forEach(button => {
+    const active = button.dataset.preference === value;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
 function guestArrivalShowForm() {
   if (!GA.form) return;
   const f = GA.form;
+  const preference = ['Non Smoking','Smoking'].includes(f.smoking_preference) ? f.smoking_preference : 'Non Smoking';
   modal('<h3 class="ga-modal-heading">Tambah Tamu</h3><p class="ga-modal-intro">Waktu kedatangan dicatat otomatis oleh server.</p>' +
     '<div class="ga-field"><label for="ga-form-name">Nama <span aria-hidden="true">*</span></label><input id="ga-form-name" autocomplete="name" maxlength="160" value="' + gaEscape(f.name) + '" placeholder="Nama tamu" oninput="guestArrivalFormInput(\'name\',this.value)" required></div>' +
-    '<div class="ga-field" style="margin-top:11px"><label for="ga-form-packs">Jumlah Pack <span aria-hidden="true">*</span></label><input id="ga-form-packs" type="number" min="1" step="1" inputmode="numeric" value="' + gaEscape(f.packs) + '" oninput="guestArrivalFormInput(\'packs\',this.value)" required></div>' +
-    '<div class="ga-field" style="margin-top:11px"><label for="ga-form-wa">Nomor WhatsApp (opsional)</label><input id="ga-form-wa" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" value="' + gaEscape(f.whatsapp) + '" placeholder="0812xxxxxxxx" oninput="guestArrivalFormInput(\'whatsapp\',this.value)"><span id="ga-form-wa-note" class="ga-muted">' + (f.whatsapp && !gaPhoneValid(f.whatsapp) ? 'Nomor tidak valid. Pendaftaran tetap boleh disimpan, tetapi tautan WhatsApp tidak akan aktif.' : 'Format lokal Indonesia, contoh 0812xxxxxxxx. Nomor tidak dikirim otomatis.') + '</span></div>' +
-    '<div class="ga-field" style="margin-top:11px"><label for="ga-form-status">Status awal</label><select id="ga-form-status" onchange="guestArrivalFormInput(\'status\',this.value)"><option value="Menunggu" ' + (f.status==='Menunggu'?'selected':'') + '>Menunggu</option><option value="Selesai" ' + (f.status==='Selesai'?'selected':'') + '>Selesai</option></select></div>' +
+    '<div class="ga-field ga-form-tight"><label for="ga-form-packs">Jumlah Pack <span aria-hidden="true">*</span></label><input id="ga-form-packs" type="number" min="1" step="1" inputmode="numeric" value="' + gaEscape(f.packs) + '" oninput="guestArrivalFormInput(\'packs\',this.value)" required></div>' +
+    '<div class="ga-field ga-form-tight ga-wa-field"><label for="ga-form-wa">Nomor WhatsApp (opsional)</label><input id="ga-form-wa" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" value="' + gaEscape(f.whatsapp) + '" placeholder="0812xxxxxxxx" oninput="guestArrivalFormInput(\'whatsapp\',this.value)"><span id="ga-form-wa-note" class="ga-muted ga-wa-help">' + (f.whatsapp && !gaPhoneValid(f.whatsapp) ? 'Nomor tidak valid. Pendaftaran tetap boleh disimpan, tetapi tautan WhatsApp tidak akan aktif.' : 'Format lokal Indonesia, contoh 0812xxxxxxxx. Nomor tidak dikirim otomatis.') + '</span></div>' +
+    '<div class="ga-preference-grid" role="group" aria-label="Preferensi smoking">' +
+      '<button type="button" class="ga-preference-btn' + (preference==='Non Smoking'?' active':'') + '" data-preference="Non Smoking" aria-pressed="' + (preference==='Non Smoking'?'true':'false') + '" onclick="guestArrivalSetSmokingPreference(this.dataset.preference)">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M5.6 5.6 18.4 18.4M7 13h8m2 0h1m-1 0v3H7v-3"></path></svg><span>Non Smoking</span></button>' +
+      '<button type="button" class="ga-preference-btn' + (preference==='Smoking'?' active':'') + '" data-preference="Smoking" aria-pressed="' + (preference==='Smoking'?'true':'false') + '" onclick="guestArrivalSetSmokingPreference(this.dataset.preference)">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15h18v4H3zM19 15V9m0 0c-2 0-3-1.5-2.2-3M14 15v-3m0 0c-2 0-3-1.5-2.2-3"></path></svg><span>Smoking</span></button>' +
+    '</div>' +
+    '<div class="ga-field ga-note-field"><label for="ga-form-note">Note (opsional)</label><textarea id="ga-form-note" rows="2" maxlength="1000" placeholder="Catatan tambahan..." oninput="guestArrivalFormInput(\'note\',this.value)">' + gaEscape(f.note || '') + '</textarea></div>' +
+    '<div class="ga-field ga-status-field"><label for="ga-form-status">Status</label><select id="ga-form-status" onchange="guestArrivalFormInput(\'status\',this.value)"><option value="Menunggu" ' + (f.status==='Menunggu'?'selected':'') + '>Menunggu</option><option value="Selesai" ' + (f.status==='Selesai'?'selected':'') + '>Selesai</option></select></div>' +
     '<div class="ga-btn-row"><button id="ga-save-btn" class="ga-btn primary" style="flex:1" type="button" onclick="guestArrivalSaveForm()" ' + (f.saving?'disabled':'') + '>' + (f.saving?'<span class="ga-spinner"></span>Menyimpan…':'Simpan') + '</button><button class="ga-btn secondary" type="button" onclick="guestArrivalRequestCloseForm()" ' + (f.saving?'disabled':'') + '>Tutup</button></div>');
 }
 function guestArrivalRequestCloseForm() {
@@ -537,6 +569,8 @@ async function guestArrivalSaveForm() {
       p_name:String(f.name).trim(), p_packs:packs,
       p_whatsapp:String(f.whatsapp || '').trim() || null,
       p_initial_status:f.status, p_request_id:f.requestId,
+      p_smoking_preference:f.smoking_preference || 'Non Smoking',
+      p_note:String(f.note || '').trim() || null,
       ...(await gaOutletParams())
     });
     const code = result && result.queue_code ? result.queue_code : 'WL';
@@ -604,6 +638,7 @@ function guestArrivalShowDetail() {
     '<div class="ga-detail-grid">' +
     info('Nomor antrean',gaEscape(g.queue_code)) + info('Status akhir',gaStatusBadge(g.status)) +
     info('Jumlah pack',gaEscape(g.packs)+' pack') + info('WhatsApp',gaPhoneMarkup(g.whatsapp)) +
+    info('Preferensi',gaEscape(g.smoking_preference || 'Non Smoking')) + (g.note ? info('Note',gaEscape(g.note),true) : '') +
     info('Tanggal antrean',gaEscape(gaFormatDate(g.operational_date))) + info('Waktu kedatangan',gaEscape(gaFormatDateTime(g.arrived_at))) +
     info('Waktu akhir',gaEscape(g.finished_at?gaFormatDateTime(g.finished_at):'Belum selesai menunggu')) +
     info('Waiting Time',gaEscape(gaDuration(gaWaitSeconds(g)))) +
@@ -690,7 +725,7 @@ async function guestArrivalExport() {
   try {
     const data=await gaRpc('guest_arrival_export',{p_from:GA.fromDate,p_to:GA.toDate,...(await gaOutletParams())});
     const details=Array.isArray(data.details)?data.details:[], cancellations=Array.isArray(data.cancellations)?data.cancellations:[], summary=data.summary||{};
-    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Waktu Kedatangan','arrived_at'],['Status Akhir','status'],['Waktu Selesai Menunggu','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
+    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Preferensi','smoking_preference'],['Note','note'],['Waktu Kedatangan','arrived_at'],['Status Akhir','status'],['Waktu Selesai Menunggu','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
     const makeRows=rows=>[columns.map(x=>x[0]),...rows.map(g=>columns.map(([label,key])=>g[key]==null?'':g[key]))];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(makeRows(details)),'Detail Tamu');
