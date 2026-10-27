@@ -2444,7 +2444,7 @@ function resetAcc(){
   D.emp=[];D.att=[];D.ot=[];D.arc=[];D.outId=undefined;
   T.perms=[];T.scopeOut=undefined;T.dbRole=null;T.authEmail='';T.hrDiv=null;T.featurePerms=[];T.permManagedAccounts=null;T.divMgrPermInit=0;T.divMgrPermLoading=false;T.divMgrPermError='';T.accs=null;T.scopes=null;T.allDivs=null;
   T.divs=null;T.divInit=0;T.dvDet=null;T.devInit=0;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
-  SB.sig=null;SB.loaded=false;SB.cached=false;SB.stale=false;
+  SB.sig=null;SB.loaded=false;SB.cached=false;SB.stale=false;SB.fullSyncAt=0;SB.activeOutletId=null;
   try{localStorage.removeItem(SBK)}catch(e){}
   sv();
 }
@@ -2524,7 +2524,7 @@ if(session&&T.dbRole==='guest_arrival'){T.perms=[];try{const {data,error}=await 
 T.perms=[];if(session&&['hr','div_admin','report_viewer','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
 if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
-const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId));
+const oid=session?await outInit():null;SB.activeOutletId=oid||null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId));
 let dIds=null;if(session&&T.dbRole=='div_admin'){try{const sc=await payQ('user_scopes','division_id');dIds=sc.map(x=>String(x.division_id));const md=dIds.length?await payQ('divisions','id,module_config',q=>q.in('id',dIds)):[];T.gaModuleEnabled=md.some(d=>d.module_config&&d.module_config.guest_arrival===true)}catch(e){dIds=[];T.gaModuleEnabled=false}}else{T.gaModuleEnabled=false}
 const inD=x=>!dIds||dIds.includes(String(x.division_id));
 const eSet=new Set(er.filter(inO).filter(inD).map(x=>String(x.id)));
@@ -2541,7 +2541,7 @@ SB.loading=false;R()}
 /* Periodic lightweight sync: refresh recent attendance frequently, reconcile full history less often.
    Tables have no updated_at column and are not in supabase_realtime publication, so full reconciliation remains necessary. */
 async function sbRefreshRecent(){
-  if(document.hidden||SB.loading||SB.busy||!SB.loaded||SB.state!=='ok')return;
+  if(document.hidden||SB.loading||SB.busy||!SB.loaded||SB.state!=='ok'||T.dbRole==='guest_arrival')return;
   if(Date.now()-(SB.fullSyncAt||0)>=15*60*1000){sbLoad(true);return}
   if(($('#m')&&$('#m').innerHTML)||inField())return;
   SB.loading=true;
@@ -2558,7 +2558,7 @@ async function sbRefreshRecent(){
       rows.push(...(data||[]));
       if(!data||data.length<1000)break;
     }
-    const oid=D.outId,lj=D.ljId;
+    const oid=SB.activeOutletId,lj=D.ljId;
     const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==lj));
     const empIds=new Set([...D.emp,...D.arc].map(x=>String(x.id)));
     const recent=rows.filter(inO).filter(x=>T.dbRole!=='div_admin'||empIds.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
