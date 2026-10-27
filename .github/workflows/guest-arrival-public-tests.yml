@@ -1,0 +1,27 @@
+name: Guest Arrival Public Queue Checks
+
+on:
+  pull_request:
+    paths:
+      - 'guest-arrival.js'
+      - 'guest-queue.html'
+      - 'supabase/migrations/**'
+      - 'supabase/functions/guest-arrival-public/**'
+      - 'scripts/guest-arrival-public.test.cjs'
+      - '.github/workflows/guest-arrival-public-tests.yml'
+
+jobs:
+  public-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run safety regression tests
+        run: node --test scripts/guest-arrival-public.test.cjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check Edge Function
+        run: deno check supabase/functions/guest-arrival-public/index.ts
