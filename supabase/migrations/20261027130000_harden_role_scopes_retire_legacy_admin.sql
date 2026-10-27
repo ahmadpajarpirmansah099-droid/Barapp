@@ -44,16 +44,10 @@ BEGIN
   END IF;
 
   IF EXISTS (
-    SELECT 1 FROM public.user_profiles up
-    WHERE up.active IS TRUE AND up.role='report_viewer'
-      AND (
-        (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=up.user_id) <> 1
-        OR NOT EXISTS (
-          SELECT 1 FROM public.user_scopes s WHERE s.user_id=up.user_id
-        )
-      )
+    SELECT 1 FROM public.user_profiles
+    WHERE role='report_viewer' AND active IS TRUE
   ) THEN
-    RAISE EXCEPTION 'Access-scope migration paused: every active report_viewer account must have scope in exactly one outlet.';
+    RAISE EXCEPTION 'Access-scope migration paused: move active report_viewer accounts to HR/Admin Divisi scopes and feature permissions first.';
   END IF;
 END
 $preflight$;
@@ -81,14 +75,6 @@ AS $function$
         SELECT 1 FROM public.user_scopes s
         WHERE s.user_id=auth.uid() AND s.outlet_id=p_outlet
           AND s.division_id=p_division AND s.division_id IS NOT NULL
-      )
-    WHEN public.app_role()='report_viewer' THEN
-      p_outlet IS NOT NULL
-      AND (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=auth.uid())=1
-      AND EXISTS (
-        SELECT 1 FROM public.user_scopes s
-        WHERE s.user_id=auth.uid() AND s.outlet_id=p_outlet
-          AND (s.division_id IS NULL OR s.division_id=p_division)
       )
     ELSE false
   END
@@ -125,7 +111,7 @@ AS $function$
     SELECT 1 FROM public.divisions d
     WHERE d.id=p_division_id AND (
       public.app_role()='dev'
-      OR (public.app_role() IN ('hr','div_admin','report_viewer')
+      OR (public.app_role() IN ('hr','div_admin')
           AND public.can_access_scope(d.outlet_id,d.id))
     )
   )
@@ -140,7 +126,7 @@ SET search_path TO 'public'
 AS $function$
   SELECT CASE
     WHEN public.app_role()='dev' THEN true
-    WHEN public.app_role() IN ('hr','div_admin','report_viewer') THEN
+    WHEN public.app_role() IN ('hr','div_admin') THEN
       EXISTS (
         SELECT 1 FROM public.user_permissions
         WHERE user_id=auth.uid() AND permission=p
@@ -172,11 +158,7 @@ AS $function$
           OR public.has_perm('cogs.sales.manage')
         )
       )
-      OR (
-        public.app_role()='report_viewer'
-        AND (public.has_perm('cogs.wip.view') OR public.has_perm('cogs.menu.view'))
-        AND public.can_access_scope(d.outlet_id,d.id)
-      )
+
     )
   )
 $function$;
@@ -250,6 +232,20 @@ BEGIN
 END
 $function$;
 
+CREATE OR REPLACE FUNCTION public.dev_assign_report_viewer(p_email text DEFAULT 'crew@div.bar'::text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'auth'
+AS $function$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.is_dev() THEN
+    RAISE EXCEPTION 'DEVELOPER_ONLY' USING errcode='42501';
+  END IF;
+  RAISE EXCEPTION 'REPORT_VIEWER_ROLE_RETIRED: use HR/Admin Divisi scope with explicit feature permissions.';
+END
+$function$;
+
 CREATE OR REPLACE FUNCTION public.dev_set_account(p_user uuid, p_role text, p_active boolean)
 RETURNS void
 LANGUAGE plpgsql
@@ -263,7 +259,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Akun tidak ditemukan'; END IF;
   IF cur.role='dev' THEN RAISE EXCEPTION 'Akun developer tidak bisa diubah dari sini'; END IF;
   IF p_user=me AND p_active=false THEN RAISE EXCEPTION 'Tidak bisa menonaktifkan akun sendiri'; END IF;
-  IF p_role IS NULL OR p_role NOT IN ('hr','div_admin','report_viewer') THEN
+  IF p_role IS NULL OR p_role NOT IN ('hr','div_admin') THEN
     RAISE EXCEPTION 'Role tidak valid';
   END IF;
 
@@ -309,16 +305,6 @@ BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'COGS_ADMIN_ONLY' USING errcode='42501';
   END IF;
-  IF v_role='report_viewer' THEN
-    IF NOT public.cogs_ops_can_access_division(p_division_id)
-       OR NOT (
-         (public.has_perm('cogs.daily_so.edit') AND public.division_module_enabled(p_division_id,'cogs_daily_so'))
-         OR (public.has_perm('cogs.production.manage') AND public.division_module_enabled(p_division_id,'cogs_production'))
-         OR (public.has_perm('cogs.sales.manage') AND public.division_module_enabled(p_division_id,'cogs_sales'))
-       )
-    THEN RAISE EXCEPTION 'COGS_DIVISION_FORBIDDEN' USING errcode='42501'; END IF;
-    RETURN;
-  END IF;
   IF v_role NOT IN ('dev','hr','div_admin') THEN
     RAISE EXCEPTION 'COGS_ADMIN_ONLY' USING errcode='42501';
   END IF;
@@ -336,12 +322,8 @@ SET search_path TO 'public'
 AS $function$
 DECLARE v_division uuid;
 BEGIN
-  IF auth.uid() IS NULL OR coalesce(public.app_role(),'') NOT IN ('dev','hr','div_admin','report_viewer') THEN
+  IF auth.uid() IS NULL OR coalesce(public.app_role(),'') NOT IN ('dev','hr','div_admin') THEN
     RAISE EXCEPTION 'COGS_ADMIN_ONLY' USING errcode='42501';
-  END IF;
-  IF coalesce(public.app_role(),'')='report_viewer'
-     AND NOT (public.has_perm('cogs.daily_so.edit') OR public.has_perm('cogs.production.manage') OR public.has_perm('cogs.sales.manage')) THEN
-    RAISE EXCEPTION 'COGS_FEATURE_PERMISSION_DENIED' USING errcode='42501';
   END IF;
   IF lower(p_kind)='production' THEN
     SELECT division_id INTO v_division FROM public.cogs_production_batches WHERE id=p_id AND status='posted';
@@ -383,13 +365,7 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
 BEGIN
-  IF auth.uid() IS NULL OR NOT (
-    coalesce(public.app_role(),'') IN ('dev','hr','div_admin')
-    OR (
-      coalesce(public.app_role(),'')='report_viewer'
-      AND (public.has_perm('cogs.wip.view') OR public.has_perm('cogs.menu.view'))
-    )
-  ) THEN
+  IF auth.uid() IS NULL OR coalesce(public.app_role(),'') NOT IN ('dev','hr','div_admin') THEN
     RAISE EXCEPTION 'COGS_ADMIN_ONLY' USING errcode='42501';
   END IF;
   RETURN QUERY
@@ -434,7 +410,7 @@ USING (
   public.has_perm('attendance.manage')
   AND (
     public.app_role()='dev'
-    OR (public.app_role() IN ('hr','div_admin','report_viewer') AND public.can_access_scope(outlet_id,division_id))
+    OR (public.app_role() IN ('hr','div_admin') AND public.can_access_scope(outlet_id,division_id))
   )
 );
 
@@ -457,7 +433,7 @@ USING (
   )
   AND (
     public.app_role()='dev'
-    OR (public.app_role() IN ('hr','div_admin','report_viewer') AND public.can_access_scope(outlet_id,division_id))
+    OR (public.app_role() IN ('hr','div_admin') AND public.can_access_scope(outlet_id,division_id))
   )
 );
 
@@ -482,7 +458,7 @@ DROP POLICY IF EXISTS p_div_sel ON public.divisions;
 CREATE POLICY p_div_sel ON public.divisions FOR SELECT TO authenticated
 USING (
   public.app_role()='dev'
-  OR (public.app_role() IN ('hr','div_admin','report_viewer') AND public.can_access_scope(outlet_id,id))
+  OR (public.app_role() IN ('hr','div_admin') AND public.can_access_scope(outlet_id,id))
 );
 
 DROP POLICY IF EXISTS p_emp_delete_feature ON public.employees;
@@ -515,7 +491,7 @@ USING (
   )
   AND (
     public.app_role()='dev'
-    OR (public.app_role() IN ('hr','div_admin','report_viewer') AND public.can_access_scope(outlet_id,division_id))
+    OR (public.app_role() IN ('hr','div_admin') AND public.can_access_scope(outlet_id,division_id))
   )
 );
 
