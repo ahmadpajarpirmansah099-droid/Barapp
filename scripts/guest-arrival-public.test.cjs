@@ -61,9 +61,11 @@ test('admin list and export payloads include registration source', () => {
 
 
 test('link lifecycle requires an authorized user and an active scoped outlet', () => {
-  assert.match(sql, /auth\\.uid\\(\\) IS NULL[\\s\\S]*?guest_arrival_can_access\\(\\)/i);
-  assert.match(sql, /v_is_dev := public\\.app_role\\(\\)='dev'/i);
-  assert.match(sql, /FROM public\\.user_scopes s[\\s\\S]*?JOIN public\\.outlets o ON o\\.id=s\\.outlet_id AND o\\.active/i);
-  assert.match(sql, /Outlet tidak ditemukan, tidak aktif, atau di luar akses akun/i);
-  assert.match(sql, /REVOKE ALL ON TABLE public\\.guest_arrival_public_rate_limits FROM PUBLIC,\\s*anon,\\s*authenticated/i);
+  assert.ok(sql.includes("auth.uid() IS NULL OR COALESCE(auth.role(),'') <> 'authenticated'"));
+  assert.ok(sql.includes("IF NOT public.guest_arrival_can_access()"));
+  assert.ok(sql.includes("v_is_dev := public.app_role()='dev'"));
+  assert.ok(sql.includes("FROM public.user_scopes s"));
+  assert.ok(sql.includes("JOIN public.outlets o ON o.id=s.outlet_id AND o.active"));
+  assert.ok(sql.includes("Outlet tidak ditemukan, tidak aktif, atau di luar akses akun"));
+  assert.ok(sql.includes("REVOKE ALL ON TABLE public.guest_arrival_public_rate_limits FROM PUBLIC, anon, authenticated"));
 });
