@@ -840,6 +840,15 @@ function guestArrivalSetSmokingPreference(value) {
 function guestArrivalShowForm() {
   if (!GA.form) return;
   const f = GA.form;
+  if (f.createdResult) {
+    const code = gaEscape(f.createdResult.queue_code || 'antrean');
+    modal('<h3 class="ga-modal-heading">Tamu Sudah Tersimpan</h3>' +
+      '<p class="ga-modal-intro">Nomor <strong>' + code + '</strong> sudah masuk ke antrean. Link belum berhasil dibuat, jadi lu bisa mencoba membuat link lagi tanpa mendaftarkan tamu ulang.</p>' +
+      '<div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalSaveForm()" ' + (f.saving?'disabled':'') + '>' +
+        (f.saving?'<span class="ga-spinner"></span>Membuat link…':'Coba Buat Link Lagi') + '</button>' +
+        '<button type="button" class="ga-btn secondary" onclick="guestArrivalCloseSavedEntry()" ' + (f.saving?'disabled':'') + '>Tutup</button></div>');
+    return;
+  }
   const preference = ['Non Smoking','Smoking'].includes(f.smoking_preference) ? f.smoking_preference : 'Non Smoking';
   modal('<h3 class="ga-modal-heading">Tambah Tamu</h3><p class="ga-modal-intro">Nomor antrean dibuat saat data disimpan. Setelah itu, link khusus tamu siap dibagikan.</p>' +
     '<div class="ga-field"><label for="ga-form-name">Nama <span aria-hidden="true">*</span></label><input id="ga-form-name" autocomplete="name" maxlength="160" value="' + gaEscape(f.name) + '" placeholder="Nama tamu" oninput="guestArrivalFormInput(\'name\',this.value)" required></div>' +
@@ -927,6 +936,15 @@ async function guestArrivalSaveForm() {
   GA.tab = 'queue'; GA.showSeated = startSeated; GA.search = ''; GA.ready = false;
   await guestArrivalRefresh();
   guestArrivalShowPublicLink(payload);
+}
+
+function guestArrivalCloseSavedEntry() {
+  if (!GA.form || !GA.form.createdResult || GA.form.saving) return;
+  GA.form = null;
+  closeM();
+  GA.ready = false;
+  void guestArrivalRefresh(true);
+  gaToast('Tamu sudah tersimpan. Link dapat dibuat dari tombol Link Tamu pada kartu antrean.', 'warn');
 }
 
 function guestArrivalOpenPendingModal() {
