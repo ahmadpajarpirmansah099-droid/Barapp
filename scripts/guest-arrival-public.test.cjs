@@ -23,6 +23,7 @@ test('admins can create/revoke per-guest links only within their outlet scope', 
   assert.match(sql, /guest_arrival_guest_link_manage\([\s\S]*?p_action text, p_guest_arrival_id uuid/i);
   assert.match(sql, /auth\.uid\(\) IS NULL OR COALESCE\(auth\.role\(\),''\) <> 'authenticated'/i);
   assert.match(sql, /IF NOT v_is_dev AND NOT EXISTS \([\s\S]*?s\.user_id=auth\.uid\(\) AND s\.outlet_id=v_outlet_id/i);
+  assert.match(sql, /v_is_dev := COALESCE\(public\.app_role\(\)='dev',false\)/i);
   assert.match(sql, /p_action='revoke'[\s\S]*?guest_arrival_id=v_guest_id/i);
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_guest_link_manage\(text,uuid\) FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.guest_arrival_guest_link_manage\(text,uuid\) TO authenticated/i);
