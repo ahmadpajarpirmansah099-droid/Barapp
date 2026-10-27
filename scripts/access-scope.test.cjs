@@ -54,10 +54,23 @@ const adminScope = section('function adminAccountScopes(uid){', 'function adminS
 assert.match(adminScope, /String\(s\.outlet_id\)===String\(T\.adminOutletId\)/, 'Admin account scope view remains filtered to the current outlet');
 assert.match(adminScope, /!x\.scope\.division_id\|\|x\.division/, 'Admin Divisi scope remains division-specific');
 
+
+const dbRoleCode = section('const dbRoleCode', 'let D=');
+assert.match(dbRoleCode, /\['div_admin','hr'\]\.includes\(r\)/, 'Only the three main account roles receive admin frontend access');
+assert.doesNotMatch(dbRoleCode, /legacy_admin|report_viewer/, 'Retired roles must not be treated as current frontend admin roles');
+
+const accountCard = section('function accsCard()', 'function accFilterCards(value)');
+assert.match(accountCard, /\['hr','div_admin'\]\.map\(k=>/, 'Role UI must only offer HR and Admin Divisi');
+assert.doesNotMatch(accountCard, /Pemilihan izin fitur Admin Divisi dinonaktifkan/, 'Feature permission editor remains available for Admin Divisi');
+assert.match(accountCard, /feature\.guest_arrival\.access/, 'Developer can grant Guest Arrival through feature permission');
+assert.match(roleMigrationSource, /HR harus memiliki scope outlet yang valid sebelum akun diaktifkan/, 'HR activation requires a valid outlet-wide scope');
+assert.match(roleMigrationSource, /Admin Divisi harus memiliki scope divisi valid dalam satu outlet/, 'Admin Divisi activation requires valid division-specific scopes');
+assert.match(roleMigrationSource, /IF cur IN \('dev','hr'\) THEN/, 'Inactive legacy accounts can be explicitly reassigned to a division scope');
+
 assert.match(roleMigrationSource, /COUNT\(DISTINCT s\.outlet_id\)[\s\S]*?s\.user_id=auth\.uid\(\)\)=1/, 'Scoped access must reject accounts assigned to multiple outlets');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='div_admin' THEN[\s\S]*?s\.division_id=p_division AND s\.division_id IS NOT NULL/, 'Admin Divisi must match its exact assigned division');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='hr' THEN[\s\S]*?s\.division_id IS NULL/, 'HR must have an outlet-wide scope in its one assigned outlet');
-assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \\('hr','div_admin'\\)/, 'Only HR and Admin Divisi roles may be assigned through the account helper');
+assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \('hr','div_admin'\)/, 'Only HR and Admin Divisi roles may be assigned through the account helper');
 assert.match(roleMigrationSource, /RAISE EXCEPTION 'Access-scope migration paused: active legacy_admin accounts need manual role\/scope migration first\.'/);
 assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'legacy_admin'/i, 'No security helper should keep a global legacy_admin bypass');
 assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'report_viewer'/i, 'Report Viewer must be retired as a role and granted access through feature permissions');
