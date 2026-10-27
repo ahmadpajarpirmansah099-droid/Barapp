@@ -49,7 +49,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Access-scope migration paused: move active report_viewer accounts to HR/Admin Divisi scopes and feature permissions first.';
   END IF;
-END
+END;
 $preflight$;
 
 CREATE OR REPLACE FUNCTION public.can_access_scope(p_outlet uuid, p_division uuid)
@@ -229,7 +229,7 @@ BEGIN
   JOIN public.outlets o ON o.id=s.outlet_id AND o.active
   WHERE s.user_id=auth.uid();
   RETURN v_outlet;
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.dev_set_division_admin(p_email text, p_division uuid)
@@ -256,7 +256,7 @@ BEGIN
     ON CONFLICT (user_id) DO UPDATE SET role='div_admin',active=true,email=excluded.email;
   DELETE FROM public.user_scopes WHERE user_id=u;
   INSERT INTO public.user_scopes(user_id,outlet_id,division_id) VALUES(u,d.outlet_id,d.id);
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.dev_assign_report_viewer(p_email text DEFAULT 'crew@div.bar'::text)
@@ -270,7 +270,7 @@ BEGIN
     RAISE EXCEPTION 'DEVELOPER_ONLY' USING errcode='42501';
   END IF;
   RAISE EXCEPTION 'REPORT_VIEWER_ROLE_RETIRED: use HR/Admin Divisi scope with explicit feature permissions.';
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.dev_set_account(p_user uuid, p_role text, p_active boolean)
@@ -335,7 +335,7 @@ BEGIN
   INSERT INTO public.audit_log(actor,actor_email,action,table_name,record_id,reason)
   VALUES(me,nullif(auth.jwt()->>'email',''),'ACCOUNT_UPDATE','user_profiles',p_user::text,
     'role='||p_role||' aktif='||coalesce(p_active,true)::text);
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.cogs_assert_ops_division(p_division_id uuid)
@@ -355,7 +355,7 @@ BEGIN
   IF NOT public.cogs_ops_can_access_division(p_division_id) THEN
     RAISE EXCEPTION 'COGS_DIVISION_FORBIDDEN' USING errcode='42501';
   END IF;
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.cogs_cancel_operation(p_kind text, p_id uuid, p_reason text DEFAULT NULL::text)
@@ -399,7 +399,7 @@ BEGIN
   ELSE
     RAISE EXCEPTION 'COGS_INVALID_OPERATION_KIND';
   END IF;
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.cogs_list_materials()
@@ -420,7 +420,7 @@ BEGIN
   JOIN public.divisions d ON d.id=i.division_id
   WHERE d.has_cogs=true AND public.cogs_ops_can_access_division(i.division_id)
   ORDER BY i.name;
-END
+END;
 $function$;
 
 CREATE OR REPLACE FUNCTION public.staff_set_pin(p_employee text, p_pin text)
@@ -445,7 +445,7 @@ BEGIN
   DELETE FROM public.staff_sessions WHERE employee_id=e.id::text;
   INSERT INTO public.audit_log(actor,actor_email,action,table_name,record_id,reason)
   VALUES(auth.uid(),nullif(auth.jwt()->>'email',''),'STAFF_PIN_SET','employees',e.id::text,'PIN diatur ulang (nilai PIN tidak dicatat)');
-END
+END;
 $function$;
 
 DROP POLICY IF EXISTS p_att_delete_feature ON public.attendance;
