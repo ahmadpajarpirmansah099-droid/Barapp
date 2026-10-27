@@ -25,7 +25,11 @@ assert.match(outInit, /const fallback=isLazyJennieHr\(\)\?null:T\.outlets\[0\]/,
 const outSwitch = section('async function outSwitch(id){', 'async function sbLoad(silent)');
 assert.match(outSwitch, /if\(!isDeveloper\(\)\|\|!id/, 'Non-developer outlet switching must be rejected');
 assert.match(outSwitch, /function outMenuHtml\(\)\{\s*if\(!isDeveloper\(\)\)return '';/, 'Outlet selector must only render for Developer');
-assert.match(outSwitch, /const multi=isDeveloper\(\);/, 'Outlet label must use the scoped outlet for non-developers');
+
+
+const outLabel = section('function outLabel(){', '/* ===== EDIT OUTLET (developer) ===== */');
+assert.match(outLabel, /const multi=isDeveloper\(\);/, 'Outlet label must use the scoped outlet for non-developers');
+assert.match(outLabel, /const id=multi\?\(D\.outId\|\|D\.ljId\):\(T\.scopeOut\|\|null\)/, 'Missing scope must not display a default outlet');
 
 const schedule = section('async function jadDivList(){', '/* ===== JADWAL: tampilan & unduh PDF ===== */');
 assert.match(schedule, /else if\(T\.dbRole==='hr'\)\{\s*const oid=await outInit\(\);/, 'HR schedule divisions must resolve from the assigned outlet');
