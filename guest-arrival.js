@@ -1326,7 +1326,7 @@ async function guestArrivalCreateGuestLink(id, confirmed) {
   const row = [...(GA.queue || []), ...(GA.pending || []), ...(GA.seated || [])].find(g => g.id === id);
   if (!row) { gaToast('Data tamu belum ditemukan. Muat ulang daftar lalu coba lagi.', 'err'); return; }
   if (!confirmed && typeof confirm === 'function' &&
-      !confirm('Buat ulang link untuk ' + (row.queue_code || 'antrean ini') + '? Link lama untuk tamu ini akan dinonaktifkan.')) return;
+      !confirm('Buat link untuk ' + (row.queue_code || 'antrean ini') + '? Jika sudah ada, link lama untuk tamu ini akan dinonaktifkan.')) return;
   GA.busy = 'guest-link:' + id;
   try {
     const data = await gaRpc('guest_arrival_guest_link_manage', {
