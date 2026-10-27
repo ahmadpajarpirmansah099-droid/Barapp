@@ -36,7 +36,7 @@ test('edge endpoint returns a safe allow-list and does not log the token', () =>
   assert.match(edge, /guest_arrival_public_create/);
   assert.match(edge, /queue_number:\s*ticket\.queue_number/);
   assert.doesNotMatch(edge, /console\.log\([^)]*token/i);
-  assert.match(edge, /Do not relay database internals or customer data/i);
+  assert.match(edge, /Permintaan belum berhasil diproses\. Coba lagi\./i);
 });
 
 test('public ticket token is carried in the URL fragment, not sent with page request', () => {
