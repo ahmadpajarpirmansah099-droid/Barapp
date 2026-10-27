@@ -2,7 +2,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 function getServiceRoleKey(): string {
   const legacyKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (legacyKey) return legacyKey;
-  // Support current named secret-key environment variables while retaining legacy compatibility.
   try {
     const namedKeys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
     return typeof namedKeys.default === "string" ? namedKeys.default : "";
@@ -67,7 +66,7 @@ async function callRpc(name: string, args: Record<string, unknown>) {
       throw new RpcFailure("Link antrean tidak valid atau sudah dinonaktifkan.", code, 404);
     }
     if (code === "22023") {
-      throw new RpcFailure(message || "Data formulir tidak valid.", code, 422);
+      throw new RpcFailure(message || "Permintaan tidak valid.", code, 422);
     }
     throw new RpcFailure("Permintaan belum berhasil diproses. Coba lagi.", code || "RPC", 500);
   }
@@ -83,7 +82,7 @@ Deno.serve(async (req: Request) => {
       return respond(415, { ok: false, error: "Format permintaan tidak didukung." });
     }
     const raw = await req.text();
-    if (raw.length > 8192) return respond(413, { ok: false, error: "Permintaan terlalu besar." });
+    if (raw.length > 4096) return respond(413, { ok: false, error: "Permintaan terlalu besar." });
 
     let body: Record<string, unknown>;
     try { body = JSON.parse(raw); }
@@ -96,52 +95,22 @@ Deno.serve(async (req: Request) => {
     if (!/^[a-f0-9]{64}$/.test(token)) {
       return respond(404, { ok: false, error: "Link antrean tidak valid atau sudah dinonaktifkan." });
     }
-
-    const action = String(body.action ?? "");
-    if (action === "outlet") {
-      const outlet = await callRpc("guest_arrival_public_outlet", { p_token: token });
-      return respond(200, { ok: true, outlet });
-    }
-    if (action !== "create") return respond(400, { ok: false, error: "Aksi permintaan tidak valid." });
-    if (String(body.website ?? "").trim()) {
-      return respond(422, { ok: false, error: "Formulir tidak dapat diproses." });
+    if (String(body.action ?? "") !== "ticket") {
+      return respond(400, { ok: false, error: "Aksi permintaan tidak valid." });
     }
 
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    const packs = Number(body.packs);
-    const whatsapp = typeof body.whatsapp === "string" ? body.whatsapp.trim() : "";
-    const note = typeof body.note === "string" ? body.note.trim() : "";
-    const smokingPreference = String(body.smoking_preference ?? "Non Smoking");
-    const requestId = String(body.request_id ?? "");
-
-    if (name.length < 2 || name.length > 80) return respond(422, { ok: false, error: "Nama wajib diisi (2–80 karakter)." });
-    if (!Number.isInteger(packs) || packs < 1 || packs > 50) return respond(422, { ok: false, error: "Jumlah tamu harus antara 1 sampai 50 orang." });
-    if (whatsapp.length > 32 || note.length > 300) return respond(422, { ok: false, error: "Nomor kontak atau catatan terlalu panjang." });
-    if (!["Non Smoking", "Smoking"].includes(smokingPreference)) return respond(422, { ok: false, error: "Preferensi tidak valid." });
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
-      return respond(422, { ok: false, error: "ID permintaan tidak valid. Muat ulang halaman." });
-    }
-
-    const ticket = await callRpc("guest_arrival_public_create", {
-      p_token: token,
-      p_name: name,
-      p_packs: packs,
-      p_whatsapp: whatsapp || null,
-      p_smoking_preference: smokingPreference,
-      p_note: note || null,
-      p_request_id: requestId,
-    });
-
+    const ticket = await callRpc("guest_arrival_public_ticket", { p_token: token });
     return respond(200, {
       ok: true,
       ticket: {
         queue_number: ticket.queue_number,
         queue_code: ticket.queue_code,
         status: ticket.status,
+        packs: ticket.packs,
         operational_date: ticket.operational_date,
+        arrived_at: ticket.arrived_at,
         outlet_code: ticket.outlet_code,
         outlet_name: ticket.outlet_name,
-        duplicate_request: Boolean(ticket.duplicate_request),
       },
     });
   } catch (error) {
