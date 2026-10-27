@@ -69,3 +69,42 @@ test('link lifecycle requires an authorized user and an active scoped outlet', (
   assert.ok(sql.includes("Outlet tidak ditemukan, tidak aktif, atau di luar akses akun"));
   assert.ok(sql.includes("REVOKE ALL ON TABLE public.guest_arrival_public_rate_limits FROM PUBLIC, anon, authenticated"));
 });
+
+
+test('public RPCs enforce service-role checks and reject invalid or revoked tokens', () => {
+  assert.ok((sql.match(/COALESCE\(auth\.role\(\),''\) <> 'service_role'/g) || []).length >= 2);
+  assert.ok((sql.match(/p_token IS NULL OR p_token !~ '\^\[a-fA-F0-9\]\{64\}\$'/g) || []).length >= 2);
+  assert.match(sql, /AND l\.active AND l\.revoked_at IS NULL/i);
+});
+
+test('only one active public link can exist per outlet and revocation is explicit', () => {
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS guest_arrival_public_links_one_active_per_outlet[\s\S]*?WHERE active AND revoked_at IS NULL/i);
+  assert.match(sql, /SET active=false,revoked_at=clock_timestamp\(\)/i);
+  assert.match(sql, /UPDATE public\.guest_arrival_public_links[\s\S]*?WHERE outlet_id=v_outlet_id AND active AND revoked_at IS NULL/i);
+});
+
+test('public queue insertion respects the existing waiting-state schema', () => {
+  const insertMatch = sql.match(/INSERT INTO public\.guest_arrivals\(([\s\S]*?)\)\s*VALUES\(([\s\S]*?)\)\s*RETURNING \* INTO v_row/i);
+  assert.ok(insertMatch, 'public registration must insert a guest_arrivals row');
+  assert.match(insertMatch[1], /outlet_id[\s\S]*operational_date[\s\S]*queue_number[\s\S]*request_id[\s\S]*registration_source/i);
+  assert.match(insertMatch[2], /'Menunggu'[\s\S]*NULL[\s\S]*NULL[\s\S]*NULL[\s\S]*'public-web'[\s\S]*'public'/i);
+  assert.match(sql, /UPDATE public\.guest_arrival_daily_counters[\s\S]*?SET last_number=last_number\+1/i);
+});
+
+test('public ticket response is an allow-list that excludes guest PII and internal row IDs', () => {
+  const responseMatch = sql.match(/-- Allow-list only:[\s\S]*?RETURN jsonb_build_object\(([\s\S]*?)\);/i);
+  assert.ok(responseMatch, 'ticket response allow-list must be present');
+  const response = responseMatch[1];
+  assert.match(response, /queue_number/);
+  assert.match(response, /queue_code/);
+  assert.match(response, /outlet_code/);
+  assert.doesNotMatch(response, /guest_name|whatsapp|packs|note|v_row\.id|created_by/i);
+});
+
+test('public form removes the token fragment after success and does not put token in query parameters', () => {
+  assert.match(page, /location\.hash/);
+  assert.match(page, /history\.replaceState\(null,\s*"",\s*location\.pathname\s*\+\s*location\.search\)/);
+  assert.match(page, /referrerPolicy:\s*"no-referrer"/i);
+  assert.match(page, /meta name="referrer" content="no-referrer"/i);
+  assert.match(admin, /url\.hash\s*=\s*'token='/i);
+});
