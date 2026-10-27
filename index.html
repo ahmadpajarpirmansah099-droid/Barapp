@@ -2542,8 +2542,8 @@ SB.loading=false;R()}
    Tables have no updated_at column and are not in supabase_realtime publication, so full reconciliation remains necessary. */
 async function sbRefreshRecent(){
   if(document.hidden||SB.loading||SB.busy||!SB.loaded||SB.state!=='ok'||T.dbRole==='guest_arrival')return;
-  if(Date.now()-(SB.fullSyncAt||0)>=15*60*1000){sbLoad(true);return}
   if(($('#m')&&$('#m').innerHTML)||inField())return;
+  if(Date.now()-(SB.fullSyncAt||0)>=15*60*1000){sbLoad(true);return}
   SB.loading=true;
   try{
     const {data:{session}}=await sb().auth.getSession();
