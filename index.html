@@ -2452,7 +2452,8 @@ function sbCacheSave(){try{localStorage.setItem(SBK,JSON.stringify({uid:(D.me&&D
 function sbCacheLoad(){try{const c=JSON.parse(localStorage.getItem(SBK)||'null');if(c&&Array.isArray(c.emp)&&Array.isArray(c.att)&&(c.uid||null)===((D.me&&D.me.uid)||null)&&(c.oid||null)===(D.outId||null)){D.emp=c.emp;D.att=c.att.map(a=>({...a,ph:PH[a.id]||''}));SB.cached=true;return true}}catch(e){}return false}
 function derivePeriods(){const ds=[...new Set(D.att.map(a=>a.d))].sort();let ch=false;ds.forEach(d=>{if(!perOf(d)&&ensurePer(d))ch=true});if(ch)sv()}
 const EMP_SAFE_SELECT='id,name,role,active,created_at,outlet_id,division_id,deleted_at';
-async function fetchAll(tbl,ord){const out=[],cols=tbl==='employees'?EMP_SAFE_SELECT:'*';for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select(cols).order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
+const ATT_SAFE_SELECT='id,employee_id,attendance_date,status,notes,photo,outlet_id,division_id';
+async function fetchAll(tbl,ord){const out=[],cols=tbl==='employees'?EMP_SAFE_SELECT:tbl==='attendance'?ATT_SAFE_SELECT:'*';for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select(cols).order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
 
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
