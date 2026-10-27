@@ -58,3 +58,12 @@ test('admin list and export payloads include registration source', () => {
   assert.ok(sql.includes("'registration_source', p_row.registration_source"));
   assert.ok(admin.includes("['Sumber','registration_source']"));
 });
+
+
+test('link lifecycle requires an authorized user and an active scoped outlet', () => {
+  assert.match(sql, /auth\\.uid\\(\\) IS NULL[\\s\\S]*?guest_arrival_can_access\\(\\)/i);
+  assert.match(sql, /v_is_dev := public\\.app_role\\(\\)='dev'/i);
+  assert.match(sql, /FROM public\\.user_scopes s[\\s\\S]*?JOIN public\\.outlets o ON o\\.id=s\\.outlet_id AND o\\.active/i);
+  assert.match(sql, /Outlet tidak ditemukan, tidak aktif, atau di luar akses akun/i);
+  assert.match(sql, /REVOKE ALL ON TABLE public\\.guest_arrival_public_rate_limits FROM PUBLIC,\\s*anon,\\s*authenticated/i);
+});
