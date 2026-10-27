@@ -666,7 +666,7 @@ function guestArrivalQueueMarkup() {
     '<div class="ga-section-title"><h3>Tamu Menunggu</h3><span class="ga-count">' + GA.queue.length + ' antrean aktif</span></div><div id="ga-queue-cards" class="ga-card-list">' + guestArrivalQueueCards() + '</div>';
 }
 function guestArrivalCard(g, pending) {
-  const detail = '<button type="button" class="ga-btn secondary small" onclick="guestArrivalOpenDetail(\\'' + g.id + '\\')">Detail</button><button type="button" class="ga-btn secondary small" onclick="guestArrivalCreateGuestLink(\\'' + g.id + '\\')">Link Tamu</button>';
+  const detail = '<button type="button" class="ga-btn secondary small" onclick="guestArrivalOpenDetail(&quot;' + g.id + '&quot;)">Detail</button><button type="button" class="ga-btn secondary small" onclick="guestArrivalCreateGuestLink(&quot;' + g.id + '&quot;)">Link Tamu</button>';
   const actions = g.status === 'Menunggu'
     ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalOpenSeatModal(\'' + g.id + '\')">Duduk</button><button type="button" class="ga-btn danger small" onclick="guestArrivalCancel(\'' + g.id + '\')">Batalkan</button>'
     : g.status === 'Duduk'
@@ -1316,7 +1316,7 @@ function guestArrivalShowPublicLink(data) {
     '<div class="ga-field"><label for="ga-guest-url">Link khusus tamu</label><div style="display:flex;gap:8px;align-items:center"><input id="ga-guest-url" type="text" readonly value="' + gaEscape(url) + '" style="min-width:0;flex:1;font-size:12px"><button type="button" class="ga-btn secondary" onclick="guestArrivalCopyGuestUrl()">Salin</button></div></div>' +
     '<p class="ga-muted" style="font-size:12px;line-height:1.5">Link ini bersifat pribadi untuk antrean tersebut. Membuat link baru untuk tamu yang sama akan menonaktifkan link lama.</p>' +
     '<div class="ga-btn-row"><a class="ga-btn primary" style="flex:1;display:inline-flex;justify-content:center;align-items:center;text-decoration:none" href="' + gaEscape(whatsappUrl) + '" target="_blank" rel="noopener noreferrer">Kirim via WhatsApp</a>' +
-      '<button type="button" class="ga-btn secondary" onclick="guestArrivalRevokeGuestLink(\'' + gaEscape(data.guest_arrival_id) + '\')">Nonaktifkan Link</button></div>' +
+      '<button type="button" class="ga-btn secondary" onclick="guestArrivalRevokeGuestLink(&quot;' + gaEscape(data.guest_arrival_id) + '&quot;)">Nonaktifkan Link</button></div>' +
     '<div class="ga-btn-row"><button type="button" class="ga-btn secondary wide" onclick="closeM()">Selesai</button></div>'
   );
 }
