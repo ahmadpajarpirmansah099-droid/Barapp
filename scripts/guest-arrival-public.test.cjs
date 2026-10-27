@@ -54,6 +54,7 @@ test('admin UI generates QR links and marks public registrations', () => {
 
 
 test('admin list and export payloads include registration source', () => {
-  assert.match(sql, /CREATE OR REPLACE FUNCTION public\\.guest_arrival_row_json[\\s\\S]*?'registration_source',\\s*p_row\\.registration_source/i);
-  assert.match(admin, /\\['Sumber','registration_source'\\]/);
+  assert.ok(sql.includes('CREATE OR REPLACE FUNCTION public.guest_arrival_row_json'));
+  assert.ok(sql.includes("'registration_source', p_row.registration_source"));
+  assert.ok(admin.includes("['Sumber','registration_source']"));
 });
