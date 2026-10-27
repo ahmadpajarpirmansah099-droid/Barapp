@@ -68,7 +68,7 @@ BEGIN
     RAISE EXCEPTION 'Tamu tidak ditemukan atau outlet tidak aktif.' USING ERRCODE='42501';
   END IF;
 
-  v_is_dev := public.app_role()='dev';
+  v_is_dev := COALESCE(public.app_role()='dev',false);
   IF NOT v_is_dev AND NOT EXISTS (
     SELECT 1 FROM public.user_scopes s
     WHERE s.user_id=auth.uid() AND s.outlet_id=v_outlet_id
