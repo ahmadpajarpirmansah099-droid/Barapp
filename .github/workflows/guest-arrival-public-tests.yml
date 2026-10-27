@@ -8,6 +8,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/functions/guest-arrival-public/**'
       - 'scripts/guest-arrival-public.test.cjs'
+      - 'scripts/guest-arrival-public.browser.test.cjs'
       - 'scripts/guest-arrival-public-fixture.sql'
       - 'scripts/guest-arrival-public.integration.sql'
       - 'scripts/guest-arrival-public-concurrency.sh'
@@ -60,3 +61,19 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: bash scripts/guest-arrival-public-concurrency.sh
+
+  public-queue-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --prefix /tmp/barapp-browser playwright@1.56.1
+          /tmp/barapp-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test guest queue form in a mocked mobile browser
+        env:
+          GA_PLAYWRIGHT_MODULE: /tmp/barapp-browser/node_modules/playwright
+        run: node scripts/guest-arrival-public.browser.test.cjs
