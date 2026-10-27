@@ -39,7 +39,7 @@ test('public endpoint only reads a linked ticket and cannot register new guests'
 });
 
 test('public ticket response is an allow-list without guest PII or internal identifiers', () => {
-  const responseMatch = sql.match(/-- Deliberate allow-list:[\s\S]*?RETURN v_ticket;/i);
+  const responseMatch = sql.match(/SELECT jsonb_build_object\(([\s\S]*?)\)\s*INTO v_ticket/i);
   assert.ok(responseMatch, 'public ticket allow-list must be present');
   assert.match(responseMatch[0], /queue_number/);
   assert.match(responseMatch[0], /queue_code/);
