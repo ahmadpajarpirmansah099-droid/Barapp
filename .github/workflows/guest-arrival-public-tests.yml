@@ -10,6 +10,7 @@ on:
       - 'scripts/guest-arrival-public.test.cjs'
       - 'scripts/guest-arrival-public-fixture.sql'
       - 'scripts/guest-arrival-public.integration.sql'
+      - 'scripts/guest-arrival-public-concurrency.sh'
       - '.github/workflows/guest-arrival-public-tests.yml'
 
 jobs:
@@ -54,3 +55,8 @@ jobs:
           psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f scripts/guest-arrival-public-fixture.sql
           psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261027190000_guest_arrival_public_queue.sql
           psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f scripts/guest-arrival-public.integration.sql
+
+      - name: Verify concurrent queue allocation
+        env:
+          PGPASSWORD: postgres
+        run: bash scripts/guest-arrival-public-concurrency.sh
