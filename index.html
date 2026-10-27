@@ -2461,28 +2461,28 @@ async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
   if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
   const lazyJennieRestricted=isLazyJennieHr();
-  const multi=isDeveloper()||(T.dbRole=='hr'&&!lazyJennieRestricted)||T.dbRole=='legacy_admin';
+  const multi=isDeveloper();
   if(lazyJennieRestricted){
-    if(!validUuid(D.ljId)){
-      try{const sc=await payQ('user_scopes','outlet_id');const sid=sc.find(x=>validUuid(x.outlet_id))?.outlet_id;if(sid)D.ljId=sid}catch(e){}
-    }
+    if(!validUuid(D.ljId)){D.outId=null;return null}
     D.outId=validUuid(D.ljId)?D.ljId:null;
     try{if(validUuid(D.outId))localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),D.outId)}catch(e){}
     sv();
     return validUuid(D.outId)?D.outId:null;
   }
   if(!multi){
-    if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
-    if(T.scopeOut){if(!validUuid(T.scopeOut)){T.scopeOut=null}else{if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut}}
-    if(T.dbRole!='div_admin')return validUuid(D.ljId)?D.ljId:null;
-    return validUuid(D.outId)&&D.outId!=='ALL'?D.outId:(validUuid(D.ljId)?D.ljId:null)}
+    if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');const scopeOutlets=[...new Set((sc||[]).map(x=>x.outlet_id).filter(validUuid))];T.scopeOut=scopeOutlets.length===1?scopeOutlets[0]:null;T.scopeOutAmbiguous=scopeOutlets.length>1}catch(e){T.scopeOut=null;T.scopeOutAmbiguous=false}}
+    if(T.scopeOut&&validUuid(T.scopeOut)){D.outId=T.scopeOut;return T.scopeOut}
+    D.outId=null;
+    T.scopeError=T.scopeOutAmbiguous?'Akun memiliki scope lebih dari satu outlet.':'Akun belum memiliki scope outlet yang valid.';
+    sv();
+    return null}
   const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
   if(!T.outlets.length)return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null);
   if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
     D.outId=ok(r)?r:(D.ljId||null);sv()}
   return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null)}
 async function outSwitch(id){
-  if(!id||String(id)===String(D.outId))return;
+  if(!isDeveloper()||!id||String(id)===String(D.outId))return;
   D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
   T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
   D.emp=[];D.att=[];D.ot=[];
@@ -2497,7 +2497,7 @@ async function outSwitch(id){
   catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
 }
 function outMenuHtml(){
-  if(!(isDeveloper()||(T.dbRole=='hr'&&!isLazyJennieHr())))return '';
+  if(!isDeveloper())return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
     if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
     return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
@@ -3753,7 +3753,7 @@ function perSel(){if(!D.per.length)return '';const cur=(F.f||'')+'|'+(F.t||'');c
 
 function outLabel(){
   if(!D.me)return '';
-  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  const multi=isDeveloper();
   const id=multi?(D.outId||D.ljId):(T.scopeOut||D.ljId);
   if(id==='ALL')return 'Semua outlet';
   const o=(T.outlets||[]).find(x=>x.id==id);
@@ -3783,19 +3783,23 @@ const jadAddDays=(s,n)=>{const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCD
 const jadMon=s=>{const d=new Date(s+'T00:00:00Z');const wd=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-wd);return d.toISOString().slice(0,10)};
 async function jadDivList(){
   if(T.jadDivs)return T.jadDivs;
-  if(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin'){
+  if(isDeveloper()){
     if(T.jadOut===undefined)T.jadOut=(await outInit())||'ALL';
     const oid=T.jadOut==='ALL'?null:T.jadOut;
     T.jadDivs=await payQ('divisions','id,name,code,outlet_id',q=>oid?q.eq('outlet_id',oid).order('name'):q.order('name'));
+  }else if(T.dbRole==='hr'){
+    const oid=await outInit();
+    T.jadOut=oid;
+    T.jadDivs=oid?await payQ('divisions','id,name,code,outlet_id',q=>q.eq('outlet_id',oid).order('name')):[];
   }else{
-    const sc=await payQ('user_scopes','division_id');const ids=sc.map(x=>x.division_id);
+    const sc=await payQ('user_scopes','division_id');const ids=sc.map(x=>x.division_id).filter(Boolean);
     T.jadDivs=ids.length?await payQ('divisions','id,name,code,outlet_id',q=>q.in('id',ids).order('name')):[];
   }
   return T.jadDivs}
 async function jadLoad(){
   try{
     const divs=await jadDivList();
-    const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+    const multi=isDeveloper()||T.dbRole==='hr';
     if(!T.jadDid||(T.jadDid!=='ALL'&&!divs.some(d=>d.id==T.jadDid)))T.jadDid=(multi&&divs.length>1)?'ALL':((divs[0]||{}).id||null);
     const ws=T.jadWs||jadMon(today()),we=jadAddDays(ws,6),did=T.jadDid;
     let rows=[];
@@ -3841,16 +3845,17 @@ async function jadSet(eid,day,code,didArg){
 function jadNow(){T.jadWs=jadMon(today());T.jadKey=null;R()}
 function jadPick(v){T.jadDid=v;T.jadKey=null;R()}
 function jadOutCode(d){const o=(T.outlets||[]).find(x=>x.id==d.outlet_id);return o?o.code:''}
-function jadPickOut(v){T.jadOut=v;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;R()}
+function jadPickOut(v){if(!isDeveloper())return;T.jadOut=v;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;R()}
 function jadCard(){
   const ws=T.jadWs||jadMon(today()),we=jadAddDays(ws,6),did=T.jadDid;
   if(T.jadKey!==ws+'|'+did&&!T.jadBusy){T.jadBusy=1;setTimeout(async()=>{try{await jadLoad()}finally{T.jadBusy=0}},0)}
   const locked=today()>=ws;
   const divs=T.jadDivs||[];
-  const multi=isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin';
+  const multiDivision=isDeveloper()||T.dbRole==='hr';
+  const canSwitchOutlet=isDeveloper();
   const outs=T.outlets||[];
-  const osel=multi&&outs.length>1?`<label style="min-width:200px">Outlet<select onchange="jadPickOut(this.value)"><option value="ALL" ${(T.jadOut||'ALL')==='ALL'?'selected':''}>Semua outlet</option>${outs.map(o=>`<option value="${o.id}" ${o.id==T.jadOut?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label>`:'';
-  const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}${jadOutCode(d)?' · '+esc(jadOutCode(d)):''}</option>`).join('')}</select></label>`:'';
+  const osel=canSwitchOutlet&&outs.length>1?`<label style="min-width:200px">Outlet<select onchange="jadPickOut(this.value)"><option value="ALL" ${(T.jadOut||'ALL')==='ALL'?'selected':''}>Semua outlet</option>${outs.map(o=>`<option value="${o.id}" ${o.id==T.jadOut?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label>`:'';
+  const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multiDivision?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}${jadOutCode(d)?' · '+esc(jadOutCode(d)):''}</option>`).join('')}</select></label>`:'';
   const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button><button class="btn x" onclick="jadPdf()">Unduh PDF</button></div></div>`;
   if(!T.jad)return `<div class="card"><h3>Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
   if(!did)return `<div class="card"><h3>Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
@@ -4469,14 +4474,17 @@ return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="ope
 (l.length?`<div class="tw"><table><tr><th>Nama</th><th>Jabatan</th><th>${L('Aktif','Active')}</th><th></th></tr>${l.map(e=>{const i=D.emp.indexOf(e);return`<tr data-fsearch="${esc((e.nama+e.id).toLowerCase())}"><td>${esc(e.nama)}</td><td>${esc(e.jab)||'-'}</td><td><input type="checkbox" ${e.aktif?'checked':''} onchange="togEmp(${i},this.checked)"></td><td><button class="btn s x" onclick="detEmp(${i})">Detail</button> <button class="btn s x" onclick="openEmp(${i})">Edit</button> <button class="btn d x" onclick="delEmp(${i})">Hapus</button></td></tr>`}).join('')}</table></div><div class="card empty" data-fsearch-empty style="display:none">Tidak ada hasil.</div>`:`<div class="card empty">${D.emp.length?'Tidak ada hasil.':'Belum ada karyawan.<br>Tambah karyawan pertama dengan tombol +.'}</div>`)};
 
 function empOutDivHtml(defOut){
-  const outs=T.outlets||[];const cur=defOut||(outs[0]&&outs[0].id);
-  const divsOf=oid=>(T.allDivs||[]).filter(d=>d.outlet_id==oid);
-  return `<label>Outlet<select id="eo" onchange="empDivRefresh()">${outs.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label><label>Divisi<select id="ed"><option value="">(tidak dipilih)</option>${divsOf(cur).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>`}
-function empDivRefresh(){const oid=v('eo');const sel=document.getElementById('ed');if(!sel)return;sel.innerHTML='<option value="">(tidak dipilih)</option>'+(T.allDivs||[]).filter(d=>d.outlet_id==oid).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}
+  const outs=T.outlets||[];const cur=isDeveloper()?(defOut||(outs[0]&&outs[0].id)):defOut;
+  const visibleOuts=isDeveloper()?outs:outs.filter(o=>String(o.id)===String(cur));
+  const divsOf=oid=>(T.allDivs||[]).filter(d=>String(d.outlet_id)===String(oid)&&(isDeveloper()||String(oid)===String(cur)));
+  const selected=visibleOuts.find(o=>String(o.id)===String(cur));
+  const outletField=isDeveloper()?`<label>Outlet<select id="eo" onchange="empDivRefresh()">${outs.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label>`:`<input type="hidden" id="eo" value="${esc(cur||'')}"><div class="mu" style="margin:8px 0">Outlet: ${esc(selected?selected.name+' ('+selected.code+')':'sesuai scope akun')}</div>`;
+  return `${outletField}<label>Divisi<select id="ed"><option value="">(tidak dipilih)</option>${divsOf(cur).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>`}
+function empDivRefresh(){const oid=isDeveloper()?v('eo'):(D.outId||T.scopeOut);const sel=document.getElementById('ed');if(!sel)return;const outletField=document.getElementById('eo');if(!isDeveloper()&&outletField)outletField.value=oid||'';sel.innerHTML='<option value="">(tidak dipilih)</option>'+(T.allDivs||[]).filter(d=>String(d.outlet_id)===String(oid)).map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}
 async function openEmp(i){if(!guard())return;if(i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')){try{if(!T.outlets)await outInit();if(!T.allDivs)T.allDivs=await payQ('divisions','id,name,code,outlet_id')}catch(e){toast(errText(e),'err')}}const e=i>=0?D.emp[i]:{};T.i=i;
 modal(`<h3>${i>=0?'Edit':'Tambah'} Karyawan</h3><label>Nama<input id="en" value="${esc(e.nama)}" autocomplete="off"></label><label>Jabatan<input id="ej" value="${esc(e.jab)}" autocomplete="off"></label>${i<0&&(isDeveloper()||T.dbRole=='hr'||T.dbRole=='legacy_admin')?empOutDivHtml(D.outId||D.ljId):''}<div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveEmp()">Simpan</button></div>`)}
 async function saveEmp(){if(!guard())return;const n=v('en').trim(),j=v('ej').trim(),i=T.i;if(!n)return toast('Nama wajib diisi','err');if(D.emp.some((x,k)=>k!=i&&x.nama.toLowerCase()==n.toLowerCase()))return toast('Nama sudah ada','err');
-const ok=await sbRun(async()=>{const c=sb();if(i<0){const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:(document.getElementById('eo')?.value)||await outInit(),division_id:(document.getElementById('ed')?.value)||null}).select(EMP_SAFE_SELECT).single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select(EMP_SAFE_SELECT);if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini (cek izin divisi/outlet)');D.emp[i]=mapEmp(data[0])}sbCacheSave()});
+const ok=await sbRun(async()=>{const c=sb();if(i<0){const targetOutlet=isDeveloper()?((document.getElementById('eo')?.value)||await outInit()):await outInit();const targetDivision=document.getElementById('ed')?.value||null;if(!targetOutlet)throw new Error('Akun belum memiliki scope outlet yang valid');if(!isDeveloper()&&targetDivision){const division=(T.allDivs||[]).find(d=>String(d.id)===String(targetDivision));if(!division||String(division.outlet_id)!==String(targetOutlet))throw new Error('Divisi harus berada di outlet yang ditugaskan');}const {data,error}=await c.from('employees').insert({name:n,role:j,active:true,outlet_id:targetOutlet,division_id:targetDivision}).select(EMP_SAFE_SELECT).single();if(error)throw error;D.emp.push(mapEmp(data))}else{const {data,error}=await c.from('employees').update({name:n,role:j}).eq('id',D.emp[i].id).select(EMP_SAFE_SELECT);if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini (cek izin divisi/outlet)');D.emp[i]=mapEmp(data[0])}sbCacheSave()});
 if(ok){closeM();toast('Karyawan tersimpan');R()}}
 async function togEmp(i,val){if(!guard())return R();const e=D.emp[i];await sbRun(async()=>{const {data,error}=await sb().from('employees').update({active:!!val}).eq('id',e.id).select(EMP_SAFE_SELECT);if(error)throw error;if(!data||!data.length)throw new Error('Karyawan ini tidak bisa diubah dengan akun ini');D.emp[i]=mapEmp(data[0]);sbCacheSave()});R()}
 function delEmp(i){if(!guard())return;const e=D.emp[i];
