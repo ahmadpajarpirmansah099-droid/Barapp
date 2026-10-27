@@ -46,7 +46,9 @@ async function callRpc(name: string, args: Record<string, unknown>) {
       method: "POST",
       headers: {
         "apikey": SERVICE_ROLE_KEY,
-        "Authorization": "Bearer " + SERVICE_ROLE_KEY,
+        ...(SERVICE_ROLE_KEY.startsWith("eyJ")
+          ? { "Authorization": "Bearer " + SERVICE_ROLE_KEY }
+          : {}),
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
