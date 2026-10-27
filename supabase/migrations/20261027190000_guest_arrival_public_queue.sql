@@ -254,3 +254,52 @@ GRANT EXECUTE ON FUNCTION public.guest_arrival_public_create(text,text,integer,t
 
 COMMENT ON TABLE public.guest_arrival_public_links IS 'Hash-only tokens for guest-facing queue registration. Plain token returned once to an authorized admin.';
 COMMENT ON TABLE public.guest_arrival_public_rate_limits IS 'Per-link minute buckets to limit public queue registration attempts.';
+
+-- Preserve the source marker in every existing Guest Arrival list/detail/export payload.
+-- This keeps the admin badge and export column in sync without changing existing fields.
+CREATE OR REPLACE FUNCTION public.guest_arrival_row_json(p_row public.guest_arrivals)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT jsonb_build_object(
+    'id', p_row.id,
+    'outlet_id', p_row.outlet_id,
+    'outlet_code', (SELECT o.code FROM public.outlets o WHERE o.id=p_row.outlet_id),
+    'outlet_name', (SELECT o.name FROM public.outlets o WHERE o.id=p_row.outlet_id),
+    'operational_date', p_row.operational_date,
+    'queue_number', p_row.queue_number,
+    'queue_code', 'WL-' || lpad(p_row.queue_number::text, 3, '0'),
+    'guest_name', p_row.guest_name,
+    'packs', p_row.packs,
+    'whatsapp', p_row.whatsapp,
+    'smoking_preference', p_row.smoking_preference,
+    'note', p_row.note,
+    'registration_source', p_row.registration_source,
+    'arrived_at', p_row.arrived_at,
+    'status', p_row.status,
+    'table_name', p_row.table_name,
+    'seated_at', p_row.seated_at,
+    'finished_at', p_row.finished_at,
+    'waiting_seconds', p_row.waiting_seconds,
+    'cancellation_reason', p_row.cancellation_reason,
+    'created_by_email', p_row.created_by_email,
+    'created_at', p_row.created_at,
+    'correction_count', (
+      SELECT count(*) FROM public.guest_arrival_changes c
+      WHERE c.guest_arrival_id = p_row.id AND c.change_type = 'CORRECTION'
+    ),
+    'last_correction_at', (
+      SELECT max(c.changed_at) FROM public.guest_arrival_changes c
+      WHERE c.guest_arrival_id = p_row.id AND c.change_type = 'CORRECTION'
+    ),
+    'last_correction_reason', (
+      SELECT c.reason FROM public.guest_arrival_changes c
+      WHERE c.guest_arrival_id = p_row.id AND c.change_type = 'CORRECTION'
+      ORDER BY c.changed_at DESC LIMIT 1
+    )
+  );
+$function$;
+
