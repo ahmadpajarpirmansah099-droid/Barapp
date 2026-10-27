@@ -4839,7 +4839,7 @@ if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m
 document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-40){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){sbLoad(true);loadSharedSettings(true)}});
-if(typeof setInterval!='undefined'){setInterval(()=>{if(!document.hidden)sbLoad(true)},60000);setInterval(()=>{if(!document.hidden)loadSharedSettings(true)},30000)}
+if(typeof setInterval!='undefined'){setInterval(()=>{if(!document.hidden)sbLoad(true)},180000);setInterval(()=>{if(!document.hidden)loadSharedSettings(true)},120000)}
 applyTheme();
 sbCacheLoad();
 
