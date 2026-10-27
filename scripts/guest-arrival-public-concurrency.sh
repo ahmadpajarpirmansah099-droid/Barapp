@@ -8,6 +8,18 @@ set -euo pipefail
 : "${PGPASSWORD:=postgres}"
 export PGHOST PGPORT PGUSER PGDATABASE PGPASSWORD
 
+# Worker mode is invoked by xargs after the parent creates one test link.
+if [[ "${1:-}" == "worker" ]]; then
+  worker_number="${2:?worker number is required}"
+  : "${TOKEN:?test token must be passed by the parent process}"
+  psql -X -qAt -v ON_ERROR_STOP=1 \
+    -v token="$TOKEN" -v guest_name="Parallel Guest ${worker_number}" <<'SQL' | tail -n 1
+SELECT set_config('request.jwt.claim.role','service_role',false);
+SELECT public.guest_arrival_public_create(:'token', :'guest_name', 1, NULL, 'Non Smoking', NULL, gen_random_uuid())->>'queue_number';
+SQL
+  exit 0
+fi
+
 readonly OUTLET_ID="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 readonly DEV_ID="11111111-1111-4111-8111-111111111111"
 readonly PARALLEL_REQUESTS=20
@@ -29,15 +41,7 @@ export TOKEN
 numbers_file="$(mktemp)"
 trap 'rm -f "$numbers_file"' EXIT
 
-seq 1 "$PARALLEL_REQUESTS" | xargs -P "$PARALLEL_REQUESTS" -I '{}' bash -c '
-  set -euo pipefail
-  guest_name="Parallel Guest $1"
-  psql -X -qAt -v ON_ERROR_STOP=1 \
-    -v token="$TOKEN" -v guest_name="$guest_name" \
-    -c "SELECT set_config('''request.jwt.claim.role''','''service_role''',false)" \
-    -c "SELECT public.guest_arrival_public_create(:'''token''', :'''guest_name''', 1, NULL, '''Non Smoking''', NULL, gen_random_uuid())->>'''queue_number'''" \
-  | tail -n 1
-' _ '{}' > "$numbers_file"
+seq 1 "$PARALLEL_REQUESTS" | xargs -P "$PARALLEL_REQUESTS" -I '{}' bash "$0" worker '{}' > "$numbers_file"
 
 line_count="$(wc -l < "$numbers_file" | tr -d ' ')"
 unique_count="$(sort -u "$numbers_file" | wc -l | tr -d ' ')"
