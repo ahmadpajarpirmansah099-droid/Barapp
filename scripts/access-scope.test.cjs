@@ -6,6 +6,10 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const roleMigrationSource = fs.readFileSync(
+  path.join(root, 'supabase/migrations/20261027130000_harden_role_scopes_retire_legacy_admin.sql'),
+  'utf8'
+);
 
 function section(start, end) {
   const a = html.indexOf(start);
@@ -49,6 +53,22 @@ assert.match(saveEmployee, /String\(division\.outlet_id\)!==String\(targetOutlet
 const adminScope = section('function adminAccountScopes(uid){', 'function adminSelectAccount(uid)');
 assert.match(adminScope, /String\(s\.outlet_id\)===String\(T\.adminOutletId\)/, 'Admin account scope view remains filtered to the current outlet');
 assert.match(adminScope, /!x\.scope\.division_id\|\|x\.division/, 'Admin Divisi scope remains division-specific');
+
+assert.match(roleMigrationSource, /COUNT\\(DISTINCT s\\.outlet_id\\)\\)=1/, 'Scoped access must reject accounts assigned to multiple outlets');
+assert.match(roleMigrationSource, /WHEN public\\.app_role\\(\\)='div_admin' THEN[\\s\\S]*?s\\.division_id=p_division AND s\\.division_id IS NOT NULL/, 'Admin Divisi must match its exact assigned division');
+assert.match(roleMigrationSource, /WHEN public\\.app_role\\(\\)='hr' THEN[\\s\\S]*?s\\.division_id IS NULL/, 'HR must have an outlet-wide scope in its one assigned outlet');
+assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \\('hr','div_admin','report_viewer'\\)/, 'Legacy admin role cannot be assigned again');
+assert.match(roleMigrationSource, /RAISE EXCEPTION 'Access-scope migration paused: active legacy_admin accounts need manual role\\/scope migration first\\.'/);
+assert.doesNotMatch(roleMigrationSource, /public\\.app_role\\(\\)\\s*=\\s*'legacy_admin'/i, 'No security helper should keep a global legacy_admin bypass');
+assert.doesNotMatch(roleMigrationSource, /DELETE\\s+FROM\\s+public\\.(employees|attendance|user_scopes)\\b/i, 'Role hardening must not delete employee, attendance, or scope data');
+for (const policy of [
+  'p_att_delete_feature','p_att_insert_feature','p_att_select_feature','p_att_update_feature',
+  'p_div_sel','p_emp_delete_feature','p_emp_insert_feature','p_emp_select_feature',
+  'p_emp_update_feature','p_pp_w'
+]) {
+  assert.ok(roleMigrationSource.includes('DROP POLICY IF EXISTS ' + policy), 'Policy must be recreated without legacy bypass: ' + policy);
+}
+assert.match(roleMigrationSource, /COUNT\\(DISTINCT s2\\.outlet_id\\)[\\s\\S]*?=1/, 'Guest Arrival access must be restricted to one active outlet');
 
 const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1])
