@@ -1990,7 +1990,7 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 const K='absensi_bar_v1',STAFF_SESSION_KEY='barapp_staff_session_v1',ST={M:'Masuk',L:'Libur',I:'Izin',S:'Sakit',PH:'Public Holiday'},SC={M:'#6E9B57',L:'#A39A88',I:'#E2A85C',S:'#D47A5B',PH:'#6FA0C8'},SK=Object.keys(ST);
 /* Roles are assigned only to explicitly approved Supabase Auth emails. */
 const normEmail=email=>String(email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').trim().toLowerCase();
-const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);if(r==='guest_arrival'){const email=await sb().auth.getSession().then(x=>x.data.session?.user?.email||'').catch(()=> '');return ['admin@div.service','admin@mnk.service'].includes(normEmail(email))?'G':null}return r=='dev'?'D':(['div_admin','hr','legacy_admin','report_viewer'].includes(r))?'A':null};
+const dbRoleCode=async()=>{const r=await sb().rpc('app_role').then(x=>x.data).catch(()=>null);if(r==='guest_arrival'){const email=await sb().auth.getSession().then(x=>x.data.session?.user?.email||'').catch(()=> '');return ['admin@div.service','admin@mnk.service'].includes(normEmail(email))?'G':null}return r=='dev'?'D':(['div_admin','hr'].includes(r))?'A':null};
 let D={emp:[],per:[],att:[],ot:[],pin:'',cur:'',me:null},pg='dash',F={f:'',t:'',q:'',e:''},T={};
 try{Object.assign(D,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');if(persisted&&persisted.me&&persisted.me.r==='K'){delete persisted.me;localStorage.setItem(K,JSON.stringify(persisted))}}catch(e){}
@@ -2520,9 +2520,9 @@ const {data:{session}}=await sb().auth.getSession();
 T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;T.authEmail=session?normEmail(session.user.email):'';
 if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;if(!silent)R();return}
 if(session&&T.dbRole==='guest_arrival'){T.perms=[];try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}if(!guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){D.emp=[];D.arc=[];D.att=[];D.ot=[];D.per=[];D.pin='';D.cur='';sv();idleSet();SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}}
-T.perms=[];if(session&&['hr','div_admin','report_viewer','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
+T.perms=[];if(session&&['hr','div_admin','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
 const [er,ar]=session?await Promise.all([fetchAll('employees','created_at'),fetchAll('attendance','attendance_date')]):[[],[]];
-if(session&&T.dbRole!=='report_viewer')await otLoad().catch(()=>{});
+if(session)await otLoad().catch(()=>{});
 const oid=session?await outInit():null;if(session){try{await perLoad()}catch(e){}}const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==D.ljId));
 let dIds=null;if(session&&T.dbRole=='div_admin'){try{const sc=await payQ('user_scopes','division_id');dIds=sc.map(x=>String(x.division_id));const md=dIds.length?await payQ('divisions','id,module_config',q=>q.in('id',dIds)):[];T.gaModuleEnabled=md.some(d=>d.module_config&&d.module_config.guest_arrival===true)}catch(e){dIds=[];T.gaModuleEnabled=false}}else{T.gaModuleEnabled=false}
 const inD=x=>!dIds||dIds.includes(String(x.division_id));
@@ -3626,7 +3626,7 @@ function accsCard(){
  const as=T.accs||[],rl=k=>({dev:'Developer',hr:'HR',div_admin:'Admin divisi',legacy_admin:'Admin lama',report_viewer:'Viewer laporan'})[k]||k;
  const rows=as.map(a=>{
   const dv=(T.scopes||[]).filter(x=>x.user_id==a.user_id).map(x=>{const d=(T.allDivs||T.divs||[]).find(d=>d.id==x.division_id);if(!d)return '';const oc=(T.outlets||[]).find(o=>o.id==d.outlet_id);return d.name+(oc?' ('+oc.code+')':'')}).filter(Boolean).join(', ')||'-';
-  const opts=a.role=='dev'?"<option>Developer</option>":['hr','div_admin','report_viewer'].concat(a.role=='legacy_admin'?['legacy_admin']:[]).map(k=>'<option value="'+k+'" '+(a.role==k?'selected':'')+'>'+rl(k)+'</option>').join('');
+  const opts=a.role=='dev'?"<option>Developer</option>":['hr','div_admin'].map(k=>'<option value="'+k+'" '+(a.role==k?'selected':'')+'>'+rl(k)+'</option>').join('');
   const dis=a.role=='dev'?'disabled':'';
   const has=perm=>a.role=='dev'||(T.featurePerms||[]).some(x=>x.user_id==a.user_id&&x.permission==perm);
   const grantGroups=[
@@ -3640,7 +3640,8 @@ function accsCard(){
   {label:'Transaksi inventori',perms:['inventory.inbound.view','inventory.inbound.manage','inventory.outbound.manage','inventory.supplies.manage']},
    {label:'Dashboard COGS · baca saja',perms:['cogs.wip.view','cogs.menu.view']},
    {label:'COGS · operasional',perms:['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.manage','cogs.menu.manage','cogs.sales.view','cogs.sales.manage']},
-   {label:'Approval Closing',perms:[],autoRole:'div_admin'}
+   {label:'Approval Closing',perms:[],autoRole:'div_admin'},
+   {label:'Guest Arrival',perms:['feature.guest_arrival.access']}
   ];
  const grantList=grantGroups.flatMap(g=>g.perms.map(perm=>[g.label,perm]));
  const allPerms=[...new Set(grantList.map(x=>x[1]))];
@@ -3650,7 +3651,7 @@ function accsCard(){
  const grantHtml=grantGroups.map((g,i)=>{const on=groupOn(g);const partial=g.perms.some(hasSelected)&&!on;return '<label style="display:flex;align-items:center;gap:8px;margin:10px 0;font-size:13px;font-weight:600"><input type="checkbox" '+(on?'checked':'')+' '+(partial?'data-partial="true"':'')+' '+dis+' '+(!g.perms.length?'disabled':'')+' onchange="accFeaturePermGroupStage(\''+a.user_id+'\','+i+',this.checked)" style="width:auto;flex:0 0 auto">'+g.label+(partial?' · sebagian':'')+'</label>'+(g.perms.length?'<div style="font-size:11px;color:var(--muted,#777);margin:-6px 0 8px 26px">'+g.perms.length+' izin terkait digabung</div>':'<div class="mu" style="font-size:11px;margin:-6px 0 8px 26px">'+(a.role==='div_admin'?'Otomatis aktif untuk Admin Divisi; tidak bisa dimatikan dari sini.':a.role==='hr'?'Tidak aktif untuk HR.':'Otomatis mengikuti role akun.')+'</div>')}).join('');
  const selectedCount=grantGroups.filter(groupOn).length;
  const dirty=a.role!=='dev'&&accFeaturePermDirty(draft);
- return '<article class="admin-account-row"><div class="account-identity"><div class="account-avatar">'+esc((a.email||'?').charAt(0).toUpperCase())+'</div><div class="account-identity-text"><b>'+esc(a.email)+'</b><small>'+esc(dv)+'</small></div></div><div class="account-controls"><label class="account-role-field"><span>Role</span><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></label><label class="account-active"><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"><span>Aktif</span></label><button type="button" class="btn s x account-password" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></div>'+(a.role==='div_admin'?'<div class="mu">Pemilihan izin fitur Admin Divisi dinonaktifkan sementara untuk pembangunan ulang.</div>':'<details class="account-permissions"><summary id="ac_perm_summary_'+a.user_id+'">Atur akses fitur · '+selectedCount+' kategori aktif</summary><div class="account-permissions-body"><div class="account-permissions-groups">'+grantHtml+'</div><p class="mu" id="ac_perm_status_'+a.user_id+'">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</p><button class="btn s" id="ac_perm_save_'+a.user_id+'" '+(dirty?'':'disabled')+' onclick="accFeaturePermSave(\''+a.user_id+'\')">'+(dirty?'Simpan Perubahan':'Tersimpan')+'</button></div></details>')+'</article>';
+ return '<article class="admin-account-row"><div class="account-identity"><div class="account-avatar">'+esc((a.email||'?').charAt(0).toUpperCase())+'</div><div class="account-identity-text"><b>'+esc(a.email)+'</b><small>'+esc(dv)+'</small></div></div><div class="account-controls"><label class="account-role-field"><span>Role</span><select id="ac_r_'+a.user_id+'" '+dis+' onchange="accSet(\''+a.user_id+'\')" style="font-size:12px">'+opts+'</select></label><label class="account-active"><input type="checkbox" id="ac_a_'+a.user_id+'" '+(a.active?'checked':'')+' '+dis+' onchange="accSet(\''+a.user_id+'\')" style="width:auto"><span>Aktif</span></label><button type="button" class="btn s x account-password" onclick="pwOpen(\''+a.user_id+'\',\''+esc(a.email)+'\')">Password</button></div>'+'<details class="account-permissions"><summary id="ac_perm_summary_'+a.user_id+'">Atur akses fitur · '+selectedCount+' kategori aktif</summary><div class="account-permissions-body"><div class="account-permissions-groups">'+grantHtml+'</div><p class="mu" id="ac_perm_status_'+a.user_id+'">'+(dirty?'Ada perubahan belum disimpan':'Tidak ada perubahan baru')+'</p><button class="btn s" id="ac_perm_save_'+a.user_id+'" '+(dirty?'':'disabled')+' onclick="accFeaturePermSave(\''+a.user_id+'\')">'+(dirty?'Simpan Perubahan':'Tersimpan')+'</button></div></details>'+'</article>';
  }).join('');
  return '<div class="card account-manager-card"><div class="admin-section-heading"><div><b>Akun aplikasi</b><p class="mu">Atur role, status, dan akses fitur setiap akun. Developer selalu memiliki akses penuh. Reset password dilakukan di Supabase → Authentication.</p></div><span class="admin-count">'+as.length+' akun</span></div><label class="account-search-wrap"><span aria-hidden="true">⌕</span><input id="acSearch" type="search" placeholder="Cari email atau divisi" oninput="accFilterCards(this.value)" autocomplete="off"></label><div class="admin-account-list">'+(rows||'<div class="mu account-empty">Belum ada akun.</div>')+'</div></div>';
 }
@@ -3686,7 +3687,8 @@ function accFeaturePermGroupStage(uid,index,on){
   ['inventory.inbound.view','inventory.inbound.manage','inventory.outbound.manage','inventory.supplies.manage'],
   ['cogs.wip.view','cogs.menu.view'],
   ['cogs.daily_so.difference','cogs.daily_so.system','cogs.daily_so.edit','cogs.production.view','cogs.production.manage','cogs.wip.manage','cogs.menu.manage','cogs.sales.view','cogs.sales.manage'],
-  []
+  [],
+  ['feature.guest_arrival.access']
  ];
  const draft=T.featurePermDrafts&&T.featurePermDrafts[uid];if(!draft||!groups[index])return;
  for(const perm of groups[index]){draft.selected=draft.selected.filter(x=>x!==perm);if(on)draft.selected.push(perm)}
