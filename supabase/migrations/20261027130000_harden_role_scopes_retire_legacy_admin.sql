@@ -232,6 +232,33 @@ BEGIN
 END
 $function$;
 
+CREATE OR REPLACE FUNCTION public.dev_set_division_admin(p_email text, p_division uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE u uuid; d public.divisions; cur text;
+BEGIN
+  IF NOT public.is_dev() THEN
+    RAISE EXCEPTION 'Hanya developer yang bisa mengatur role dan scope admin divisi' USING errcode='42501';
+  END IF;
+  SELECT id INTO u FROM auth.users WHERE lower(email)=lower(btrim(p_email));
+  IF u IS NULL THEN RAISE EXCEPTION 'Akun belum ada di Authentication. Buat dulu di Supabase, lalu coba lagi.'; END IF;
+  SELECT role INTO cur FROM public.user_profiles WHERE user_id=u;
+  IF cur IN ('dev','hr') THEN
+    RAISE EXCEPTION 'Akun ini sudah berperan sebagai %, tidak bisa dijadikan admin divisi.',cur;
+  END IF;
+  SELECT * INTO d FROM public.divisions WHERE id=p_division;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Divisi tidak ditemukan'; END IF;
+  INSERT INTO public.user_profiles(user_id,email,role,active)
+    VALUES(u,lower(btrim(p_email)),'div_admin',true)
+    ON CONFLICT (user_id) DO UPDATE SET role='div_admin',active=true,email=excluded.email;
+  DELETE FROM public.user_scopes WHERE user_id=u;
+  INSERT INTO public.user_scopes(user_id,outlet_id,division_id) VALUES(u,d.outlet_id,d.id);
+END
+$function$;
+
 CREATE OR REPLACE FUNCTION public.dev_assign_report_viewer(p_email text DEFAULT 'crew@div.bar'::text)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -263,6 +290,29 @@ BEGIN
     RAISE EXCEPTION 'Role tidak valid';
   END IF;
 
+  IF coalesce(p_active,true) THEN
+    IF p_role='hr' AND (
+      (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=p_user) <> 1
+      OR NOT EXISTS (SELECT 1 FROM public.user_scopes s WHERE s.user_id=p_user AND s.division_id IS NULL)
+    ) THEN
+      RAISE EXCEPTION 'HR harus memiliki scope outlet yang valid sebelum akun diaktifkan.';
+    END IF;
+
+    IF p_role='div_admin' AND (
+      (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=p_user) <> 1
+      OR NOT EXISTS (SELECT 1 FROM public.user_scopes s WHERE s.user_id=p_user AND s.division_id IS NOT NULL)
+      OR EXISTS (SELECT 1 FROM public.user_scopes s WHERE s.user_id=p_user AND s.division_id IS NULL)
+      OR EXISTS (
+        SELECT 1 FROM public.user_scopes s
+        LEFT JOIN public.divisions d ON d.id=s.division_id
+        WHERE s.user_id=p_user AND s.division_id IS NOT NULL
+          AND (d.id IS NULL OR d.outlet_id<>s.outlet_id)
+      )
+    ) THEN
+      RAISE EXCEPTION 'Admin Divisi harus memiliki scope divisi valid dalam satu outlet. Atur melalui Developer > Divisi & Admin.';
+    END IF;
+  END IF;
+
   UPDATE public.user_profiles
     SET role=p_role,active=coalesce(p_active,true)
     WHERE user_id=p_user;
@@ -280,12 +330,6 @@ BEGIN
   ELSIF p_role='div_admin' THEN
     DELETE FROM public.user_permissions
     WHERE user_id=p_user AND permission NOT IN ('inventory.view','inventory.manage');
-  ELSIF p_role='report_viewer' THEN
-    IF cur.role IS DISTINCT FROM p_role THEN
-      DELETE FROM public.user_permissions WHERE user_id=p_user;
-      INSERT INTO public.user_permissions(user_id,permission)
-      VALUES (p_user,'attendance.view'),(p_user,'employees.view'),(p_user,'cogs.wip.view'),(p_user,'cogs.menu.view');
-    END IF;
   END IF;
 
   INSERT INTO public.audit_log(actor,actor_email,action,table_name,record_id,reason)
