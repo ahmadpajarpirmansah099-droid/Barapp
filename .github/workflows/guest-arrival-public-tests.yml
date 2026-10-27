@@ -57,7 +57,7 @@ jobs:
           psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261027190000_guest_arrival_public_queue.sql
           psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f scripts/guest-arrival-public.integration.sql
 
-      - name: Verify concurrent queue allocation
+      - name: Verify concurrent view-only ticket reads
         env:
           PGPASSWORD: postgres
         run: bash scripts/guest-arrival-public-concurrency.sh
