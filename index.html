@@ -2484,7 +2484,7 @@ async function outInit(){
   return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null)}
 async function outSwitch(id){
   if(!id||String(id)===String(D.outId))return;
-  D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
+  D.outId=id;SB.activeOutletId=id;SB.fullSyncAt=0;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
   T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
   D.emp=[];D.att=[];D.ot=[];
   PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
@@ -2544,6 +2544,7 @@ async function sbRefreshRecent(){
   if(document.hidden||SB.loading||SB.busy||!SB.loaded||SB.state!=='ok'||T.dbRole==='guest_arrival')return;
   if(($('#m')&&$('#m').innerHTML)||inField())return;
   if(Date.now()-(SB.fullSyncAt||0)>=15*60*1000){sbLoad(true);return}
+  const syncOutlet=SB.activeOutletId,syncLj=D.ljId,writeSeq=SB.writeSeq||0;
   SB.loading=true;
   try{
     const {data:{session}}=await sb().auth.getSession();
@@ -2558,7 +2559,8 @@ async function sbRefreshRecent(){
       rows.push(...(data||[]));
       if(!data||data.length<1000)break;
     }
-    const oid=SB.activeOutletId,lj=D.ljId;
+    const oid=syncOutlet,lj=syncLj;
+    if(syncOutlet!==SB.activeOutletId||syncLj!==D.ljId||writeSeq!==(SB.writeSeq||0)||SB.busy||($('#m')&&$('#m').innerHTML)||inField())return;
     const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==lj));
     const empIds=new Set([...D.emp,...D.arc].map(x=>String(x.id)));
     const recent=rows.filter(inO).filter(x=>T.dbRole!=='div_admin'||empIds.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
@@ -2580,7 +2582,7 @@ async function sbRefreshRecent(){
 }
 
 async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
-SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
+SB.busy=true;SB.writeSeq=(SB.writeSeq||0)+1;try{await fn();return truecatch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
 
 /* ---------- SHARED APP SETTINGS ----------
    The app_settings row stores only public presentation settings (theme, title, logo).
