@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#111827">
+  <title>Ambil Nomor Antrean — Barapp</title>
+  <style>
+    :root{color-scheme:light;--ink:#18221d;--muted:#66736b;--line:#dce4dd;--paper:#fff;--wash:#f5f8f5;--brand:#bbf451;--danger:#9d2828}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{width:min(100% - 28px,540px);margin:32px auto;padding-bottom:24px}
+    .brand{font-weight:850;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#4b5b4f}
+    h1{font-size:clamp(25px,6vw,34px);line-height:1.12;letter-spacing:-.04em;margin:12px 0 8px}
+    .sub{color:var(--muted);margin:0 0 22px}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:clamp(18px,5vw,28px);box-shadow:0 12px 34px rgba(24,34,29,.06)}
+    .outlet{padding:12px 14px;border-radius:12px;background:#f0f5ed;margin-bottom:18px}
+    .outlet small{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .outlet strong{display:block;font-size:16px;margin-top:2px}
+    label{display:block;font-size:13px;font-weight:750;margin:15px 0 6px}
+    input,select,textarea{width:100%;min-height:46px;border:1px solid #cbd6cc;border-radius:11px;padding:11px 12px;font:inherit;color:var(--ink);background:#fff}
+    textarea{min-height:84px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:3px solid rgba(115,155,72,.25);border-color:#6f963e}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+    .primary{width:100%;margin-top:20px;min-height:50px;border:0;border-radius:13px;background:var(--brand);font-weight:850;font-size:15px;cursor:pointer}
+    .primary:disabled{opacity:.6;cursor:wait}
+    .error{display:none;margin:14px 0 0;color:var(--danger);background:#fff0f0;border:1px solid #f0caca;padding:10px 12px;border-radius:10px;font-size:13px}
+    .ticket{display:none;text-align:center}
+    .ticket-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:850}
+    .ticket-number{font-size:clamp(58px,17vw,92px);line-height:1.05;letter-spacing:-.055em;font-weight:950;margin:12px 0 6px}
+    .ticket-code{font-size:18px;font-weight:800}
+    .ticket-status{display:inline-flex;margin:16px 0 0;padding:7px 11px;border-radius:999px;background:#eef7d8;font-size:12px;font-weight:800}
+    .ticket-note{font-size:13px;color:var(--muted);margin-top:18px}
+    .error-state{text-align:center;display:none}
+    .footer{text-align:center;font-size:11px;color:#859187;margin-top:18px}
+    .honeypot{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+    @media(max-width:390px){main{margin-top:20px}.grid{grid-template-columns:1fr;gap:0}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">BARAPP · GUEST ARRIVAL</div>
+  <h1>Ambil nomor antrean</h1>
+  <p class="sub">Isi data singkat untuk mendapatkan nomor antrean. Nomor akan langsung masuk ke antrean outlet.</p>
+
+  <section id="invalid" class="card error-state" aria-live="polite">
+    <h2>Link antrean tidak aktif</h2>
+    <p class="sub">QR atau link ini tidak valid atau sudah dinonaktifkan. Minta link terbaru kepada staf outlet.</p>
+  </section>
+
+  <section id="registration" class="card" hidden>
+    <div class="outlet">
+      <small>Outlet tujuan</small>
+      <strong id="outlet-name">Memeriksa link…</strong>
+      <div id="outlet-code" class="hint"></div>
+    </div>
+    <form id="queue-form" novalidate>
+      <label for="guest-name">Nama *</label>
+      <input id="guest-name" name="name" maxlength="80" autocomplete="name" required placeholder="Nama Anda">
+      <div class="grid">
+        <div>
+          <label for="packs">Jumlah orang *</label>
+          <input id="packs" name="packs" type="number" inputmode="numeric" min="1" max="50" value="1" required>
+        </div>
+        <div>
+          <label for="whatsapp">Nomor WhatsApp</label>
+          <input id="whatsapp" name="whatsapp" maxlength="32" inputmode="tel" autocomplete="tel" placeholder="Opsional">
+        </div>
+      </div>
+      <label for="smoking">Preferensi area</label>
+      <select id="smoking" name="smoking_preference">
+        <option value="Non Smoking">Non Smoking</option>
+        <option value="Smoking">Smoking</option>
+      </select>
+      <label for="note">Catatan</label>
+      <textarea id="note" name="note" maxlength="300" placeholder="Opsional"></textarea>
+      <div class="hint">Nomor antrean diterbitkan setelah formulir berhasil diproses. Tunjukkan nomor ini kepada staf saat tiba.</div>
+      <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      <div id="error" class="error" role="alert"></div>
+      <button id="submit" class="primary" type="submit">Ambil Nomor Antrean</button>
+    </form>
+  </section>
+
+  <section id="ticket" class="card ticket" aria-live="polite">
+    <div class="ticket-label">Nomor antrean Anda</div>
+    <div id="ticket-number" class="ticket-number">—</div>
+    <div id="ticket-code" class="ticket-code">—</div>
+    <div id="ticket-status" class="ticket-status">Menunggu</div>
+    <div id="ticket-outlet" class="ticket-note"></div>
+    <p class="ticket-note">Tunjukkan nomor ini kepada staf outlet saat dipanggil. Simpan nomor antrean Anda.</p>
+    <button id="new-ticket" class="primary" type="button">Ambil antrean lain</button>
+  </section>
+
+  <div class="footer">Barapp · Link ini hanya untuk pendaftaran antrean outlet terkait.</div>
+</main>
+<script>
+(() => {
+  "use strict";
+  const ENDPOINT = "https://ybptbloiujrbvgxcjqqk.supabase.co/functions/v1/guest-arrival-public";
+  const $ = (id) => document.getElementById(id);
+  const tokenMatch = String(location.hash || "").replace(/^#/, "").match(/(?:^|&)token=([a-f0-9]{64})(?:&|$)/i);
+  const token = tokenMatch ? tokenMatch[1].toLowerCase() : "";
+  let outlet = null;
+  let pending = false;
+
+  async function request(body) {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok !== true) {
+      const error = new Error(data.error || "Permintaan belum berhasil. Coba lagi.");
+      error.status = res.status;
+      throw error;
+    }
+    return data;
+  }
+
+  function showInvalid() {
+    $("registration").hidden = true;
+    $("ticket").style.display = "none";
+    $("invalid").style.display = "block";
+    $("invalid").setAttribute("role", "alert");
+  }
+
+  function showError(message) {
+    $("error").textContent = message;
+    $("error").style.display = "block";
+  }
+
+  async function loadOutlet() {
+    if (!token) { showInvalid(); return; }
+    try {
+      const data = await request({ action: "outlet", token });
+      outlet = data.outlet;
+      $("outlet-name").textContent = outlet.outlet_name || "Outlet Barapp";
+      $("outlet-code").textContent = outlet.outlet_code || "";
+      $("registration").hidden = false;
+    } catch (_) {
+      showInvalid();
+    }
+  }
+
+  $("queue-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (pending || !outlet) return;
+    const name = $("guest-name").value.trim();
+    const packs = Number($("packs").value);
+    const whatsapp = $("whatsapp").value.trim();
+    const note = $("note").value.trim();
+    const smoking = $("smoking").value;
+    if (name.length < 2 || name.length > 80) { showError("Nama wajib diisi (2–80 karakter)."); return; }
+    if (!Number.isInteger(packs) || packs < 1 || packs > 50) { showError("Jumlah tamu harus antara 1 sampai 50 orang."); return; }
+    if (whatsapp.length > 32 || note.length > 300) { showError("Nomor kontak atau catatan terlalu panjang."); return; }
+    if (!window.crypto || typeof window.crypto.randomUUID !== "function") {
+      showError("Browser ini belum mendukung pembuatan permintaan aman. Perbarui browser lalu coba lagi.");
+      return;
+    }
+    pending = true;
+    $("submit").disabled = true;
+    $("submit").textContent = "Memproses…";
+    $("error").style.display = "none";
+    try {
+      const data = await request({
+        action: "create",
+        token,
+        name,
+        packs,
+        whatsapp,
+        note,
+        smoking_preference: smoking,
+        request_id: window.crypto.randomUUID(),
+        website: $("website").value
+      });
+      const ticket = data.ticket;
+      $("registration").hidden = true;
+      $("ticket-number").textContent = String(ticket.queue_number ?? "—");
+      $("ticket-code").textContent = String(ticket.queue_code ?? "—");
+      $("ticket-status").textContent = ticket.status === "Menunggu" ? "Menunggu" : String(ticket.status || "Tercatat");
+      $("ticket-outlet").textContent = [ticket.outlet_name, ticket.outlet_code].filter(Boolean).join(" · ");
+      $("ticket").style.display = "block";
+      history.replaceState(null, "", location.pathname + location.search);
+    } catch (error) {
+      showError(error.message || "Permintaan belum berhasil. Coba lagi.");
+    } finally {
+      pending = false;
+      $("submit").disabled = false;
+      $("submit").textContent = "Ambil Nomor Antrean";
+    }
+  });
+
+  $("new-ticket").addEventListener("click", () => {
+    $("ticket").style.display = "none";
+    $("registration").hidden = false;
+    $("queue-form").reset();
+    $("packs").value = "1";
+    $("error").style.display = "none";
+  });
+
+  loadOutlet();
+})();
+</script>
+</body>
+</html>
