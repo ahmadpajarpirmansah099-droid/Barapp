@@ -57,9 +57,12 @@ assert.match(adminScope, /!x\.scope\.division_id\|\|x\.division/, 'Admin Divisi 
 assert.match(roleMigrationSource, /COUNT\(DISTINCT s\.outlet_id\)[\s\S]*?s\.user_id=auth\.uid\(\)\)=1/, 'Scoped access must reject accounts assigned to multiple outlets');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='div_admin' THEN[\s\S]*?s\.division_id=p_division AND s\.division_id IS NOT NULL/, 'Admin Divisi must match its exact assigned division');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='hr' THEN[\s\S]*?s\.division_id IS NULL/, 'HR must have an outlet-wide scope in its one assigned outlet');
-assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \('hr','div_admin','report_viewer'\)/, 'Legacy admin role cannot be assigned again');
+assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \\('hr','div_admin'\\)/, 'Only HR and Admin Divisi roles may be assigned through the account helper');
 assert.match(roleMigrationSource, /RAISE EXCEPTION 'Access-scope migration paused: active legacy_admin accounts need manual role\/scope migration first\.'/);
 assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'legacy_admin'/i, 'No security helper should keep a global legacy_admin bypass');
+assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'report_viewer'/i, 'Report Viewer must be retired as a role and granted access through feature permissions');
+assert.match(roleMigrationSource, /active report_viewer accounts to HR\/Admin Divisi scopes and feature permissions first/);
+assert.match(roleMigrationSource, /CREATE OR REPLACE FUNCTION public\.dev_assign_report_viewer[\s\S]*?REPORT_VIEWER_ROLE_RETIRED/);
 assert.doesNotMatch(roleMigrationSource, /DELETE\s+FROM\s+public\.(employees|attendance|user_scopes)\b/i, 'Role hardening must not delete employee, attendance, or scope data');
 for (const policy of [
   'p_att_delete_feature','p_att_insert_feature','p_att_select_feature','p_att_update_feature',
