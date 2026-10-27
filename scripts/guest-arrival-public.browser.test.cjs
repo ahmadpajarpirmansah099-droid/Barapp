@@ -51,65 +51,74 @@ function jsonResponse(status, body) {
     const createBodies = [];
     const outletBodies = [];
     const seenApiKeys = [];
-    let routeHits = 0;
+    let apiHits = 0;
     let firstCreateFails = true;
 
-    await page.route(/guest-arrival-public$/, async (route) => {
-      routeHits++;
-      const request = route.request();
-      if (request.method() === 'OPTIONS') {
-        await route.fulfill({
-          status: 204,
-          headers: {
-            'access-control-allow-origin': '*',
-            'access-control-allow-methods': 'POST, OPTIONS',
-            'access-control-allow-headers': 'apikey, content-type',
-            'access-control-max-age': '600',
-          },
-        });
-        return;
-      }
-
-      seenApiKeys.push(request.headers()['apikey'] || '');
-      const body = JSON.parse(request.postData() || '{}');
+    // Mock the API at the page's fetch boundary. This keeps the browser-flow
+    // test deterministic and avoids relying on external DNS/CORS/network.
+    await page.exposeFunction('__gaMockRequest', async (url, init) => {
+      apiHits++;
+      const headers = init.headers || {};
+      const apiKey = Object.entries(headers).find(([key]) => key.toLowerCase() === 'apikey')?.[1] || '';
+      seenApiKeys.push(apiKey);
+      const body = JSON.parse(init.body || '{}');
 
       if (body.action === 'outlet') {
         outletBodies.push(body);
-        await route.fulfill(jsonResponse(200, {
-          ok: true,
-          outlet: { outlet_code: 'LJN', outlet_name: 'Lazy Jennie' },
-        }));
-        return;
+        return {
+          status: 200,
+          body: { ok: true, outlet: { outlet_code: 'LJN', outlet_name: 'Lazy Jennie' } },
+        };
       }
 
       if (body.action === 'create') {
         createBodies.push(body);
         if (firstCreateFails) {
           firstCreateFails = false;
-          await route.fulfill(jsonResponse(500, {
-            ok: false,
-            error: 'Permintaan belum berhasil diproses. Coba lagi.',
-          }));
-          return;
+          return {
+            status: 500,
+            body: { ok: false, error: 'Permintaan belum berhasil diproses. Coba lagi.' },
+          };
         }
-        await route.fulfill(jsonResponse(200, {
-          ok: true,
-          ticket: {
-            queue_number: 7,
-            queue_code: 'WL-007',
-            status: 'Menunggu',
-            operational_date: '2026-10-27',
-            outlet_code: 'LJN',
-            outlet_name: 'Lazy Jennie',
-            duplicate_request: false,
-            guest_name: 'MUST NOT BE RETURNED',
-            whatsapp: 'MUST NOT BE RETURNED',
+        return {
+          status: 200,
+          body: {
+            ok: true,
+            ticket: {
+              queue_number: 7,
+              queue_code: 'WL-007',
+              status: 'Menunggu',
+              operational_date: '2026-10-27',
+              outlet_code: 'LJN',
+              outlet_name: 'Lazy Jennie',
+              duplicate_request: false,
+              guest_name: 'MUST NOT BE RETURNED',
+              whatsapp: 'MUST NOT BE RETURNED',
+            },
           },
-        }));
-        return;
+        };
       }
 
-      await route.fulfill(jsonResponse(400, { ok: false, error: 'Aksi tidak valid.' }));
+      return { status: 400, body: { ok: false, error: 'Aksi tidak valid.' } };
+    });
+
+    await context.addInitScript(() => {
+      const realFetch = window.fetch.bind(window);
+      window.fetch = async (input, init = {}) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (!url.includes('/functions/v1/guest-arrival-public')) {
+          return realFetch(input, init);
+        }
+        const result = await window.__gaMockRequest(url, {
+          method: init.method || 'GET',
+          headers: init.headers || {},
+          body: init.body || '',
+        });
+        return new Response(JSON.stringify(result.body), {
+          status: result.status,
+          headers: { 'content-type': 'application/json; charset=utf-8' },
+        });
+      };
     });
 
     // Missing token: the page must stop before making a request.
@@ -126,7 +135,7 @@ function jsonResponse(status, body) {
     await page.locator('#registration').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
       throw new Error('Mock outlet lookup did not reveal the form; intercepted requests: ' + routeHits);
     });
-    assert.ok(routeHits >= 2, 'the endpoint and its CORS preflight should be intercepted');
+    assert.equal(apiHits, 1, 'valid token should perform one mocked outlet lookup');
     assert.equal(outletBodies[0]?.token, TOKEN, 'the URL fragment token should be sent in the outlet lookup body');
     assert.equal(seenApiKeys[0], 'sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd');
     assert.equal(await page.locator('#outlet-name').textContent(), 'Lazy Jennie');
