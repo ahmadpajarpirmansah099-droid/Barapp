@@ -36,11 +36,14 @@ jobs:
       - name: Assemble preview package
         run: |
           mkdir -p preview
-          cp index.html manifest.json sw.js icon-192.png icon-512.png preview/
+          cp index.html closing.js guest-arrival.js manifest.json sw.js icon-192.png icon-512.png preview/
+          test -s preview/closing.js
+          test -s preview/guest-arrival.js
           cat > preview/TESTING-NOTES.txt <<'EOF'
           BARAPP COGS — PREVIEW PACKAGE
 
           This package was built from the feature branch, not from main.
+          It includes index.html plus the local closing.js and guest-arrival.js modules.
           Open index.html in Chrome for a visual/navigation check. Some browser
           features, including service-worker/PWA behavior, may not work from a
           local file URL.
