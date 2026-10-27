@@ -126,12 +126,12 @@ function jsonResponse(status, body) {
     page.on('request', (request) => {
       if (request.url().includes('/functions/v1/guest-arrival-public')) invalidRequests++;
     });
-    await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html`);
+    await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html?case=missing-token`);
     await page.locator('#invalid').waitFor({ state: 'visible' });
     assert.equal(invalidRequests, 0, 'missing token must not call the Edge Function');
 
     // Valid token: outlet loads, validation blocks invalid input, retry uses same idempotency key.
-    await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html#token=${TOKEN}`);
+    await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html?case=valid-token#token=${TOKEN}`);
     await page.locator('#registration').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
       throw new Error('Mock outlet lookup did not reveal the form; mocked API calls: ' + apiHits);
     });
