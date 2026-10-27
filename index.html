@@ -2529,14 +2529,55 @@ const inD=x=>!dIds||dIds.includes(String(x.division_id));
 const eSet=new Set(er.filter(inO).filter(inD).map(x=>String(x.id)));
 const emp=er.filter(inO).filter(inD).filter(x=>!x.deleted_at).map(mapEmp),arc=er.filter(inO).filter(inD).filter(x=>x.deleted_at).map(mapEmp),att=ar.filter(inO).filter(x=>!dIds||eSet.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|');
-if(silent&&SB.state=='ok'&&sig==SB.sig){SB.stale=false;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
+if(silent&&SB.state=='ok'&&sig==SB.sig){SB.fullSyncAt=Date.now();SB.stale=false;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(silent&&(SB.busy||$('#m').innerHTML||inField())){SB.loading=false;return}
 D.emp=emp;D.arc=arc;D.att=att;SB.sig=sig;SB.state='ok';SB.msg='';SB.loaded=true;SB.cached=false;SB.stale=false;
 
-derivePeriods();sbCacheSave()
+derivePeriods();sbCacheSave();SB.fullSyncAt=Date.now()
 }catch(e){if(silent&&SB.state=='ok'){SB.stale=true;const l=$('#sbl');if(l)l.textContent=sbLabel();SB.loading=false;return}
 if(!silent||SB.state!='err'){SB.state='err';SB.msg=errText(e)}}
 SB.loading=false;R()}
+/* Periodic lightweight sync: refresh recent attendance frequently, reconcile full history less often.
+   Tables have no updated_at column and are not in supabase_realtime publication, so full reconciliation remains necessary. */
+async function sbRefreshRecent(){
+  if(document.hidden||SB.loading||SB.busy||!SB.loaded||SB.state!=='ok')return;
+  if(Date.now()-(SB.fullSyncAt||0)>=15*60*1000){sbLoad(true);return}
+  if(($('#m')&&$('#m').innerHTML)||inField())return;
+  SB.loading=true;
+  try{
+    const {data:{session}}=await sb().auth.getSession();
+    if(!session)return;
+    const cut=new Date();cut.setDate(cut.getDate()-14);
+    const p=n=>String(n).padStart(2,'0');
+    const since=`${cut.getFullYear()}-${p(cut.getMonth()+1)}-${p(cut.getDate())}`;
+    const rows=[],cols='id,employee_id,attendance_date,status,notes,photo,outlet_id,division_id';
+    for(let from=0;;from+=1000){
+      const {data,error}=await sb().from('attendance').select(cols).gte('attendance_date',since).order('attendance_date',{ascending:true}).order('id',{ascending:true}).range(from,from+999);
+      if(error)throw error;
+      rows.push(...(data||[]));
+      if(!data||data.length<1000)break;
+    }
+    const oid=D.outId,lj=D.ljId;
+    const inO=x=>!!oid&&(x.outlet_id==oid||(!x.outlet_id&&oid==lj));
+    const empIds=new Set([...D.emp,...D.arc].map(x=>String(x.id)));
+    const recent=rows.filter(inO).filter(x=>T.dbRole!=='div_admin'||empIds.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
+    const keep=D.att.filter(a=>a.d<since);
+    const merged=[...keep,...recent];
+    const sig=D.emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+merged.map(a=>[a.id,a.e,a.d,a.s,a.n].join('|')).join('|');
+    if(sig!==SB.sig){
+      D.att=merged;SB.sig=sig;SB.stale=false;SB.state='ok';SB.msg='';
+      derivePeriods();sbCacheSave();R();
+    }else{
+      SB.stale=false;const l=$('#sbl');if(l)l.textContent=sbLabel();
+    }
+  }catch(e){
+    if(SB.state==='ok'){SB.stale=true;const l=$('#sbl');if(l)l.textContent=sbLabel()}
+  }finally{
+    SB.loading=false;
+    if(SB.pend){const m=SB.pend;SB.pend=null;setTimeout(()=>sbLoad(m==='silent'),0)}
+  }
+}
+
 async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
 SB.busy=true;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
 
@@ -4839,7 +4880,7 @@ if(typeof MutationObserver!='undefined')new MutationObserver(ms=>ms.forEach(m=>m
 document.addEventListener('click',e=>{if(!e.target.closest('.mn'))cmn();const h=e.target.closest('.card>h3:first-child,.md>h3:first-child');if(h){const q=h.getBoundingClientRect();if(e.clientX>q.right-40){if(h.parentElement.classList.contains('md'))closeM();else if(!h.parentElement.classList.contains('dlgw'))h.parentElement.classList.toggle('cl')}}});
 if(typeof setInterval!='undefined')setInterval(()=>{const c=document.getElementById('clk');if(c)c.textContent=clk()},15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){sbLoad(true);loadSharedSettings(true)}});
-if(typeof setInterval!='undefined'){setInterval(()=>{if(!document.hidden)sbLoad(true)},180000);setInterval(()=>{if(!document.hidden)loadSharedSettings(true)},120000)}
+if(typeof setInterval!='undefined'){setInterval(()=>{if(!document.hidden)sbRefreshRecent()},60000);setInterval(()=>{if(!document.hidden)loadSharedSettings(true)},120000)}
 applyTheme();
 sbCacheLoad();
 
