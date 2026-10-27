@@ -113,6 +113,28 @@ BEGIN
   END;
   ASSERT v_denied, '61st ticket read should be rate limited';
 
+  -- Moving a guest from Menunggu to Duduk automatically revokes the active ticket link.
+  PERFORM set_config('request.jwt.claim.role','authenticated',true);
+  v_link := public.guest_arrival_guest_link_manage('create',v_guest_id);
+  v_token := v_link->>'token';
+  UPDATE public.guest_arrivals
+  SET status='Duduk', seated_at=clock_timestamp(), table_name='Meja 01',
+      waiting_seconds=GREATEST(0, floor(extract(epoch FROM (clock_timestamp()-arrived_at)))::integer)
+  WHERE id=v_guest_id AND status='Menunggu';
+  PERFORM set_config('request.jwt.claim.role','service_role',true);
+  v_denied := false;
+  BEGIN
+    PERFORM public.guest_arrival_public_ticket(v_token);
+  EXCEPTION WHEN SQLSTATE 'P0002' THEN
+    v_denied := true;
+  END;
+  ASSERT v_denied, 'ticket link should be automatically revoked when guest becomes seated';
+  SELECT count(*) INTO v_count FROM public.guest_arrival_public_links
+   WHERE guest_arrival_id=v_guest_id AND active AND revoked_at IS NULL;
+  ASSERT v_count=0, 'no active guest link should remain after seating';
+  SELECT count(*) INTO v_count FROM public.guest_arrivals WHERE id=v_guest_id AND status='Duduk';
+  ASSERT v_count=1, 'seating should preserve the guest queue record';
+
   SELECT count(*) INTO v_count FROM public.guest_arrivals WHERE id=v_guest_id;
   ASSERT v_count=1, 'ticket views must never insert queue rows';
 END
