@@ -8,7 +8,7 @@ const GA = {
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   dashboard: null, busy: '', form: null, edit: null, detail: null, showSeated: false, seat: null, tableMove: null,
-  cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null
+  cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null, lastAutoRefreshAt: 0
 };
 const gaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
 const gaEscape = (v) => typeof esc === 'function' ? esc(String(v ?? '')) : String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -103,6 +103,7 @@ const gaRefreshLists = async (outletParams) => {
   GA.queue = Array.isArray(queue) ? queue : [];
   GA.pending = Array.isArray(pending) ? pending : [];
   GA.seated = Array.isArray(seated) ? seated : [];
+  GA.lastAutoRefreshAt = Date.now();
   gaCaptureServerTime(GA.queue.concat(GA.pending, GA.seated));
 };
 async function guestArrivalRefresh(silent) {
@@ -1197,6 +1198,10 @@ setInterval(() => {
   if (today !== GA.lastOperationalDate && !GA.loading) {
     GA.lastOperationalDate = today;
     if (GA.tab === 'queue') { GA.ready = false; guestArrivalRefresh(true); }
+  }
+  if (GA.tab === 'queue' && !GA.loading && Date.now() - GA.lastAutoRefreshAt >= 10000) {
+    GA.lastAutoRefreshAt = Date.now();
+    void guestArrivalRefresh(true);
   }
   document.querySelectorAll('[data-ga-wait-id]').forEach(node => {
     const id=node.getAttribute('data-ga-wait-id'), row=[...GA.queue,...GA.pending,...GA.history].find(g=>g.id===id);
