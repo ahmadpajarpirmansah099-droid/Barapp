@@ -75,7 +75,7 @@ jobs:
         run: |
           npm install --prefix /tmp/barapp-browser playwright@1.56.1
           /tmp/barapp-browser/node_modules/.bin/playwright install --with-deps chromium
-      - name: Test guest queue form in a mocked mobile browser
+      - name: Test view-only guest ticket in a mocked mobile browser
         env:
           GA_PLAYWRIGHT_MODULE: /tmp/barapp-browser/node_modules/playwright
         run: node scripts/guest-arrival-public.browser.test.cjs
