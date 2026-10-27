@@ -54,7 +54,7 @@ function jsonResponse(status, body) {
     let routeHits = 0;
     let firstCreateFails = true;
 
-    await page.route(/guest-arrival-public(?:\\?.*)?$/, async (route) => {
+    await page.route(/guest-arrival-public$/, async (route) => {
       routeHits++;
       const request = route.request();
       if (request.method() === 'OPTIONS') {
