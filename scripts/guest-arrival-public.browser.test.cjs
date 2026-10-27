@@ -133,7 +133,7 @@ function jsonResponse(status, body) {
     // Valid token: outlet loads, validation blocks invalid input, retry uses same idempotency key.
     await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html#token=${TOKEN}`);
     await page.locator('#registration').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
-      throw new Error('Mock outlet lookup did not reveal the form; intercepted requests: ' + routeHits);
+      throw new Error('Mock outlet lookup did not reveal the form; mocked API calls: ' + apiHits);
     });
     assert.equal(apiHits, 1, 'valid token should perform one mocked outlet lookup');
     assert.equal(outletBodies[0]?.token, TOKEN, 'the URL fragment token should be sent in the outlet lookup body');
