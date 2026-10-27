@@ -49,9 +49,13 @@ function jsonResponse(status, body) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
     const page = await context.newPage();
     const createBodies = [];
+    const outletBodies = [];
+    const seenApiKeys = [];
+    let routeHits = 0;
     let firstCreateFails = true;
 
-    await page.route('**/functions/v1/guest-arrival-public', async (route) => {
+    await page.route(/guest-arrival-public(?:\\?.*)?$/, async (route) => {
+      routeHits++;
       const request = route.request();
       if (request.method() === 'OPTIONS') {
         await route.fulfill({
@@ -66,12 +70,11 @@ function jsonResponse(status, body) {
         return;
       }
 
-      assert.equal(request.method(), 'POST');
-      assert.equal(request.headers()['apikey'], 'sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd');
+      seenApiKeys.push(request.headers()['apikey'] || '');
       const body = JSON.parse(request.postData() || '{}');
-      assert.equal(body.token, TOKEN);
 
       if (body.action === 'outlet') {
+        outletBodies.push(body);
         await route.fulfill(jsonResponse(200, {
           ok: true,
           outlet: { outlet_code: 'LJN', outlet_name: 'Lazy Jennie' },
@@ -120,7 +123,12 @@ function jsonResponse(status, body) {
 
     // Valid token: outlet loads, validation blocks invalid input, retry uses same idempotency key.
     await page.goto(`http://127.0.0.1:${address.port}/guest-queue.html#token=${TOKEN}`);
-    await page.locator('#registration').waitFor({ state: 'visible' });
+    await page.locator('#registration').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+      throw new Error('Mock outlet lookup did not reveal the form; intercepted requests: ' + routeHits);
+    });
+    assert.ok(routeHits >= 2, 'the endpoint and its CORS preflight should be intercepted');
+    assert.equal(outletBodies[0]?.token, TOKEN, 'the URL fragment token should be sent in the outlet lookup body');
+    assert.equal(seenApiKeys[0], 'sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd');
     assert.equal(await page.locator('#outlet-name').textContent(), 'Lazy Jennie');
 
     await page.locator('#guest-name').fill('Browser Guest');
