@@ -33,6 +33,9 @@ jobs:
           });
           NODE
 
+      - name: Test access scope guardrails
+        run: node scripts/access-scope.test.cjs
+
       - name: Assemble preview package
         run: |
           mkdir -p preview
