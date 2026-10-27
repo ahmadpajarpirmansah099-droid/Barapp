@@ -2459,7 +2459,7 @@ const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.clos
 async function outInit(){
   const validUuid=id=>!!id&&typeof id==='string'&&!['null','undefined','all'].includes(id.trim().toLowerCase())&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id.trim());
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
-  if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
+  if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE');const fallback=isLazyJennieHr()?null:T.outlets[0];if((l||fallback)&&validUuid((l||fallback).id))D.ljId=(l||fallback).id}
   const lazyJennieRestricted=isLazyJennieHr();
   const multi=isDeveloper();
   if(lazyJennieRestricted){
@@ -3754,7 +3754,7 @@ function perSel(){if(!D.per.length)return '';const cur=(F.f||'')+'|'+(F.t||'');c
 function outLabel(){
   if(!D.me)return '';
   const multi=isDeveloper();
-  const id=multi?(D.outId||D.ljId):(T.scopeOut||D.ljId);
+  const id=multi?(D.outId||D.ljId):(T.scopeOut||null);
   if(id==='ALL')return 'Semua outlet';
   const o=(T.outlets||[]).find(x=>x.id==id);
   return o?o.name+' ('+o.code+')':'';
