@@ -30,9 +30,9 @@ test('admins can create/revoke per-guest links only within their outlet scope', 
 });
 
 test('changing guest status to Duduk automatically revokes active public links', () => {
-  assert.match(sql, /CREATE TRIGGER guest_arrival_revoke_public_link_when_seated[\\s\\S]*?AFTER UPDATE OF status ON public\\.guest_arrivals/i);
-  assert.match(sql, /NEW\\.status = 'Duduk' AND OLD\\.status IS DISTINCT FROM NEW\\.status/i);
-  assert.match(sql, /UPDATE public\\.guest_arrival_public_links[\\s\\S]*?SET active = false, revoked_at = clock_timestamp\\(\\)/i);
+  assert.match(sql, /CREATE TRIGGER guest_arrival_revoke_public_link_when_seated[\s\S]*?AFTER UPDATE OF status ON public\.guest_arrivals/i);
+  assert.match(sql, /NEW\.status = 'Duduk' AND OLD\.status IS DISTINCT FROM NEW\.status/i);
+  assert.match(sql, /UPDATE public\.guest_arrival_public_links[\s\S]*?SET active = false, revoked_at = clock_timestamp\(\)/i);
 });
 
 test('public endpoint only reads a linked ticket and cannot register new guests', () => {
