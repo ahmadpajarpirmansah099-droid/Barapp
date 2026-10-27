@@ -76,7 +76,7 @@ assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'legacy_adm
 assert.doesNotMatch(roleMigrationSource, /public\.app_role\(\)\s*=\s*'report_viewer'/i, 'Report Viewer must be retired as a role and granted access through feature permissions');
 assert.match(roleMigrationSource, /active report_viewer accounts to HR\/Admin Divisi scopes and feature permissions first/);
 assert.match(roleMigrationSource, /CREATE OR REPLACE FUNCTION public\.dev_assign_report_viewer[\s\S]*?REPORT_VIEWER_ROLE_RETIRED/);
-assert.doesNotMatch(roleMigrationSource, /DELETE\s+FROM\s+public\.(employees|attendance|user_scopes)\b/i, 'Role hardening must not delete employee, attendance, or scope data');
+assert.doesNotMatch(roleMigrationSource, /DELETE\s+FROM\s+public\.(employees|attendance)\b/i, 'Role hardening must not delete employee or attendance data');
 for (const policy of [
   'p_att_delete_feature','p_att_insert_feature','p_att_select_feature','p_att_update_feature',
   'p_div_sel','p_emp_delete_feature','p_emp_insert_feature','p_emp_select_feature',
@@ -85,6 +85,9 @@ for (const policy of [
   assert.ok(roleMigrationSource.includes('DROP POLICY IF EXISTS ' + policy), 'Policy must be recreated without legacy bypass: ' + policy);
 }
 assert.match(roleMigrationSource, /COUNT\(DISTINCT s2\.outlet_id\)[\s\S]*?=1/, 'Guest Arrival access must be restricted to one active outlet');
+assert.match(roleMigrationSource, /DELETE FROM public\.user_scopes WHERE user_id=u/, 'Scope replacement is limited to the account explicitly reassigned by Developer');
+assert.doesNotMatch(roleMigrationSource, /\nEND\n\$function\$;/, 'PL/pgSQL functions must terminate their final block correctly');
+assert.doesNotMatch(roleMigrationSource, /\nEND\n\$preflight\$;/, 'Migration preflight block must terminate correctly');
 
 const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1])
