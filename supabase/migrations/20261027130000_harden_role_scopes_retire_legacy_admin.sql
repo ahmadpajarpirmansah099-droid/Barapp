@@ -20,6 +20,11 @@ BEGIN
           SELECT 1 FROM public.user_scopes s
           WHERE s.user_id=up.user_id AND s.division_id IS NULL
         )
+        OR EXISTS (
+          SELECT 1 FROM public.user_scopes s
+          LEFT JOIN public.outlets o ON o.id=s.outlet_id
+          WHERE s.user_id=up.user_id AND (o.id IS NULL OR o.active IS NOT TRUE)
+        )
       )
   ) THEN
     RAISE EXCEPTION 'Access-scope migration paused: every active HR account must have one outlet-wide scope.';
@@ -37,6 +42,14 @@ BEGIN
         OR EXISTS (
           SELECT 1 FROM public.user_scopes s
           WHERE s.user_id=up.user_id AND s.division_id IS NULL
+        )
+        OR EXISTS (
+          SELECT 1 FROM public.user_scopes s
+          LEFT JOIN public.outlets o ON o.id=s.outlet_id
+          LEFT JOIN public.divisions d ON d.id=s.division_id
+          WHERE s.user_id=up.user_id AND (
+            o.id IS NULL OR o.active IS NOT TRUE OR d.id IS NULL OR d.outlet_id<>s.outlet_id
+          )
         )
       )
   ) THEN
@@ -64,6 +77,7 @@ AS $function$
     WHEN public.app_role()='hr' THEN
       p_outlet IS NOT NULL
       AND (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=auth.uid())=1
+      AND EXISTS (SELECT 1 FROM public.outlets o WHERE o.id=p_outlet AND o.active IS TRUE)
       AND EXISTS (
         SELECT 1 FROM public.user_scopes s
         WHERE s.user_id=auth.uid() AND s.outlet_id=p_outlet AND s.division_id IS NULL
@@ -71,6 +85,7 @@ AS $function$
     WHEN public.app_role()='div_admin' THEN
       p_outlet IS NOT NULL AND p_division IS NOT NULL
       AND (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=auth.uid())=1
+      AND EXISTS (SELECT 1 FROM public.outlets o WHERE o.id=p_outlet AND o.active IS TRUE)
       AND EXISTS (
         SELECT 1 FROM public.user_scopes s
         WHERE s.user_id=auth.uid() AND s.outlet_id=p_outlet
@@ -92,6 +107,7 @@ AS $function$
     WHEN public.app_role()='hr' THEN
       p_outlet IS NOT NULL
       AND (SELECT COUNT(DISTINCT s.outlet_id) FROM public.user_scopes s WHERE s.user_id=auth.uid())=1
+      AND EXISTS (SELECT 1 FROM public.outlets o WHERE o.id=p_outlet AND o.active IS TRUE)
       AND EXISTS (
         SELECT 1 FROM public.user_scopes s
         WHERE s.user_id=auth.uid() AND s.outlet_id=p_outlet AND s.division_id IS NULL
