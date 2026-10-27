@@ -13,6 +13,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS guest_arrival_public_links_one_active_per_gues
   ON public.guest_arrival_public_links(guest_arrival_id)
   WHERE active AND revoked_at IS NULL;
 
+-- Revoke guest-facing links in the same database transaction when a guest is seated.
+-- This is enforced server-side, so the old URL stops working without a manual admin action.
+CREATE OR REPLACE FUNCTION public.guest_arrival_revoke_link_when_seated()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.status = 'Duduk' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    UPDATE public.guest_arrival_public_links
+    SET active = false, revoked_at = clock_timestamp()
+    WHERE guest_arrival_id = NEW.id AND active AND revoked_at IS NULL;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS guest_arrival_revoke_public_link_when_seated ON public.guest_arrivals;
+CREATE TRIGGER guest_arrival_revoke_public_link_when_seated
+AFTER UPDATE OF status ON public.guest_arrivals
+FOR EACH ROW
+WHEN (NEW.status = 'Duduk' AND OLD.status IS DISTINCT FROM NEW.status)
+EXECUTE FUNCTION public.guest_arrival_revoke_link_when_seated();
+
 CREATE TABLE IF NOT EXISTS public.guest_arrival_public_rate_limits (
   link_id uuid NOT NULL REFERENCES public.guest_arrival_public_links(id) ON DELETE CASCADE,
   window_start timestamptz NOT NULL,
