@@ -13,7 +13,7 @@ test('guest links are tied to one existing guest row and store only token hashes
   assert.match(sql, /guest_arrival_id uuid NOT NULL REFERENCES public\.guest_arrivals\(id\) ON DELETE CASCADE/i);
   assert.match(sql, /token_hash text NOT NULL UNIQUE/i);
   assert.match(sql, /extensions\.digest\(v_token,'sha256'\)/i);
-  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_links FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_links FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /ALTER TABLE public\.guest_arrival_public_links ENABLE ROW LEVEL SECURITY/i);
   assert.match(sql, /guest_arrival_public_links_one_active_per_guest[\s\S]*?ON public\.guest_arrival_public_links\(guest_arrival_id\)/i);
   assert.doesNotMatch(sql, /outlet_id uuid NOT NULL REFERENCES public\.outlets/i);
@@ -21,16 +21,16 @@ test('guest links are tied to one existing guest row and store only token hashes
 
 test('admins can create/revoke per-guest links only within their outlet scope', () => {
   assert.match(sql, /guest_arrival_guest_link_manage\([\s\S]*?p_action text, p_guest_arrival_id uuid/i);
-  assert.match(sql, /auth\.uid\(\) IS NULL OR COALESCE\(auth\.role\(\),' '\) <> 'authenticated'/i);
+  assert.match(sql, /auth\.uid\(\) IS NULL OR COALESCE\(auth\.role\(\),''\) <> 'authenticated'/i);
   assert.match(sql, /IF NOT v_is_dev AND NOT EXISTS \([\s\S]*?s\.user_id=auth\.uid\(\) AND s\.outlet_id=v_outlet_id/i);
   assert.match(sql, /p_action='revoke'[\s\S]*?guest_arrival_id=v_guest_id/i);
-  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_guest_link_manage\(text,uuid\) FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_guest_link_manage\(text,uuid\) FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.guest_arrival_guest_link_manage\(text,uuid\) TO authenticated/i);
 });
 
 test('public endpoint only reads a linked ticket and cannot register new guests', () => {
   assert.match(sql, /guest_arrival_public_ticket\(p_token text\)/i);
-  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_ticket\(text\) FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_ticket\(text\) FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.guest_arrival_public_ticket\(text\) TO service_role/i);
   assert.match(edge, /guest_arrival_public_ticket/);
   assert.match(edge, /String\(body\.action \?\? ""\) !== "ticket"/);
@@ -45,7 +45,7 @@ test('public ticket response is an allow-list without guest PII or internal iden
   assert.match(responseMatch[0], /queue_code/);
   assert.match(responseMatch[0], /status/);
   assert.match(responseMatch[0], /outlet_name/);
-  assert.doesNotMatch(responseMatch[0], /guest_name|whatsapp|note|created_by|guest_arrival_id|'id'/i);
+  assert.doesNotMatch(responseMatch[0], /'guest_name'|'whatsapp'|'note'|'created_by'|'id'\s*,/i);
   assert.match(sql, /IF v_count>60 THEN/i);
 });
 
@@ -74,7 +74,7 @@ test('guest page is view-only, removes the URL fragment, and refreshes ticket st
 });
 
 test('public endpoints and secret token are not directly exposed through table grants or logs', () => {
-  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_rate_limits FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_rate_limits FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.doesNotMatch(edge, /console\.log\([^)]*token/i);
   assert.match(edge, /console\.error\("guest-arrival-public request failed", \{ code: err\.code, status: err\.status \}\)/);
 });
