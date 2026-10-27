@@ -2582,7 +2582,7 @@ async function sbRefreshRecent(){
 }
 
 async function sbRun(fn){if(SB.busy){toast(L('Masih menyimpan, tunggu sebentar…','Still saving, please wait…'),'warn');return false}
-SB.busy=true;SB.writeSeq=(SB.writeSeq||0)+1;try{await fn();return truecatch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
+SB.busy=true;SB.writeSeq=(SB.writeSeq||0)+1;try{await fn();return true}catch(e){toast(errText(e),'err');return false}finally{SB.busy=false}}
 
 /* ---------- SHARED APP SETTINGS ----------
    The app_settings row stores only public presentation settings (theme, title, logo).
