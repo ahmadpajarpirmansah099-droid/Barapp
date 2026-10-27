@@ -104,6 +104,7 @@
   const token = tokenMatch ? tokenMatch[1].toLowerCase() : "";
   let outlet = null;
   let pending = false;
+  let requestId = null;
 
   async function request(body) {
     const res = await fetch(ENDPOINT, {
@@ -162,6 +163,7 @@
       showError("Browser ini belum mendukung pembuatan permintaan aman. Perbarui browser lalu coba lagi.");
       return;
     }
+    if (!requestId) requestId = window.crypto.randomUUID();
     pending = true;
     $("submit").disabled = true;
     $("submit").textContent = "Memproses…";
@@ -175,10 +177,11 @@
         whatsapp,
         note,
         smoking_preference: smoking,
-        request_id: window.crypto.randomUUID(),
+        request_id: requestId,
         website: $("website").value
       });
       const ticket = data.ticket;
+      requestId = null;
       $("registration").hidden = true;
       $("ticket-number").textContent = String(ticket.queue_number ?? "—");
       $("ticket-code").textContent = String(ticket.queue_code ?? "—");
@@ -199,6 +202,7 @@
     $("ticket").style.display = "none";
     $("registration").hidden = false;
     $("queue-form").reset();
+    requestId = null;
     $("packs").value = "1";
     $("error").style.display = "none";
   });
