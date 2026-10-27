@@ -77,6 +77,7 @@
       <label for="note">Catatan</label>
       <textarea id="note" name="note" maxlength="300" placeholder="Opsional"></textarea>
       <div class="hint">Nomor antrean diterbitkan setelah formulir berhasil diproses. Tunjukkan nomor ini kepada staf saat tiba.</div>
+      <div class="hint">Nama dan data opsional dipakai outlet untuk mengelola antrean. Nomor WhatsApp tidak wajib diisi.</div>
       <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
       <div id="error" class="error" role="alert"></div>
       <button id="submit" class="primary" type="submit">Ambil Nomor Antrean</button>
@@ -99,6 +100,7 @@
 (() => {
   "use strict";
   const ENDPOINT = "https://ybptbloiujrbvgxcjqqk.supabase.co/functions/v1/guest-arrival-public";
+  const PUBLISHABLE_KEY = "sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd";
   const $ = (id) => document.getElementById(id);
   const tokenMatch = String(location.hash || "").replace(/^#/, "").match(/(?:^|&)token=([a-f0-9]{64})(?:&|$)/i);
   const token = tokenMatch ? tokenMatch[1].toLowerCase() : "";
@@ -109,7 +111,7 @@
   async function request(body) {
     const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "apikey": PUBLISHABLE_KEY },
       cache: "no-store",
       referrerPolicy: "no-referrer",
       body: JSON.stringify(body)
