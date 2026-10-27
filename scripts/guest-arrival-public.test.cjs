@@ -10,16 +10,16 @@ const page = fs.readFileSync(path.join(root, 'guest-queue.html'), 'utf8');
 const admin = fs.readFileSync(path.join(root, 'guest-arrival.js'), 'utf8');
 
 test('public RPCs are not executable by anon or authenticated users', () => {
-  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_outlet\(text\) FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_outlet\(text\) FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.guest_arrival_public_outlet\(text\) TO service_role/i);
-  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_create\(text,text,integer,text,text,text,uuid\) FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.guest_arrival_public_create\(text,text,integer,text,text,text,uuid\) FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.guest_arrival_public_create\(text,text,integer,text,text,text,uuid\) TO service_role/i);
 });
 
 test('public link table stores only a hash and denies direct public grants', () => {
   assert.match(sql, /token_hash text NOT NULL UNIQUE/i);
   assert.match(sql, /extensions\.digest\(v_token,'sha256'\)/i);
-  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_links FROM PUBLIC,anon,authenticated/i);
+  assert.match(sql, /REVOKE ALL ON TABLE public\.guest_arrival_public_links FROM PUBLIC,\s*anon,\s*authenticated/i);
   assert.match(sql, /ALTER TABLE public\.guest_arrival_public_links ENABLE ROW LEVEL SECURITY/i);
 });
 
