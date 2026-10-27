@@ -661,7 +661,7 @@ body:has(#app.in .ga-wrap){
 }
 `;
 function guestArrivalQueueMarkup() {
-  return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
+  return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPublicLink()">Link / QR Publik</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
     '<div class="ga-section-title"><h3>Tamu Menunggu</h3><span class="ga-count">' + GA.queue.length + ' antrean aktif</span></div><div id="ga-queue-cards" class="ga-card-list">' + guestArrivalQueueCards() + '</div>';
 }
 function guestArrivalCard(g, pending) {
@@ -671,7 +671,7 @@ function guestArrivalCard(g, pending) {
     : g.status === 'Duduk'
       ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalFinishSeated(\'' + g.id + '\')">Selesai</button>'
       : '';
-  return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
+  return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + '<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap">' + gaStatusBadge(g.status) + (g.registration_source === 'public' ? '<span class="ga-source-chip" style="display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;background:#e9f4d5;color:#35551b;font-size:10px;font-weight:800">Link / QR</span>' : '') + '</div></div>' +
     '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span>' + (g.table_name ? '<span class="ga-table-chip">Meja: ' + gaEscape(g.table_name) + '</span>' : '') + (g.status==='Duduk' ? '<span class="ga-sitting-chip' + (gaSittingRemaining(g)<=0?' expired':'') + '">Sitting time <strong data-ga-sitting-id="' + gaEscape(g.id) + '">' + gaSittingCountdown(g) + '</strong></span>' : '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span>') + '</div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
     '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + (g.seated_at ? ' · Duduk ' + gaEscape(gaFormatDateTime(g.seated_at)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
 }
@@ -1161,7 +1161,7 @@ async function guestArrivalExport() {
   try {
     const data=await gaRpc('guest_arrival_export',{p_from:GA.fromDate,p_to:GA.toDate,...(await gaOutletParams())});
     const details=Array.isArray(data.details)?data.details:[], cancellations=Array.isArray(data.cancellations)?data.cancellations:[], summary=data.summary||{};
-    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Preferensi','smoking_preference'],['Note','note'],['Waktu Kedatangan','arrived_at'],['Status','status'],['Meja','table_name'],['Waktu Duduk','seated_at'],['Waktu Akhir','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
+    const columns=[['Tanggal Operasional','operational_date'],['Nomor Antrean','queue_code'],['Nama Tamu','guest_name'],['Jumlah Pack','packs'],['WhatsApp','whatsapp'],['Preferensi','smoking_preference'],['Note','note'],['Sumber','registration_source'],['Waktu Kedatangan','arrived_at'],['Status','status'],['Meja','table_name'],['Waktu Duduk','seated_at'],['Waktu Akhir','finished_at'],['Waiting Time (detik)','waiting_seconds'],['Alasan Pembatalan','cancellation_reason'],['Jumlah Koreksi','correction_count'],['Koreksi Terakhir','last_correction_at'],['Alasan Koreksi Terakhir','last_correction_reason'],['Didaftarkan Oleh','created_by_email']];
     const makeRows=rows=>[columns.map(x=>x[0]),...rows.map(g=>columns.map(([label,key])=>g[key]==null?'':g[key]))];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(makeRows(details)),'Detail Tamu');
@@ -1211,3 +1211,123 @@ setInterval(() => {
     }
   });
 },1000);
+
+
+/* Public Guest Arrival link management — tokens are shown once and stored hash-only. */
+function guestArrivalBuildPublicUrl(token) {
+  const url = new URL('./guest-queue.html', window.location.href);
+  url.hash = 'token=' + encodeURIComponent(token);
+  return url.href;
+}
+
+function guestArrivalLoadQrLibrary() {
+  if (window.QRCode) return Promise.resolve(true);
+  if (window.__gaQrLoadPromise) return window.__gaQrLoadPromise;
+  window.__gaQrLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.referrerPolicy = 'no-referrer';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => window.QRCode ? resolve(true) : reject(new Error('Library QR tidak tersedia.'));
+    script.onerror = () => reject(new Error('Library QR gagal dimuat.'));
+    document.head.appendChild(script);
+  });
+  return window.__gaQrLoadPromise;
+}
+
+async function guestArrivalCopyPublicUrl() {
+  const input = document.getElementById('ga-public-url');
+  if (!input) return;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(input.value);
+      gaToast('Link antrean berhasil disalin.', 'ok');
+      return;
+    }
+  } catch (_) {}
+  input.focus();
+  input.select();
+  gaToast('Link dipilih. Salin teks yang dipilih untuk menyimpannya.', 'warn');
+}
+
+async function guestArrivalRenderPublicQr(url) {
+  const holder = document.getElementById('ga-public-qr');
+  if (!holder) return;
+  holder.innerHTML = '<div class="ga-muted">Menyiapkan QR…</div>';
+  try {
+    await guestArrivalLoadQrLibrary();
+    if (!document.getElementById('ga-public-qr')) return;
+    holder.innerHTML = '';
+    new window.QRCode(holder, {
+      text: url,
+      width: 220,
+      height: 220,
+      colorDark: '#111827',
+      colorLight: '#ffffff',
+      correctLevel: window.QRCode.CorrectLevel.M
+    });
+  } catch (_) {
+    holder.innerHTML = '<div class="ga-muted">QR otomatis belum dapat dibuat karena library QR tidak tersedia. Link tetap dapat disalin dan dibuka.</div>';
+  }
+}
+
+function guestArrivalShowPublicLink(data) {
+  const url = guestArrivalBuildPublicUrl(data.token);
+  modal(
+    '<h3 class="ga-modal-heading">Link / QR Antrean Publik</h3>' +
+    '<p class="ga-modal-intro">Outlet <strong>' + gaEscape(data.outlet_name || data.outlet_code || 'Barapp') + '</strong>. Tamu yang membuka link ini bisa mengambil nomor antrean tanpa login admin.</p>' +
+    '<div style="display:flex;gap:8px;align-items:center;margin:12px 0">' +
+      '<input id="ga-public-url" type="text" readonly value="' + gaEscape(url) + '" style="min-width:0;flex:1;border:1px solid var(--br,#d5ddd1);border-radius:10px;padding:10px;font-size:12px" aria-label="Link antrean publik">' +
+      '<button type="button" class="ga-btn primary" onclick="guestArrivalCopyPublicUrl()">Salin</button>' +
+    '</div>' +
+    '<div style="border:1px solid var(--br,#d5ddd1);border-radius:14px;padding:16px;text-align:center;margin:14px auto;max-width:290px">' +
+      '<div id="ga-public-qr" style="display:flex;justify-content:center;min-height:34px"></div>' +
+      '<div class="ga-muted" style="margin-top:10px">Cetak atau simpan QR ini untuk dipasang di outlet.</div>' +
+    '</div>' +
+    '<p style="font-size:12px;color:var(--mu,#758078);line-height:1.5">Token disimpan sebagai hash di database dan ditampilkan sekali. Simpan atau cetak sekarang. Membuat link baru akan menonaktifkan QR lama.</p>' +
+    '<div class="ga-btn-row"><button type="button" class="ga-btn secondary" onclick="guestArrivalRevokePublicLink()">Nonaktifkan Link</button><button type="button" class="ga-btn primary" onclick="closeM()">Selesai</button></div>'
+  );
+  void guestArrivalRenderPublicQr(url);
+}
+
+async function guestArrivalOpenPublicLink() {
+  if (GA.busy) return;
+  const proceed = typeof confirm === 'function'
+    ? confirm('Buat link antrean publik baru untuk outlet yang sedang dipilih? Link baru akan menonaktifkan QR sebelumnya di outlet ini.')
+    : true;
+  if (!proceed) return;
+  GA.busy = 'public-link';
+  try {
+    const data = await gaRpc('guest_arrival_public_link_manage', {
+      p_action: 'create',
+      ...(await gaOutletParams())
+    });
+    if (!data || data.ok !== true || !data.token) throw new Error('Server tidak mengembalikan link yang valid.');
+    guestArrivalShowPublicLink(data);
+  } catch (e) {
+    gaToast('Link publik gagal dibuat. ' + gaHumanError(e), 'err');
+  } finally {
+    GA.busy = '';
+  }
+}
+
+async function guestArrivalRevokePublicLink() {
+  if (GA.busy) return;
+  const proceed = typeof confirm === 'function'
+    ? confirm('Nonaktifkan link antrean publik untuk outlet ini? QR lama tidak bisa dipakai lagi.')
+    : true;
+  if (!proceed) return;
+  GA.busy = 'public-link-revoke';
+  try {
+    const data = await gaRpc('guest_arrival_public_link_manage', {
+      p_action: 'revoke',
+      ...(await gaOutletParams())
+    });
+    closeM();
+    gaToast(data && data.revoked ? 'Link publik berhasil dinonaktifkan.' : 'Tidak ada link publik aktif di outlet ini.', 'ok');
+  } catch (e) {
+    gaToast('Link publik gagal dinonaktifkan. ' + gaHumanError(e), 'err');
+  } finally {
+    GA.busy = '';
+  }
+}
