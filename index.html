@@ -2461,7 +2461,7 @@ async function outInit(){
   if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
   if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
   const lazyJennieRestricted=isLazyJennieHr();
-  const multi=isDeveloper()||(T.dbRole=='hr'&&!lazyJennieRestricted)||T.dbRole=='legacy_admin';
+  const multi=isDeveloper();
   if(lazyJennieRestricted){
     if(!validUuid(D.ljId)){
       try{const sc=await payQ('user_scopes','outlet_id');const sid=sc.find(x=>validUuid(x.outlet_id))?.outlet_id;if(sid)D.ljId=sid}catch(e){}
@@ -2497,7 +2497,7 @@ async function outSwitch(id){
   catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
 }
 function outMenuHtml(){
-  if(!(isDeveloper()||(T.dbRole=='hr'&&!isLazyJennieHr())))return '';
+  if(!isDeveloper())return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
     if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
     return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
