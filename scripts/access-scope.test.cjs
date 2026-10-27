@@ -54,7 +54,7 @@ const adminScope = section('function adminAccountScopes(uid){', 'function adminS
 assert.match(adminScope, /String\(s\.outlet_id\)===String\(T\.adminOutletId\)/, 'Admin account scope view remains filtered to the current outlet');
 assert.match(adminScope, /!x\.scope\.division_id\|\|x\.division/, 'Admin Divisi scope remains division-specific');
 
-assert.match(roleMigrationSource, /COUNT\(DISTINCT s\.outlet_id\)\)=1/, 'Scoped access must reject accounts assigned to multiple outlets');
+assert.match(roleMigrationSource, /COUNT\(DISTINCT s\.outlet_id\)[\s\S]*?s\.user_id=auth\.uid\(\)\)=1/, 'Scoped access must reject accounts assigned to multiple outlets');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='div_admin' THEN[\s\S]*?s\.division_id=p_division AND s\.division_id IS NOT NULL/, 'Admin Divisi must match its exact assigned division');
 assert.match(roleMigrationSource, /WHEN public\.app_role\(\)='hr' THEN[\s\S]*?s\.division_id IS NULL/, 'HR must have an outlet-wide scope in its one assigned outlet');
 assert.match(roleMigrationSource, /p_role IS NULL OR p_role NOT IN \('hr','div_admin','report_viewer'\)/, 'Legacy admin role cannot be assigned again');
