@@ -1,5 +1,16 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+function getServiceRoleKey(): string {
+  const legacyKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (legacyKey) return legacyKey;
+  // Support current named secret-key environment variables while retaining legacy compatibility.
+  try {
+    const namedKeys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+    return typeof namedKeys.default === "string" ? namedKeys.default : "";
+  } catch {
+    return "";
+  }
+}
+const SERVICE_ROLE_KEY = getServiceRoleKey();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
