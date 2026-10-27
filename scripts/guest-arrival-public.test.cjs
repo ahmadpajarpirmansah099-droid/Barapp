@@ -51,3 +51,9 @@ test('admin UI generates QR links and marks public registrations', () => {
   assert.match(admin, /registration_source === 'public'/);
   assert.match(admin, /guest_arrival_public_link_manage/);
 });
+
+
+test('admin list and export payloads include registration source', () => {
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\\.guest_arrival_row_json[\\s\\S]*?'registration_source',\\s*p_row\\.registration_source/i);
+  assert.match(admin, /\\['Sumber','registration_source'\\]/);
+});
