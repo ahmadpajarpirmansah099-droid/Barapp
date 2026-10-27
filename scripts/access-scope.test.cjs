@@ -62,7 +62,8 @@ assert.doesNotMatch(dbRoleCode, /legacy_admin|report_viewer/, 'Retired roles mus
 const accountCard = section('function accsCard()', 'function accFilterCards(value)');
 assert.match(accountCard, /\['hr','div_admin'\]\.map\(k=>/, 'Role UI must only offer HR and Admin Divisi');
 assert.doesNotMatch(accountCard, /Pemilihan izin fitur Admin Divisi dinonaktifkan/, 'Feature permission editor remains available for Admin Divisi');
-assert.match(accountCard, /feature\.guest_arrival\.access/, 'Developer can grant Guest Arrival through feature permission');
+const grantGroupsSource = section('const grantGroups', 'const grantList');
+assert.match(grantGroupsSource, /feature\.guest_arrival\.access/, 'Developer can grant Guest Arrival through feature permission');
 assert.match(roleMigrationSource, /HR harus memiliki scope outlet yang valid sebelum akun diaktifkan/, 'HR activation requires a valid outlet-wide scope');
 assert.match(roleMigrationSource, /Admin Divisi harus memiliki scope divisi valid dalam satu outlet/, 'Admin Divisi activation requires valid division-specific scopes');
 assert.match(roleMigrationSource, /IF cur IN \('dev','hr'\) THEN/, 'Inactive legacy accounts can be explicitly reassigned to a division scope');
