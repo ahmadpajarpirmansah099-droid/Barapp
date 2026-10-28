@@ -3628,6 +3628,18 @@ function adminAccountsFiltered(){
  })
 }
 
+async function audLoad(){
+ if(!isDeveloper())return;
+ try{
+  const {data,error}=await sb().from('audit_log').select('at,actor_email,action,table_name,reason').order('at',{ascending:false}).limit(100);
+  if(error)throw error;
+  T.aud=data||[];T.audError='';
+ }catch(e){
+  T.audError=errText(e);
+  toast('Audit Log gagal dimuat: '+T.audError,'err');
+ }
+ R();
+}
 V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer yang bisa melihat audit log.</div>';
  if(!T.audInit){T.audInit=1;setTimeout(audLoad,0)}
  const rows=T.aud||[];
