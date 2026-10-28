@@ -2632,6 +2632,8 @@ async function initAuth(){
         R();if(guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){await Promise.all([sbLoad(),loadSharedSettings(true)]);R()}return;
       }
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
+      try{const savedPage=localStorage.getItem(pageStorageKey());if(savedPage&&PAGES[savedPage])pg=savedPage;else pg='dash'}catch(e){pg='dash'}
+      T.pgInit=1;
       R();
     };
     await applySession(data.session);
@@ -2804,7 +2806,7 @@ let BARAPP_DESKTOP_SIDEBAR_COLLAPSED=false;
 try{BARAPP_DESKTOP_SIDEBAR_COLLAPSED=localStorage.getItem('barapp.desktopSidebarCollapsed')==='1'}catch(e){}
 const desktopSidebarIcon=()=>'<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'m13 8 4 4-4 4':'m15 8-4 4 4 4')+'"/></svg>';
 function toggleDesktopSidebar(){BARAPP_DESKTOP_SIDEBAR_COLLAPSED=!BARAPP_DESKTOP_SIDEBAR_COLLAPSED;try{localStorage.setItem('barapp.desktopSidebarCollapsed',BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'1':'0')}catch(e){}R()}
-const go=p=>{if(p==='div'||p==='divdet'){toast('Fitur Divisi & Admin sudah dinonaktifkan. Pengaturan akses dilakukan melalui backend.','warn');return}if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;R()},tsd=()=>$('#sdw').classList.toggle('open');
+const go=p=>{if(p==='div'||p==='divdet'){toast('Fitur Divisi & Admin sudah dinonaktifkan. Pengaturan akses dilakukan melalui backend.','warn');return}if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;try{if(D.me&&PAGES[pg])localStorage.setItem(pageStorageKey(),pg)}catch(e){}R()},tsd=()=>$('#sdw').classList.toggle('open');
 function featureMenuIcon(m,lk){
  if(lk||!m.page)return IC('lock',30);
  const common='viewBox="0 0 64 64" width="60" height="60" fill="none" stroke-linecap="round" stroke-linejoin="round"';
