@@ -2458,24 +2458,30 @@ const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.clos
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
   const validUuid=id=>!!id&&typeof id==='string'&&!['null','undefined','all'].includes(id.trim().toLowerCase())&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id.trim());
-  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'))}catch(e){T.outlets=[]}}
+  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.order('code'))}catch(e){T.outlets=[]}}
   if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
-  const lazyJennieRestricted=isLazyJennieHr();
-  const multi=isDeveloper()||(T.dbRole=='hr'&&!lazyJennieRestricted)||T.dbRole=='legacy_admin';
-  if(lazyJennieRestricted){
-    if(!validUuid(D.ljId)){
-      try{const sc=await payQ('user_scopes','outlet_id');const sid=sc.find(x=>validUuid(x.outlet_id))?.outlet_id;if(sid)D.ljId=sid}catch(e){}
-    }
-    D.outId=validUuid(D.ljId)?D.ljId:null;
-    try{if(validUuid(D.outId))localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),D.outId)}catch(e){}
-    sv();
-    return validUuid(D.outId)?D.outId:null;
-  }
+  const multi=isDeveloper();
   if(!multi){
-    if(T.scopeOut===undefined){try{const sc=await payQ('user_scopes','outlet_id');T.scopeOut=(sc[0]&&sc[0].outlet_id)||null}catch(e){T.scopeOut=null}}
-    if(T.scopeOut){if(!validUuid(T.scopeOut)){T.scopeOut=null}else{if(T.dbRole==='report_viewer')D.outId=T.scopeOut;return T.scopeOut}}
-    if(T.dbRole!='div_admin')return validUuid(D.ljId)?D.ljId:null;
-    return validUuid(D.outId)&&D.outId!=='ALL'?D.outId:(validUuid(D.ljId)?D.ljId:null)}
+    if(T.scopeOut===undefined){
+      try{
+        const sc=await payQ('user_scopes','outlet_id');
+        const ids=[...new Set((sc||[]).map(x=>String(x.outlet_id||'')).filter(validUuid))];
+        T.scopeOut=ids.length===1?ids[0]:null;
+        T.scopeInvalid=ids.length!==1;
+      }catch(e){T.scopeOut=null;T.scopeInvalid=true}
+    }
+    const activeScope=validUuid(T.scopeOut)&&(T.outlets||[]).some(o=>String(o.id)===String(T.scopeOut)&&(o.active===true||o.active==='true'));
+    if(activeScope){
+      D.outId=T.scopeOut;
+      try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),T.scopeOut)}catch(e){}
+      sv();
+      return T.scopeOut;
+    }
+    D.outId=null;T.scopeInvalid=true;
+    try{localStorage.removeItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
+    sv();
+    return null;
+  }
   const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
   if(!T.outlets.length)return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null);
   if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
@@ -2497,9 +2503,9 @@ async function outSwitch(id){
   catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
 }
 function outMenuHtml(){
-  if(!(isDeveloper()||(T.dbRole=='hr'&&!isLazyJennieHr())))return '';
+  if(!isDeveloper())return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
-    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
+    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
     return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
   }
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
@@ -2801,7 +2807,6 @@ function cgModuleGate(key,label){
  return '<div class="card"><h3>Modul '+esc(label)+' nonaktif pada divisi ini</h3><p class="mu">Pilih divisi lain yang mengaktifkan modul, atau minta Developer mengaktifkannya untuk divisi ini.</p><label>Divisi<select onchange="cgModuleChoose(this.value)">'+options+'</select></label></div>';
 }
 const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
- const isLazyJennieHr=()=>T.dbRole==='hr'&&String(T.authEmail||'').trim().toLowerCase()==='admin@lazy.jennie';
 const cogsPageFeature={cogs_dashboard:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_materials:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.production.view','cogs.production.manage','cogs.sales.view','cogs.sales.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_wip:['cogs.wip.view','cogs.wip.manage'],cogs_menu:['cogs.menu.view','cogs.menu.manage'],cogs_production:['cogs.production.view','cogs.production.manage'],cogs_daily_so:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_sales:['cogs.sales.view','cogs.sales.manage']};
 const cogsPageOK=k=>T.dbRole==='report_viewer'
  ? ((k==='cogs_daily_so'&&hasFeature('cogs.daily_so.edit'))||(k==='cogs_production'&&hasFeature('cogs.production.manage'))||(k==='cogs_sales'&&hasFeature('cogs.sales.manage')))
