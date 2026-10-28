@@ -2629,19 +2629,19 @@ async function initAuth(){
         setTimeout(()=>c.auth.signOut().catch(()=>{}),0);
         return;
       }
-      if(!D.me||D.me.uid!==session.user.id||D.me.r!==role){resetAcc();pg='dash';T.pgInit=0;}
+      if(!D.me||D.me.uid!==session.user.id||D.me.r!==role){resetAcc();T.pagePreference='';pg='dash';T.pgInit=0;}
       D.me={r:role,uid:session.user.id,email};sv();
       if(role==='G'){
         resetAcc();D.per=[];D.pin='';D.cur='';sv();idleSet();
-        T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pgInit=1;if(typeof window.guestArrivalResetSession==='function')window.guestArrivalResetSession();
+        T.dbRole='guest_arrival';T.perms=[];pg='guest_arrival';T.pagePreference='guest_arrival';T.pgInit=1;if(typeof window.guestArrivalResetSession==='function')window.guestArrivalResetSession();
         try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}
-        SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;
-        try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
+        SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;pg='guest_arrival';T.pagePreference='guest_arrival';
+        try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival');localStorage.setItem(pageStorageKey(),'guest_arrival')}catch(e){}
         R();if(guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){await Promise.all([sbLoad(),loadSharedSettings(true)]);R()}return;
       }
-      let savedPageBeforeLoad='';try{savedPageBeforeLoad=localStorage.getItem(pageStorageKey())||''}catch(e){}
+      let savedPageBeforeLoad='';try{savedPageBeforeLoad=localStorage.getItem(pageStorageKey())||''}catch(e){}T.pagePreference=savedPageBeforeLoad;
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
-      try{const savedPage=savedPageBeforeLoad||localStorage.getItem(pageStorageKey());if(savedPage&&PAGES[savedPage])pg=savedPage;else pg='dash'}catch(e){pg='dash'}
+      try{const savedPage=savedPageBeforeLoad||localStorage.getItem(pageStorageKey());T.pagePreference=savedPage&&PAGES[savedPage]?savedPage:'dash';pg=T.pagePreference}catch(e){T.pagePreference='dash';pg='dash'}
       T.pgInit=1;
       R();
     };
@@ -2815,7 +2815,7 @@ let BARAPP_DESKTOP_SIDEBAR_COLLAPSED=false;
 try{BARAPP_DESKTOP_SIDEBAR_COLLAPSED=localStorage.getItem('barapp.desktopSidebarCollapsed')==='1'}catch(e){}
 const desktopSidebarIcon=()=>'<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'m13 8 4 4-4 4':'m15 8-4 4 4 4')+'"/></svg>';
 function toggleDesktopSidebar(){BARAPP_DESKTOP_SIDEBAR_COLLAPSED=!BARAPP_DESKTOP_SIDEBAR_COLLAPSED;try{localStorage.setItem('barapp.desktopSidebarCollapsed',BARAPP_DESKTOP_SIDEBAR_COLLAPSED?'1':'0')}catch(e){}R()}
-const go=p=>{if(p==='div'||p==='divdet'){toast('Fitur Divisi & Admin sudah dinonaktifkan. Pengaturan akses dilakukan melalui backend.','warn');return}if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;try{if(D.me&&PAGES[pg])localStorage.setItem(pageStorageKey(),pg)}catch(e){}R()},tsd=()=>$('#sdw').classList.toggle('open');
+const go=p=>{if(p==='div'||p==='divdet'){toast('Fitur Divisi & Admin sudah dinonaktifkan. Pengaturan akses dilakukan melalui backend.','warn');return}if((T.dbRole==='guest_arrival'||pg==='guest_arrival')&&p!==pg&&typeof window.guestArrivalHandleNavigation==='function'&&!window.guestArrivalHandleNavigation(p))return;if(p!=pg)T.cq='';pg=p;T.pagePreference=p;try{if(D.me&&PAGES[pg])localStorage.setItem(pageStorageKey(),pg)}catch(e){}R()},tsd=()=>$('#sdw').classList.toggle('open');
 function featureMenuIcon(m,lk){
  if(lk||!m.page)return IC('lock',30);
  const common='viewBox="0 0 64 64" width="60" height="60" fill="none" stroke-linecap="round" stroke-linejoin="round"';
@@ -2927,9 +2927,10 @@ function accFix(){const m=document.querySelector('main');if(!m)return;
 window.__barappRefreshUI=()=>{if(D.me)R()};
 const pageStorageKey=()=> 'bar_pg_last_'+String((D.me&&D.me.uid)||(D.me&&D.me.email)||(D.me&&D.me.r)||'guest');
 function R(){const a=$('#app');if(!D.me){a.className='';a.innerHTML=login();return}
-if(!T.pgInit){T.pgInit=1;let restored=false;if(T.dbRole==='guest_arrival'||D.me.r==='G'){pg='guest_arrival';restored=true}if(!restored)try{const lp=localStorage.getItem(pageStorageKey());if(lp&&PAGES[lp]){pg=lp;restored=true}}catch(e){}if(!restored&&isDeveloper())pg='dash'}
+if(!T.pgInit){T.pgInit=1;let restored=false;if(T.dbRole==='guest_arrival'||D.me.r==='G'){pg='guest_arrival';T.pagePreference='guest_arrival';restored=true}if(!restored)try{const lp=localStorage.getItem(pageStorageKey());if(lp&&PAGES[lp]){pg=lp;T.pagePreference=lp;restored=true}}catch(e){}if(!restored&&isDeveloper()){pg='dash';T.pagePreference='dash'}}
 a.className='in'+(BARAPP_DESKTOP_SIDEBAR_COLLAPSED?' sidebar-collapsed':'');if(D.per.length&&!P())D.cur=D.per[D.per.length-1].id;
-if(!allowed().includes(pg))pg=allowed()[0]||'dash';
+const allowedPagesNow=allowed();let preferredPage=T.pagePreference||'';if(!preferredPage)try{preferredPage=localStorage.getItem(pageStorageKey())||''}catch(e){}
+if(preferredPage&&allowedPagesNow.includes(preferredPage)&&pg!==preferredPage)pg=preferredPage;else if(!allowedPagesNow.includes(pg))pg=allowedPagesNow[0]||'dash';
 try{sessionStorage.setItem('bar_pg',pg)}catch(e){}
 const key=pg+'|'+D.cur,an=key!=T.lk;T.lk=key;if(an)scrollTo({top:0,behavior:'smooth'});
 const lab=k=>esc(TH.nav[k]||PAGES[k]),rg=rng(),role=D.me.r==='G'?'GUEST ARRIVAL':isDeveloper()?'DEVELOPER':adm()?'ADMIN':esc((D.emp.find(e=>e.id==D.me.id)||{nama:'KARYAWAN'}).nama),px=pg.startsWith('pay_'),gr=GRP(pg),home=gr=='guest'?'guest_arrival':gr=='cogs'?'cogs_materials':gr=='pay'?'pay_data':gr=='dev'?'dash':gr=='inventory'?'barang':'dash',shl=gr=='pay'?SHEET_PAY:gr=='abs'?SHEET_ABS:gr=='inventory'?SHEET_INV:[],pgs=Object.keys(PAGES).filter(k=>allowed().includes(k)&&(!HIDE_NAV.includes(k)||(T.dbRole==='report_viewer'&&['masuk','pengeluaran','supplies','cogs_production','cogs_sales'].includes(k)))&&(!MOVED.includes(k)||k==='pay_data')&&(k!='audit'||isDeveloper())).sort((a,b)=>{const order=['cogs_dashboard','cogs_daily_so','cogs_closing','dash','ops_dashboard','barang','pay_data','audit'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?order.length:ai)-(bi<0?order.length:bi)}),pic=k=>({guest_arrival:'calendar-clock',dash:'dashboard',ops_dashboard:'chart-no-axes-combined',cogs_dashboard:'chart-no-axes-combined',pay_data:'kar',pay_lap:'lap',pay_kas:'user',pay_set:'settings',audit:'doc',barang:'box',masuk:'truck',pengeluaran:'refresh',supplies:'clipboard-list',cogs_materials:'box',cogs_wip:'sprout',cogs_menu:'doc',cogs_production:'boxplus',cogs_daily_so:'cal',cogs_sales:'bar',cogs_closing:'approval'})[k]||k;
