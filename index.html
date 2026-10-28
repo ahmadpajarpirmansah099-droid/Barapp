@@ -2631,8 +2631,9 @@ async function initAuth(){
         try{sessionStorage.setItem('bar_pg','guest_arrival');localStorage.setItem('bar_pg_last','guest_arrival')}catch(e){}
         R();if(guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){await Promise.all([sbLoad(),loadSharedSettings(true)]);R()}return;
       }
+      let savedPageBeforeLoad='';try{savedPageBeforeLoad=localStorage.getItem(pageStorageKey())||''}catch(e){}
       await Promise.all([sbLoad(),loadSharedSettings(true)]);
-      try{const savedPage=localStorage.getItem(pageStorageKey());if(savedPage&&PAGES[savedPage])pg=savedPage;else pg='dash'}catch(e){pg='dash'}
+      try{const savedPage=savedPageBeforeLoad||localStorage.getItem(pageStorageKey());if(savedPage&&PAGES[savedPage])pg=savedPage;else pg='dash'}catch(e){pg='dash'}
       T.pgInit=1;
       R();
     };
