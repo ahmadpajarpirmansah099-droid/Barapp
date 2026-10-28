@@ -2505,11 +2505,19 @@ function outMenuHtml(){
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
   const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
   return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div>`}
+let SB_LOAD_PROMISE=null;
 async function sbLoad(silent){
 if(T.dbRole==='guest_arrival'){if(typeof guestArrivalRefresh==='function')guestArrivalRefresh(true);return}
-if(SB.loading){SB.pend=(!silent||SB.pend=='full')?'full':'silent';return}
-await sbLoad0(silent);
-if(SB.pend){const m=SB.pend;SB.pend=null;setTimeout(()=>sbLoad(m=='silent'),0)}
+if(SB_LOAD_PROMISE){
+  SB.pend=(!silent||SB.pend=='full')?'full':'silent';
+  await SB_LOAD_PROMISE;
+  if(SB.pend){const m=SB.pend;SB.pend=null;await sbLoad(m=='silent')}
+  return;
+}
+const current=sbLoad0(silent);
+SB_LOAD_PROMISE=current;
+try{await current}finally{if(SB_LOAD_PROMISE===current)SB_LOAD_PROMISE=null}
+if(SB.pend){const m=SB.pend;SB.pend=null;await sbLoad(m=='silent')}
 }
 async function sbLoad0(silent){
 if(SB.loading)return;SB.loading=true;
