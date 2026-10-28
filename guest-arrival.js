@@ -247,7 +247,14 @@ const gaCss = String.raw`
 .ga-detail-wide{grid-column:1/-1}
 .ga-change-list{display:grid;gap:10px;margin-top:10px}
 .ga-change{border-left:3px solid var(--ac,#6e9b57);padding:2px 0 2px 10px;font-size:12px}
-.ga-change pre{font-family:inherit;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--tint,rgba(100,140,95,.13));padding:8px;border-radius:8px;margin:6px 0}
+.ga-change-fields{display:grid;gap:5px;margin-top:7px}
+.ga-change-field{display:flex;flex-wrap:wrap;gap:4px;line-height:1.45;overflow-wrap:anywhere}
+.ga-change-field strong{font-weight:800}
+.ga-change-field span{overflow-wrap:anywhere}
+.ga-change-empty{margin-top:7px;color:var(--mu,#758078)}
+.ga-table-route{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ga-table-route .ga-table-value{margin:2px 0}
+.ga-table-route-arrow{color:var(--ac,#6e9b57);font-size:17px;font-weight:900;line-height:1}
 .ga-inline-summary{font-size:12px;color:var(--mu,#758078);margin-top:7px}
 @media(min-width:640px){.ga-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ga-month-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ga-card{padding:15px}.ga-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.ga-heading{align-items:flex-start}.ga-date-pill{font-size:10px;padding:6px 8px}.ga-tabs{gap:3px}.ga-tab{font-size:11px;padding:10px 2px}.ga-card-actions{gap:6px}.ga-card-actions .ga-btn{padding:8px 5px;font-size:11px}.ga-detail-grid{grid-template-columns:1fr}.ga-detail-wide{grid-column:auto}}
@@ -1116,14 +1123,84 @@ async function guestArrivalConfirmMoveTable() {
     if(GA.busy===f.id) GA.busy='';
   }
 }
+function gaChangeValue(key,value) {
+  if (value === null || value === undefined || value === '') return '—';
+  if (key === 'arrived_at' || key === 'seated_at' || key === 'finished_at') return gaFormatDateTime(value);
+  if (key === 'operational_date') return gaFormatDate(value);
+  if (key === 'waiting_seconds') return gaDuration(value);
+  if (key === 'packs') return String(value) + ' pack';
+  return String(value);
+}
+function gaChangeSummary(change) {
+  const oldData = change && change.old_data && typeof change.old_data === 'object' ? change.old_data : {};
+  const newData = change && change.new_data && typeof change.new_data === 'object' ? change.new_data : {};
+  const fields = [
+    ['guest_name','Nama'],
+    ['status','Status'],
+    ['table_name','Meja'],
+    ['packs','Jumlah pack'],
+    ['whatsapp','WhatsApp'],
+    ['smoking_preference','Preferensi'],
+    ['note','Catatan'],
+    ['arrived_at','Waktu kedatangan'],
+    ['seated_at','Waktu duduk'],
+    ['finished_at','Waktu akhir'],
+    ['operational_date','Tanggal antrean'],
+    ['waiting_seconds','Waiting Time'],
+    ['cancellation_reason','Alasan pembatalan']
+  ];
+  const rows = fields.filter(([key]) => {
+    const before = oldData[key] == null ? null : oldData[key];
+    const after = newData[key] == null ? null : newData[key];
+    return before !== after;
+  }).map(([key,label]) => {
+    const before = gaEscape(gaChangeValue(key,oldData[key]));
+    const after = gaEscape(gaChangeValue(key,newData[key]));
+    return '<div class="ga-change-field"><strong>' + label + ':</strong><span>' + before + ' → ' + after + '</span></div>';
+  }).join('');
+  return rows
+    ? '<div class="ga-change-fields">' + rows + '</div>'
+    : '<div class="ga-change-empty">Tidak ada perubahan yang perlu ditampilkan.</div>';
+}
+function gaTableRoute(changes,currentTable) {
+  const tableChanges = (Array.isArray(changes) ? changes : []).filter(c => {
+    const oldData = c && c.old_data && typeof c.old_data === 'object' ? c.old_data : {};
+    const newData = c && c.new_data && typeof c.new_data === 'object' ? c.new_data : {};
+    return String(oldData.table_name || '').trim() !== String(newData.table_name || '').trim();
+  }).slice().sort((a,b) => {
+    const aTime = Date.parse(a.changed_at || '') || 0;
+    const bTime = Date.parse(b.changed_at || '') || 0;
+    return aTime - bTime;
+  });
+  const route = [];
+  tableChanges.forEach(c => {
+    const oldData = c && c.old_data && typeof c.old_data === 'object' ? c.old_data : {};
+    const newData = c && c.new_data && typeof c.new_data === 'object' ? c.new_data : {};
+    const before = String(oldData.table_name || '').trim();
+    const after = String(newData.table_name || '').trim();
+    if (before && route[route.length - 1] !== before) route.push(before);
+    if (after && route[route.length - 1] !== after) route.push(after);
+  });
+  const current = String(currentTable || '').trim();
+  if (current && (!route.length || route[route.length - 1] !== current)) route.push(current);
+  return route;
+}
+function gaTableRouteMarkup(route) {
+  if (!Array.isArray(route) || !route.length) return '<span class="ga-muted">—</span>';
+  return '<div class="ga-table-route">' + route.map((table,index) =>
+    (index ? '<span class="ga-table-route-arrow" aria-hidden="true">→</span>' : '') +
+    '<span class="ga-table-value">' + gaEscape(table) + '</span>'
+  ).join('') + '</div>';
+}
 function guestArrivalShowDetail() {
   const g = GA.detail; if (!g) return;
   const changes = Array.isArray(g.changes) ? g.changes : [];
+  const tableRoute = gaTableRoute(changes,g.table_name);
   const info = (label,value,wide) => '<div class="ga-detail-item ' + (wide?'ga-detail-wide':'') + '"><label>' + gaEscape(label) + '</label><div>' + value + '</div></div>';
   modal('<h3 class="ga-modal-heading">' + gaEscape(g.queue_code) + ' · ' + gaEscape(g.guest_name) + '</h3><p class="ga-modal-intro">Detail pendaftaran tamu. Koreksi data tidak dapat mengubah status atau waktu kedatangan.</p>' +
     '<div class="ga-detail-grid">' +
     info('Nomor antrean',gaEscape(g.queue_code)) + info('Status',gaStatusBadge(g.status)) +
-    (g.table_name ? info('Meja','<span class="ga-table-value">' + gaEscape(g.table_name) + '</span>',true) : '') +
+    (tableRoute.length ? info('Meja',gaTableRouteMarkup(tableRoute),true) : '') +
     (g.seated_at ? info('Waktu duduk',gaEscape(gaFormatDateTime(g.seated_at))) : '') +
     info('Jumlah pack',gaEscape(g.packs)+' pack') + info('WhatsApp',gaPhoneMarkup(g.whatsapp)) +
     info('Preferensi',gaEscape(g.smoking_preference || 'Non Smoking')) +
@@ -1135,9 +1212,12 @@ function guestArrivalShowDetail() {
     (g.cancellation_reason ? info('Alasan pembatalan',gaEscape(g.cancellation_reason),true) : '') +
     (Number(g.correction_count || 0) ? info('Koreksi',Number(g.correction_count)+' kali · terakhir '+gaEscape(g.last_correction_at?gaFormatDateTime(g.last_correction_at):'—'),true) : '') +
     '</div><details style="margin-top:15px"><summary style="cursor:pointer;font-weight:750">Riwayat Perubahan (' + changes.length + ')</summary>' +
-    (changes.length ? '<div class="ga-change-list">' + changes.map(c => '<div class="ga-change"><strong>' + (c.change_type==='CORRECTION'?'Koreksi data':c.change_type==='TABLE_MOVE'?'Pindah meja':'Perubahan status') + '</strong><div class="ga-muted">' + gaEscape(gaFormatDateTime(c.changed_at)) + ' · ' + gaEscape(c.actor_email || '—') + '</div>' +
-      (c.reason?'<div>Alasan: '+gaEscape(c.reason)+'</div>':'') +
-      '<details style="margin-top:6px"><summary style="cursor:pointer">Lihat nilai sebelum/sesudah</summary><pre>Sebelum:\n' + gaEscape(JSON.stringify(c.old_data||{},null,2)) + '\n\nSesudah:\n' + gaEscape(JSON.stringify(c.new_data||{},null,2)) + '</pre></details></div>').join('') : '<div class="ga-inline-summary">Belum ada perubahan data</div>') +
+    (changes.length ? '<div class="ga-change-list">' + changes.map(c => {
+      const changeTitle = c.change_type==='CORRECTION' ? 'Koreksi data' : c.change_type==='TABLE_MOVE' ? 'Pindah meja' : 'Perubahan status';
+      return '<div class="ga-change"><strong>' + changeTitle + '</strong><div class="ga-muted">' + gaEscape(gaFormatDateTime(c.changed_at)) + ' · ' + gaEscape(c.actor_email || '—') + '</div>' +
+        (c.reason ? '<div>Alasan: ' + gaEscape(c.reason) + '</div>' : '') +
+        gaChangeSummary(c) + '</div>';
+    }).join('') : '<div class="ga-inline-summary">Belum ada perubahan data</div>') +
     '</details><div class="ga-btn-row">' +
     (g.status==='Duduk' ? '<button type="button" class="ga-btn primary" onclick="guestArrivalOpenMoveTable()">Pindah meja</button>' : '') +
     '<button type="button" class="ga-btn primary" onclick="guestArrivalOpenEdit()">Edit data</button><button type="button" class="ga-btn secondary" onclick="closeM()">Tutup</button></div>');
