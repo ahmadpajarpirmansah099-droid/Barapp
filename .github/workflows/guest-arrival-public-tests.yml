@@ -1,0 +1,81 @@
+name: Guest Arrival Public Queue Checks
+
+on:
+  pull_request:
+    paths:
+      - 'guest-arrival.js'
+      - 'guest-queue.html'
+      - 'supabase/migrations/**'
+      - 'supabase/functions/guest-arrival-public/**'
+      - 'scripts/guest-arrival-public.test.cjs'
+      - 'scripts/guest-arrival-public.browser.test.cjs'
+      - 'scripts/guest-arrival-public-fixture.sql'
+      - 'scripts/guest-arrival-public.integration.sql'
+      - 'scripts/guest-arrival-public-concurrency.sh'
+      - '.github/workflows/guest-arrival-public-tests.yml'
+
+jobs:
+  public-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run safety regression tests
+        run: node --test scripts/guest-arrival-public.test.cjs
+      - name: Check Guest Arrival admin JavaScript syntax
+        run: node --check guest-arrival.js
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check Edge Function
+        run: deno check supabase/functions/guest-arrival-public/index.ts
+
+  public-queue-sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: barapp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d barapp_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Apply fixture, migration, and integration assertions
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f scripts/guest-arrival-public-fixture.sql
+          psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261027190000_guest_arrival_public_queue.sql
+          psql -h localhost -U postgres -d barapp_test -v ON_ERROR_STOP=1 -f scripts/guest-arrival-public.integration.sql
+
+      - name: Verify concurrent view-only ticket reads
+        env:
+          PGPASSWORD: postgres
+        run: bash scripts/guest-arrival-public-concurrency.sh
+
+  public-queue-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --prefix /tmp/barapp-browser playwright@1.56.1
+          /tmp/barapp-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test view-only guest ticket in a mocked mobile browser
+        env:
+          GA_PLAYWRIGHT_MODULE: /tmp/barapp-browser/node_modules/playwright
+        run: node scripts/guest-arrival-public.browser.test.cjs

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#8f2024">
+  <title>Nomor Antrean Anda — Barapp</title>
+  <style>
+    :root{color-scheme:light;--ink:#1d2520;--muted:#68746c;--line:#dfe5e0;--paper:#fff;--wash:#f5f7f5;--brand:#98252a;--green:#137c43;--amber:#935800;--red:#a51d2d}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    header{height:60px;background:linear-gradient(120deg,#8c2025,#a52a30);color:#fff;display:flex;align-items:center;padding:0 max(18px,calc((100vw - 520px)/2));font-size:18px;font-weight:850;letter-spacing:.02em}
+    main{width:min(100% - 28px,520px);margin:28px auto;padding-bottom:30px}
+    .eyebrow{font-size:11px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+    h1{font-size:clamp(26px,6vw,34px);line-height:1.12;letter-spacing:-.04em;margin:8px 0}
+    .sub{color:var(--muted);margin:0 0 22px}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:clamp(20px,5vw,30px);box-shadow:0 14px 38px rgba(24,34,29,.07)}
+    .state{display:none;text-align:center}
+    .ticket-label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:850}
+    .ticket-code{font-size:clamp(56px,16vw,84px);line-height:1.12;letter-spacing:-.055em;font-weight:950;color:var(--brand);margin:10px 0 14px}
+    .status{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 13px;font-weight:850;font-size:13px;background:#f0f3f0}
+    .status:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+    .status.waiting{background:#fff0c8;color:var(--amber)}
+    .status.seated,.status.done{background:#e0f5e9;color:var(--green)}
+    .status.cancelled{background:#ffe8eb;color:var(--red)}
+    .details{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px;text-align:left}
+    .detail{padding:13px;border:1px solid var(--line);border-radius:13px;background:#fbfcfb}
+    .detail small{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+    .detail strong{font-size:14px;overflow-wrap:anywhere}
+    .notice{font-size:12px;color:var(--muted);margin:20px 0 0}
+    .symbol{width:56px;height:56px;margin:2px auto 14px;border-radius:18px;background:#fbe9e9;display:grid;place-items:center;color:var(--brand);font-size:27px;font-weight:900}
+    .error-title{font-size:20px;margin:0 0 8px}
+    .footer{text-align:center;font-size:11px;color:#859187;margin-top:17px}
+    .refresh{font-size:11px;color:var(--muted);margin-top:12px}
+    @media(max-width:360px){main{margin-top:20px}.details{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>Barapp</header>
+<main>
+  <div class="eyebrow">Guest Arrival</div>
+  <h1>Nomor antrean Anda</h1>
+  <p class="sub">Lihat nomor dan status antrean Anda di sini. Tidak perlu mengisi formulir lagi.</p>
+
+  <section id="loading" class="card state" style="display:block" aria-live="polite">
+    <div class="symbol">…</div><h2 class="error-title">Memeriksa link antrean</h2>
+    <p class="sub">Mohon tunggu sebentar.</p>
+  </section>
+
+  <section id="invalid" class="card state" aria-live="polite">
+    <div class="symbol">!</div><h2 class="error-title">Link antrean tidak tersedia</h2>
+    <p class="sub">Link ini tidak valid, telah dicabut, atau sementara tidak dapat diakses. Hubungi staf outlet untuk meminta link yang baru.</p>
+  </section>
+
+  <section id="ticket" class="card state" aria-live="polite">
+    <div class="ticket-label">Nomor antrean Anda</div>
+    <div id="ticket-code" class="ticket-code">—</div>
+    <div id="ticket-status" class="status waiting">Memuat status</div>
+    <div class="details">
+      <div class="detail"><small>Outlet</small><strong id="ticket-outlet">—</strong></div>
+      <div class="detail"><small>Jumlah orang</small><strong id="ticket-packs">—</strong></div>
+      <div class="detail"><small>Tanggal antrean</small><strong id="ticket-date">—</strong></div>
+      <div class="detail"><small>Waktu daftar</small><strong id="ticket-time">—</strong></div>
+    </div>
+    <p class="notice">Status antrean diperbarui otomatis. Tunjukkan nomor ini kepada staf outlet saat diperlukan.</p>
+    <div id="refresh-state" class="refresh">Memperbarui status antrean secara berkala.</div>
+  </section>
+  <div class="footer">Barapp · Link khusus untuk melihat antrean ini.</div>
+</main>
+<script>
+(() => {
+  "use strict";
+  const ENDPOINT = "https://ybptbloiujrbvgxcjqqk.supabase.co/functions/v1/guest-arrival-public";
+  const PUBLISHABLE_KEY = "sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd";
+  const $ = (id) => document.getElementById(id);
+  const tokenMatch = String(location.hash || "").replace(/^#/, "").match(/(?:^|&)token=([a-f0-9]{64})(?:&|$)/i);
+  const token = tokenMatch ? tokenMatch[1].toLowerCase() : "";
+  // The bearer token lives only in memory after the initial URL fragment is removed.
+  if (token) history.replaceState(null, "", location.pathname + location.search);
+  let busy = false;
+  let failedPermanently = false;
+
+  function showState(id) {
+    ["loading","invalid","ticket"].forEach((name) => {
+      $(name).style.display = name === id ? "block" : "none";
+    });
+  }
+  function formatDate(value) {
+    if (!value) return "—";
+    const match = String(value).slice(0,10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? match[3] + "-" + match[2] + "-" + match[1] : String(value);
+  }
+  function formatTime(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    }).format(date);
+  }
+  function renderTicket(ticket) {
+    $("ticket-code").textContent = ticket.queue_code || ("WL-" + String(ticket.queue_number || "").padStart(3,"0"));
+    $("ticket-outlet").textContent = ticket.outlet_name || ticket.outlet_code || "Barapp";
+    $("ticket-packs").textContent = String(ticket.packs || 1) + " orang";
+    $("ticket-date").textContent = formatDate(ticket.operational_date);
+    $("ticket-time").textContent = formatTime(ticket.arrived_at);
+    const status = String(ticket.status || "Menunggu");
+    const statusNode = $("ticket-status");
+    statusNode.textContent = status === "Duduk" ? "Sudah mendapat meja" :
+      status === "Selesai" ? "Selesai" :
+      status === "Batalkan" ? "Dibatalkan" : "Menunggu";
+    statusNode.className = "status " + (status === "Duduk" ? "seated" :
+      status === "Selesai" ? "done" : status === "Batalkan" ? "cancelled" : "waiting");
+    showState("ticket");
+  }
+  async function refreshTicket() {
+    if (!token || busy || failedPermanently) return;
+    busy = true;
+    try {
+      const response = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": PUBLISHABLE_KEY },
+        cache: "no-store",
+        referrerPolicy: "no-referrer",
+        body: JSON.stringify({ action: "ticket", token })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok !== true || !data.ticket) {
+        if (response.status === 404) {
+          failedPermanently = true;
+          showState("invalid");
+        } else if ($("ticket").style.display !== "block") {
+          showState("invalid");
+        } else {
+          $("refresh-state").textContent = "Status belum berhasil diperbarui. Akan dicoba lagi otomatis.";
+        }
+        return;
+      }
+      renderTicket(data.ticket);
+      $("refresh-state").textContent = "Terakhir diperbarui " + formatTime(new Date().toISOString()) + " WIB.";
+    } catch (_) {
+      if ($("ticket").style.display !== "block") showState("invalid");
+      else $("refresh-state").textContent = "Koneksi terputus. Akan dicoba lagi otomatis.";
+    } finally {
+      busy = false;
+    }
+  }
+
+  if (!token) {
+    failedPermanently = true;
+    showState("invalid");
+  } else {
+    void refreshTicket();
+    window.setInterval(refreshTicket, 15000);
+  }
+})();
+</script>
+</body>
+</html>
