@@ -150,6 +150,9 @@ begin
  select * into r from public.payroll_runs where id=p_run for update;
  if not found then raise exception 'Run tidak ditemukan' using errcode='P0002'; end if;
  perform public.payroll_assert_outlet_scope(r.outlet_id);
+ if exists (select 1 from public.payroll_items pi where pi.run_id=p_run and pi.outlet_id is distinct from r.outlet_id) then
+  raise exception 'PAYROLL_RUN_ITEM_OUTLET_MISMATCH' using errcode='42501';
+ end if;
  if r.status<>'calculated' then raise exception 'Payroll harus berstatus calculated' using errcode='55000'; end if;
  for x in select i.id,i.employee_id,i.monthly_salary,i.net_pay,i.overtime_total as oldot
           from public.payroll_items i where i.run_id=p_run loop
@@ -178,6 +181,9 @@ begin
  select * into r from public.payroll_runs where id=p_run for update;
  if not found then raise exception 'Run tidak ditemukan' using errcode='P0002'; end if;
  perform public.payroll_assert_outlet_scope(r.outlet_id);
+ if exists (select 1 from public.payroll_items pi where pi.run_id=p_run and pi.outlet_id is distinct from r.outlet_id) then
+  raise exception 'PAYROLL_RUN_ITEM_OUTLET_MISMATCH' using errcode='42501';
+ end if;
  if r.status='finalized' then
   if r.idempotency_key=p_key then return; end if;
   raise exception 'Payroll sudah final';
@@ -221,6 +227,9 @@ begin
   if public.app_role()<>'dev' then raise exception 'PAYROLL_LEGACY_GLOBAL_RUN_REQUIRES_DEVELOPER_REVIEW' using errcode='42501'; end if;
  else
   perform public.payroll_assert_outlet_scope(r.outlet_id);
+  if exists (select 1 from public.payroll_items pi where pi.run_id=p_run and pi.outlet_id is distinct from r.outlet_id) then
+   raise exception 'PAYROLL_RUN_ITEM_OUTLET_MISMATCH' using errcode='42501';
+  end if;
  end if;
  if r.status<>'finalized' then raise exception 'Hanya payroll final yang dapat di-void'; end if;
  perform set_config('app.void_ok','1',true);
