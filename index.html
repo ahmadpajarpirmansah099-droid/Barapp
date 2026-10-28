@@ -3644,7 +3644,7 @@ V.audit=()=>{if(!isDeveloper())return '<div class="card empty">Hanya developer y
  if(!T.audInit){T.audInit=1;setTimeout(audLoad,0)}
  const rows=T.aud||[];
  return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Riwayat perubahan (100 terakhir)</b><button class="btn s x" onclick="audLoad()">Muat ulang</button></div></div>`+
- `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
+ `<div class="card"><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Tabel</th><th>Keterangan</th></tr>${T.audError?'<tr><td colspan="5">Gagal memuat: '+esc(T.audError)+'</td></tr>':rows.map(r=>`<tr><td style="white-space:nowrap">${String(r.at).slice(0,16).replace('T',' ')}</td><td>${esc(r.actor_email||'-')}</td><td>${esc(r.action)}</td><td>${esc(r.table_name||'-')}</td><td>${esc(r.reason||'')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada data.</td></tr>'}</table></div></div>`};
 
 /* ===== MANAJEMEN AKUN (dev) ===== */
 function accsCard(){
