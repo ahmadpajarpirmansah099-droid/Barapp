@@ -183,7 +183,7 @@ const gaCss = String.raw`
 .ga-eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--ac,#6e9b57)}
 .ga-muted{color:var(--mu,#758078);font-size:12px}
 .ga-date-pill{border:1px solid var(--br,#d5ddd1);border-radius:999px;padding:7px 10px;font-size:11px;white-space:nowrap;background:var(--cd,#fff)}
-.ga-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;background:var(--tint,rgba(100,140,95,.13));border-radius:14px;margin:0 0 16px}
+.ga-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px;background:var(--tint,rgba(100,140,95,.13));border-radius:14px;margin:0 0 16px}
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
