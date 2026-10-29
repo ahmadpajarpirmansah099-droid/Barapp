@@ -376,6 +376,9 @@ const gaCss = String.raw`
   #app.in .ga-wrap .ga-section-title { margin:10px 0 7px!important; }
   #app.in .ga-wrap .ga-card-list { gap:9px!important; }
   #app.in .ga-wrap .ga-card-list .ga-card { padding:10px 13px!important; border:1.5px solid #c8796d!important; border-left:4px solid #c75e50!important; border-radius:12px!important; background:#fffaf6!important; box-shadow:0 2px 0 rgba(83,43,35,.10),0 4px 10px rgba(83,43,35,.07)!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card.ga-card-reservation { background:#edf4e9!important; border:1.5px solid #9db79a!important; border-left:4px solid #6f966d!important; box-shadow:0 2px 0 rgba(65,99,62,.14),0 4px 10px rgba(65,99,62,.08)!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card.ga-card-reservation .ga-rsv-linked-code { background:#dcead7!important; border-color:#9db79a!important; color:#385b3c!important; }
+  #app.in .ga-wrap .ga-card-list .ga-card.ga-card-reservation .ga-status { border-color:#b4cdb0!important; }
   #app.in .ga-wrap .ga-card-list .ga-card + .ga-card { margin-top:0!important; }
   #app.in .ga-wrap .ga-card-list .ga-card-top { align-items:center!important; gap:12px!important; }
   #app.in .ga-wrap .ga-card-list .ga-queue-code { font-size:15px!important; }
