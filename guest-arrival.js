@@ -673,7 +673,7 @@ body:has(#app.in .ga-wrap){
   }
 }
 
-.ga-rsv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px}.ga-rsv-toolbar h3,.ga-rsv-detail-head h3{margin:4px 0;font-size:clamp(17px,2.5vw,22px)}.ga-rsv-month-nav{display:flex;gap:6px;align-items:center}.ga-rsv-month-nav .ga-btn{min-width:42px;padding:8px}.ga-rsv-legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 12px;font-size:11px;color:var(--mu,#758078)}.ga-rsv-legend span{display:inline-flex;align-items:center;gap:6px}.ga-rsv-legend i,.ga-rsv-dots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b98a27}.ga-rsv-legend i.seated,.ga-rsv-dots i.seated{background:#4c8a5a}.ga-rsv-legend i.cancelled,.ga-rsv-dots i.cancelled{background:#bf5b50}.ga-rsv-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:10px;border:1.5px solid var(--line,#26332a);border-radius:15px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-weekday{text-align:center;padding:6px 0;color:var(--mu,#758078);font-size:10px;font-weight:850}.ga-rsv-day{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:clamp(48px,8vw,82px);padding:7px;border:1px solid var(--br,#d7dfd3);border-radius:10px;background:var(--cd,#fff);color:var(--tx,#26332a);text-align:left;cursor:pointer}.ga-rsv-day.empty{visibility:hidden;border:0}.ga-rsv-day-num{font-size:12px;font-weight:800;line-height:1}.ga-rsv-day.today .ga-rsv-day-num{display:grid;place-items:center;width:23px;height:23px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--ac,#6e9b57);color:var(--onac,#fff)}.ga-rsv-day.selected{outline:2px solid var(--tx,#26332a);outline-offset:-2px;background:var(--tint,rgba(100,140,95,.13))}.ga-rsv-day.has-items{border-color:var(--tx,#26332a)}.ga-rsv-day-count{font-size:10px;font-weight:900}.ga-rsv-dots{display:flex;gap:4px}.ga-rsv-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 12px}.ga-rsv-form{padding:14px;margin:12px 0;border:1.5px solid var(--line,#26332a);border-radius:14px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-form-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.ga-rsv-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.ga-rsv-wide{grid-column:1/-1}.ga-rsv-note{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;color:var(--mu,#758078)}.ga-rsv-card{border-color:var(--line,#26332a)}@media(max-width:520px){.ga-rsv-toolbar{align-items:flex-start;flex-direction:column}.ga-rsv-month-nav{width:100%;justify-content:space-between}.ga-rsv-calendar{gap:3px;padding:6px}.ga-rsv-day{min-height:47px;padding:5px;border-radius:8px}.ga-rsv-day-num{font-size:11px}.ga-rsv-day-count{font-size:9px}.ga-rsv-form-grid{grid-template-columns:1fr}.ga-rsv-wide{grid-column:auto}.ga-rsv-detail-head{align-items:flex-start}.ga-rsv-detail-head>.ga-btn{padding:8px;font-size:12px}}
+.ga-rsv-time-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px 14px;border:1.5px solid #b4533f;border-radius:12px;background:#fff0e8;color:#873a2d}.ga-rsv-time-label{font-size:10px;font-weight:850;letter-spacing:.09em}.ga-rsv-time-banner strong{font-size:clamp(22px,3vw,28px);line-height:1.1;font-weight:950;font-variant-numeric:tabular-nums;letter-spacing:.02em}.ga-rsv-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin:10px 0 4px}.ga-rsv-detail{display:grid;gap:4px;min-width:0}.ga-rsv-detail>span{font-size:10px;color:var(--mu,#758078);font-weight:750}.ga-rsv-detail>strong{font-size:12px;font-weight:750;overflow-wrap:anywhere}.ga-rsv-detail-note{grid-column:1/-1;padding-top:9px;border-top:1px solid var(--br,#d7dfd3)}.ga-rsv-detail-note>strong{white-space:pre-wrap;font-weight:600}.ga-rsv-actions{grid-template-columns:repeat(3,minmax(0,1fr));align-items:center}.ga-rsv-actions .ga-btn{min-width:0;padding:9px 7px;font-size:12px}.ga-rsv-actions .ga-table-chip{grid-column:span 2;justify-content:center}.ga-rsv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px}.ga-rsv-toolbar h3,.ga-rsv-detail-head h3{margin:4px 0;font-size:clamp(17px,2.5vw,22px)}.ga-rsv-month-nav{display:flex;gap:6px;align-items:center}.ga-rsv-month-nav .ga-btn{min-width:42px;padding:8px}.ga-rsv-legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 12px;font-size:11px;color:var(--mu,#758078)}.ga-rsv-legend span{display:inline-flex;align-items:center;gap:6px}.ga-rsv-legend i,.ga-rsv-dots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b98a27}.ga-rsv-legend i.seated,.ga-rsv-dots i.seated{background:#4c8a5a}.ga-rsv-legend i.cancelled,.ga-rsv-dots i.cancelled{background:#bf5b50}.ga-rsv-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:10px;border:1.5px solid var(--line,#26332a);border-radius:15px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-weekday{text-align:center;padding:6px 0;color:var(--mu,#758078);font-size:10px;font-weight:850}.ga-rsv-day{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:clamp(48px,8vw,82px);padding:7px;border:1px solid var(--br,#d7dfd3);border-radius:10px;background:var(--cd,#fff);color:var(--tx,#26332a);text-align:left;cursor:pointer}.ga-rsv-day.empty{visibility:hidden;border:0}.ga-rsv-day-num{font-size:12px;font-weight:800;line-height:1}.ga-rsv-day.today .ga-rsv-day-num{display:grid;place-items:center;width:23px;height:23px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--ac,#6e9b57);color:var(--onac,#fff)}.ga-rsv-day.selected{outline:2px solid var(--tx,#26332a);outline-offset:-2px;background:var(--tint,rgba(100,140,95,.13))}.ga-rsv-day.has-items{border-color:var(--tx,#26332a)}.ga-rsv-day-count{font-size:10px;font-weight:900}.ga-rsv-dots{display:flex;gap:4px}.ga-rsv-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 12px}.ga-rsv-form{padding:14px;margin:12px 0;border:1.5px solid var(--line,#26332a);border-radius:14px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-form-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.ga-rsv-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.ga-rsv-wide{grid-column:1/-1}.ga-rsv-note{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;color:var(--mu,#758078)}.ga-rsv-card{border-color:var(--line,#26332a)}@media(max-width:520px){.ga-rsv-time-banner{align-items:flex-start;flex-direction:column;gap:6px}.ga-rsv-actions .ga-btn{font-size:11px;padding:8px 4px}.ga-rsv-toolbar{align-items:flex-start;flex-direction:column}.ga-rsv-month-nav{width:100%;justify-content:space-between}.ga-rsv-calendar{gap:3px;padding:6px}.ga-rsv-day{min-height:47px;padding:5px;border-radius:8px}.ga-rsv-day-num{font-size:11px}.ga-rsv-day-count{font-size:9px}.ga-rsv-form-grid{grid-template-columns:1fr}.ga-rsv-wide{grid-column:auto}.ga-rsv-detail-head{align-items:flex-start}.ga-rsv-detail-head>.ga-btn{padding:8px;font-size:12px}}
 
 `;
 function guestArrivalQueueMarkup() {
@@ -807,9 +807,9 @@ function guestArrivalReservationsMarkup() {
     '</div><button class="ga-btn primary wide" type="submit" '+(GA.busy==='reservation-create'?'disabled':'')+'>'+(GA.busy==='reservation-create'?'Menyimpan…':'Simpan reservasi')+'</button></form>' : '';
   const cards = selected.length ? '<div class="ga-card-list">'+selected.map(r =>
     '<article class="ga-card ga-rsv-card"><div class="ga-card-top"><div><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div></div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div>' +
-    '<div class="ga-card-meta"><span>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</span><span>'+gaEscape(r.packs)+' pack</span><span>'+gaEscape(r.smoking_preference||'Non Smoking')+'</span>'+(r.whatsapp?'<span>'+gaPhoneMarkup(r.whatsapp)+'</span>':'')+'</div>' +
-    (r.note?'<p class="ga-rsv-note">'+gaEscape(r.note)+'</p>':'')+
-    (r.status==='Menunggu Reservasi'?'<div class="ga-card-actions"><button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button></div>':r.guest_arrival_id?'<div class="ga-card-meta"><span class="ga-table-chip">Tercatat di Guest Arrival</span></div>':'')+
+    '<div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div>' +
+    '<div class="ga-rsv-details"><div class="ga-rsv-detail"><span>Tanggal</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</strong></div><div class="ga-rsv-detail"><span>Jumlah pack</span><strong>'+gaEscape(r.packs)+' pack</strong></div><div class="ga-rsv-detail"><span>Preferensi smoking</span><strong>'+gaEscape(r.smoking_preference||'Non Smoking')+'</strong></div><div class="ga-rsv-detail"><span>WhatsApp</span><strong>'+(r.whatsapp?gaPhoneMarkup(r.whatsapp):'—')+'</strong></div><div class="ga-rsv-detail ga-rsv-detail-note"><span>Catatan</span><strong>'+(r.note?gaEscape(r.note):'—')+'</strong></div></div>' +
+    '<div class="ga-card-actions ga-rsv-actions"><button class="ga-btn secondary" type="button" onclick="guestArrivalReservationOpenDetail(\''+r.id+'\')">Detail</button>'+(r.status==='Menunggu Reservasi'?'<button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button>':r.guest_arrival_id?'<span class="ga-table-chip">Tercatat di Guest Arrival</span>':'')+'</div>' +
     '</article>').join('')+'</div>' : '<div class="ga-empty"><strong>Belum ada reservasi</strong>Tidak ada reservasi pada tanggal ini.</div>';
   return '<div class="ga-rsv-toolbar"><div><div class="ga-eyebrow">KALENDER RESERVASI</div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsMonth+'-01',{month:'long',year:'numeric'}))+'</h3><p class="ga-muted">Kapasitas tetap diatur staf secara manual.</p></div><div class="ga-rsv-month-nav"><button type="button" class="ga-btn secondary" aria-label="Bulan sebelumnya" onclick="guestArrivalReservationChangeMonth(-1)">‹</button><button type="button" class="ga-btn secondary" onclick="guestArrivalReservationThisMonth()">Hari ini</button><button type="button" class="ga-btn secondary" aria-label="Bulan berikutnya" onclick="guestArrivalReservationChangeMonth(1)">›</button></div></div>' +
     '<div class="ga-rsv-legend"><span><i class="waiting"></i> Menunggu</span><span><i class="seated"></i> Duduk</span><span><i class="cancelled"></i> Dibatalkan</span></div>' +
@@ -865,30 +865,57 @@ async function guestArrivalReservationCreate(event) {
   } catch(e) { GA.error=gaHumanError(e); gaToast('Reservasi gagal disimpan. '+GA.error,'err'); }
   finally { GA.busy=''; R(); }
 }
-async function guestArrivalReservationCancel(id) {
+function guestArrivalReservationOpenDetail(id) {
+  const r=(GA.reservations||[]).find(item=>item.id===id);
+  if (!r) return;
+  const info=(label,value,wide)=>'<div class="ga-detail-item '+(wide?'ga-detail-wide':'')+'"><label>'+label+'</label><div>'+value+'</div></div>';
+  const statusClass=r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting';
+  modal('<h3 class="ga-modal-heading">Detail Reservasi</h3><p class="ga-modal-intro">'+gaEscape(r.reservation_code)+' · '+gaEscape(r.guest_name)+'</p>'+
+    '<div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div>'+
+    '<div class="ga-detail-grid">'+info('Status','<span class="ga-status '+statusClass+'">'+gaEscape(r.status)+'</span>')+
+    info('Nama tamu',gaEscape(r.guest_name))+info('Tanggal reservasi',gaEscape(gaReservationDateLabel(r.reservation_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'})),true)+
+    info('Jumlah pack',gaEscape(r.packs)+' pack')+info('Preferensi smoking',gaEscape(r.smoking_preference||'Non Smoking'))+
+    info('WhatsApp',r.whatsapp?gaPhoneMarkup(r.whatsapp):'—',true)+info('Catatan',r.note?gaEscape(r.note):'—',true)+
+    (r.guest_arrival_id?info('Guest Arrival','Tercatat di Guest Arrival',true):'')+'</div>'+
+    '<div class="ga-btn-row"><button type="button" class="ga-btn secondary" onclick="closeM()">Tutup</button></div>');
+}
+function guestArrivalReservationCancel(id) {
   const row=(GA.reservations||[]).find(r=>r.id===id);
-  if (!row || row.status!=='Menunggu Reservasi') return;
-  if (!confirm('Batalkan reservasi '+row.reservation_code+' atas nama '+row.guest_name+'?')) return;
-  const reason=prompt('Alasan pembatalan (opsional):','');
-  if (reason===null) return;
+  if (!row || row.status!=='Menunggu Reservasi' || GA.busy) return;
+  modal('<h3 class="ga-modal-heading">Batalkan reservasi?</h3><p class="ga-modal-intro">'+gaEscape(row.reservation_code)+' · '+gaEscape(row.guest_name)+'<br>Reservasi akan ditandai sebagai dibatalkan.</p>'+
+    '<div class="ga-field"><label for="ga-rsv-cancel-reason">Alasan pembatalan (opsional)</label><textarea id="ga-rsv-cancel-reason" maxlength="1000" rows="3" placeholder="Tulis alasan jika ada"></textarea></div>'+
+    '<div class="ga-btn-row"><button type="button" class="ga-btn danger" onclick="guestArrivalReservationConfirmCancel(\''+id+'\')">Ya, batalkan</button><button type="button" class="ga-btn secondary" onclick="closeM()">Kembali</button></div>');
+}
+async function guestArrivalReservationConfirmCancel(id) {
+  if (GA.busy) return;
+  const row=(GA.reservations||[]).find(r=>r.id===id);
+  if (!row || row.status!=='Menunggu Reservasi') { closeM(); return; }
+  const reason=document.getElementById('ga-rsv-cancel-reason')?.value?.trim()||'';
   GA.busy='reservation-cancel'; R();
   try {
     await gaRpc('guest_reservation_cancel',{p_id:id,p_reason:reason,...(await gaOutletParams())});
-    gaToast('Reservasi dibatalkan.','ok'); GA.ready=false; await guestArrivalRefresh(true);
+    closeM(); gaToast('Reservasi dibatalkan.','ok'); GA.ready=false; await guestArrivalRefresh(true);
   } catch(e) { GA.error=gaHumanError(e); gaToast('Pembatalan gagal. '+GA.error,'err'); }
   finally { GA.busy=''; R(); }
 }
-async function guestArrivalReservationSeat(id) {
+function guestArrivalReservationSeat(id) {
   const row=(GA.reservations||[]).find(r=>r.id===id);
-  if (!row || row.status!=='Menunggu Reservasi') return;
-  const table=prompt('Masukkan nomor atau nama meja untuk '+row.guest_name+':','');
-  if (table===null) return;
-  if (!table.trim()) { gaToast('Nomor atau nama meja wajib diisi.','err'); return; }
-  if (!confirm('Konfirmasi tamu '+row.guest_name+' duduk di meja '+table.trim()+'? Data tamu akan tercatat di Guest Arrival.')) return;
+  if (!row || row.status!=='Menunggu Reservasi' || GA.busy) return;
+  modal('<h3 class="ga-modal-heading">Dudukkan tamu reservasi?</h3><p class="ga-modal-intro">'+gaEscape(row.reservation_code)+' · '+gaEscape(row.guest_name)+'<br>Isi meja tujuan. Setelah dikonfirmasi, data tamu akan tercatat di Guest Arrival.</p>'+
+    '<div class="ga-seating-highlight"><label for="ga-rsv-seat-table">NOMOR / NAMA MEJA *</label><input id="ga-rsv-seat-table" maxlength="80" autocomplete="off" placeholder="Contoh: Meja 05, VIP 2, Teras A"><div class="ga-muted">Wajib diisi · Maksimal 80 karakter</div></div>'+
+    '<div class="ga-btn-row"><button type="button" class="ga-btn primary" onclick="guestArrivalReservationConfirmSeat(\''+id+'\')">Konfirmasi Duduk</button><button type="button" class="ga-btn secondary" onclick="closeM()">Batal</button></div>');
+}
+async function guestArrivalReservationConfirmSeat(id) {
+  if (GA.busy) return;
+  const row=(GA.reservations||[]).find(r=>r.id===id);
+  if (!row || row.status!=='Menunggu Reservasi') { closeM(); return; }
+  const table=document.getElementById('ga-rsv-seat-table')?.value?.trim()||'';
+  if (!table) { gaToast('Nomor atau nama meja wajib diisi.','err'); document.getElementById('ga-rsv-seat-table')?.focus(); return; }
+  if (table.length>80) { gaToast('Nomor atau nama meja maksimal 80 karakter.','err'); return; }
   GA.busy='reservation-seat'; R();
   try {
-    await gaRpc('guest_reservation_seat',{p_id:id,p_table_name:table.trim(),...(await gaOutletParams())});
-    gaToast('Reservasi terhubung ke Guest Arrival.','ok'); GA.ready=false; await guestArrivalRefresh(true);
+    await gaRpc('guest_reservation_seat',{p_id:id,p_table_name:table,...(await gaOutletParams())});
+    closeM(); gaToast('Reservasi terhubung ke Guest Arrival.','ok'); GA.ready=false; await guestArrivalRefresh(true);
   } catch(e) { GA.error=gaHumanError(e); gaToast('Gagal memproses reservasi. '+GA.error,'err'); }
   finally { GA.busy=''; R(); }
 }
