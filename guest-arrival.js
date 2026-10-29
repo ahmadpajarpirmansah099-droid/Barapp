@@ -717,6 +717,32 @@ body:has(#app.in .ga-wrap){
   .ga-rsv-form-modal .ga-field textarea{min-height:50px;padding:6px 8px;font-size:12px}
 }
  
+
+/* Mobile reservation layout: use empty toolbar space and compact reservation cards. */
+.ga-rsv-time-banner{box-sizing:border-box;width:50%;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;margin:6px 0;padding:8px 10px}
+.ga-rsv-time-banner strong{font-size:clamp(20px,2.5vw,25px)}
+.ga-rsv-note-actions{display:flex;align-items:flex-end;gap:8px;margin-top:5px;min-width:0}
+.ga-rsv-note-actions .ga-rsv-detail-note{flex:1 1 0;min-width:0;margin:0;padding-top:7px}
+.ga-rsv-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;flex:1 1 0;min-width:0;margin:0}
+.ga-rsv-actions .ga-btn{min-width:0;min-height:34px;padding:6px 4px;font-size:11px;line-height:1.2;overflow-wrap:anywhere}
+@media(max-width:520px){
+  .ga-rsv-toolbar{align-items:center;flex-direction:row;gap:6px;margin:4px 0 6px}
+  .ga-rsv-toolbar>div:first-child{flex:1 1 auto;min-width:0}
+  .ga-rsv-toolbar .ga-eyebrow{font-size:9px}
+  .ga-rsv-toolbar h3{font-size:18px;line-height:1.15;margin:2px 0}
+  .ga-rsv-toolbar p{font-size:11px;line-height:1.25;margin:4px 0 0}
+  .ga-rsv-month-nav{width:auto;flex:0 0 auto;justify-content:flex-end;gap:3px}
+  .ga-rsv-month-nav .ga-btn{min-width:27px;min-height:31px;padding:4px 5px;font-size:11px}
+  .ga-rsv-time-banner{width:50%;gap:3px;margin:5px 0;padding:7px 9px}
+  .ga-rsv-time-label{font-size:9px}
+  .ga-rsv-time-banner strong{font-size:21px;line-height:1.1}
+  .ga-rsv-details{gap:6px 8px;margin:6px 0 2px}
+  .ga-rsv-note-actions{gap:6px;margin-top:3px;align-items:flex-end}
+  .ga-rsv-note-actions .ga-rsv-detail-note{padding-top:6px}
+  .ga-rsv-note-actions .ga-rsv-detail-note>strong{font-size:11px}
+  .ga-rsv-actions{gap:3px}
+  .ga-rsv-actions .ga-btn{min-height:32px;padding:5px 2px;font-size:10px;border-radius:8px}
+}
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
@@ -847,8 +873,9 @@ function guestArrivalReservationsMarkup() {
   const cards = selected.length ? '<div class="ga-card-list">'+selected.map(r =>
     '<article class="ga-card ga-rsv-card"><div class="ga-card-top"><div><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div></div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div>' +
     '<div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div>' +
-    '<div class="ga-rsv-details"><div class="ga-rsv-detail"><span>Tanggal</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</strong></div><div class="ga-rsv-detail"><span>Jumlah pack</span><strong>'+gaEscape(r.packs)+' pack</strong></div><div class="ga-rsv-detail"><span>Preferensi smoking</span><strong>'+gaEscape(r.smoking_preference||'Non Smoking')+'</strong></div><div class="ga-rsv-detail"><span>WhatsApp</span><strong>'+(r.whatsapp?gaPhoneMarkup(r.whatsapp):'—')+'</strong></div><div class="ga-rsv-detail ga-rsv-detail-note"><span>Catatan</span><strong>'+(r.note?gaEscape(r.note):'—')+'</strong></div></div>' +
-    '<div class="ga-card-actions ga-rsv-actions"><button class="ga-btn secondary" type="button" onclick="guestArrivalReservationOpenDetail(\''+r.id+'\')">Detail</button>'+(r.status==='Menunggu Reservasi'?'<button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button>':r.guest_arrival_id?'<span class="ga-table-chip">Tercatat di Guest Arrival</span>':'')+'</div>' +
+    '<div class="ga-rsv-details"><div class="ga-rsv-detail"><span>Tanggal</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</strong></div><div class="ga-rsv-detail"><span>Jumlah pack</span><strong>'+gaEscape(r.packs)+' pack</strong></div><div class="ga-rsv-detail"><span>Preferensi smoking</span><strong>'+gaEscape(r.smoking_preference||'Non Smoking')+'</strong></div><div class="ga-rsv-detail"><span>WhatsApp</span><strong>'+(r.whatsapp?gaPhoneMarkup(r.whatsapp):'—')+'</strong></div></div>' +
+    '<div class="ga-rsv-note-actions"><div class="ga-rsv-detail ga-rsv-detail-note"><span>Catatan</span><strong>'+(r.note?gaEscape(r.note):'—')+'</strong></div>' +
+    '<div class="ga-card-actions ga-rsv-actions"><button class="ga-btn secondary" type="button" onclick="guestArrivalReservationOpenDetail(\''+r.id+'\')">Detail</button>'+(r.status==='Menunggu Reservasi'?'<button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button>':r.guest_arrival_id?'<span class="ga-table-chip">Tercatat di Guest Arrival</span>':'')+'</div></div>' +
     '</article>').join('')+'</div>' : '<div class="ga-empty"><strong>Belum ada reservasi</strong>Tidak ada reservasi pada tanggal ini.</div>';
   return '<div class="ga-rsv-toolbar"><div><div class="ga-eyebrow">KALENDER RESERVASI</div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsMonth+'-01',{month:'long',year:'numeric'}))+'</h3><p class="ga-muted">Kapasitas tetap diatur staf secara manual.</p></div><div class="ga-rsv-month-nav"><button type="button" class="ga-btn secondary" aria-label="Bulan sebelumnya" onclick="guestArrivalReservationChangeMonth(-1)">‹</button><button type="button" class="ga-btn secondary" onclick="guestArrivalReservationThisMonth()">Hari ini</button><button type="button" class="ga-btn secondary" aria-label="Bulan berikutnya" onclick="guestArrivalReservationChangeMonth(1)">›</button></div></div>' +
     '<div class="ga-rsv-legend"><span><i class="waiting"></i> Menunggu</span><span><i class="seated"></i> Duduk</span><span><i class="cancelled"></i> Dibatalkan</span></div>' +
