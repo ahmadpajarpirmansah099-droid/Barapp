@@ -2458,7 +2458,7 @@ const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.clos
 /* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
 async function outInit(){
   const validUuid=id=>!!id&&typeof id==='string'&&!['null','undefined','all'].includes(id.trim().toLowerCase())&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id.trim());
-  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.order('code'))}catch(e){T.outlets=[]}}
+  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.eq('active',true).order('code'))}catch(e){T.outlets=[]}}
   if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
   const multi=isDeveloper();
   if(!multi){
@@ -2488,6 +2488,8 @@ async function outInit(){
     D.outId=ok(r)?r:(D.ljId||null);sv()}
   return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null)}
 async function outSwitch(id){
+  if(!isDeveloper()){toast('Hanya Developer yang bisa mengganti outlet.','err');return}
+  if(!T.outlets?.some(o=>String(o.id)===String(id)&&(o.active===true||o.active==='true'))){toast('Outlet tidak aktif atau tidak valid.','err');return}
   if(!id||String(id)===String(D.outId))return;
   D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
   T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
@@ -2505,7 +2507,7 @@ async function outSwitch(id){
 function outMenuHtml(){
   if(!isDeveloper())return '';
   if(!Array.isArray(T.outlets)||!T.outlets.length){
-    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
+    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.eq('active',true).order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
     return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
   }
   const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
@@ -2531,7 +2533,7 @@ try{sb()}catch(e){const m=errText(e),ch=SB.state!='err'||SB.msg!=m;SB.state='err
 if(!silent){SB.state='loading';R()}
 try{
 const {data:{session}}=await sb().auth.getSession();
-T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;T.authEmail=session?normEmail(session.user.email):'';
+T.dbRole=session?await sb().rpc('app_role').then(r=>r.data).catch(()=>null):null;T.authEmail=session?normEmail(session.user.email):'';T.scopeOut=undefined;T.scopeInvalid=false;T.outlets=null;
 if(session&&!T.dbRole){if(SB.state==='loading'){SB.state='idle';SB.msg=''}SB.loading=false;if(!silent)R();return}
 if(session&&T.dbRole==='guest_arrival'){T.perms=[];try{const {data,error}=await sb().from('user_permissions').select('permission');if(!error)T.perms=(data||[]).map(x=>x.permission)}catch(e){}if(!guestArrivalAllowedPages().some(k=>k!=='guest_arrival')){D.emp=[];D.arc=[];D.att=[];D.ot=[];D.per=[];D.pin='';D.cur='';sv();idleSet();SB.sig=null;SB.state='ok';SB.msg='';SB.loaded=true;SB.loading=false;SB.cached=false;SB.stale=false;if(!silent)R();return}}
 T.perms=[];if(session&&['hr','div_admin','report_viewer','guest_arrival'].includes(T.dbRole)){try{T.perms=(await payQ('user_permissions','permission')).map(x=>x.permission)}catch(e){}}
