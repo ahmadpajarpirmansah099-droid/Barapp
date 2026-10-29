@@ -35,41 +35,48 @@ REVOKE ALL ON FUNCTION public.payroll_assert_outlet_scope(uuid) FROM PUBLIC, ano
 
 -- Carefully scope calculated legacy global runs only when all item rows and employees
 -- point to the same active outlet. Runs with mixed/unknown scope remain unchanged for review.
-SELECT set_config('app.change_reason',
- 'Backfill legacy payroll run outlet from consistent payroll-item and employee scope during security migration',
- true);
+DO $backfill$
+BEGIN
+ PERFORM set_config(
+  'app.change_reason',
+  'Backfill legacy payroll run outlet from consistent payroll-item and employee scope during security migration',
+  true
+ );
 
-WITH safe_runs AS (
- SELECT pr.id, MIN(pi.outlet_id::text)::uuid AS resolved_outlet_id
- FROM public.payroll_runs pr
- JOIN public.payroll_items pi ON pi.run_id=pr.id
- JOIN public.employees e ON e.id=pi.employee_id
- JOIN public.outlets o ON o.id=pi.outlet_id AND o.active IS TRUE
- WHERE pr.outlet_id IS NULL
-   AND pr.status='calculated'
- GROUP BY pr.id
- HAVING COUNT(pi.id)>0
-    AND COUNT(DISTINCT pi.outlet_id)=1
-    AND COUNT(*) FILTER (
-      WHERE pi.outlet_id IS NULL
-         OR e.outlet_id IS DISTINCT FROM pi.outlet_id
-         OR o.id IS NULL
-         OR o.active IS NOT TRUE
-    )=0
-)
-UPDATE public.payroll_runs pr
-SET outlet_id=safe_runs.resolved_outlet_id
-FROM safe_runs
-WHERE pr.id=safe_runs.id
-  AND NOT EXISTS (
-    SELECT 1
-    FROM public.payroll_runs other
-    WHERE other.id<>pr.id
-      AND other.outlet_id=safe_runs.resolved_outlet_id
-      AND other.period_start=pr.period_start
-      AND other.period_end=pr.period_end
-      AND other.status<>'void'
-  );
+ WITH safe_runs AS (
+  SELECT pr.id, MIN(pi.outlet_id::text)::uuid AS resolved_outlet_id
+  FROM public.payroll_runs pr
+  LEFT JOIN public.payroll_items pi ON pi.run_id=pr.id
+  LEFT JOIN public.employees e ON e.id=pi.employee_id
+  LEFT JOIN public.outlets o ON o.id=pi.outlet_id
+  WHERE pr.outlet_id IS NULL
+    AND pr.status='calculated'
+  GROUP BY pr.id
+  HAVING COUNT(pi.id)>0
+     AND COUNT(DISTINCT pi.outlet_id)=1
+     AND COUNT(*) FILTER (
+       WHERE pi.outlet_id IS NULL
+          OR e.id IS NULL
+          OR e.outlet_id IS DISTINCT FROM pi.outlet_id
+          OR o.id IS NULL
+          OR o.active IS NOT TRUE
+     )=0
+ )
+ UPDATE public.payroll_runs pr
+ SET outlet_id=safe_runs.resolved_outlet_id
+ FROM safe_runs
+ WHERE pr.id=safe_runs.id
+   AND NOT EXISTS (
+     SELECT 1
+     FROM public.payroll_runs other
+     WHERE other.id<>pr.id
+       AND other.outlet_id=safe_runs.resolved_outlet_id
+       AND other.period_start=pr.period_start
+       AND other.period_end=pr.period_end
+       AND other.status<>'void'
+   );
+END
+$backfill$;
 
 
 CREATE OR REPLACE FUNCTION public.payroll_calculate(p_outlet uuid, p_start date, p_end date)
