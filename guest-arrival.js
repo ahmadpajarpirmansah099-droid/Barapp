@@ -698,7 +698,25 @@ body:has(#app.in .ga-wrap){
 .ga-rsv-detail-note{padding-top:5px}
 .ga-rsv-actions{gap:5px}
 @media(max-width:520px){.ga-rsv-time-banner{align-items:flex-start;flex-direction:column;gap:6px}.ga-rsv-actions .ga-btn{font-size:11px;padding:8px 4px}.ga-rsv-toolbar{align-items:flex-start;flex-direction:column;gap:4px;margin:4px 0 6px}.ga-rsv-month-nav{width:100%;justify-content:space-between}.ga-rsv-month-nav .ga-btn{min-width:32px;min-height:32px;padding:4px 6px}.ga-rsv-legend{gap:6px;margin:4px 0 5px}.ga-rsv-calendar{gap:2px;padding:5px}.ga-rsv-weekday{padding:2px 0}.ga-rsv-day{gap:2px;min-height:35px;padding:3px;border-radius:7px}.ga-rsv-detail-head{margin:8px 0 5px}.ga-rsv-form{padding:8px;margin:5px 0}.ga-rsv-form-heading{margin-bottom:5px}.ga-rsv-form-grid{gap:5px;margin-bottom:5px}.ga-rsv-card{padding:7px;margin:4px 0}.ga-rsv-time-banner{margin:5px 0;padding:8px}.ga-rsv-details{gap:5px 7px;margin:5px 0 1px}.ga-rsv-day-num{font-size:11px}.ga-rsv-day-count{font-size:9px}.ga-rsv-form-grid{grid-template-columns:1fr}.ga-rsv-wide{grid-column:auto}.ga-rsv-detail-head{align-items:flex-start}.ga-rsv-detail-head>.ga-btn{padding:8px;font-size:12px}}
-
+/* Compact reservation creation modal: tight fields, no oversized empty space. */
+#m .md.ga-rsv-modal-shell{box-sizing:border-box;width:min(100%,560px);max-width:560px;max-height:calc(100dvh - 24px);padding:12px;overflow-y:auto;overscroll-behavior:contain}
+.ga-rsv-form-modal{padding:0;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.ga-rsv-form-modal .ga-rsv-form-heading{margin:0 0 8px}
+.ga-rsv-form-modal .ga-rsv-form-heading strong{font-size:18px;line-height:1.2}
+.ga-rsv-form-modal .ga-rsv-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;margin:0 0 9px}
+.ga-rsv-form-modal .ga-rsv-name-field,.ga-rsv-form-modal .ga-rsv-wide{grid-column:1/-1}
+.ga-rsv-form-modal .ga-field{gap:3px;margin:0;font-size:12px;line-height:1.3}
+.ga-rsv-form-modal .ga-field input,.ga-rsv-form-modal .ga-field select{min-height:38px;margin:0;padding:7px 9px;border-radius:9px;font-size:13px}
+.ga-rsv-form-modal .ga-field textarea{min-height:54px;margin:0;padding:7px 9px;border-radius:9px;font-size:13px}
+.ga-rsv-form-modal #ga-rsv-submit{width:100%;min-height:40px;padding:8px 12px}
+@media(max-width:520px){
+  #m .ov{padding:10px}
+  #m .md.ga-rsv-modal-shell{width:calc(100vw - 20px);max-width:560px;max-height:calc(100dvh - 20px);padding:10px;border-radius:16px}
+  .ga-rsv-form-modal .ga-rsv-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 8px}
+  .ga-rsv-form-modal .ga-field input,.ga-rsv-form-modal .ga-field select{min-height:36px;padding:6px 8px;font-size:12px}
+  .ga-rsv-form-modal .ga-field textarea{min-height:50px;padding:6px 8px;font-size:12px}
+}
+ 
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
@@ -826,17 +844,6 @@ function guestArrivalReservationsMarkup() {
       '</button>';
   }
   const selected = (GA.reservations || []).filter(r => gaReservationDateKey(r.reservation_at) === GA.reservationsDate);
-  const form = GA.reservationFormOpen ? '<form class="ga-rsv-form" onsubmit="guestArrivalReservationCreate(event)">' +
-    '<div class="ga-rsv-form-heading"><strong>Reservasi baru</strong><button type="button" class="ga-btn small secondary" onclick="guestArrivalReservationToggleForm(false)">Tutup</button></div>' +
-    '<div class="ga-rsv-form-grid">' +
-    '<label class="ga-field">Nama tamu<input id="ga-rsv-name" maxlength="120" required autocomplete="name" placeholder="Nama tamu"></label>' +
-    '<label class="ga-field">Jumlah pack<input id="ga-rsv-packs" type="number" min="1" max="500" step="1" value="2" required></label>' +
-    '<label class="ga-field">Tanggal reservasi<input id="ga-rsv-date" type="date" min="'+today+'" value="'+GA.reservationsDate+'" required></label>' +
-    '<label class="ga-field">Jam reservasi<input id="ga-rsv-time" type="time" step="60" value="19:00" required></label>' +
-    '<label class="ga-field">WhatsApp (opsional)<input id="ga-rsv-phone" inputmode="tel" maxlength="24" placeholder="08xxxxxxxxxx"></label>' +
-    '<label class="ga-field">Preferensi smoking<select id="ga-rsv-smoking"><option value="Non Smoking">Non Smoking</option><option value="Smoking">Smoking</option></select></label>' +
-    '<label class="ga-field ga-rsv-wide">Catatan (opsional)<textarea id="ga-rsv-note" maxlength="1000" rows="2" placeholder="Catatan untuk staf"></textarea></label>' +
-    '</div><button class="ga-btn primary wide" type="submit" '+(GA.busy==='reservation-create'?'disabled':'')+'>'+(GA.busy==='reservation-create'?'Menyimpan…':'Simpan reservasi')+'</button></form>' : '';
   const cards = selected.length ? '<div class="ga-card-list">'+selected.map(r =>
     '<article class="ga-card ga-rsv-card"><div class="ga-card-top"><div><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div></div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div>' +
     '<div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div>' +
@@ -847,7 +854,7 @@ function guestArrivalReservationsMarkup() {
     '<div class="ga-rsv-legend"><span><i class="waiting"></i> Menunggu</span><span><i class="seated"></i> Duduk</span><span><i class="cancelled"></i> Dibatalkan</span></div>' +
     '<div class="ga-rsv-calendar" role="group" aria-label="Kalender reservasi bulanan">'+cells+'</div>' +
     '<div class="ga-rsv-detail-head"><div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsDate,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</h3><p class="ga-muted">'+selected.length+' reservasi</p></div><button type="button" class="ga-btn primary" onclick="guestArrivalReservationToggleForm(!GA.reservationFormOpen)">+ Reservasi</button></div>' +
-    form + cards;
+    cards;
 }
 function guestArrivalReservationSelectDate(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
@@ -865,10 +872,29 @@ async function guestArrivalReservationThisMonth() {
   GA.reservationsMonth=gaToday().slice(0,7); GA.reservationsDate=gaToday(); GA.reservationFormOpen=false;
   GA.ready=false; R(); await guestArrivalRefresh(true);
 }
+function guestArrivalReservationFormMarkup() {
+  const today=gaToday();
+  return '<form class="ga-rsv-form ga-rsv-form-modal" onsubmit="guestArrivalReservationCreate(event)">' +
+    '<div class="ga-rsv-form-heading"><strong>Reservasi baru</strong><button type="button" class="ga-btn small secondary" onclick="guestArrivalReservationToggleForm(false)">Tutup</button></div>' +
+    '<div class="ga-rsv-form-grid">' +
+    '<label class="ga-field ga-rsv-name-field">Nama tamu<input id="ga-rsv-name" maxlength="120" required autocomplete="name" placeholder="Nama tamu"></label>' +
+    '<label class="ga-field">Jumlah pack<input id="ga-rsv-packs" type="number" min="1" max="500" step="1" value="2" required></label>' +
+    '<label class="ga-field">Tanggal reservasi<input id="ga-rsv-date" type="date" min="'+today+'" value="'+GA.reservationsDate+'" required></label>' +
+    '<label class="ga-field">Jam reservasi<input id="ga-rsv-time" type="time" step="60" value="19:00" required></label>' +
+    '<label class="ga-field">WhatsApp (opsional)<input id="ga-rsv-phone" inputmode="tel" maxlength="24" placeholder="08xxxxxxxxxx"></label>' +
+    '<label class="ga-field">Preferensi smoking<select id="ga-rsv-smoking"><option value="Non Smoking">Non Smoking</option><option value="Smoking">Smoking</option></select></label>' +
+    '<label class="ga-field ga-rsv-wide">Catatan (opsional)<textarea id="ga-rsv-note" maxlength="1000" rows="2" placeholder="Catatan untuk staf"></textarea></label>' +
+    '</div><button id="ga-rsv-submit" class="ga-btn primary wide" type="submit" '+(GA.busy==='reservation-create'?'disabled':'')+'>'+(GA.busy==='reservation-create'?'Menyimpan…':'Simpan reservasi')+'</button></form>';
+}
 function guestArrivalReservationToggleForm(open) {
   GA.reservationFormOpen=!!open;
-  if (GA.reservationFormOpen && GA.reservationsDate < gaToday()) GA.reservationsDate=gaToday();
-  R();
+  if (!GA.reservationFormOpen) { closeM(); return; }
+  if (GA.reservationsDate < gaToday()) GA.reservationsDate=gaToday();
+  modal(guestArrivalReservationFormMarkup());
+  const shell=document.querySelector('#m .md');
+  if (shell) shell.classList.add('ga-rsv-modal-shell');
+  const overlay=document.querySelector('#m .ov');
+  if (overlay) overlay.onmousedown=(event)=>{if(event.target===overlay){GA.reservationFormOpen=false;closeM();}};
 }
 async function guestArrivalReservationCreate(event) {
   if (event) event.preventDefault();
@@ -888,14 +914,22 @@ async function guestArrivalReservationCreate(event) {
     gaToast('Tanggal dan jam reservasi tidak boleh di masa lalu.','err'); return;
   }
   if (phone && !gaPhoneValid(phone)) { gaToast('Format WhatsApp tidak valid. Gunakan nomor Indonesia, contoh 08xxxxxxxxxx.','err'); return; }
-  GA.busy='reservation-create'; R();
+  GA.busy='reservation-create';
+  const submit=document.getElementById('ga-rsv-submit');
+  if (submit) { submit.disabled=true; submit.textContent='Menyimpan…'; }
   try {
     await gaRpc('guest_reservation_create',{p_guest_name:name,p_whatsapp:phone,p_packs:packs,p_reservation_at:at.toISOString(),p_smoking_preference:smoking,p_note:note,...(await gaOutletParams())});
     GA.reservationsMonth=date.slice(0,7); GA.reservationsDate=date; GA.reservationFormOpen=false; GA.ready=false;
     gaToast('Reservasi berhasil disimpan.','ok');
+    closeM();
     await guestArrivalRefresh(true);
   } catch(e) { GA.error=gaHumanError(e); gaToast('Reservasi gagal disimpan. '+GA.error,'err'); }
-  finally { GA.busy=''; R(); }
+  finally {
+    GA.busy='';
+    const currentSubmit=document.getElementById('ga-rsv-submit');
+    if (currentSubmit) { currentSubmit.disabled=false; currentSubmit.textContent='Simpan reservasi'; }
+    R();
+  }
 }
 function guestArrivalReservationOpenDetail(id) {
   const r=(GA.reservations||[]).find(item=>item.id===id);
