@@ -210,7 +210,7 @@ const gaCss = String.raw`
 .ga-card-list{display:grid;gap:10px}
 .ga-card{border:1px solid var(--br,#d7dfd3);border-radius:15px;padding:13px;background:var(--cd,#fff);box-shadow:0 2px 7px rgba(30,50,35,.04);min-width:0}
 .ga-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.ga-queue-code{font-size:18px;font-weight:850;letter-spacing:.01em;line-height:1.2}
+.ga-queue-code{font-size:18px;font-weight:850;letter-spacing:.01em;line-height:1.2}.ga-rsv-linked-code{display:inline-flex;align-items:center;margin-top:4px;padding:3px 7px;border:1px solid #dfb5ab;border-radius:7px;background:#fff0e8;color:#873a2d;font-size:10px;font-weight:800;letter-spacing:.02em;line-height:1.3}
 .ga-name{font-size:15px;font-weight:800;overflow-wrap:anywhere;margin:5px 0}
 .ga-card-meta{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;margin-top:9px;align-items:center}
 .ga-wait{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;background:var(--tint,rgba(100,140,95,.13));border-radius:9px;font-variant-numeric:tabular-nums;font-size:12px;font-weight:800}
@@ -687,7 +687,7 @@ function guestArrivalCard(g, pending) {
     : g.status === 'Duduk'
       ? '<button type="button" class="ga-btn primary small" onclick="guestArrivalFinishSeated(\'' + g.id + '\')">Selesai</button>'
       : '';
-  return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div><div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
+  return '<article class="ga-card"><div class="ga-card-top"><div><div class="ga-queue-code">' + gaEscape(g.queue_code || ('WL-' + String(g.queue_number).padStart(3,'0'))) + '</div>' + (g.reservation_code ? '<div class="ga-rsv-linked-code">Reservasi: ' + gaEscape(g.reservation_code) + '</div>' : '') + '<div class="ga-name">' + gaEscape(g.guest_name) + '</div></div>' + gaStatusBadge(g.status) + '</div>' +
     '<div class="ga-card-meta"><span>' + Number(g.packs || 0) + ' pack</span>' + (g.whatsapp ? '<span>' + gaPhoneMarkup(g.whatsapp) + '</span>' : '') + '<span class="ga-preference-chip">' + gaEscape(g.smoking_preference || 'Non Smoking') + '</span>' + (g.table_name ? '<span class="ga-table-chip">Meja: ' + gaEscape(g.table_name) + '</span>' : '') + (g.status==='Duduk' ? '<span class="ga-sitting-chip' + (gaSittingRemaining(g)<=0?' expired':'') + '">Sitting time <strong data-ga-sitting-id="' + gaEscape(g.id) + '">' + gaSittingCountdown(g) + '</strong></span>' : '<span class="ga-wait">Waiting <span class="ga-wait-time" data-ga-wait-id="' + gaEscape(g.id) + '">' + gaDuration(gaWaitSeconds(g)) + '</span></span>') + '</div>' + (g.note ? '<div class="ga-inline-summary">Note: ' + gaEscape(g.note) + '</div>' : '') +
     '<div class="ga-inline-summary">Datang ' + gaEscape(gaFormatDateTime(g.arrived_at)) + (pending ? ' · ' + gaEscape(gaFormatDate(g.operational_date)) : '') + (g.seated_at ? ' · Duduk ' + gaEscape(gaFormatDateTime(g.seated_at)) : '') + '</div><div class="ga-card-actions">' + detail + actions + '</div></article>';
 }
@@ -711,7 +711,8 @@ function guestArrivalSeatedCards() {
   const rows = (GA.seated || []).filter(g =>
     String(g.guest_name || '').toLocaleLowerCase('id-ID').includes(needle) ||
     String(g.table_name || '').toLocaleLowerCase('id-ID').includes(needle) ||
-    String(g.queue_code || '').toLocaleLowerCase('id-ID').includes(needle)
+    String(g.queue_code || '').toLocaleLowerCase('id-ID').includes(needle) ||
+    String(g.reservation_code || '').toLocaleLowerCase('id-ID').includes(needle)
   ).slice().sort((a,b) => (Date.parse(b.seated_at || '') || 0) - (Date.parse(a.seated_at || '') || 0));
   if (!rows.length) return '<div class="ga-empty"><strong>Belum ada tamu yang telah duduk</strong>Tamu akan muncul di sini setelah status diubah menjadi Duduk.</div>';
   return rows.map(g => guestArrivalCard(g,false)).join('');
@@ -1292,7 +1293,7 @@ function guestArrivalShowDetail() {
   const info = (label,value,wide) => '<div class="ga-detail-item ' + (wide?'ga-detail-wide':'') + '"><label>' + gaEscape(label) + '</label><div>' + value + '</div></div>';
   modal('<h3 class="ga-modal-heading">' + gaEscape(g.queue_code) + ' · ' + gaEscape(g.guest_name) + '</h3><p class="ga-modal-intro">Detail pendaftaran tamu. Koreksi data tidak dapat mengubah status atau waktu kedatangan.</p>' +
     '<div class="ga-detail-grid">' +
-    info('Nomor antrean',gaEscape(g.queue_code)) + info('Status',gaStatusBadge(g.status)) +
+    info('Nomor antrean',gaEscape(g.queue_code)) + (g.reservation_code ? info('Kode reservasi',gaEscape(g.reservation_code)) : '') + info('Status',gaStatusBadge(g.status)) +
     (tableRoute.length ? info('Meja',gaTableRouteMarkup(tableRoute),true) : '') +
     (g.seated_at ? info('Waktu duduk',gaEscape(gaFormatDateTime(g.seated_at))) : '') +
     info('Jumlah pack',gaEscape(g.packs)+' pack') + info('WhatsApp',gaPhoneMarkup(g.whatsapp)) +
