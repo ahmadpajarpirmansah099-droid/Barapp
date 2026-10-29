@@ -50,10 +50,10 @@ begin
   v_is_dev := public.app_role()='dev';
   if v_is_dev then
     v_outlet_id := p_outlet_id;
-    if v_outlet_id is not null and not exists (
+    if v_outlet_id is null or not exists (
       select 1 from public.outlets o where o.id=v_outlet_id and o.active
     ) then
-      raise exception 'Outlet yang dipilih tidak ditemukan atau tidak aktif.' using errcode='42501';
+      raise exception 'Pilih satu outlet aktif terlebih dahulu.' using errcode='42501';
     end if;
   else
     v_outlet_id := public.guest_arrival_current_outlet();
@@ -166,6 +166,11 @@ begin
   v_is_dev := public.app_role()='dev';
   if v_is_dev then
     v_outlet_id := p_outlet_id;
+    if v_outlet_id is null or not exists (
+      select 1 from public.outlets o where o.id=v_outlet_id and o.active
+    ) then
+      raise exception 'Pilih satu outlet aktif terlebih dahulu.' using errcode='42501';
+    end if;
   else
     v_outlet_id := public.guest_arrival_current_outlet();
     if v_outlet_id is null then
