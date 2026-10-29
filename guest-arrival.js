@@ -744,26 +744,24 @@ body:has(#app.in .ga-wrap){
   .ga-rsv-actions .ga-btn{min-height:32px;padding:5px 2px;font-size:10px;border-radius:8px}
 }
 
-/* Reservation card two-column mobile layout; desktop keeps its previous flow. */
-.ga-rsv-card-layout,.ga-rsv-card-info,.ga-rsv-card-side{display:contents}
+/* Reservation card header: guest identity left, time right, actions full-width below. */
+.ga-rsv-card-layout,.ga-rsv-card-info,.ga-rsv-card-side,.ga-rsv-card-actions-row{display:contents}
 @media(max-width:520px){
-  .ga-rsv-card-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:10px;align-items:start}
-  .ga-rsv-card-info{display:flex;flex-direction:column;gap:7px;min-width:0}
-  .ga-rsv-card-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .ga-rsv-card-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:9px 10px;align-items:start}
+  .ga-rsv-card-info{display:block;min-width:0}
+  .ga-rsv-card-identity{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+  .ga-rsv-card-identity .ga-queue-code{font-size:clamp(15px,4.3vw,20px);line-height:1.15;overflow-wrap:anywhere}
+  .ga-rsv-card-identity .ga-name{font-size:14px;line-height:1.25;margin:1px 0 2px}
+  .ga-rsv-card-identity .ga-status{font-size:9px;padding:4px 7px}
+  .ga-rsv-card-side{display:block;min-width:0}
   .ga-rsv-card .ga-rsv-time-banner{width:100%;box-sizing:border-box;margin:0;padding:9px 8px;align-items:flex-start;gap:4px}
-  .ga-rsv-card .ga-rsv-time-banner strong{font-size:clamp(19px,5vw,23px);line-height:1.1}
   .ga-rsv-card .ga-rsv-time-label{font-size:9px}
-  .ga-rsv-card .ga-rsv-details{display:flex;flex-direction:column;gap:8px;margin:0}
-  .ga-rsv-card .ga-rsv-detail{gap:3px}
-  .ga-rsv-card .ga-rsv-detail>span{font-size:10px}
-  .ga-rsv-card .ga-rsv-detail>strong{font-size:12px;line-height:1.35}
-  .ga-rsv-card .ga-rsv-detail-note{padding-top:8px;border-top:1px solid var(--br,#d7dfd3)}
-  .ga-rsv-card .ga-rsv-detail-note>strong{font-size:12px;overflow-wrap:anywhere}
-  .ga-rsv-card .ga-rsv-actions{display:flex;flex-direction:column;gap:5px;width:100%;margin:0}
-  .ga-rsv-card .ga-rsv-actions .ga-btn{width:100%;min-height:34px;padding:6px 5px;font-size:11px;line-height:1.2}
-  .ga-rsv-card .ga-rsv-actions .ga-table-chip{width:100%;box-sizing:border-box;font-size:10px;padding:6px 4px}
-}
-`;
+  .ga-rsv-card .ga-rsv-time-banner strong{font-size:clamp(18px,4.8vw,23px);line-height:1.1;overflow-wrap:anywhere}
+  .ga-rsv-card-actions-row{display:block;grid-column:1/-1;min-width:0}
+  .ga-rsv-card .ga-rsv-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;width:100%;margin:0}
+  .ga-rsv-card .ga-rsv-actions .ga-btn{width:100%;min-width:0;min-height:34px;padding:6px 4px;font-size:11px;line-height:1.2;overflow-wrap:anywhere}
+  .ga-rsv-card .ga-rsv-actions .ga-table-chip{grid-column:1/-1;justify-content:center;width:100%;box-sizing:border-box;font-size:10px;padding:6px 4px}
+}`;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
     '<div class="ga-section-title"><h3>Tamu Menunggu</h3><span class="ga-count">' + GA.queue.length + ' antrean aktif</span></div><div id="ga-queue-cards" class="ga-card-list">' + guestArrivalQueueCards() + '</div>';
@@ -891,10 +889,7 @@ function guestArrivalReservationsMarkup() {
   }
   const selected = (GA.reservations || []).filter(r => gaReservationDateKey(r.reservation_at) === GA.reservationsDate);
   const cards = selected.length ? '<div class="ga-card-list">'+selected.map(r =>
-    '<article class="ga-card ga-rsv-card"><div class="ga-card-top"><div><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div></div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div>' +
-    '<div class="ga-rsv-card-layout"><div class="ga-rsv-card-info"><div class="ga-rsv-details"><div class="ga-rsv-detail"><span>Tanggal</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</strong></div><div class="ga-rsv-detail"><span>Preferensi smoking</span><strong>'+gaEscape(r.smoking_preference||'Non Smoking')+'</strong></div><div class="ga-rsv-detail"><span>Jumlah pack</span><strong>'+gaEscape(r.packs)+' pack</strong></div><div class="ga-rsv-detail"><span>WhatsApp</span><strong>'+(r.whatsapp?gaPhoneMarkup(r.whatsapp):'—')+'</strong></div></div>' +
-    '<div class="ga-rsv-detail ga-rsv-detail-note"><span>Catatan</span><strong>'+(r.note?gaEscape(r.note):'—')+'</strong></div></div><div class="ga-rsv-card-side"><div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div>' +
-    '<div class="ga-card-actions ga-rsv-actions"><button class="ga-btn secondary" type="button" onclick="guestArrivalReservationOpenDetail(\''+r.id+'\')">Detail</button>'+(r.status==='Menunggu Reservasi'?'<button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button>':r.guest_arrival_id?'<span class="ga-table-chip">Tercatat di Guest Arrival</span>':'')+'</div></div>' +
+    '<article class="ga-card ga-rsv-card"><div class="ga-rsv-card-layout"><div class="ga-rsv-card-info"><div class="ga-rsv-card-identity"><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div></div><div class="ga-rsv-card-side"><div class="ga-rsv-time-banner"><span class="ga-rsv-time-label">JAM RESERVASI</span><strong>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</strong></div></div><div class="ga-rsv-card-actions-row"><div class="ga-card-actions ga-rsv-actions"><button class="ga-btn secondary" type="button" onclick="guestArrivalReservationOpenDetail(\''+r.id+'\')">Detail</button>'+(r.status==='Menunggu Reservasi'?'<button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button>':r.guest_arrival_id?'<span class="ga-table-chip">Tercatat di Guest Arrival</span>':'')+'</div></div>' +
     '</div></article>').join('')+'</div>' : '<div class="ga-empty"><strong>Belum ada reservasi</strong>Tidak ada reservasi pada tanggal ini.</div>';
   return '<div class="ga-rsv-toolbar"><div><div class="ga-eyebrow">KALENDER RESERVASI</div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsMonth+'-01',{month:'long',year:'numeric'}))+'</h3><p class="ga-muted">Kapasitas tetap diatur staf secara manual.</p></div><div class="ga-rsv-month-nav"><button type="button" class="ga-btn secondary" aria-label="Bulan sebelumnya" onclick="guestArrivalReservationChangeMonth(-1)">‹</button><button type="button" class="ga-btn secondary" onclick="guestArrivalReservationThisMonth()">Hari ini</button><button type="button" class="ga-btn secondary" aria-label="Bulan berikutnya" onclick="guestArrivalReservationChangeMonth(1)">›</button></div></div>' +
     '<div class="ga-rsv-legend"><span><i class="waiting"></i> Menunggu</span><span><i class="seated"></i> Duduk</span><span><i class="cancelled"></i> Dibatalkan</span></div>' +
