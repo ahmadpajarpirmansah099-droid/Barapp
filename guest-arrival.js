@@ -8,6 +8,9 @@ const GA = {
   fromDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7) + '-01',
   toDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
   dashboard: null, busy: '', form: null, edit: null, detail: null, showSeated: false, seat: null, tableMove: null,
+  reservationsMonth: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7),
+  reservationsDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date()),
+  reservations: [], reservationFormOpen: false,
   cancelId: null, cancelReason: '', showPending: false, serverOffsetMs: 0, context: null
 };
 const gaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
@@ -119,6 +122,9 @@ async function guestArrivalRefresh(silent) {
       const rows = await gaRpc('guest_arrival_list', { p_scope:'history', p_date:GA.historyDate, ...outletParams });
       GA.history = Array.isArray(rows) ? rows : [];
       gaCaptureServerTime(GA.history);
+    } else if (GA.tab === 'reservations') {
+      const rows = await gaRpc('guest_reservation_list', { p_month: GA.reservationsMonth + '-01', ...outletParams });
+      GA.reservations = Array.isArray(rows) ? rows : [];
     } else if (GA.tab === 'dashboard') {
       if (GA.fromDate > GA.toDate) throw new Error('Tanggal mulai harus sebelum atau sama dengan tanggal akhir.');
       GA.dashboard = await gaRpc('guest_arrival_dashboard', { p_from:GA.fromDate, p_to:GA.toDate, ...outletParams });
@@ -155,19 +161,19 @@ function guestArrivalOutletChanged() {
   if (pg === 'guest_arrival') void guestArrivalRefresh(true);
 }
 function guestArrivalSetTab(tab) {
-  if (!['queue','dashboard','history'].includes(tab)) return;
+  if (!['queue','dashboard','history','reservations'].includes(tab)) return;
   GA.tab = tab; GA.showSeated = false; GA.ready = false; GA.error = ''; GA.search = '';
   R(); guestArrivalRefresh();
 }
 function guestArrivalRender() {
   if (!GA.ready && !GA.loading) setTimeout(() => guestArrivalRefresh(), 0);
-  const tabs = [['queue','Antrean Hari Ini'],['dashboard','Dashboard'],['history','Riwayat']];
+  const tabs = [['queue','Antrean Hari Ini'],['reservations','Reservasi'],['dashboard','Dashboard'],['history','Riwayat']];
   return '<style>' + gaCss + '</style><section class="ga-wrap' + (GA.showSeated ? ' ga-wrap-seated' : GA.tab==='dashboard' ? ' ga-wrap-dashboard' : GA.tab==='queue' ? ' ga-wrap-queue' : GA.tab==='history' ? ' ga-wrap-history' : '') + '">' +
     '<div class="ga-heading"><h2>Guest Arrival &amp; Waiting List</h2><div class="ga-heading-meta">' + (GA.context && GA.context.outlet_code ? '<span class="ga-outlet-pill" title="' + gaEscape(GA.context.outlet_name || GA.context.outlet_code) + '">' + gaEscape(GA.context.outlet_code) + '</span>' : '') + '<span class="ga-date-pill">' + gaEscape(gaFormatDate(gaToday())) + ' WIB</span></div></div>' +
     '<div class="ga-tabs" role="tablist">' + tabs.map(([key,title]) => '<button type="button" class="ga-tab ' + (GA.tab===key?'active':'') + '" aria-selected="' + (GA.tab===key?'true':'false') + '" onclick="guestArrivalSetTab(\'' + key + '\')">' + title + '</button>').join('') + '</div>' +
     (GA.tab==='queue' && !GA.showSeated ? '<button type="button" class="ga-btn secondary ga-seated-shortcut" onclick="guestArrivalToggleSeatedView()"><span class="ga-seated-shortcut-icon" aria-hidden="true">▦</span><span>Tamu yang Telah Duduk (' + GA.seated.length + ')</span></button>' : '') +
     (GA.error ? '<div class="ga-error" role="alert"><strong>Data belum berhasil dimuat.</strong><span>' + gaEscape(GA.error) + '</span><button type="button" class="ga-btn secondary" onclick="guestArrivalRefresh()">Coba lagi</button></div>' : '') +
-    (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? (GA.showSeated ? guestArrivalSeatedMarkup() : guestArrivalQueueMarkup()) : GA.tab==='history' ? guestArrivalHistoryMarkup() : guestArrivalDashboardMarkup()) +
+    (GA.loading ? '<div class="ga-load"><span class="ga-spinner"></span><span>Memuat data dari server…</span></div>' : GA.tab==='queue' ? (GA.showSeated ? guestArrivalSeatedMarkup() : guestArrivalQueueMarkup()) : GA.tab==='history' ? guestArrivalHistoryMarkup() : GA.tab==='reservations' ? guestArrivalReservationsMarkup() : guestArrivalDashboardMarkup()) +
     '</section>';
 }
 const gaCss = String.raw`
@@ -177,7 +183,7 @@ const gaCss = String.raw`
 .ga-eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--ac,#6e9b57)}
 .ga-muted{color:var(--mu,#758078);font-size:12px}
 .ga-date-pill{border:1px solid var(--br,#d5ddd1);border-radius:999px;padding:7px 10px;font-size:11px;white-space:nowrap;background:var(--cd,#fff)}
-.ga-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;background:var(--tint,rgba(100,140,95,.13));border-radius:14px;margin:0 0 16px}
+.ga-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px;background:var(--tint,rgba(100,140,95,.13));border-radius:14px;margin:0 0 16px}
 .ga-tab{border:0;border-radius:10px;padding:11px 5px;background:transparent;font-weight:700;font-size:12px;color:var(--tx,#26332a);min-width:0}
 .ga-tab.active{background:var(--cd,#fff);box-shadow:0 2px 8px rgba(0,0,0,.08);color:var(--ac,#527c48)}
 .ga-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
@@ -666,6 +672,9 @@ body:has(#app.in .ga-wrap){
     min-height:35px!important;padding:6px 7px!important;font-size:11px!important;border-radius:9px!important;
   }
 }
+
+.ga-rsv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px}.ga-rsv-toolbar h3,.ga-rsv-detail-head h3{margin:4px 0;font-size:clamp(17px,2.5vw,22px)}.ga-rsv-month-nav{display:flex;gap:6px;align-items:center}.ga-rsv-month-nav .ga-btn{min-width:42px;padding:8px}.ga-rsv-legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 12px;font-size:11px;color:var(--mu,#758078)}.ga-rsv-legend span{display:inline-flex;align-items:center;gap:6px}.ga-rsv-legend i,.ga-rsv-dots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b98a27}.ga-rsv-legend i.seated,.ga-rsv-dots i.seated{background:#4c8a5a}.ga-rsv-legend i.cancelled,.ga-rsv-dots i.cancelled{background:#bf5b50}.ga-rsv-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:10px;border:1.5px solid var(--line,#26332a);border-radius:15px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-weekday{text-align:center;padding:6px 0;color:var(--mu,#758078);font-size:10px;font-weight:850}.ga-rsv-day{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:clamp(48px,8vw,82px);padding:7px;border:1px solid var(--br,#d7dfd3);border-radius:10px;background:var(--cd,#fff);color:var(--tx,#26332a);text-align:left;cursor:pointer}.ga-rsv-day.empty{visibility:hidden;border:0}.ga-rsv-day-num{font-size:12px;font-weight:800;line-height:1}.ga-rsv-day.today .ga-rsv-day-num{display:grid;place-items:center;width:23px;height:23px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--ac,#6e9b57);color:var(--onac,#fff)}.ga-rsv-day.selected{outline:2px solid var(--tx,#26332a);outline-offset:-2px;background:var(--tint,rgba(100,140,95,.13))}.ga-rsv-day.has-items{border-color:var(--tx,#26332a)}.ga-rsv-day-count{font-size:10px;font-weight:900}.ga-rsv-dots{display:flex;gap:4px}.ga-rsv-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 12px}.ga-rsv-form{padding:14px;margin:12px 0;border:1.5px solid var(--line,#26332a);border-radius:14px;background:var(--cd,#fff);box-shadow:0 3px 0 var(--line,#26332a)}.ga-rsv-form-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.ga-rsv-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.ga-rsv-wide{grid-column:1/-1}.ga-rsv-note{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;color:var(--mu,#758078)}.ga-rsv-card{border-color:var(--line,#26332a)}@media(max-width:520px){.ga-rsv-toolbar{align-items:flex-start;flex-direction:column}.ga-rsv-month-nav{width:100%;justify-content:space-between}.ga-rsv-calendar{gap:3px;padding:6px}.ga-rsv-day{min-height:47px;padding:5px;border-radius:8px}.ga-rsv-day-num{font-size:11px}.ga-rsv-day-count{font-size:9px}.ga-rsv-form-grid{grid-template-columns:1fr}.ga-rsv-wide{grid-column:auto}.ga-rsv-detail-head{align-items:flex-start}.ga-rsv-detail-head>.ga-btn{padding:8px;font-size:12px}}
+
 `;
 function guestArrivalQueueMarkup() {
   return '<div class="ga-actions"><button type="button" class="ga-btn primary" onclick="guestArrivalOpenForm()">＋ Tambah Tamu</button><button type="button" class="ga-btn secondary" onclick="guestArrivalOpenPendingModal()">Tertunda (' + GA.pending.length + ')</button></div>' +
@@ -749,6 +758,141 @@ async function guestArrivalHistoryDate(value) {
   await guestArrivalRefresh();
 }
 function guestArrivalSecondsStat(seconds) { return gaDuration(Number(seconds) || 0); }
+
+const gaReservationDateLabel = (value, options={}) => {
+  const d = new Date(String(value || '') + (String(value || '').length === 10 ? 'T12:00:00+07:00' : ''));
+  if (!Number.isFinite(d.getTime())) return String(value || '—');
+  return new Intl.DateTimeFormat('id-ID', {timeZone:'Asia/Jakarta', ...options}).format(d);
+};
+function guestArrivalReservationsMarkup() {
+  const [year, month] = GA.reservationsMonth.split('-').map(Number);
+  const first = new Date(Date.UTC(year, month - 1, 1, 12));
+  const offset = first.getUTCDay();
+  const days = new Date(Date.UTC(year, month, 0, 12)).getUTCDate();
+  const today = gaToday();
+  const byDate = {};
+  (GA.reservations || []).forEach(r => {
+    const date = gaReservationDateLabel(r.reservation_at, {year:'numeric',month:'2-digit',day:'2-digit'});
+    const bits = date.split('/');
+    if (bits.length === 3) {
+      const key = bits[2] + '-' + bits[1] + '-' + bits[0];
+      (byDate[key] ||= []).push(r);
+    }
+  });
+  const weekday = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  let cells = weekday.map(d => '<div class="ga-rsv-weekday">' + d + '</div>').join('');
+  for (let i=0;i<offset;i++) cells += '<div class="ga-rsv-day empty" aria-hidden="true"></div>';
+  for (let day=1;day<=days;day++) {
+    const date = GA.reservationsMonth + '-' + String(day).padStart(2,'0');
+    const items = byDate[date] || [];
+    const active = items.filter(r => r.status === 'Menunggu Reservasi').length;
+    const seated = items.filter(r => r.status === 'Duduk').length;
+    const cancelled = items.filter(r => r.status === 'Dibatalkan').length;
+    cells += '<button type="button" class="ga-rsv-day' + (date===today?' today':'') + (date===GA.reservationsDate?' selected':'') + (items.length?' has-items':'') + '" onclick="guestArrivalReservationSelectDate(\''+date+'\')" aria-label="'+date+', '+items.length+' reservasi">' +
+      '<span class="ga-rsv-day-num">'+day+'</span>' +
+      (items.length ? '<span class="ga-rsv-day-count">'+items.length+'</span><span class="ga-rsv-dots">'+(active?'<i class="waiting"></i>':'')+(seated?'<i class="seated"></i>':'')+(cancelled?'<i class="cancelled"></i>':'')+'</span>' : '') +
+      '</button>';
+  }
+  const selected = (GA.reservations || []).filter(r => String(r.reservation_at || '').slice(0,10) === GA.reservationsDate || gaReservationDateLabel(r.reservation_at,{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-') === GA.reservationsDate);
+  const form = GA.reservationFormOpen ? '<form class="ga-rsv-form" onsubmit="guestArrivalReservationCreate(event)">' +
+    '<div class="ga-rsv-form-heading"><strong>Reservasi baru</strong><button type="button" class="ga-btn small secondary" onclick="guestArrivalReservationToggleForm(false)">Tutup</button></div>' +
+    '<div class="ga-rsv-form-grid">' +
+    '<label class="ga-field">Nama tamu<input id="ga-rsv-name" maxlength="120" required autocomplete="name" placeholder="Nama tamu"></label>' +
+    '<label class="ga-field">Jumlah pack<input id="ga-rsv-packs" type="number" min="1" max="500" step="1" value="2" required></label>' +
+    '<label class="ga-field">Tanggal reservasi<input id="ga-rsv-date" type="date" min="'+today+'" value="'+GA.reservationsDate+'" required></label>' +
+    '<label class="ga-field">Jam reservasi<input id="ga-rsv-time" type="time" step="60" value="19:00" required></label>' +
+    '<label class="ga-field">WhatsApp (opsional)<input id="ga-rsv-phone" inputmode="tel" maxlength="24" placeholder="08xxxxxxxxxx"></label>' +
+    '<label class="ga-field">Preferensi smoking<select id="ga-rsv-smoking"><option value="Non Smoking">Non Smoking</option><option value="Smoking">Smoking</option></select></label>' +
+    '<label class="ga-field ga-rsv-wide">Catatan (opsional)<textarea id="ga-rsv-note" maxlength="1000" rows="2" placeholder="Catatan untuk staf"></textarea></label>' +
+    '</div><button class="ga-btn primary wide" type="submit" '+(GA.busy==='reservation-create'?'disabled':'')+'>'+(GA.busy==='reservation-create'?'Menyimpan…':'Simpan reservasi')+'</button></form>' : '';
+  const cards = selected.length ? '<div class="ga-card-list">'+selected.map(r =>
+    '<article class="ga-card ga-rsv-card"><div class="ga-card-top"><div><div class="ga-queue-code">'+gaEscape(r.reservation_code)+'</div><div class="ga-name">'+gaEscape(r.guest_name)+'</div></div><span class="ga-status '+(r.status==='Duduk'?'seated':r.status==='Dibatalkan'?'cancelled':'waiting')+'">'+gaEscape(r.status)+'</span></div>' +
+    '<div class="ga-card-meta"><span>'+gaEscape(gaReservationDateLabel(r.reservation_at,{hour:'2-digit',minute:'2-digit'}))+' WIB</span><span>'+gaEscape(r.packs)+' pack</span><span>'+gaEscape(r.smoking_preference||'Non Smoking')+'</span>'+(r.whatsapp?'<span>'+gaPhoneMarkup(r.whatsapp)+'</span>':'')+'</div>' +
+    (r.note?'<p class="ga-rsv-note">'+gaEscape(r.note)+'</p>':'')+
+    (r.status==='Menunggu Reservasi'?'<div class="ga-card-actions"><button class="ga-btn primary" type="button" onclick="guestArrivalReservationSeat(\''+r.id+'\')">Dudukkan tamu</button><button class="ga-btn danger" type="button" onclick="guestArrivalReservationCancel(\''+r.id+'\')">Batalkan</button></div>':r.guest_arrival_id?'<div class="ga-card-meta"><span class="ga-table-chip">Tercatat di Guest Arrival</span></div>':'')+
+    '</article>').join('')+'</div>' : '<div class="ga-empty"><strong>Belum ada reservasi</strong>Tidak ada reservasi pada tanggal ini.</div>';
+  return '<div class="ga-rsv-toolbar"><div><div class="ga-eyebrow">KALENDER RESERVASI</div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsMonth+'-01',{month:'long',year:'numeric'}))+'</h3><p class="ga-muted">Kapasitas tetap diatur staf secara manual.</p></div><div class="ga-rsv-month-nav"><button type="button" class="ga-btn secondary" aria-label="Bulan sebelumnya" onclick="guestArrivalReservationChangeMonth(-1)">‹</button><button type="button" class="ga-btn secondary" onclick="guestArrivalReservationThisMonth()">Hari ini</button><button type="button" class="ga-btn secondary" aria-label="Bulan berikutnya" onclick="guestArrivalReservationChangeMonth(1)">›</button></div></div>' +
+    '<div class="ga-rsv-legend"><span><i class="waiting"></i> Menunggu</span><span><i class="seated"></i> Duduk</span><span><i class="cancelled"></i> Dibatalkan</span></div>' +
+    '<div class="ga-rsv-calendar" role="group" aria-label="Kalender reservasi bulanan">'+cells+'</div>' +
+    '<div class="ga-rsv-detail-head"><div><h3>'+gaEscape(gaReservationDateLabel(GA.reservationsDate,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</h3><p class="ga-muted">'+selected.length+' reservasi</p></div><button type="button" class="ga-btn primary" onclick="guestArrivalReservationToggleForm(!GA.reservationFormOpen)">+ Reservasi</button></div>' +
+    form + cards;
+}
+function guestArrivalReservationSelectDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  GA.reservationsDate = date;
+  R();
+}
+async function guestArrivalReservationChangeMonth(delta) {
+  const [year,month]=GA.reservationsMonth.split('-').map(Number);
+  const d=new Date(Date.UTC(year,month-1+delta,1,12));
+  GA.reservationsMonth=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+  GA.reservationsDate=GA.reservationsMonth+'-01';
+  GA.reservationFormOpen=false; GA.ready=false; R(); await guestArrivalRefresh(true);
+}
+async function guestArrivalReservationThisMonth() {
+  GA.reservationsMonth=gaToday().slice(0,7); GA.reservationsDate=gaToday(); GA.reservationFormOpen=false;
+  GA.ready=false; R(); await guestArrivalRefresh(true);
+}
+function guestArrivalReservationToggleForm(open) {
+  GA.reservationFormOpen=!!open;
+  if (GA.reservationFormOpen && GA.reservationsDate < gaToday()) GA.reservationsDate=gaToday();
+  R();
+}
+async function guestArrivalReservationCreate(event) {
+  if (event) event.preventDefault();
+  if (GA.busy) return;
+  const name=document.getElementById('ga-rsv-name')?.value?.trim()||'';
+  const packs=Number(document.getElementById('ga-rsv-packs')?.value);
+  const date=document.getElementById('ga-rsv-date')?.value||'';
+  const time=document.getElementById('ga-rsv-time')?.value||'';
+  const phone=document.getElementById('ga-rsv-phone')?.value?.trim()||'';
+  const smoking=document.getElementById('ga-rsv-smoking')?.value||'Non Smoking';
+  const note=document.getElementById('ga-rsv-note')?.value?.trim()||'';
+  if (!name || !Number.isInteger(packs) || packs<1 || packs>500 || !date || !time) {
+    gaToast('Lengkapi nama, jumlah pack, tanggal, dan jam reservasi.','err'); return;
+  }
+  const at=new Date(date+'T'+time+':00+07:00');
+  if (!Number.isFinite(at.getTime()) || at.getTime()<Date.now()-5*60*1000) {
+    gaToast('Tanggal dan jam reservasi tidak boleh di masa lalu.','err'); return;
+  }
+  if (phone && !gaPhoneValid(phone)) { gaToast('Format WhatsApp tidak valid. Gunakan nomor Indonesia, contoh 08xxxxxxxxxx.','err'); return; }
+  GA.busy='reservation-create'; R();
+  try {
+    await gaRpc('guest_reservation_create',{p_guest_name:name,p_whatsapp:phone,p_packs:packs,p_reservation_at:at.toISOString(),p_smoking_preference:smoking,p_note:note,...(await gaOutletParams())});
+    GA.reservationsMonth=date.slice(0,7); GA.reservationsDate=date; GA.reservationFormOpen=false; GA.ready=false;
+    gaToast('Reservasi berhasil disimpan.','ok');
+    await guestArrivalRefresh(true);
+  } catch(e) { GA.error=gaHumanError(e); gaToast('Reservasi gagal disimpan. '+GA.error,'err'); }
+  finally { GA.busy=''; R(); }
+}
+async function guestArrivalReservationCancel(id) {
+  const row=(GA.reservations||[]).find(r=>r.id===id);
+  if (!row || row.status!=='Menunggu Reservasi') return;
+  if (!confirm('Batalkan reservasi '+row.reservation_code+' atas nama '+row.guest_name+'?')) return;
+  const reason=prompt('Alasan pembatalan (opsional):','');
+  if (reason===null) return;
+  GA.busy='reservation-cancel'; R();
+  try {
+    await gaRpc('guest_reservation_cancel',{p_id:id,p_reason:reason,...(await gaOutletParams())});
+    gaToast('Reservasi dibatalkan.','ok'); GA.ready=false; await guestArrivalRefresh(true);
+  } catch(e) { GA.error=gaHumanError(e); gaToast('Pembatalan gagal. '+GA.error,'err'); }
+  finally { GA.busy=''; R(); }
+}
+async function guestArrivalReservationSeat(id) {
+  const row=(GA.reservations||[]).find(r=>r.id===id);
+  if (!row || row.status!=='Menunggu Reservasi') return;
+  const table=prompt('Masukkan nomor atau nama meja untuk '+row.guest_name+':','');
+  if (table===null) return;
+  if (!table.trim()) { gaToast('Nomor atau nama meja wajib diisi.','err'); return; }
+  if (!confirm('Konfirmasi tamu '+row.guest_name+' duduk di meja '+table.trim()+'? Data tamu akan tercatat di Guest Arrival.')) return;
+  GA.busy='reservation-seat'; R();
+  try {
+    await gaRpc('guest_reservation_seat',{p_id:id,p_table_name:table.trim(),...(await gaOutletParams())});
+    gaToast('Reservasi terhubung ke Guest Arrival.','ok'); GA.ready=false; await guestArrivalRefresh(true);
+  } catch(e) { GA.error=gaHumanError(e); gaToast('Gagal memproses reservasi. '+GA.error,'err'); }
+  finally { GA.busy=''; R(); }
+}
+
 function guestArrivalDashboardMarkup() {
   const d = GA.dashboard || {};
   const stats = [
@@ -1233,6 +1377,7 @@ async function guestArrivalExport() {
 window.guestArrivalResetSession = function() {
   const today = gaToday();
   GA.tab='queue'; GA.ready=false; GA.loading=false; GA.error='';
+  GA.reservationsMonth=today.slice(0,7); GA.reservationsDate=today; GA.reservations=[]; GA.reservationFormOpen=false;
   GA.queue=[]; GA.pending=[]; GA.seated=[]; GA.history=[]; GA.search=''; GA.showSeated=false; GA.seat=null;
   GA.historyDate=today; GA.lastOperationalDate=today;
   GA.fromDate=today.slice(0,7)+'-01'; GA.toDate=today;
