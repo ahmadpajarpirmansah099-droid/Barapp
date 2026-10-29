@@ -75,7 +75,7 @@ BEGIN
        AND other.period_end=pr.period_end
        AND other.status<>'void'
    );
-END
+END;
 $backfill$;
 
 
