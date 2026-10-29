@@ -789,6 +789,17 @@ const gaReservationDateLabel = (value, options={}) => {
   if (!Number.isFinite(d.getTime())) return String(value || '—');
   return new Intl.DateTimeFormat('id-ID', {timeZone:'Asia/Jakarta', ...options}).format(d);
 };
+const gaReservationDateKey = (value) => {
+  const d = new Date(String(value || ''));
+  if (!Number.isFinite(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone:'Asia/Jakarta', year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(d);
+  const year = parts.find(part => part.type === 'year')?.value;
+  const month = parts.find(part => part.type === 'month')?.value;
+  const day = parts.find(part => part.type === 'day')?.value;
+  return year && month && day ? year + '-' + month + '-' + day : '';
+};
 function guestArrivalReservationsMarkup() {
   const [year, month] = GA.reservationsMonth.split('-').map(Number);
   const first = new Date(Date.UTC(year, month - 1, 1, 12));
@@ -797,12 +808,8 @@ function guestArrivalReservationsMarkup() {
   const today = gaToday();
   const byDate = {};
   (GA.reservations || []).forEach(r => {
-    const date = gaReservationDateLabel(r.reservation_at, {year:'numeric',month:'2-digit',day:'2-digit'});
-    const bits = date.split('/');
-    if (bits.length === 3) {
-      const key = bits[2] + '-' + bits[1] + '-' + bits[0];
-      (byDate[key] ||= []).push(r);
-    }
+    const key = gaReservationDateKey(r.reservation_at);
+    if (key) (byDate[key] ||= []).push(r);
   });
   const weekday = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
   let cells = weekday.map(d => '<div class="ga-rsv-weekday">' + d + '</div>').join('');
@@ -818,7 +825,7 @@ function guestArrivalReservationsMarkup() {
       (items.length ? '<span class="ga-rsv-day-count">'+items.length+'</span><span class="ga-rsv-dots">'+(active?'<i class="waiting"></i>':'')+(seated?'<i class="seated"></i>':'')+(cancelled?'<i class="cancelled"></i>':'')+'</span>' : '') +
       '</button>';
   }
-  const selected = (GA.reservations || []).filter(r => String(r.reservation_at || '').slice(0,10) === GA.reservationsDate || gaReservationDateLabel(r.reservation_at,{year:'numeric',month:'2-digit',day:'2-digit'}).split('/').reverse().join('-') === GA.reservationsDate);
+  const selected = (GA.reservations || []).filter(r => gaReservationDateKey(r.reservation_at) === GA.reservationsDate);
   const form = GA.reservationFormOpen ? '<form class="ga-rsv-form" onsubmit="guestArrivalReservationCreate(event)">' +
     '<div class="ga-rsv-form-heading"><strong>Reservasi baru</strong><button type="button" class="ga-btn small secondary" onclick="guestArrivalReservationToggleForm(false)">Tutup</button></div>' +
     '<div class="ga-rsv-form-grid">' +
