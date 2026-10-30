@@ -511,7 +511,7 @@ const badge=s=>`<span class="b" style="background:${SC[s]};color:${s=='I'||s=='L
    JANGAN PERNAH memasukkan service_role / secret key / password database ke file ini (key ini tampil publik di GitHub Pages).
    Kalau dikosongkan, URL & key bisa diisi lewat menu Alat > Sambungan Supabase (tersimpan di perangkat itu saja). */
 /* Pemetaan tabel: employees(name=nama, role=jabatan, active=aktif)  attendance(employee_id, attendance_date, status M/L/I/S/PH, notes). */
-let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:''},SBC=null,PH={};
+let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:''},PH={};
 try{PH=JSON.parse(localStorage.getItem(PHK)||'{}')}catch(e){}
 const savePH=()=>{try{localStorage.setItem(PHK,JSON.stringify(PH))}catch(e){}};
 function errText(e){const m=String((e&&e.message)||e||''),c=e&&e.code;
