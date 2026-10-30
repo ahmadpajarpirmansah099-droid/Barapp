@@ -72,6 +72,8 @@
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onload="window.__barappSupabaseLoaded=true" onerror="window.__barappSupabaseLoadError=true;console.error('Barapp: gagal memuat library Supabase dari CDN')"></script>
 <script async src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="./core/config.js"></script>
+<script src="./core/supabase.js"></script>
 <script>
 (function(){
   function showError(kind, message, line, col){
@@ -508,20 +510,10 @@ const badge=s=>`<span class="b" style="background:${SC[s]};color:${s=='I'||s=='L
    Isi 2 konstanta di bawah dengan Project URL & Publishable (anon) key dari Supabase > Project Settings > API.
    JANGAN PERNAH memasukkan service_role / secret key / password database ke file ini (key ini tampil publik di GitHub Pages).
    Kalau dikosongkan, URL & key bisa diisi lewat menu Alat > Sambungan Supabase (tersimpan di perangkat itu saja). */
-const SUPABASE_URL='https://ybptbloiujrbvgxcjqqk.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd';
 /* Pemetaan tabel: employees(name=nama, role=jabatan, active=aktif)  attendance(employee_id, attendance_date, status M/L/I/S/PH, notes). */
-const SBK='absensi_bar_sbcache_v1',SBCFGK='absensi_bar_sbcfg_v1',PHK='absensi_bar_photos_v1';
 let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:''},SBC=null,PH={};
 try{PH=JSON.parse(localStorage.getItem(PHK)||'{}')}catch(e){}
 const savePH=()=>{try{localStorage.setItem(PHK,JSON.stringify(PH))}catch(e){}};
-const sbCfg=()=>{let c={};try{c=JSON.parse(localStorage.getItem(SBCFGK)||'{}')}catch(e){}return{url:String(SUPABASE_URL||c.url||'').trim().replace(/\/+$/,''),key:String(SUPABASE_ANON_KEY||c.key||'').trim()}};
-function sbKeyBad(k){if(/^sb_secret_/i.test(k))return true;try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='service_role'}catch(e){return false}}
-const sbEr=(code)=>Object.assign(new Error(code),{code});
-/* Beberapa sandbox/pratinjau (mis. viewer file di aplikasi chat) meneruskan fetch lewat postMessage dan gagal meng-clone objek Headers/AbortSignal
-   ("DataCloneError"). Pembungkus ini mengubah headers menjadi objek biasa sebelum memanggil fetch. Di browser biasa/GitHub Pages perilakunya sama saja. */
-const sbFetch=(url,opts)=>{const o={...(opts||{})};const h=o.headers;if(h&&typeof h.forEach=='function'&&!Array.isArray(h)){const p={};h.forEach((val,key)=>{p[key]=val});o.headers=p}if(!o.signal)delete o.signal;return fetch(typeof url=='string'?url:String(url&&url.url||url),o)};
-function sb(){if(SBC)return SBC;const c=sbCfg();if(!c.url||!c.key)throw sbEr('NOCFG');if(sbKeyBad(c.key))throw sbEr('SECRETKEY');if(!(window.supabase&&window.supabase.createClient))throw sbEr('NOLIB');SBC=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},global:{fetch:sbFetch}});return SBC}
 function errText(e){const m=String((e&&e.message)||e||''),c=e&&e.code;
 if(c=='NOCFG')return L('Supabase belum dikonfigurasi (Project URL & anon key masih kosong).','Supabase is not configured (Project URL & anon key are empty).');
 if(c=='SECRETKEY')return L('Key yang dimasukkan adalah key RAHASIA (service_role/secret). Pakai Publishable/anon key saja.','The key is a SECRET key (service_role/secret). Use the Publishable/anon key only.');
