@@ -30,6 +30,7 @@ for (const marker of [
 
 assert.match(closingSource, /Template Daily SO hanya menerima Stok Fisik Akhir\. Barang Masuk dan Total Invoice tidak boleh diisi/, 'Stock rows must reject stock-in and invoice input');
 assert.match(closingSource, /Template Daily SO hanya menerima Stok Fisik Akhir\. Produksi Aktual tidak boleh diisi/, 'WIP rows must reject production input');
+assert.ok(closingSource.includes("mapped.some(x=>!['STOCK','WIP'].includes(x.section))"), 'Non-stock template sections must be rejected');
 assert.ok(closingSource.includes("const actual=opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v)"), 'Item physical stock is the only accepted stock-row quantity');
 assert.ok(closingSource.includes("const actual=opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v)"), 'WIP physical stock is the only accepted WIP quantity');
 assert.equal(closingSource.includes("p.stock_in.push("), false, 'Daily SO import must never create stock-in transactions');
