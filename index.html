@@ -77,6 +77,8 @@
 <script src="./core/state.js"></script>
 <script src="./core/session.js"></script>
 <script src="./core/idle-session.js"></script>
+<script src="./core/permissions.js"></script>
+<script src="./core/outlet.js"></script>
 <script>
 (function(){
   function showError(kind, message, line, col){
@@ -536,64 +538,6 @@ const EMP_SAFE_SELECT='id,name,role,active,created_at,outlet_id,division_id,dele
 async function fetchAll(tbl,ord){const out=[],cols=tbl==='employees'?EMP_SAFE_SELECT:'*';for(let from=0;;from+=1000){const {data,error}=await sb().from(tbl).select(cols).order(ord,{ascending:true}).order('id',{ascending:true}).range(from,from+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break}return out}
 const inField=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
 
-/* ===== OUTLET (dev bisa pindah outlet; data tiap outlet terpisah) ===== */
-async function outInit(){
-  const validUuid=id=>!!id&&typeof id==='string'&&!['null','undefined','all'].includes(id.trim().toLowerCase())&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id.trim());
-  if(!T.outlets){try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.eq('active',true).order('code'))}catch(e){T.outlets=[]}}
-  if(T.outlets.length){const l=T.outlets.find(x=>['LJ','LJN'].includes(String(x.code||'').toUpperCase())||String(x.name||'').trim().toUpperCase()==='LAZY JENNIE')||T.outlets[0];if(l&&validUuid(l.id))D.ljId=l.id}
-  const multi=isDeveloper();
-  if(!multi){
-    if(T.scopeOut===undefined){
-      try{
-        const sc=await payQ('user_scopes','outlet_id');
-        const ids=[...new Set((sc||[]).map(x=>String(x.outlet_id||'')).filter(validUuid))];
-        T.scopeOut=ids.length===1?ids[0]:null;
-        T.scopeInvalid=ids.length!==1;
-      }catch(e){T.scopeOut=null;T.scopeInvalid=true}
-    }
-    const activeScope=validUuid(T.scopeOut)&&(T.outlets||[]).some(o=>String(o.id)===String(T.scopeOut)&&(o.active===true||o.active==='true'));
-    if(activeScope){
-      D.outId=T.scopeOut;
-      try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),T.scopeOut)}catch(e){}
-      sv();
-      return T.scopeOut;
-    }
-    D.outId=null;T.scopeInvalid=true;
-    try{localStorage.removeItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
-    sv();
-    return null;
-  }
-  const ok=id=>!!id&&id!=='ALL'&&T.outlets.some(o=>o.id==id);
-  if(!T.outlets.length)return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null);
-  if(!ok(D.outId)){let r=null;try{r=localStorage.getItem('bar_out_'+((D.me&&D.me.uid)||''))}catch(e){}
-    D.outId=ok(r)?r:(D.ljId||null);sv()}
-  return validUuid(D.outId)?D.outId:(validUuid(D.ljId)?D.ljId:null)}
-async function outSwitch(id){
-  if(!isDeveloper()){toast('Hanya Developer yang bisa mengganti outlet.','err');return}
-  if(!T.outlets?.some(o=>String(o.id)===String(id)&&(o.active===true||o.active==='true'))){toast('Outlet tidak aktif atau tidak valid.','err');return}
-  if(!id||String(id)===String(D.outId))return;
-  D.outId=id;sv();try{localStorage.setItem('bar_out_'+((D.me&&D.me.uid)||''),id)}catch(e){}F.f='';F.t='';
-  T.divs=null;T.divInit=0;T.dvDet=null;T.jadDivs=null;T.jadDid=null;T.jadKey=null;T.jad=null;T.jadOut=undefined;
-  D.emp=[];D.att=[];D.ot=[];
-  PAY.run=null;PAY.items=[];PAY.rep=null;PAY.urls={};PAY.lapInit=false;PAY.need=true;PAY.busy=false;
-  PAY.pp={};PAY.allow=[];PAY.cash=[];PAY.bal={};
-  INV.items=[];INV.wips=[];INV.ins=[];INV.rets=[];INV.stockOut=[];INV.suppliesSO=[];INV.suppliesSOLines=[];INV.qtyByItem=null;INV.qtyByWip=null;INV.productionBatches=[];INV.productionInputs=[];INV.menuSales=[];INV.menuSalesLines=[];INV.dailySO=[];INV.dailySOLines=[];INV.ready=false;INV.init=false;INV.err='';SUPS.division='';SUPS.date=today();SUPS.historyDate=today();SUPS.position=[];SUPS.positionLoadedFor='';SUPS.positionLoading=false;SUPS.positionError='';SUPS.actuals={};
-  CG.items=[];CG.wips=[];CG.wipLines=[];CG.menus=[];CG.menuLines=[];CG.productions=[];CG.productionInputs=[];CG.sales=[];CG.saleLines=[];CG.dailySO=[];CG.dailySOLines=[];CG.ready=false;CG.err='';CG.filter='';CG.materialTab='active';CG.wipTab='active';CG.menuTab='active';
-  OPS.division='';OPS.date=today();OPS.prodHistoryDate=today();OPS.soHistoryDate=today();OPS.position=[];OPS.positionLoadedFor='';OPS.positionLoading=false;OPS.positionError='';OPS.counts={};
-  if(typeof guestArrivalOutletChanged==='function')guestArrivalOutletChanged();
-  toast('Outlet diganti · memuat data outlet baru…');R();
-  try{await sbLoad();await Promise.all([payLoad(),invLoad(true),cgLoad(true)]);if(pg==='cogs_daily_so'||pg==='cogs_production')await opsLoadPosition(true);R();toast('Data outlet baru sudah dimuat.','ok')}
-  catch(e){R();toast('Outlet berubah, tetapi sebagian data gagal dimuat. Tekan Muat ulang pada halaman terkait.','err')}
-}
-function outMenuHtml(){
-  if(!isDeveloper())return '';
-  if(!Array.isArray(T.outlets)||!T.outlets.length){
-    if(!T.outMenuLoading){T.outMenuLoading=true;setTimeout(async()=>{try{T.outlets=await payQ('outlets','id,code,name,active',q=>q.eq('active',true).order('code'));if(!D.ljId&&T.outlets.length)D.ljId=T.outlets.find(x=>x.code=='LJ')?.id||T.outlets[0].id}catch(e){T.outlets=[]}finally{T.outMenuLoading=false;R()}},0)}
-    return '<div class="hd-outlet"><small>Outlet</small><div class="mu" style="padding:8px 0">Memuat daftar outlet…</div></div>';
-  }
-  const cur=(D.outId&&D.outId!=='ALL')?D.outId:(D.ljId||T.outlets[0].id);
-  const opts=T.outlets.map(o=>`<option value="${o.id}" ${o.id==cur?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('');
-  return `<div class="hd-outlet"><small>Outlet</small><select aria-label="Pilih outlet aktif" onchange="outSwitch(this.value)">${opts}</select></div>`}
 let SB_LOAD_PROMISE=null;
 async function sbLoad(silent){
 if(T.dbRole==='guest_arrival'){if(typeof guestArrivalRefresh==='function')guestArrivalRefresh(true);return}
@@ -737,13 +681,6 @@ function cgModuleGate(key,label){
  const options=enabled.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('');
  return '<div class="card"><h3>Modul '+esc(label)+' nonaktif pada divisi ini</h3><p class="mu">Pilih divisi lain yang mengaktifkan modul, atau minta Developer mengaktifkannya untuk divisi ini.</p><label>Divisi<select onchange="cgModuleChoose(this.value)">'+options+'</select></label></div>';
 }
-const hasFeature=(p)=>isDeveloper()||!!(T.perms&&T.perms.includes(p));
-const cogsPageFeature={cogs_dashboard:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_materials:['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.production.view','cogs.production.manage','cogs.sales.view','cogs.sales.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_wip:['cogs.wip.view','cogs.wip.manage'],cogs_menu:['cogs.menu.view','cogs.menu.manage'],cogs_production:['cogs.production.view','cogs.production.manage'],cogs_daily_so:['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'],cogs_sales:['cogs.sales.view','cogs.sales.manage']};
-const cogsPageOK=k=>T.dbRole==='report_viewer'
- ? ((k==='cogs_daily_so'&&hasFeature('cogs.daily_so.edit'))||(k==='cogs_production'&&hasFeature('cogs.production.manage'))||(k==='cogs_sales'&&hasFeature('cogs.sales.manage')))
- : k==='cogs_closing'?(isDeveloper()||T.dbRole==='div_admin'||(T.dbRole==='hr'&&hasFeature('feature.approval.access'))):k==='cogs_materials'?(isDeveloper()||hasFeature('inventory.view')||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature)):k==='cogs_dashboard'?(isDeveloper()||['inventory.view','cogs.wip.view','cogs.wip.manage','cogs.menu.view','cogs.menu.manage','cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature)):(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature));
-const guestArrivalAllowedPages=()=>{const out=['guest_arrival'],any=xs=>xs.some(hasFeature);if(any(['attendance.view','attendance.input','attendance.manage']))out.push('dash');if(any(['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit']))out.push('ops_dashboard','cogs_daily_so');if(cogsPageOK('cogs_dashboard'))out.push('cogs_dashboard');if(any(['inventory.view','inventory.manage']))out.push('barang');if(hasFeature('payroll.view'))out.push('pay_data');return out};
-const allowed=()=>{if(T.dbRole==='guest_arrival')return guestArrivalAllowedPages();const p=T.dbRole==='report_viewer'?['dash','cogs_daily_so','pengeluaran','cogs_production','masuk','cogs_sales','supplies']:adm()?Object.keys(PAGES):['dash','abs','ot'];return p.filter(k=>(k!='dash'||T.dbRole!=='report_viewer'||(hasFeature('attendance.view')&&hasFeature('employees.view')))&&(!k.startsWith('pay_')||(payOK()&&(k!='pay_set'||payOK())))&&(k!=='barang'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!=='masuk'||hasFeature('inventory.view')||hasFeature('inventory.inbound.view')||hasFeature('inventory.manage')||hasFeature('inventory.inbound.manage'))&&(k!=='pengeluaran'||hasFeature('inventory.manage')||hasFeature('inventory.outbound.manage'))&&(k!=='supplies'||hasFeature('inventory.manage')||hasFeature('inventory.supplies.manage'))&&(k!='ops_dashboard'||(adm()&&(isDeveloper()||['cogs.daily_so.system','cogs.daily_so.difference','cogs.daily_so.edit'].some(hasFeature))))&&(k!='abs'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='kar'||(T.dbRole==='report_viewer'?(hasFeature('employees.view')&&hasFeature('employees.directory.view')):(hasFeature('employees.view')||hasFeature('employees.manage'))))&&(k!='ot'||hasFeature('attendance.input')||hasFeature('attendance.manage'))&&(k!='lap'||(T.dbRole==='report_viewer'?(hasFeature('attendance.view')&&hasFeature('attendance.report.view')):(hasFeature('attendance.view')||payOK())))&&(k!='unit'||hasFeature('inventory.view')||hasFeature('inventory.manage'))&&(k!='audit'||isDeveloper())&&(!k.startsWith('cogs_')||cogsPageOK(k))&&(k!=='guest_arrival'||isDeveloper()||hasFeature('feature.guest_arrival.access')))};
 const GRP=k=>k==='guest_arrival'?'guest':k.startsWith('cogs_')?'cogs':k=='unit'?'unit':k.startsWith('pay_')?'pay':(k=='audit')?'dev':(k=='barang'||k=='masuk'||k=='pengeluaran'||k=='supplies')?'inventory':'abs';
 const HIDE_NAV=['abs','unit','masuk','pengeluaran','supplies','cogs_materials','cogs_wip','cogs_menu','cogs_sales','cogs_production'],SHEET_ABS=['kar','ot','lap'],SHEET_PAY=['pay_data','pay_lap','pay_kas','pay_set'],SHEET_INV=['barang'],MOVED=SHEET_ABS.concat(SHEET_PAY);
 /* Desktop sidebar collapse preference; independent from account permissions. */
