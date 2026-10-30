@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/cogs-backend-v1
+      - refactor/app-shell-dashboards
   pull_request:
     branches:
       - main
@@ -36,11 +37,14 @@ jobs:
       - name: Assemble preview package
         run: |
           mkdir -p preview
-          cp index.html manifest.json sw.js icon-192.png icon-512.png preview/
+          cp index.html manifest.json icon-192.png icon-512.png preview/
+          cp -R public/. preview/
           cat > preview/TESTING-NOTES.txt <<'EOF'
           BARAPP COGS — PREVIEW PACKAGE
 
           This package was built from the feature branch, not from main.
+          Public assets are copied to the package root to preserve the app's
+          existing classic-script URLs.
           Open index.html in Chrome for a visual/navigation check. Some browser
           features, including service-worker/PWA behavior, may not work from a
           local file URL.
