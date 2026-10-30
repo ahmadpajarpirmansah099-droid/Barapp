@@ -43,9 +43,8 @@ const functionNames = [
 ];
 
 for (const name of functionNames) {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(
-    `CREATE OR REPLACE FUNCTION public\\.${escaped}\\b[\\s\\S]*?AS \\\$function\\\$([\\s\\S]*?)\\\\$function\\\\$;`,
+    `CREATE OR REPLACE FUNCTION public\\\\.${name}\\\\b[\\\\s\\\\S]*?AS \\\\$function\\\\$([\\\\s\\\\S]*?)\\\\$function\\\\$;`,
     'i'
   );
   const match = sql.match(pattern);
