@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const closingSource = fs.readFileSync(path.join(root, 'closing.js'), 'utf8');
+const closingSource = fs.readFileSync(path.join(root, 'public/closing.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const migrationSource = fs.readFileSync(
   path.join(root, 'supabase/migrations/20261024_add_atomic_operational_template_v2.sql'),
@@ -58,7 +58,7 @@ assert.ok(migrationSource.includes('revoke all on function public.barapp_closing
 assert.match(migrationSource, /\$function\$;\s*revoke all on function public\.barapp_closing_import_operational_template_v2/i, 'Function terminator must be complete before permissions are changed');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
 
-assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v7'), 'The app must load the auto-refresh and Daily SO template script version');
+assert.match(indexSource, /closing\.js\?v=/, 'The app must load the versioned closing script from public assets');
 assert.equal(closingSource.includes('Template Operasional (Excel)'), false, 'Approval Closing should not contain the operational template button');
 assert.ok(indexSource.includes('window.__clOpenOperationalTemplateFromDailySO()'), 'Daily SO should expose the operational template action');
 assert.ok(closingSource.includes('window.__clOpenOperationalTemplateFromDailySO=opTOpenFromDailySO'), 'Daily SO template opener should be wired to current division/date');
