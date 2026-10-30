@@ -2989,7 +2989,7 @@ function unitConvert(id){const x=UNIT_DATA.find(v=>v.id===id);if(!x)return;const
 V.unit=()=>{const rows=UNIT_DATA.map(x=>`<div class="card"><div class="row" style="align-items:center;justify-content:space-between"><div><h3>${esc(x.name)}</h3><span class="mu">Satuan dasar: ${esc(x.baseUnit)}</span></div><div class="btns"><button class="btn s x" onclick="unitEdit('${x.id}')">Edit</button><button class="btn d x" onclick="cf('Hapus konfigurasi ini?',()=>unitDelete('${x.id}'))">Hapus</button></div></div><div style="overflow-x:auto"><table style="font-size:12px"><tr><th>Satuan</th><th>Setara ${esc(x.baseUnit)}</th></tr>${x.units.map(u=>`<tr><td>${esc(u.name)}</td><td>${unitNum(u.factor)} ${esc(x.baseUnit)}</td></tr>`).join('')}</table></div><div class="ts">Simulasi konversi</div><div class="row"><label style="flex:1">Jumlah<input id="uq_${x.id}" type="number" min="0" step="any" value="1"></label><label style="flex:1">Satuan<select id="uu_${x.id}">${x.units.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('')}</select></label><button class="btn" onclick="unitConvert('${x.id}')">Konversi</button></div><div class="dlg" id="ur_${x.id}">Hasil konversi akan muncul di sini.</div></div>`).join('');return `<div class="card"><h3>Master Konversi Unit</h3><p class="mu">Atur satuan per barang. Semua faktor menyatakan berapa satuan dasar di dalam satu unit. Data disimpan bersama di Supabase agar bisa dipakai lintas perangkat.</p><div class="btns"><button class="btn" onclick="unitAdd()">+ Tambah barang</button><button class="btn s" onclick="loadSharedSettings().then(()=>R())">Muat ulang data</button></div></div>${rows||'<div class="card empty">Belum ada konfigurasi konversi.</div>'}<div class="card"><h3>Aturan penting</h3><p>Konversi massa dan volume tidak boleh dicampur otomatis. Setiap barang harus memakai satu satuan dasar yang konsisten.</p></div>`};
 /* ---------- GAJI / PAYROLL ---------- */
 const PAY={need:true,busy:false,s:null,pp:{},allow:[],cash:[],bal:{},run:null,items:[],rep:null,urls:{}};
-const payOK=()=>isDeveloper()||(T.dbRole==='hr'&&hasFeature('payroll.view'));
+const payOK=()=>T.dbRole==='dev'||(T.dbRole==='hr'&&hasFeature('payroll.view'));
 const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
 const fmtN=n=>{const r=Math.round(+n||0);return (r<0?'-':'')+String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')};
 const rupiah=n=>'Rp '+fmtN(n);
@@ -3060,7 +3060,7 @@ const invRole=()=>String(T.dbRole||'');
 const invCanAll=()=>isDeveloper()||(T.dbRole==='hr'&&hasFeature('inventory.view'));
 const invCanWrite=()=>isDeveloper()||(adm()&&hasFeature('inventory.view')&&hasFeature('inventory.manage'));
 const invCanInbound=()=>isDeveloper()||invCanWrite()||hasFeature('inventory.inbound.manage');
-const invCanReadPositions=()=>isDeveloper()||['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage'].some(hasFeature);
+const invCanReadPositions=()=>T.dbRole==='dev'||['inventory.view','inventory.manage','inventory.inbound.view','inventory.inbound.manage'].some(hasFeature);
 const invCanStockOut=()=>isDeveloper()||invCanWrite()||hasFeature('inventory.outbound.manage');
 const invCanSupplies=()=>isDeveloper()||invCanWrite()||hasFeature('inventory.supplies.manage');
 const invCanOpeningWip=()=>invCanInbound()||hasFeature('cogs.production.manage');
