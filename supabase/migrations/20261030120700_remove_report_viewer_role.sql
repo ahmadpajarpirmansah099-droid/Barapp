@@ -1,3 +1,9 @@
+-- Reconciliation note:
+-- Supabase migration history records 20261025084054_allow_report_viewer_daily_so_save
+-- as applied, but its source file and path commit history are absent from GitHub main.
+-- This corrective migration removes the report_viewer-specific behavior still
+-- visible in the live function and policy catalog. Historical migration records
+-- and source files are intentionally retained.
 BEGIN;
 
 -- Refuse to remove the role constraint if an account still depends on it.
