@@ -1,0 +1,42 @@
+name: Report Viewer retirement QA
+
+on:
+  push:
+    branches:
+      - fix/remove-report-viewer-role-20261030
+  pull_request:
+    branches:
+      - main
+    paths:
+      - index.html
+      - supabase/migrations/20261030120700_remove_report_viewer_role.sql
+      - scripts/report-viewer-role-removal.test.cjs
+      - .github/workflows/report-viewer-removal.yml
+
+permissions:
+  contents: read
+
+jobs:
+  report-viewer-retirement:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Check retired role and preserved permissions
+        run: node scripts/report-viewer-role-removal.test.cjs
+
+      - name: Validate inline JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(match => match[1])
+            .filter(script => script.trim().length > 0);
+          if (!scripts.length) throw new Error('No inline scripts found');
+          scripts.forEach((script, index) => {
+            new Function(script);
+            console.log('Inline script ' + (index + 1) + ': syntax OK');
+          });
+          NODE
