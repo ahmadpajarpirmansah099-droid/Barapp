@@ -2418,7 +2418,7 @@ const SUPABASE_URL='https://ybptbloiujrbvgxcjqqk.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_Ey60O_H9LU6mYI8fYbBPWw_5OOtVCmd';
 /* Pemetaan tabel: employees(name=nama, role=jabatan, active=aktif)  attendance(employee_id, attendance_date, status M/L/I/S/PH, notes). */
 const SBK='absensi_bar_sbcache_v1',SBCFGK='absensi_bar_sbcfg_v1',PHK='absensi_bar_photos_v1';
-let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:''},SBC=null,PH={};
+let SB={state:'idle',msg:'',loaded:false,busy:false,loading:false,stale:false,cached:false,photoCol:null,sig:'',accessSig:''},SBC=null,PH={};
 try{PH=JSON.parse(localStorage.getItem(PHK)||'{}')}catch(e){}
 const savePH=()=>{try{localStorage.setItem(PHK,JSON.stringify(PH))}catch(e){}};
 const sbCfg=()=>{let c={};try{c=JSON.parse(localStorage.getItem(SBCFGK)||'{}')}catch(e){}return{url:String(SUPABASE_URL||c.url||'').trim().replace(/\/+$/,''),key:String(SUPABASE_ANON_KEY||c.key||'').trim()}};
