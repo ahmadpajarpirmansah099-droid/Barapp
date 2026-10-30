@@ -47,6 +47,7 @@ DECLARE
   v_earned numeric;
   v_cfg_start date;
   v_cfg_end date;
+  v_existing boolean := false;
   v_oth numeric;
   v_ot numeric;
   v_divisor numeric;
@@ -77,6 +78,18 @@ BEGIN
   -- Serialize calculate/finalize/void across outlets to prevent race conditions.
   PERFORM pg_advisory_xact_lock(20261030, 30103);
 
+  IF EXISTS (
+    SELECT 1
+    FROM public.payroll_periods pp
+    WHERE pp.outlet_id = p_outlet
+      AND pp.start_date = p_start
+      AND pp.end_date = p_end
+      AND pp.locked
+  ) THEN
+    RAISE EXCEPTION 'PAYROLL_PERIOD_LOCKED: buka kunci periode sebelum menghitung ulang'
+      USING ERRCODE='55000';
+  END IF;
+
   SELECT * INTO r
   FROM public.payroll_runs
   WHERE outlet_id = p_outlet
@@ -84,8 +97,9 @@ BEGIN
     AND period_end = p_end
     AND status <> 'void'
   FOR UPDATE;
+  v_existing := FOUND;
 
-  IF FOUND AND r.status = 'finalized' THEN
+  IF v_existing AND r.status = 'finalized' THEN
     RAISE EXCEPTION 'Payroll periode ini sudah final';
   END IF;
 
@@ -108,7 +122,7 @@ BEGIN
     ELSE 31
   END;
 
-  IF FOUND THEN
+  IF v_existing THEN
     v_run := r.id;
     DELETE FROM public.payroll_items WHERE run_id = v_run;
   ELSE
