@@ -297,6 +297,7 @@ async function opTPreview(input){
   const c=opTCatalog(),mapped=opTMapRows(ws),expenseOptions=opTExpenseOptions(ws);
   const byKey=new Map(mapped.map(x=>[x.section+':'+x.id,x]));
   if(byKey.size!==mapped.length)errors.push('Metadata template berisi ID duplikat.');
+  if(mapped.some(x=>!['STOCK','WIP'].includes(x.section)))errors.push('Template Daily SO hanya menerima metadata stok fisik ITEM dan WIP. Bagian transaksi lain tidak diizinkan.');
   const requiredSections={
    STOCK:c.dailyMaterials.map(x=>({id:String(x.id),name:String(x.name),type:'material',unit:String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')})),
    WIP:c.dailyWips.map(x=>({id:String(x.id),name:String(x.name),type:'wip',unit:String(x.yield_unit||'UNIT')})),
