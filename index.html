@@ -2547,7 +2547,7 @@ let dIds=null;if(session&&T.dbRole=='div_admin'){try{const sc=await payQ('user_s
 const inD=x=>!dIds||dIds.includes(String(x.division_id));
 const eSet=new Set(er.filter(inO).filter(inD).map(x=>String(x.id)));
 const emp=er.filter(inO).filter(inD).filter(x=>!x.deleted_at).map(mapEmp),arc=er.filter(inO).filter(inD).filter(x=>x.deleted_at).map(mapEmp),att=ar.filter(inO).filter(x=>!dIds||eSet.has(String(x.employee_id))).map(mapAtt).filter(a=>a.s);
-const accessSig=String(T.dbRole||'')+'|'+(T.perms||[]).slice().sort().join(',');
+const accessSig=[String(D.me&&D.me.uid||''),String(T.dbRole||''),String(oid||''),dIds===null?'*':dIds.map(String).sort().join(','),(T.perms||[]).slice().sort().join(',')].join('|');
 if(SB.accessSig&&SB.accessSig!==accessSig){INV.init=false;INV.ready=false;INV.err='';SUPS.positionLoadedFor='';SUPS.position=[];}
 SB.accessSig=accessSig;
 const sig=emp.map(e=>[e.id,e.nama,e.jab,e.aktif].join()).join('|')+'#'+att.map(a=>[a.id,a.e,a.d,a.s,a.n].join()).join('|')+'#access:'+accessSig;
