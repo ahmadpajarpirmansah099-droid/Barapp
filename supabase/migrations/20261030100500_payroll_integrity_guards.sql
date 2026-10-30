@@ -778,3 +778,7 @@ WITH CHECK (
     OR can_access_outlet(outlet_id)
   )
 );
+
+
+-- Overtime is now applied atomically inside payroll_calculate.
+REVOKE EXECUTE ON FUNCTION public.payroll_apply_overtime(uuid) FROM PUBLIC, anon, authenticated;
