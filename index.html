@@ -4348,7 +4348,8 @@ function kasSel(){const outs=(T.outlets||[]).filter(o=>o&&o.id);let kOut=T.kOut|
  `<label>Nama<select id="kn1">${cands.map(x=>`<option value="${x.id}">${esc(x.nama)}</option>`).join('')||'<option value="">Tidak ada karyawan</option>'}</select></label>`}
 
 async function cashAdd(eid){const p=+v('kp'),n=+v('kn2'),d=v('kd'),note=v('kn').trim()||null;
- if(!(p>0))return toast('Pokok kasbon wajib lebih dari 0','err');
+ if(!eid)return toast('Pilih karyawan terlebih dahulu','err');
+ if(!(p>0)||!Number.isInteger(p))return toast('Pokok kasbon wajib berupa nominal rupiah yang valid','err');
  if(p>1000000)return toast('Maksimal kasbon Rp 1.000.000','err');
  if(!(n>=1&&Number.isInteger(n)))return toast('Jumlah periode potongan minimal 1','err');
  if(!d)return toast('Tanggal wajib','err');
@@ -4356,11 +4357,14 @@ async function cashAdd(eid){const p=+v('kp'),n=+v('kn2'),d=v('kd'),note=v('kn').
  const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvances').insert({employee_id:eid,principal:p,installment:cicil,issued_on:d,notes:note});if(error)throw error});
  if(ok){toast('Kasbon dicatat');payLoad()}}
 function cashVoid(id){const c=PAY.cash.find(x=>x.id==id);if(!c)return;const b=PAY.bal[id];
- if(b!=null&&+b!==+c.principal)return toast('Kasbon sudah ada pembayaran / potongan, tidak bisa dihapus','err');
- cf('Hapus kasbon ini? Datanya tetap tersimpan sebagai dibatalkan.',async()=>{const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvances').update({status:'void',notes:'Dibatalkan dari aplikasi'}).eq('id',id);if(error)throw error});if(ok){toast('Kasbon dihapus');payLoad()}},'Ya, hapus')}
+ if(b!=null&&+b!==+c.principal)return toast('Kasbon sudah ada pembayaran / potongan, tidak bisa dibatalkan','err');
+ cf('Batalkan kasbon ini? Riwayat akan tetap tersimpan.',async()=>{const ok=await sbRun(async()=>{await payRpc('cashadvance_void',{p_id:id,p_reason:'Dibatalkan dari aplikasi'})});if(ok){toast('Kasbon dibatalkan');payLoad()}},'Ya, batalkan')}
 function cashPay(id){const sisa=PAY.bal[id]??0;modal(`<h3>Bayar kasbon</h3><p class="mu">Sisa kasbon: ${rupiah(sisa)}</p><label>Jumlah pembayaran (Rp)<input id="cpAmt" type="number" inputmode="numeric" min="1" autocomplete="off"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="cashPaySave('${id}')">Simpan pembayaran</button></div>`)}
-async function cashPaySave(id){const sisa=PAY.bal[id]??0,n=+v('cpAmt');if(!(n>0))return toast('Jumlah tidak valid','err');if(n>sisa)return toast('Melebihi sisa kasbon','err');
- const ok=await sbRun(async()=>{const {error}=await sb().from('cashadvance_transactions').insert({cashadvance_id:id,kind:'payment',amount:n,tx_date:today(),notes:'Pembayaran tunai'});if(error)throw error});if(ok){closeM();toast('Pembayaran dicatat');payLoad()}}
+async function cashPaySave(id){if(window.__cashPayBusy)return;const sisa=PAY.bal[id]??0,n=+v('cpAmt');if(!(n>0)||!Number.isSafeInteger(n))return toast('Jumlah harus berupa nominal rupiah yang valid','err');if(n>sisa)return toast('Melebihi sisa kasbon','err');
+ const requestKey=(window.crypto&&typeof window.crypto.randomUUID==='function')?window.crypto.randomUUID():('cashpay-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+ window.__cashPayBusy=true;
+ try{const ok=await sbRun(async()=>{await payRpc('cashadvance_register_payment',{p_id:id,p_amount:n,p_tx_date:today(),p_notes:'Pembayaran tunai',p_request_key:requestKey})});if(ok){closeM();toast('Pembayaran dicatat');payLoad()}}
+ finally{window.__cashPayBusy=false}}
 
 /* ===== Hitung & Finalisasi ===== */
 V.pay_lap=()=>{if(!payOK())return payDenied();payEnsure();
