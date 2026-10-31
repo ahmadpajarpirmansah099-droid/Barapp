@@ -22,3 +22,10 @@ jobs:
         run: npm install
       - name: Build Barapp with Vite
         run: npm run build
+      - name: Save build output for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: barapp-vite-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
