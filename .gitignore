@@ -1,0 +1,14 @@
+# File rahasia dan pengaturan lokal
+.env
+.env.*
+!.env.example
+
+# Hasil instalasi dan proses Vite
+node_modules/
+dist/
+.vite/
+
+# File sementara sistem
+.DS_Store
+Thumbs.db
+npm-debug.log*

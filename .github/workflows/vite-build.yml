@@ -1,0 +1,31 @@
+name: Vite build check
+
+on:
+  push:
+    branches:
+      - chore/vite-dev-setup
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Build Barapp with Vite
+        run: npm run build
+      - name: Save build output for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: barapp-vite-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
