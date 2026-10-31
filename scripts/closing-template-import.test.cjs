@@ -28,7 +28,7 @@ for (const marker of [
   'opTPreferredUnit',
   'const dailyPhysicalTouched=mapped.some',
   'const supplyPhysicalTouched=mapped.some',
-  'Only data Daily SO ITEM dan WIP'
+  'Hanya data Daily SO ITEM dan WIP yang akan diimpor.'
 ]) {
   assert.ok(closingSource.includes(marker), 'Missing Daily SO template marker: ' + marker);
 }
