@@ -1,0 +1,68 @@
+name: Deploy Barapp to GitHub Pages (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_publish:
+        description: "Centang hanya jika memang ingin menerbitkan versi ini ke GitHub Pages"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: inputs.confirm_publish == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Vite site
+        run: npm run build
+
+      - name: Check required Pages output
+        run: |
+          test -f dist/index.html
+          test -f dist/.nojekyll || touch dist/.nojekyll
+          test -f dist/core/config.js
+          test -f dist/features/dashboard/operational.js
+          test -f dist/closing.js
+          test -f dist/guest-arrival.js
+          test -f dist/sw.js
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: inputs.confirm_publish == true
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
