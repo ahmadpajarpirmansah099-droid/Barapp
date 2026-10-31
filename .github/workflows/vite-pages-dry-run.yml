@@ -1,0 +1,75 @@
+name: Vite Pages dry run
+
+on:
+  push:
+    branches:
+      - refactor/app-shell-dashboards
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-pages-artifact:
+    if: github.ref == 'refs/heads/refactor/app-shell-dashboards'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated Vite branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Vite output
+        run: npm run build
+
+      - name: Verify static files and relative asset paths
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = path.resolve('dist');
+          const htmlPath = path.join(root, 'index.html');
+          if (!fs.existsSync(htmlPath)) throw new Error('dist/index.html was not created');
+
+          const html = fs.readFileSync(htmlPath, 'utf8');
+          const tags = [...html.matchAll(/<(?:script|link)\\b[^>]*>/gi)].map(match => match[0]);
+          const refs = [];
+          for (const tag of tags) {
+            const attr = tag.match(/\\b(?:src|href)=["']([^"']+)["']/i);
+            if (attr) refs.push(attr[1]);
+          }
+
+          const missing = [];
+          for (const ref of refs) {
+            if (/^(?:[a-z]+:|\\/\\/|#)/i.test(ref)) continue;
+            const pathname = decodeURIComponent(ref.split(/[?#]/, 1)[0]);
+            const target = path.resolve(root, pathname.replace(/^\\.\\//, '').replace(/^\\//, ''));
+            if (!target.startsWith(root + path.sep) || !fs.existsSync(target)) missing.push(ref);
+          }
+          if (missing.length) {
+            console.error('Missing local files referenced by dist/index.html:', missing.join(', '));
+            process.exit(1);
+          }
+          if (!fs.existsSync(path.join(root, 'manifest.json'))) throw new Error('manifest.json is missing');
+          if (!fs.existsSync(path.join(root, 'sw.js'))) throw new Error('sw.js is missing');
+          if (!fs.existsSync(path.join(root, 'core/config.js'))) throw new Error('core/config.js is missing');
+          if (!fs.existsSync(path.join(root, 'features/dashboard/operational.js'))) throw new Error('Dashboard assets are missing');
+          console.log('Vite output passed. Checked local asset references:', refs.length);
+          NODE
+
+      - name: Mark artifact as static Pages content
+        run: touch dist/.nojekyll
+
+      - name: Upload dry-run artifact only
+        uses: actions/upload-artifact@v4
+        with:
+          name: barapp-vite-pages-dry-run-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
