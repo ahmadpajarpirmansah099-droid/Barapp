@@ -447,11 +447,10 @@ const gaCss = String.raw`
   #app.in .ga-wrap .ga-heading .ga-date-pill{font-size:8px!important;padding:4px 5px!important}
 }
 
-/* Keep Guest Arrival on its dedicated terracotta-red theme, independent of the account accent. */
+/* Guest Arrival workspace background matches the card color; keep coral accents inside the feature. */
 body:has(#app.in .ga-wrap){
-  background-color:#B4533F!important;
-  background-image:radial-gradient(rgba(255,232,225,.58) 2px,transparent 2px)!important;
-  background-size:32px 32px!important;
+  background-color:var(--cd)!important;
+  background-image:none!important;
 }
 #app.in .ga-wrap{
   --ac:#B4533F;
