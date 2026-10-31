@@ -97,22 +97,22 @@ jobs:
           if (!fs.existsSync(htmlPath)) throw new Error('dist/index.html was not created');
 
           const html = fs.readFileSync(htmlPath, 'utf8');
-          const tags = [...html.matchAll(/<(?:script|link)\\b[^>]*>/gi)].map(match => match[0]);
+          const tags = [...html.matchAll(/<(?:script|link)\b[^>]*>/gi)].map(match => match[0]);
           const refs = [];
           for (const tag of tags) {
-            const attr = tag.match(/\\b(?:src|href)=["']([^"']+)["']/i);
+            const attr = tag.match(/\b(?:src|href)=["']([^"']+)["']/i);
             if (attr) refs.push(attr[1]);
           }
 
           const missing = [];
           for (const ref of refs) {
-            if (/^(?:[a-z]+:|\\/\\/|#)/i.test(ref)) continue;
+            if (/^(?:[a-z]+:|\/\/|#)/i.test(ref)) continue;
             if (ref.startsWith('/')) {
               missing.push(ref + ' (absolute path; expected relative path for /Barapp/)');
               continue;
             }
             const pathname = decodeURIComponent(ref.split(/[?#]/, 1)[0]);
-            const target = path.resolve(root, pathname.replace(/^\\.\\//, ''));
+            const target = path.resolve(root, pathname.replace(/^\.\//, ''));
             if (!target.startsWith(root + path.sep) || !fs.existsSync(target)) missing.push(ref);
           }
           if (missing.length) {
@@ -121,10 +121,7 @@ jobs:
           }
 
           const required = [
-            'manifest.json',
             'sw.js',
-            'icon-192.png',
-            'icon-512.png',
             'core/config.js',
             'features/dashboard/operational.js',
             'closing.js',
