@@ -36,7 +36,7 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]
             .map(match => match[1])
             .filter(script => script.trim().length > 0);
           if (!scripts.length) throw new Error('No inline scripts found');
@@ -86,3 +86,65 @@ jobs:
           }
           console.log(`All ${required.length} COGS UI/RPC markers found.`);
           NODE
+
+      - name: Verify GitHub Pages-ready Vite output
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = path.resolve('dist');
+          const htmlPath = path.join(root, 'index.html');
+          if (!fs.existsSync(htmlPath)) throw new Error('dist/index.html was not created');
+
+          const html = fs.readFileSync(htmlPath, 'utf8');
+          const tags = [...html.matchAll(/<(?:script|link)\\b[^>]*>/gi)].map(match => match[0]);
+          const refs = [];
+          for (const tag of tags) {
+            const attr = tag.match(/\\b(?:src|href)=["']([^"']+)["']/i);
+            if (attr) refs.push(attr[1]);
+          }
+
+          const missing = [];
+          for (const ref of refs) {
+            if (/^(?:[a-z]+:|\\/\\/|#)/i.test(ref)) continue;
+            if (ref.startsWith('/')) {
+              missing.push(ref + ' (absolute path; expected relative path for /Barapp/)');
+              continue;
+            }
+            const pathname = decodeURIComponent(ref.split(/[?#]/, 1)[0]);
+            const target = path.resolve(root, pathname.replace(/^\\.\\//, ''));
+            if (!target.startsWith(root + path.sep) || !fs.existsSync(target)) missing.push(ref);
+          }
+          if (missing.length) {
+            console.error('Invalid local references in dist/index.html:', missing.join(', '));
+            process.exit(1);
+          }
+
+          const required = [
+            'manifest.json',
+            'sw.js',
+            'icon-192.png',
+            'icon-512.png',
+            'core/config.js',
+            'features/dashboard/operational.js',
+            'closing.js',
+            'guest-arrival.js'
+          ];
+          const absent = required.filter(file => !fs.existsSync(path.join(root, file)));
+          if (absent.length) {
+            console.error('Missing required Vite output files:', absent.join(', '));
+            process.exit(1);
+          }
+          console.log('Pages-ready output OK. Local script/link references checked:', refs.length);
+          NODE
+
+      - name: Mark output to bypass Jekyll processing
+        run: touch dist/.nojekyll
+
+      - name: Upload Vite dry-run artifact (not deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: barapp-vite-pages-dry-run-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
