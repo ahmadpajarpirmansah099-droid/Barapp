@@ -2,7 +2,7 @@ import { copyFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
-const pwaFiles = ["manifest.json", "sw.js", "icon-192.png", "icon-512.png"];
+const publicRootFiles = ["manifest.json", "sw.js", "icon-192.png", "icon-512.png", "closing.js", "guest-arrival.js"];
 
 export default defineConfig({
   base: "./",
@@ -11,13 +11,13 @@ export default defineConfig({
   },
   plugins: [
     {
-      name: "copy-barapp-pwa-files",
+      name: "copy-barapp-public-root-files",
       closeBundle() {
         const root = process.cwd();
         const output = resolve(root, "dist");
         mkdirSync(output, { recursive: true });
 
-        for (const file of pwaFiles) {
+        for (const file of publicRootFiles) {
           copyFileSync(resolve(root, file), resolve(output, file));
         }
       }
