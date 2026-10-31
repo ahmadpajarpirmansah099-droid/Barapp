@@ -14,69 +14,49 @@ const migrationSource = fs.readFileSync(
 
 assert.doesNotThrow(() => new Function(closingSource), 'closing.js must remain valid JavaScript');
 
+// The current Excel feature is a Daily SO-only template for physical stock counts.
 for (const marker of [
   'function opTDownload()',
   'function opTPreview(input)',
   'function opTConfirmImport()',
-  'Template Operasional Barapp',
-  'BARAPP_OPERATIONAL_TEMPLATE_V2',
-  'STOCK OPNAME + BARANG MASUK',
-  'PENGELUARAN — 20 BARIS INPUT MANUAL',
-  'PENJUALAN MENU',
-  'PRODUKSI WIP + STOK FISIK AKHIR',
-  'SUPPLIES',
+  'BARAPP_DAILY_SO_TEMPLATE_V1',
+  'DAILY SO',
   'window.__clDownloadOperationalTemplate=opTDownload',
   'window.__clPreviewOperationalImport=opTPreview',
   'window.__clConfirmOperationalImport=opTConfirmImport',
   'barapp_closing_import_operational_template_v2',
-  'stock_returns',
-  'opTPreferredUnit'
+  'opTPreferredUnit',
+  'const dailyPhysicalTouched=mapped.some',
+  'const supplyPhysicalTouched=mapped.some',
+  'Hanya data Daily SO ITEM dan WIP yang akan diimpor.'
 ]) {
-  assert.ok(closingSource.includes(marker), 'Missing operational template marker: ' + marker);
+  assert.ok(closingSource.includes(marker), 'Missing Daily SO template marker: ' + marker);
 }
 
-assert.ok(closingSource.includes("unit:x.is_supply===true?String(x.base_unit||'UNIT'):String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')"), 'Import validates STOCK metadata against the same preferred unit used during export');
-assert.ok(closingSource.includes("'SKM':'CAN'"), 'SKM uses CAN default');
-assert.ok(closingSource.includes("'SKMCOKLAT':'PACK'"), 'SKM Coklat uses PACK default');
-assert.ok(closingSource.includes("'GALONAQUA':'GALON'"), 'Galon Aqua uses GALON default');
-assert.ok(closingSource.includes("'GALONVIT':'GALON'"), 'Galon Vit uses GALON default');
-assert.ok(closingSource.includes("'ESBATUATLAS':'BALL'"), 'Es Batu Atlas uses BALL default');
-assert.ok(closingSource.includes("'GINGERALE':'CAN'"), 'Gingerale uses CAN default');
-assert.ok(closingSource.includes("ws.getCell('AA'+(i+1)).value=key"), 'Template metadata does not overwrite row IDs');
-assert.ok(closingSource.includes("const expenseStart=Number(ws['BD1']?.v||0),expenseLast=Number(ws['BD2']?.v||0)"), 'Expense input range is present in hidden metadata');
-assert.ok(closingSource.includes("cogs_save_daily_so") === false, 'V2 must use one atomic import RPC, not separate per-section client writes');
+assert.ok(closingSource.includes('function opTOpenFromDailySO()'), 'Daily SO template must open using the selected division and date');
+assert.ok(closingSource.includes('window.__clOpenOperationalTemplateFromDailySO=opTOpenFromDailySO'), 'Daily SO button must be wired to its template opener');
+assert.ok(closingSource.includes("ws.getCell('AA'+(i+1)).value=key"), 'Template metadata must remain separate from visible stock rows');
+assert.ok(closingSource.includes("opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v)"), 'Blank item physical quantities must default to zero');
+assert.ok(closingSource.includes("opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v)"), 'Blank WIP physical quantities must default to zero');
+assert.ok(closingSource.includes('Hanya data Daily SO ITEM dan WIP yang akan diimpor.'), 'Import preview must clearly state its Daily SO-only scope');
+assert.ok(closingSource.includes('if(dailyTouched){'), 'Daily SO must validate the complete active item set when physical counts are entered');
+assert.ok(closingSource.includes('if(supplyTouched){'), 'Supplies must validate the complete active supply set when physical counts are entered');
+assert.ok(closingSource.includes('await Promise.all([cgLoad(false),invLoad(false)])'), 'Successful import must refresh COGS and inventory caches');
+assert.ok(closingSource.includes('await opsLoadPosition(false,true)'), 'Successful import must refresh the Daily SO stock position when applicable');
+assert.equal(closingSource.includes('Template Operasional Barapp'), false, 'Legacy operational template title must not return');
+assert.equal(closingSource.includes('Template Operasional (Excel)'), false, 'Legacy operational template button must not return');
+assert.equal(closingSource.includes('STOCK OPNAME + BARANG MASUK'), false, 'Legacy multi-module template section must not return');
+assert.equal(closingSource.includes('PENGELUARAN — 20 BARIS INPUT MANUAL'), false, 'Legacy expense template section must not return');
+assert.equal(closingSource.includes('PENJUALAN MENU'), false, 'Legacy sales template section must not return');
+assert.equal(closingSource.includes('PRODUKSI WIP + STOK FISIK AKHIR'), false, 'Legacy multi-module WIP section must not return');
+assert.ok(closingSource.includes('window.__barappRegisterViews?.({cogs_closing:view})'), 'Closing view registration must remain reachable');
 
-assert.ok(migrationSource.includes('create table if not exists public.barapp_closing_operational_template_imports'), 'V2 import audit table must be created');
-assert.ok(migrationSource.toLowerCase().includes('create or replace function public.barapp_closing_import_operational_template_v2'), 'V2 atomic import RPC must be created');
-assert.match(migrationSource, /security definer/i, 'RPC must run with its protected database owner');
-assert.ok(migrationSource.includes('public.cogs_save_daily_so'), 'Daily SO is saved using the existing validated RPC');
-assert.ok(migrationSource.includes('public.cogs_record_menu_sales_batch'), 'Sales uses the existing validated batch RPC');
-assert.ok(migrationSource.includes('public.cogs_record_production_batch'), 'WIP production uses the existing validated batch RPC');
-assert.ok(migrationSource.includes('public.barapp_supplies_save_so'), 'Supplies uses the existing validated RPC');
-assert.ok(migrationSource.includes('public.barapp_stock_returns'), 'Supplier returns are included in the same DB transaction');
-assert.ok(migrationSource.includes('revoke all on function public.barapp_closing_import_operational_template_v2'), 'RPC execute permissions are explicitly restricted');
-assert.match(migrationSource, /\$function\$;\s*revoke all on function public\.barapp_closing_import_operational_template_v2/i, 'Function terminator must be complete before permissions are changed');
-assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC is available to authenticated sessions');
+assert.ok(migrationSource.toLowerCase().includes('create or replace function public.barapp_closing_import_operational_template_v2'), 'Daily SO import RPC must remain available');
+assert.ok(migrationSource.includes('public.cogs_save_daily_so'), 'Daily SO import must use the existing validated save function');
+assert.ok(migrationSource.includes('revoke all on function public.barapp_closing_import_operational_template_v2'), 'Import RPC execute permissions must be explicitly restricted');
+assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'Authenticated sessions must retain the intended import RPC access');
 
-assert.ok(indexSource.includes('closing.js?v=20261024-approval-operational-template-v7'), 'The app must load the auto-refresh and Daily SO template script version');
-assert.equal(closingSource.includes('Template Operasional (Excel)'), false, 'Approval Closing should not contain the operational template button');
-assert.ok(indexSource.includes('window.__clOpenOperationalTemplateFromDailySO()'), 'Daily SO should expose the operational template action');
-assert.ok(closingSource.includes('window.__clOpenOperationalTemplateFromDailySO=opTOpenFromDailySO'), 'Daily SO template opener should be wired to current division/date');
-assert.ok(closingSource.includes('await Promise.all([cgLoad(false),invLoad(false)])'), 'A successful import refreshes COGS and inventory caches');
-assert.ok(closingSource.includes('await opsLoadPosition(false,true)'), 'A successful import refreshes Daily SO stock position when applicable');
-assert.equal(closingSource.includes('Stok Awal WIP (Qty)'), false, 'Operational template must not request opening WIP stock');
-assert.equal(closingSource.includes('returnStart'), false, 'Operational template export must not reference the removed supplier returns section');
-assert.ok(closingSource.includes("opTBlank(ws['F'+row]?.v)?0:opTNum(ws['F'+row]?.v)"), 'Blank stock physical quantities default to zero when the section is used');
-assert.ok(closingSource.includes("opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v)"), 'Blank WIP physical quantities default to zero when Daily SO is used');
-assert.ok(closingSource.includes("const dailyPhysicalTouched=mapped.some"), 'Daily SO zero-default is conditional on a physical-count entry');
-assert.ok(closingSource.includes("const supplyPhysicalTouched=mapped.some"), 'Supplies zero-default is conditional on a supplies-count entry');
+assert.match(indexSource, /<script src="\.\/closing\.js\?v=[^"]+"><\/script>/, 'The page must load the current closing.js file');
+assert.ok(indexSource.includes('window.__clOpenOperationalTemplateFromDailySO()'), 'Daily SO page must expose the Daily SO template action');
 
-assert.equal(closingSource.includes('RETUR KE SUPPLIER'), false, 'Operational template must not expose supplier returns');
-assert.equal(closingSource.includes("section==='RETURNS'"), false, 'Operational template must not parse supplier return rows');
-assert.ok(closingSource.includes("['Nama WIP','Satuan Hasil','Produksi Aktual (Qty)','Stok Fisik Akhir (Qty)','Catatan']"), 'WIP template should contain production and physical ending stock only');
-assert.equal(closingSource.includes('clExportDailySOTemplate'), false, 'Removed Daily SO-only template binding must not break registration');
-assert.equal(closingSource.includes('clImportDailySO'), false, 'Removed Daily SO-only importer must not remain referenced');
-assert.ok(closingSource.includes('window.__barappRegisterViews?.({cogs_closing:view})'), 'Closing view registration must remain reachable after function binding');
-assert.equal(indexSource.includes('window.__clOpenTemplate'), false, 'Legacy single-template entry point must not be used');
-
-console.log('Approval Closing single-sheet operational Excel template v2: all static QA checks passed.');
+console.log('Daily SO-only Excel template: all static QA checks passed.');
