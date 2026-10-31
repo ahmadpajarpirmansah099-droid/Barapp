@@ -439,6 +439,7 @@ async function opTConfirmImport(){
   if(error)throw error;
   const targetDivision=String(CL.division),targetDate=String(CL.date),z=data?.summary||{};
   CL.operationalTemplateDraft=null;CL.busy='';CL.ready=false;CG.ready=false;INV.ready=false;
+  closeM();
   let refreshed=false;
   try{
    await Promise.all([cgLoad(false),invLoad(false)]);
