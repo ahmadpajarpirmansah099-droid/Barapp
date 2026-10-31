@@ -12,6 +12,25 @@ const migrationSource = fs.readFileSync(
   'utf8'
 );
 
+function collectJavaScriptFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) return collectJavaScriptFiles(fullPath);
+    return entry.isFile() && entry.name.endsWith('.js') ? [fullPath] : [];
+  });
+}
+
+const publicJavaScriptFiles = collectJavaScriptFiles(path.join(root, 'public'));
+assert.ok(publicJavaScriptFiles.length > 0, 'Expected JavaScript files under public/');
+for (const filePath of publicJavaScriptFiles) {
+  const source = fs.readFileSync(filePath, 'utf8');
+  assert.doesNotThrow(
+    () => new Function(source),
+    path.relative(root, filePath) + ' must remain valid JavaScript'
+  );
+}
+console.log(`Syntax check passed for ${publicJavaScriptFiles.length} JavaScript files under public/.`);
+
 assert.doesNotThrow(() => new Function(closingSource), 'closing.js must remain valid JavaScript');
 
 for (const marker of [
