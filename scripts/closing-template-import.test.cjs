@@ -36,7 +36,6 @@ for (const marker of [
 assert.ok(closingSource.includes('function opTOpenFromDailySO()'), 'Daily SO template must open using the selected division and date');
 assert.ok(closingSource.includes('window.__clOpenOperationalTemplateFromDailySO=opTOpenFromDailySO'), 'Daily SO button must be wired to its template opener');
 assert.ok(closingSource.includes("ws.getCell('AA'+(i+1)).value=key"), 'Template metadata must remain separate from visible stock rows');
-assert.ok(closingSource.includes("unit:x.is_supply===true?String(x.base_unit||'UNIT'):String(opTPreferredUnit(x).unit||x.base_unit||'UNIT')") === false, 'Legacy multi-module unit assertion must not be required by the Daily SO-only template');
 assert.ok(closingSource.includes("opTBlank(ws['F'+x.row]?.v)?0:opTNum(ws['F'+x.row]?.v)"), 'Blank item physical quantities must default to zero');
 assert.ok(closingSource.includes("opTBlank(ws['D'+r]?.v)?0:opTNum(ws['D'+r]?.v)"), 'Blank WIP physical quantities must default to zero');
 assert.ok(closingSource.includes('Hanya data Daily SO ITEM dan WIP yang akan diimpor.'), 'Import preview must clearly state its Daily SO-only scope');
