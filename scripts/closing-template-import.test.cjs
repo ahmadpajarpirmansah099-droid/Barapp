@@ -59,6 +59,17 @@ assert.ok(migrationSource.toLowerCase().includes('create or replace function pub
 assert.ok(migrationSource.includes('revoke all on function public.barapp_closing_import_operational_template_v2'), 'RPC execute permissions remain restricted');
 assert.ok(migrationSource.includes('grant execute on function public.barapp_closing_import_operational_template_v2'), 'RPC remains available to authenticated sessions');
 
+const confirmStart = closingSource.indexOf('async function opTConfirmImport()');
+const confirmEnd = closingSource.indexOf('window.__clOpenOperationalTemplate=opTOpenDialog', confirmStart);
+assert.ok(confirmStart >= 0 && confirmEnd > confirmStart, 'Daily SO confirmation handler must be present');
+const confirmSource = closingSource.slice(confirmStart, confirmEnd);
+const saveSuccess = confirmSource.indexOf("if(error)throw error;");
+const closePreview = confirmSource.indexOf("closeM();", saveSuccess);
+const refreshAttempt = confirmSource.indexOf("await Promise.all([cgLoad(false),invLoad(false)])", closePreview);
+assert.ok(saveSuccess >= 0, 'Import handler must check the database save result');
+assert.ok(closePreview > saveSuccess, 'Import preview must close only after the database confirms a successful save');
+assert.ok(refreshAttempt > closePreview, 'Preview must close before refreshing screen data');
+assert.equal(confirmSource.slice(0, saveSuccess).includes("closeM();"), false, 'Preview must remain open before the save succeeds');
 assert.match(indexSource, /closing\.js\?v=/, 'The app must load the versioned closing script from public assets');
 
 console.log('Daily SO-only Excel import: all static QA checks passed.');
