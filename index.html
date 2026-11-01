@@ -2419,6 +2419,89 @@ body:has(#app.in main .rk) {
 }
 
 </style>
+
+<style id="barapp-absensi-icon-badges">
+/* Small section icons matching the reference design. */
+#app:has(main .rk) main>.card>h3.abs-jadwal-heading,
+#app:has(main .rk) main>.card>h3.abs-rekap-heading,
+#app:has(main .rk) main>.card>h3.abs-input-heading {
+  display:flex!important;align-items:center!important;gap:11px!important;
+  min-height:44px!important;margin:0 0 10px!important;padding:0!important;
+  color:#17213B!important;font-family:'Plus Jakarta Sans',sans-serif!important;
+  font-size:17px!important;font-weight:750!important;line-height:1.3!important;
+}
+#app:has(main .rk) main>.card>h3.abs-jadwal-heading::before,
+#app:has(main .rk) main>.card>h3.abs-rekap-heading::before,
+#app:has(main .rk) main>.card>h3.abs-input-heading::before {
+  content:"";display:inline-block;flex:0 0 42px;width:42px;height:42px;
+  border-radius:13px;background-repeat:no-repeat!important;
+  background-position:center!important;background-size:25px 25px!important;
+}
+#app:has(main .rk) main>.card>h3.abs-jadwal-heading::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18M8 14h2M8 17h2M14 14h2'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main>.card>h3.abs-rekap-heading::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 20v-1.2A4.8 4.8 0 0 1 7.8 14h2.4a4.8 4.8 0 0 1 4.8 4.8V20zM17 5.5a3 3 0 0 1 0 5.8M18 14.2a4.5 4.5 0 0 1 3 4.3V20'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main>.card>h3.abs-input-heading::before {
+  background-color:#E8EDDF!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2344624F' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21c-4.5 0-8-3.4-8-8a8 8 0 1 1 16 0v1.5M8 13a4 4 0 1 1 8 0v2.5M10 15v2a2 2 0 0 0 4 0v-4a2 2 0 1 0-4 0M7 17.5c.8 1.4 2.2 2.4 3.8 2.8M17 18.5c-.4 1-1.1 1.8-2 2.3'/%3E%3C/svg%3E")!important;
+}
+
+/* Initial letters are visual labels only; attendance values and click targets stay unchanged. */
+#app:has(main .rk) main>.card:has(.tw) .tw td.abs-emp-name-cell {
+  display:table-cell!important;text-align:left!important;
+  min-width:126px!important;width:140px!important;max-width:140px!important;
+  padding:7px 8px!important;vertical-align:middle!important;
+  white-space:nowrap!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw .abs-emp-initial {
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:27px!important;height:27px!important;min-width:27px!important;
+  margin-right:7px!important;border:1px solid transparent!important;
+  border-radius:9px!important;font-family:'Plus Jakarta Sans',sans-serif!important;
+  font-size:12px!important;font-weight:800!important;line-height:1!important;
+  vertical-align:middle!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw .abs-emp-label {
+  display:inline-block!important;max-width:calc(100% - 39px)!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  vertical-align:middle!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(2) .abs-emp-initial {background:#E7F0E2!important;border-color:#BFD4B8!important;color:#365E3A!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(3) .abs-emp-initial {background:#FCE9DC!important;border-color:#F4C9AE!important;color:#A14F20!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(4) .abs-emp-initial {background:#E2F0F5!important;border-color:#BBDCE8!important;color:#286078!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(5) .abs-emp-initial {background:#EEE9FA!important;border-color:#D0C2EF!important;color:#63509A!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(6) .abs-emp-initial {background:#FCEBDD!important;border-color:#F3C9A8!important;color:#A45A25!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(7) .abs-emp-initial {background:#E4F0F5!important;border-color:#B9DCE8!important;color:#2E6176!important;}
+#app:has(main .rk) main>.card:has(.tw) .tw tr:nth-of-type(8) .abs-emp-initial {background:#FBE5E7!important;border-color:#F2BFC4!important;color:#A13F4C!important;}
+
+@media(max-width:600px) {
+  #app:has(main .rk) main>.card>h3.abs-jadwal-heading,
+  #app:has(main .rk) main>.card>h3.abs-rekap-heading,
+  #app:has(main .rk) main>.card>h3.abs-input-heading {gap:9px!important;font-size:15px!important;}
+  #app:has(main .rk) main>.card>h3.abs-jadwal-heading::before,
+  #app:has(main .rk) main>.card>h3.abs-rekap-heading::before,
+  #app:has(main .rk) main>.card>h3.abs-input-heading::before {
+    flex-basis:38px!important;width:38px!important;height:38px!important;
+    background-size:23px 23px!important;border-radius:12px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw td.abs-emp-name-cell {
+    min-width:118px!important;width:126px!important;max-width:126px!important;
+    padding:6px 6px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw .abs-emp-initial {
+    width:25px!important;height:25px!important;min-width:25px!important;
+    margin-right:5px!important;border-radius:8px!important;font-size:11px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw .abs-emp-label {
+    max-width:calc(100% - 32px)!important;font-size:12px!important;
+  }
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
@@ -4347,8 +4430,8 @@ function jadCard(){
   const osel=multi&&outs.length>1?`<label style="min-width:200px">Outlet<select onchange="jadPickOut(this.value)"><option value="ALL" ${(T.jadOut||'ALL')==='ALL'?'selected':''}>Semua outlet</option>${outs.map(o=>`<option value="${o.id}" ${o.id==T.jadOut?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join('')}</select></label>`:'';
   const dsel=divs.length>1?`<label style="min-width:200px">Divisi<select onchange="jadPick(this.value)">${multi?`<option value="ALL" ${did==='ALL'?'selected':''}>Semua divisi</option>`:''}${divs.map(d=>`<option value="${d.id}" ${d.id==did?'selected':''}>${esc(d.name)}${d.code?' ('+esc(d.code)+')':''}${jadOutCode(d)?' · '+esc(jadOutCode(d)):''}</option>`).join('')}</select></label>`:'';
   const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div><b>${fdp(ws)} – ${fdp(we)}</b><div class="mu" style="font-size:12px;margin-top:2px">${locked?'Terkunci: minggu sudah dimulai':'Bisa diubah sampai minggu dimulai'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn s x" onclick="jadNav(-7)">‹ Minggu lalu</button><button class="btn s x" onclick="jadNow()">Minggu ini</button><button class="btn s x" onclick="jadNav(7)">Minggu depan ›</button><button class="btn x" onclick="jadPdf()">Unduh PDF</button></div></div>`;
-  if(!T.jad)return `<div class="card"><h3>Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
-  if(!did)return `<div class="card"><h3>Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
+  if(!T.jad)return `<div class="card"><h3 class="abs-jadwal-heading">Jadwal</h3><p class="mu">Memuat jadwal…</p></div>`;
+  if(!did)return `<div class="card"><h3 class="abs-jadwal-heading">Jadwal</h3><p class="mu">Belum ada divisi untuk akun ini.</p></div>`;
   const groups=did==='ALL'?divs:divs.filter(d=>d.id==did);
   const days=[0,1,2,3,4,5,6].map(i=>jadAddDays(ws,i));
   const blocks=groups.map(g=>{
@@ -4356,7 +4439,7 @@ function jadCard(){
     if(!emps.length)return did==='ALL'?'':`<p class="mu">Belum ada karyawan di divisi ini.</p>`;
     const title=did==='ALL'?`<div style="font-weight:700;margin:14px 0 6px">${esc(g.name)} <span class="mu" style="font-weight:500">${esc(g.code||'')}${jadOutCode(g)?' · '+esc(jadOutCode(g)):''}</span></div>`:'';
     return `${title}<div class="jad-table-scroll" style="overflow-x:auto"><table class="rpt" style="min-width:680px"><tr><th>Nama</th>${days.map((d,i)=>`<th style="text-align:center">${JAD_NAMA[i]}<br><span class="mu" style="font-size:10px">${d.slice(8,10)}/${d.slice(5,7)}</span></th>`).join('')}</tr>${emps.map(e=>`<tr><td class="nmc">${esc(e.nama)}</td>${days.map(d=>{const v=T.jad[e.id+'|'+d]||'';return `<td style="text-align:center"><select id="${jadCellDomId(e.id,d)}" data-jad-cell="1" class="jd jd-${jadKey(v)}" ${locked?'disabled':''} onchange="jadSet('${e.id}','${d}',this.value,'${e.dv}')" style="width:104px;min-width:104px;padding:6px 24px 6px 8px;text-align:left">${JAD_CODES.map(c=>`<option value="${c}" ${c==v?'selected':''}>${jadOpt(c)}</option>`).join('')}</select></td>`}).join('')}</tr>`).join('')}</table></div>`}).join('');
-  return `<div class="card"><h3>Jadwal</h3>${(osel||dsel)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">${osel}${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1–2 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
+  return `<div class="card"><h3 class="abs-jadwal-heading">Jadwal</h3>${(osel||dsel)?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">${osel}${dsel}</div>`:''}${head}${blocks||'<p class="mu">Belum ada karyawan.</p>'}<p class="mu" style="font-size:12px;margin-top:10px">6–12 & 1–2 = jam masuk shift · L = Libur · S = Sakit · PH = Public Holiday</p></div>`}
 
 /* ===== JADWAL: tampilan & unduh PDF ===== */
 const jadLabel=c=>c==='L'?'OFF':(JAD_TIME[c]||c||'');
@@ -4846,11 +4929,11 @@ V.dash=()=>{const {f,t}=rng(),bad=f>t,l=bad?[]:rEmps(f,t),nd=bad?0:days(f,t).len
 cards=[['Karyawan',l.length],['Hadir (M)',c.M],['Libur',c.L],['Sakit',c.S],['Izin',c.I],['Public Holiday',c.PH],['Belum diisi',c.B]],
 dist=tot?SK.concat('B').map(k=>`<div>${k=='B'?'BELUM ADA DATA':ST[k]} <b>${c[k]}</b><div class="bar" style="width:${Math.max(c[k]/tot*100,c[k]?2:0)}%;background:${k=='B'?'#aaa':SC[k]}"></div></div>`).join(''):'<div class="empty">BELUM ADA DATA</div>',
 qq=F.q.toLowerCase(),rows=l.filter(e=>e.nama.toLowerCase().includes(qq)).map(e=>({e,c:cntR(f,t,[e]),h:otH(e,f,t)})),
-rk=!l.length?'':`<div class="card"><h3>Rekap Karyawan</h3>${rows.length?`<div style="overflow-x:auto"><table class="rk"><tr><th>No</th><th>Nama</th><th>M</th><th>L</th><th>S</th><th>PH</th><th>I</th><th>Total Data</th><th>Belum</th><th>Lembur (jam)</th></tr>${rows.map((x,i)=>`<tr><td>${i+1}</td><td><a class="nm" onclick="detEmp(${D.emp.indexOf(x.e)})">${esc(x.e.nama)}</a></td><td>${x.c.M}</td><td>${x.c.L}</td><td>${x.c.S}</td><td>${x.c.PH}</td><td>${x.c.I}</td><td><b>${nd-x.c.B}</b></td><td>${x.c.B}</td><td>${x.h}</td></tr>`).join('')}</table></div><p class="mu">Ketuk nama untuk melihat detail.</p>`:'<div class="empty">Tidak ada hasil.</div>'}</div>`,
+rk=!l.length?'':`<div class="card"><h3 class="abs-rekap-heading">Rekap Karyawan</h3>${rows.length?`<div style="overflow-x:auto"><table class="rk"><tr><th>No</th><th>Nama</th><th>M</th><th>L</th><th>S</th><th>PH</th><th>I</th><th>Total Data</th><th>Belum</th><th>Lembur (jam)</th></tr>${rows.map((x,i)=>`<tr><td>${i+1}</td><td><a class="nm" onclick="detEmp(${D.emp.indexOf(x.e)})">${esc(x.e.nama)}</a></td><td>${x.c.M}</td><td>${x.c.L}</td><td>${x.c.S}</td><td>${x.c.PH}</td><td>${x.c.I}</td><td><b>${nd-x.c.B}</b></td><td>${x.c.B}</td><td>${x.h}</td></tr>`).join('')}</table></div><p class="mu">Ketuk nama untuk melihat detail.</p>`:'<div class="empty">Tidak ada hasil.</div>'}</div>`,
 ch=!rows.length?'':`<div class="card"><h3>Rekap per Karyawan</h3><div class="vch">${rows.map(x=>`<div class="vcol" title="${esc(x.e.nama)}"><div class="vstk">${['M','L','S','PH','I','B'].map(k=>x.c[k]?`<i style="height:${x.c[k]/nd*100}%;background:${k=='B'?'#ffffff':SC[k]}" title="${k}: ${x.c[k]}"></i>`:'').join('')}</div><div class="vn">${esc(x.e.nama)}</div></div>`).join('')}</div><div class="lg">${['M','L','S','PH','I','B'].map(k=>`<span><i style="background:${k=='B'?'#ffffff':SC[k]}"></i>${k=='B'?'Belum ada data':k}</span>`).join('')}</div></div>`,
 per=D.per.map(q=>[pl(q),cnt(q,pEmps(q)).M]),mx=Math.max(1,...per.map(x=>x[1]));
 if(D.per.length>1){if(!P(T.c1))T.c1=D.cur;if(!P(T.c2))T.c2=D.per[Math.max(0,D.per.findIndex(q=>q.id==D.cur)-1)].id}
-return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${perSel()}${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${jadCard()}${rk}<div class="card"><h3>Input Absensi</h3>${V.abs()}</div><div class="card"><h3>Unduh Rekap Daily SO</h3><p class="mu">Unduh rekap Excel Daily SO sesuai divisi dan tanggal yang dipilih pada fitur Daily SO.</p><button class="btn" onclick="window.__clDownloadSO&&window.__clDownloadSO()">Unduh Daily SO (Excel)</button></div>`)};
+return (bad?fbar(1)+'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':`<p class="mu" style="margin:0 0 10px">Rekap ${fd(f)} – ${fd(t)} · ${nd} hari</p>${perSel()}${!l.length?`<div class="card empty">${D.emp.length?'Tidak ada karyawan pada filter ini.':'Belum ada karyawan.<br>'+(adm()?'<button class="btn" style="margin-top:10px" onclick="openEmp(-1)">Tambah karyawan pertama</button>':'')}</div>`:''}${jadCard()}${rk}<div class="card"><h3 class="abs-input-heading">Input Absensi</h3>${V.abs()}</div><div class="card"><h3>Unduh Rekap Daily SO</h3><p class="mu">Unduh rekap Excel Daily SO sesuai divisi dan tanggal yang dipilih pada fitur Daily SO.</p><button class="btn" onclick="window.__clDownloadSO&&window.__clDownloadSO()">Unduh Daily SO (Excel)</button></div>`)};
 function cmp(){const a=P(T.c1),b=P(T.c2),sel=(id,s)=>`<select onchange="T.${id}=this.value;R()">${D.per.map(q=>`<option value="${q.id}" ${q.id==s?'selected':''}>${pl(q)}</option>`).join('')}</select>`;
 let t='';if(a&&b){const x=cnt(a,pEmps(a)),y=cnt(b,pEmps(b)),has=q=>q.M+q.L+q.I+q.S+q.PH>0;t=`<div class="tw"><table><tr><th>Status</th><th>Periode A</th><th>Periode B</th></tr>${SK.concat('B').map(k=>`<tr><td>${k=='B'?'Belum ada data':ST[k]}</td><td>${has(x)||k=='B'&&x.B?x[k]:'BELUM ADA DATA'}</td><td>${has(y)||k=='B'&&y.B?y[k]:'BELUM ADA DATA'}</td></tr>`).join('')}</table></div>`}
 return`<div class="card"><h3>Bandingkan periode</h3><div class="row"><label>A${sel('c1',T.c1)}</label><label>B${sel('c2',T.c2)}</label></div>${t}</div>`}
@@ -4958,7 +5041,7 @@ V.ops_dashboard=()=>odView();
 
 V.abs=()=>{const {f,t}=rng(),bad=f>t,ds=bad?[]:days(f,t),big=ds.length>93,l=bad||big?[]:flt(f,t),lk=D.per.filter(p=>p.lock&&p.s<=t&&p.e>=f);
 const msg=bad?'<div class="card empty">Tanggal mulai harus sebelum tanggal akhir.</div>':big?'<div class="card empty">Rentang lebih dari 93 hari terlalu panjang untuk tabel harian. Persempit rentang, atau lihat di Rekap / Export.</div>':'';
-const tb=l.length?`<div class="tw"><table><tr><th>Nama</th>${ds.map(d=>`<th>${+d.slice(8)}<br><small class="mu">${(LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'])[new Date(U(d)).getUTCDay()]}</small></th>`).join('')}<th>Hari Kerja (M)</th><th>L</th><th>I</th><th>S</th><th>PH</th><th>Belum</th></tr>${l.map(e=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0};return`<tr><td title="${esc(e.nama)}">${esc(e.nama)}</td>${ds.map(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++;return`<td class="c" ${adm()?`onclick="cell('${esc(e.id)}','${d}')"`:''} title="${a?ST[a.s]:'BELUM ADA DATA'}">${a?badge(a.s)+(a.ph?IC('cam',12):''):'<span class="mu">—</span>'}</td>`}).join('')}<td>${c.M}</td><td>${c.L}</td><td>${c.I}</td><td>${c.S}</td><td>${c.PH}</td><td><b>${c.B}</b></td></tr>`}).join('')}</table></div><p class="mu"><span>M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk).</span> ${adm()?'<span>Ketuk sel untuk isi/ubah.</span>':''}</p>`:(msg?'':'<div class="card empty">'+(D.emp.length?'Tidak ada hasil.':'Belum ada karyawan. Tambahkan karyawan terlebih dahulu.')+'</div>');
+const tb=l.length?`<div class="tw"><table><tr><th>Nama</th>${ds.map(d=>`<th>${+d.slice(8)}<br><small class="mu">${(LANG=='en'?['Su','Mo','Tu','We','Th','Fr','Sa']:['Mg','Sn','Sl','Rb','Km','Jm','Sb'])[new Date(U(d)).getUTCDay()]}</small></th>`).join('')}<th>Hari Kerja (M)</th><th>L</th><th>I</th><th>S</th><th>PH</th><th>Belum</th></tr>${l.map(e=>{const c={M:0,L:0,I:0,S:0,PH:0,B:0};return`<tr><td class="abs-emp-name-cell" title="${esc(e.nama)}"><span class="abs-emp-initial" aria-hidden="true">${esc((e.nama||'').trim().charAt(0).toUpperCase())}</span><span class="abs-emp-label">${esc(e.nama)}</span></td>${ds.map(d=>{const a=rec(e.id,d);a?c[a.s]++:c.B++;return`<td class="c" ${adm()?`onclick="cell('${esc(e.id)}','${d}')"`:''} title="${a?ST[a.s]:'BELUM ADA DATA'}">${a?badge(a.s)+(a.ph?IC('cam',12):''):'<span class="mu">—</span>'}</td>`}).join('')}<td>${c.M}</td><td>${c.L}</td><td>${c.I}</td><td>${c.S}</td><td>${c.PH}</td><td><b>${c.B}</b></td></tr>`}).join('')}</table></div><p class="mu"><span>M=Masuk · L=Libur · PH=Public Holiday · S=Sakit (dengan surat/bukti) · I=Izin (termasuk sakit tanpa surat). — = BELUM ADA DATA (bukan Libur/Masuk).</span> ${adm()?'<span>Ketuk sel untuk isi/ubah.</span>':''}</p>`:(msg?'':'<div class="card empty">'+(D.emp.length?'Tidak ada hasil.':'Belum ada karyawan. Tambahkan karyawan terlebih dahulu.')+'</div>');
 const any=!bad&&D.att.some(a=>a.d>=f&&a.d<=t);
 return`${adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openAtt(-1)">+ Input Absensi</button></div>':''}${lk.length?`<div class="card"><span class="tag r">LOCKED</span> ${lk.map(pl).join(', ')}</div>`:''}${msg}${tb}${!any&&l.length?'<div class="card empty">Belum ada data absensi pada rentang ini.<br>Tambahkan absensi untuk mulai menggunakan sistem.</div>':''}`};
 function cell(e,d){const tw=document.querySelector('.tw');if(tw)T.tableLeft=tw.scrollLeft;const a=D.att.findIndex(x=>x.e==e&&x.d==d);T.pre={e,d};openAtt(a)}
