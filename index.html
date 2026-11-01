@@ -948,6 +948,17 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .ops-production-detail-foot .cogs-pill{font-size:8px}
  .ops-production-detail-foot .btn{font-size:8px;padding:2px 4px}
 }
+
+/* Riwayat Produksi WIP: aktifkan layout dua sisi pada mobile */
+@media(max-width:600px){
+ .ops-production-page .ops-production-history-row td .ops-production-compact-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;width:100%!important;box-sizing:border-box!important;padding:10px 2px!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-main{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:12px!important;width:100%!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-main b{min-width:0!important;font-size:14px!important;line-height:1.35!important;overflow-wrap:anywhere!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-main span{justify-self:end!important;text-align:right!important;white-space:nowrap!important;font-size:12px!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-sub{display:grid!important;grid-template-columns:minmax(0,1fr) 116px!important;align-items:center!important;gap:12px!important;width:100%!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-sub small{justify-self:start!important;font-size:11px!important}
+ .ops-production-page .ops-production-history-row td .ops-production-compact-sub .btn{justify-self:end!important;width:116px!important;min-height:30px!important;padding:4px 12px!important;font-size:11px!important}
+}
 </style>
 
 <style id="cogs-ui">
