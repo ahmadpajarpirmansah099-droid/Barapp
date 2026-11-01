@@ -910,6 +910,44 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
  .ad-toggle-track:after{width:15px;height:15px}
  .ad-feature-toggle input:checked+.ad-toggle-track:after{transform:translateX(15px)}
 }
+
+/* Compact Excel-like WIP production history and batch detail */
+.ops-production-compact-row{display:grid;gap:2px;padding:7px 2px}
+.ops-production-compact-main,.ops-production-compact-sub{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+.ops-production-compact-main b{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.ops-production-compact-main span{font-size:11px;font-weight:700;white-space:nowrap}
+.ops-production-compact-sub small{font-size:10px}
+.ops-production-compact-sub .btn{min-height:25px;padding:2px 10px;font-size:10px}
+.ops-production-popup-head{margin-bottom:10px}
+.ops-production-popup-list{display:block;gap:0;padding:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ops-production-detail-batch{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:7px;padding:7px 3px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.ops-production-detail-batch:last-child{border-bottom:0}
+.ops-production-detail-head,.ops-production-detail-grid,.ops-production-detail-foot{display:contents}
+.ops-production-detail-head b:first-child,.ops-production-detail-grid>div:first-child small,.ops-production-detail-grid>div:nth-child(2){display:none}
+.ops-production-detail-head b:last-child{grid-column:2;grid-row:1;white-space:nowrap;font-size:11px}
+.ops-production-detail-grid>div:first-child b{grid-column:1;grid-row:1;font-size:12px;overflow-wrap:anywhere}
+.ops-production-detail-foot .cogs-pill{grid-column:3;grid-row:1;font-size:9px}
+.ops-production-detail-foot .btn{grid-column:4;grid-row:1;min-height:23px;padding:2px 5px;font-size:9px;white-space:nowrap}
+.ops-production-detail-total{text-align:right;font-size:11px;font-weight:800;padding-top:8px}
+@media(max-width:600px){
+ .ops-production-history-scroll{overflow:visible!important;max-width:100%!important}
+ .ops-production-history-table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;border-collapse:collapse!important}
+ .ops-production-history-table thead{display:none!important}
+ .ops-production-history-table tbody{display:block!important;width:100%!important;gap:0!important}
+ .ops-production-history-table tbody tr{display:block!important;width:100%!important;padding:0 9px!important;margin:0!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;background:transparent!important;box-sizing:border-box!important}
+ .ops-production-history-table tbody td{display:block!important;width:100%!important;min-width:0!important;padding:0!important;border:0!important;white-space:normal!important;overflow-wrap:anywhere!important}
+ .ops-production-compact-row{padding:7px 0!important}
+ .ops-production-compact-main b{font-size:12px!important}
+ .ops-production-compact-main span{font-size:10px!important}
+ .ops-production-compact-sub small{font-size:9px!important}
+ .ops-production-compact-sub .btn{min-height:23px!important;padding:1px 8px!important;font-size:9px!important}
+ .ops-production-popup-head h3{font-size:17px}
+ .ops-production-detail-batch{grid-template-columns:minmax(0,1fr) auto auto auto;gap:5px;padding:7px 2px}
+ .ops-production-detail-grid>div:first-child b{font-size:11px}
+ .ops-production-detail-head b:last-child{font-size:10px}
+ .ops-production-detail-foot .cogs-pill{font-size:8px}
+ .ops-production-detail-foot .btn{font-size:8px;padding:2px 4px}
+}
 </style>
 
 <style id="cogs-ui">
