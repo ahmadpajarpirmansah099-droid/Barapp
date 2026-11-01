@@ -2299,6 +2299,125 @@ body:has(#app.in main .rk) {
   #app:has(main .rk) main>.card:has(.rk) {grid-column:1/-1!important;}
   #app:has(main .rk) main::after {padding-right:64px!important;font-size:11px!important;background-size:58px 52px!important;}
 }
+
+/* barapp-absensi-refinement-v2 — requested layout corrections; presentation only. */
+
+/* Remove the added decorative Absensi title, calendar art, and helper caption. */
+#app:has(main .rk) main::before,
+#app:has(main .rk) main::after {
+  display:none!important;
+  content:none!important;
+}
+
+/* Keep the original vertical module order: Jadwal first, Rekap Karyawan second. */
+#app:has(main .rk) main {
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  grid-template-areas:
+    "period-summary period-summary"
+    "period-picker period-picker"
+    "schedule schedule"
+    "employee-summary employee-summary"
+    "attendance-table attendance-table"
+    "other other"!important;
+}
+#app:has(main .rk) main>.card:has(.jad-table-scroll) {
+  grid-area:schedule!important;grid-column:1/-1!important;
+}
+#app:has(main .rk) main>.card:has(.rk) {
+  grid-area:employee-summary!important;grid-column:1/-1!important;
+}
+
+/* Soft, consistent card elevation without the heavy cartoon/3D look. */
+#app:has(main .rk) main>.card,
+#app:has(main .rk) main>.card .card {
+  box-shadow:0 5px 18px rgba(30,38,28,.055),0 1px 3px rgba(30,38,28,.035)!important;
+}
+
+/* Restore the existing quick-feature (+) menu and its original tsd() action. */
+#app:has(main .rk) #sdw>.fab {
+  display:grid!important;
+  right:16px!important;
+  bottom:calc(28px + var(--sf))!important;
+}
+#app:has(main .rk) #sdw>.fab,
+#app:has(main .rk) #sdw>.fab:hover,
+#app:has(main .rk) #sdw>.fab:active {
+  box-shadow:0 5px 14px rgba(198,91,11,.18)!important;
+}
+
+/* Reduce the attendance matrix to a compact, familiar footprint. */
+#app:has(main .rk) main>.card:has(.tw) .tw {
+  width:100%!important;max-width:100%!important;overflow-x:auto!important;
+  border-radius:14px!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw th {
+  height:48px!important;padding:7px 5px!important;font-size:12px!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw td {
+  height:44px!important;padding:6px 5px!important;font-size:13px!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw th:first-child,
+#app:has(main .rk) main>.card:has(.tw) .tw td:first-child {
+  width:140px!important;min-width:120px!important;max-width:140px!important;
+  padding-left:11px!important;padding-right:8px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw th:not(:first-child),
+#app:has(main .rk) main>.card:has(.tw) .tw td.c {
+  min-width:46px!important;
+}
+#app:has(main .rk) main>.card:has(.tw) .tw td.c .b {
+  min-width:34px!important;min-height:29px!important;padding:4px 8px!important;
+  border-radius:10px!important;font-size:13px!important;
+}
+
+/* Replace the thick offset shadow on the Input Absensi button with a soft shadow. */
+#app:has(main .rk) main>.card:has(.tw) .btn:not(.x) {
+  box-shadow:0 5px 13px rgba(198,91,11,.16)!important;
+  border:1px solid #D9650C!important;
+  border-radius:16px!important;
+}
+
+@media(max-width:600px) {
+  #app:has(main .rk) main {
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "period-summary"
+      "period-picker"
+      "schedule"
+      "employee-summary"
+      "attendance-table"
+      "other"!important;
+  }
+  #app:has(main .rk) main>.card:has(.jad-table-scroll),
+  #app:has(main .rk) main>.card:has(.rk) {
+    grid-column:1/-1!important;
+  }
+  #app:has(main .rk) #sdw>.fab {
+    right:14px!important;
+    bottom:calc(124px + var(--sf))!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw th {
+    height:44px!important;padding:6px 4px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw td {
+    height:40px!important;padding:5px 4px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw th:first-child,
+  #app:has(main .rk) main>.card:has(.tw) .tw td:first-child {
+    width:126px!important;min-width:112px!important;max-width:126px!important;
+    padding-left:9px!important;padding-right:6px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw th:not(:first-child),
+  #app:has(main .rk) main>.card:has(.tw) .tw td.c {
+    min-width:42px!important;
+  }
+  #app:has(main .rk) main>.card:has(.tw) .tw td.c .b {
+    min-width:31px!important;min-height:27px!important;padding:3px 7px!important;
+    font-size:12px!important;
+  }
+}
+
 </style>
 </head><body>
 
