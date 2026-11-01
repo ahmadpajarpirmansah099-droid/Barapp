@@ -2502,6 +2502,71 @@ body:has(#app.in main .rk) {
 }
 </style>
 
+
+<style id="barapp-absensi-icon-selector-fix">
+/* Fix: the Absensi headings and table can be nested inside inner cards. */
+#app:has(main .rk) main h3.abs-jadwal-heading,
+#app:has(main .rk) main h3.abs-rekap-heading,
+#app:has(main .rk) main h3.abs-input-heading {
+  display:flex!important;align-items:center!important;gap:10px!important;
+  min-height:42px!important;margin:0 0 12px!important;padding:0!important;
+}
+#app:has(main .rk) main h3.abs-jadwal-heading::before,
+#app:has(main .rk) main h3.abs-rekap-heading::before,
+#app:has(main .rk) main h3.abs-input-heading::before {
+  content:""!important;display:inline-block!important;flex:0 0 40px!important;
+  width:40px!important;height:40px!important;min-width:40px!important;
+  border-radius:12px!important;background-repeat:no-repeat!important;
+  background-position:center!important;background-size:24px 24px!important;
+}
+#app:has(main .rk) main h3.abs-jadwal-heading::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18M8 14h2M8 17h2M14 14h2'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main h3.abs-rekap-heading::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1M17 5a3 3 0 0 1 0 6M18 14a4 4 0 0 1 3 4v2'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main h3.abs-input-heading::before {
+  background-color:#E8EDDF!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2344624F' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21c-4.5 0-8-3.4-8-8a8 8 0 1 1 16 0v1.5M8 13a4 4 0 1 1 8 0v2.5M10 15v2a2 2 0 0 0 4 0v-4a2 2 0 1 0-4 0M7 17.5c.8 1.4 2.2 2.4 3.8 2.8M17 18.5c-.4 1-1.1 1.8-2 2.3'/%3E%3C/svg%3E")!important;
+}
+
+/* Apply badge styling to the nested attendance table, not only direct cards. */
+#app:has(main .rk) main .tw td.abs-emp-name-cell {
+  display:table-cell!important;text-align:left!important;white-space:nowrap!important;
+  min-width:126px!important;width:126px!important;max-width:126px!important;
+  padding:6px 6px!important;vertical-align:middle!important;
+}
+#app:has(main .rk) main .tw .abs-emp-initial {
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:25px!important;height:25px!important;min-width:25px!important;
+  margin-right:5px!important;border:1px solid #C9D8C5!important;border-radius:8px!important;
+  background:#E7F0E2!important;color:#365E3A!important;
+  font:800 11px/1 'Plus Jakarta Sans',sans-serif!important;vertical-align:middle!important;
+}
+#app:has(main .rk) main .tw .abs-emp-label {
+  display:inline-block!important;max-width:calc(100% - 32px)!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+  vertical-align:middle!important;
+}
+#app:has(main .rk) main .tw tr:nth-of-type(3) .abs-emp-initial {background:#FCE9DC!important;border-color:#F4C9AE!important;color:#A14F20!important;}
+#app:has(main .rk) main .tw tr:nth-of-type(4) .abs-emp-initial {background:#E2F0F5!important;border-color:#BBDCE8!important;color:#286078!important;}
+#app:has(main .rk) main .tw tr:nth-of-type(5) .abs-emp-initial {background:#EEE9FA!important;border-color:#D0C2EF!important;color:#63509A!important;}
+#app:has(main .rk) main .tw tr:nth-of-type(6) .abs-emp-initial {background:#FCEBDD!important;border-color:#F3C9A8!important;color:#A45A25!important;}
+#app:has(main .rk) main .tw tr:nth-of-type(7) .abs-emp-initial {background:#E4F0F5!important;border-color:#B9DCE8!important;color:#2E6176!important;}
+#app:has(main .rk) main .tw tr:nth-of-type(8) .abs-emp-initial {background:#FBE5E7!important;border-color:#F2BFC4!important;color:#A13F4C!important;}
+@media(max-width:600px) {
+  #app:has(main .rk) main h3.abs-jadwal-heading,
+  #app:has(main .rk) main h3.abs-rekap-heading,
+  #app:has(main .rk) main h3.abs-input-heading {gap:9px!important;font-size:15px!important;}
+  #app:has(main .rk) main h3.abs-jadwal-heading::before,
+  #app:has(main .rk) main h3.abs-rekap-heading::before,
+  #app:has(main .rk) main h3.abs-input-heading::before {flex-basis:36px!important;width:36px!important;height:36px!important;min-width:36px!important;background-size:22px 22px!important;}
+  #app:has(main .rk) main .tw td.abs-emp-name-cell {min-width:118px!important;width:118px!important;max-width:118px!important;}
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
