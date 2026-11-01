@@ -2776,6 +2776,42 @@ body:has(#app.in main .rk) {
 }
 </style>
 
+
+<style id="barapp-absensi-period-card">
+/* Put the outlet period label and date selector together in one compact card. */
+#app:has(main .rk) main>label {
+  display:block!important;width:100%!important;box-sizing:border-box!important;
+  margin:0!important;padding:16px 17px!important;
+  border:1px solid #E9DFD5!important;border-radius:21px!important;
+  background:#FFFCF7!important;
+  box-shadow:0 5px 16px rgba(39,35,29,.07),0 1px 3px rgba(39,35,29,.035)!important;
+  color:#101B38!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
+  font-size:16px!important;font-weight:800!important;
+  line-height:1.35!important;letter-spacing:-.02em!important;
+}
+#app:has(main .rk) main>label select {
+  display:block!important;width:100%!important;max-width:100%!important;
+  min-height:52px!important;height:52px!important;box-sizing:border-box!important;
+  margin:10px 0 0!important;padding:0 42px 0 15px!important;
+  border:1px solid #F0DFD0!important;border-radius:16px!important;
+  background-color:#FCEBDD!important;color:#17213B!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
+  font-size:16px!important;font-weight:750!important;
+  line-height:1.3!important;letter-spacing:-.015em!important;
+}
+@media(max-width:600px) {
+  #app:has(main .rk) main>label {
+    padding:15px 16px!important;border-radius:20px!important;
+    font-size:16px!important;font-weight:800!important;
+  }
+  #app:has(main .rk) main>label select {
+    min-height:50px!important;height:50px!important;margin-top:9px!important;
+    padding-left:14px!important;font-size:15px!important;font-weight:750!important;
+  }
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
