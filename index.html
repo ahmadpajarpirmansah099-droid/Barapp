@@ -1503,6 +1503,12 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .ops-feature-page{display:grid;gap:10px;align-content:start;min-width:0}
 .ops-feature-page>.card{margin-bottom:0;min-width:0;box-sizing:border-box}
 .ops-feature-page .cogs-top{gap:7px}
+.ops-production-detail{min-width:0}
+.ops-production-detail>summary{display:inline-flex;align-items:center;justify-content:center;list-style:none;cursor:pointer}
+.ops-production-detail>summary::-webkit-details-marker{display:none}
+.ops-production-detail[open]>summary{margin-bottom:7px}
+.ops-production-detail .cogs-scroll{max-width:min(78vw,520px)}
+.ops-production-detail .cogs-table{font-size:12px}
 .ops-feature-page .cogs-top .mu{margin:0}
 .ops-feature-page label{font-weight:800}
 .ops-feature-page input:not([type="checkbox"]):not([type="hidden"]),
@@ -6249,11 +6255,27 @@ async function exportSuppliesSOExcel(){
  const wips=CG.wips.filter(w=>w.active&&String(w.division_id)===String(selectedDiv)).sort((a,b)=>invAlpha(a.name,b.name));
  
  const prodHistoryFrom=OPS.prodHistoryFrom||opsDate(),prodHistoryTo=OPS.prodHistoryTo||opsDate();
- const rows=CG.productions.filter(b=>String(b.division_id)===String(selectedDiv)&&String(b.produced_at)>=prodHistoryFrom&&String(b.produced_at)<=prodHistoryTo).sort((a,b)=>invAlpha(a.wip_name_snapshot||opsWip(a.wip_id)?.name,b.wip_name_snapshot||opsWip(b.wip_id)?.name)||String(b.produced_at||'').localeCompare(String(a.produced_at||''))).map(b=>{
-  const w=opsWip(b.wip_id),status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
-  return '<tr><td><b>'+esc(b.wip_name_snapshot||w&&w.name||'WIP')+'</b></td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit)+'</td><td>'+cgMoney(b.total_cost_snapshot)+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
+ const productionRows=CG.productions.filter(b=>String(b.division_id)===String(selectedDiv)&&String(b.produced_at||'').slice(0,10)>=prodHistoryFrom&&String(b.produced_at||'').slice(0,10)<=prodHistoryTo);
+ const productionGroups=new Map();
+ productionRows.forEach(b=>{
+  const day=String(b.produced_at||'').slice(0,10),key=day+'|'+String(b.wip_id||b.wip_name_snapshot||'');
+  if(!productionGroups.has(key))productionGroups.set(key,{day,wipId:b.wip_id,name:b.wip_name_snapshot||opsWip(b.wip_id)?.name||'WIP',unit:b.yield_unit||'',items:[]});
+  productionGroups.get(key).items.push(b);
+ });
+ const rows=Array.from(productionGroups.values()).sort((a,b)=>b.day.localeCompare(a.day)||invAlpha(a.name,b.name)).map((g,i)=>{
+  const posted=g.items.filter(b=>b.status==='posted');
+  const totalQty=posted.reduce((sum,b)=>sum+Number(b.produced_qty||0),0);
+  const batchCount=posted.reduce((sum,b)=>sum+Math.max(1,Number(b.batches??b.batch_count??b.batch_qty??1)||1),0);
+  const detailRows=g.items.slice().sort((a,b)=>String(a.produced_at||'').localeCompare(String(b.produced_at||''))).map((b,n)=>{
+   const rawTime=String(b.produced_at||''),parsedTime=rawTime.includes('T')?new Date(rawTime):null;
+   const time=parsedTime&&!Number.isNaN(parsedTime.getTime())?parsedTime.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',hour12:false}):'Jam tidak tersedia';
+   const status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
+   return '<tr><td>'+time+'</td><td>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit||g.unit)+'</td><td>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit||g.unit)+'</td><td>'+status+' '+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</td></tr>';
+  }).join('');
+  const detailId='ops-prod-detail-'+i;
+  return '<tr><td><b>'+esc(g.name)+'</b><br><small class="mu">'+fdp(g.day)+'</small></td><td><b>'+cgNum(totalQty)+' '+esc(g.unit)+'</b></td><td>'+batchCount+' batch</td><td><details class="ops-production-detail"><summary class="btn s">DETAIL</summary><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Jam pembuatan</th><th>Qty produksi</th><th>HPP per unit</th><th>Status / aksi</th></tr></thead><tbody>'+detailRows+'</tbody></table></div></details></td></tr>';
  }).join('');
- return '<div class="cogs-wrap ops-feature-page ops-production-page"><div class="card ops-entry-card"><div class="cogs-top"><div><h3>Produksi WIP</h3></div><div class="btns"><button class="btn s daily-so-back" onclick="go(\'cogs_daily_so\')">← Kembali ke Daily SO</button><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table ops-production-entry-table"><thead><tr><th>ITEM WIP</th><th>JUMLAH BATCH</th><th>Aksi</th></tr></thead><tbody id="ops_prod_entry_rows">'+wips.map(w=>'<tr class="ops-entry-row" data-item-id="'+w.id+'"><td><b>'+esc(w.name)+'</b></td><td><input class="ops-entry-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="" aria-label="Jumlah batch '+esc(w.name)+'"></td><td><span class="mu">Batch</span></td></tr>').join('')+'</tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card ops-history-card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><button class="btn s" onclick="rOpen(\'P\')">📅 '+(OPS.prodHistoryPicked?fdp(prodHistoryFrom)+' s/d '+fdp(prodHistoryTo):'Pilih rentang tanggal')+'</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP</th><th>Qty produksi</th><th>HPP per unit</th><th>Total HPP</th><th>Status / aksi</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
+ return '<div class="cogs-wrap ops-feature-page ops-production-page"><div class="card ops-entry-card"><div class="cogs-top"><div><h3>Produksi WIP</h3></div><div class="btns"><button class="btn s daily-so-back" onclick="go(\'cogs_daily_so\')">← Kembali ke Daily SO</button><button class="btn s" onclick="cgLoad(true)">Muat ulang</button></div></div><div class="cogs-formgrid"><label>Divisi<select id="ops_prod_div" onchange="OPS.division=this.value;R()">'+divOptions+'</select></label><label>Tanggal produksi<input id="ops_prod_date" type="date" value="'+opsDate()+'" max="'+opsDate()+'"></label></div><div class="cogs-scroll"><table class="cogs-table ops-production-entry-table"><thead><tr><th>ITEM WIP</th><th>JUMLAH BATCH</th><th>Aksi</th></tr></thead><tbody id="ops_prod_entry_rows">'+wips.map(w=>'<tr class="ops-entry-row" data-item-id="'+w.id+'"><td><b>'+esc(w.name)+'</b></td><td><input class="ops-entry-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="" aria-label="Jumlah batch '+esc(w.name)+'"></td><td><span class="mu">Batch</span></td></tr>').join('')+'</tbody></table></div><label>Catatan<input id="ops_prod_note" maxlength="500" placeholder="Shift atau keterangan produksi (opsional)"></label><button class="btn" id="ops_prod_save" onclick="opsRecordProductionBatch()">Simpan produksi</button></div><div class="card ops-history-card"><div class="cogs-top"><h3>Riwayat Produksi WIP</h3><button class="btn s" onclick="rOpen(\'P\')">📅 '+(OPS.prodHistoryPicked?fdp(prodHistoryFrom)+' s/d '+fdp(prodHistoryTo):'Pilih rentang tanggal')+'</button></div><div class="cogs-scroll"><table class="cogs-table"><thead><tr><th>Item WIP / tanggal</th><th>Total qty produksi</th><th>Jumlah batch</th><th>Rincian</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="mu">Belum ada transaksi produksi.</td></tr>')+'</tbody></table></div></div></div>';
 };
 (window.__barappPendingViews||(window.__barappPendingViews={})).cogs_sales=()=>{
  if(!cgRoleOK())return '<div class="card empty">Akses ditolak.</div>';cgInit();if(!CG.ready)return CG.err?cgErrCard():'<div class="card">Memuat data penjualan…</div>';const gate=cgModuleGate('cogs_sales','Penjualan Menu');if(gate)return gate;
