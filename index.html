@@ -6528,13 +6528,13 @@ window.cgRemoveLine=function(type,i){
 <script src="./closing.js?v=20261026-hr-approval-scope-v9"></script>
 <script src="./guest-arrival.js?v=20261031-rsv-header-aligned-v44"></script>
 </body></html>
-/* Mobile: gunakan lebar kartu riwayat WIP dengan lebih efektif */
+/* Mobile: manfaatkan lebar kartu riwayat WIP, info rata kanan */
 @media(max-width:600px){
  .ops-production-compact-row{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding:10px 2px}
- .ops-production-compact-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%}
+ .ops-production-compact-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,auto);align-items:center;gap:10px;width:100%}
  .ops-production-compact-main b{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
- .ops-production-compact-main span{font-size:12px;white-space:nowrap;text-align:right}
- .ops-production-compact-sub{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%}
+ .ops-production-compact-main span{font-size:12px;white-space:nowrap;text-align:right;justify-self:end}
+ .ops-production-compact-sub{display:grid;grid-template-columns:minmax(0,1fr) 116px;align-items:center;gap:10px;width:100%}
  .ops-production-compact-sub small{font-size:11px}
- .ops-production-compact-sub .btn{width:116px;min-height:30px;padding:4px 12px;font-size:11px;line-height:1}
+ .ops-production-compact-sub .btn{width:116px;min-height:30px;padding:4px 12px;font-size:11px;line-height:1;justify-self:end}
 }
