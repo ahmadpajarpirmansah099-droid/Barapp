@@ -2567,6 +2567,52 @@ body:has(#app.in main .rk) {
 }
 </style>
 
+
+<style id="barapp-absensi-accfix-heading-icons">
+/*
+  accFix converts original H3 headings into:
+  card > header div > title div + chevron.
+  Attach icons to those generated title divs; no JS or click behavior changes.
+*/
+#app:has(main .rk) main>.card:has(.jad-table-scroll)>div:first-child>div:first-child,
+#app:has(main .rk) main>.card:has(.rk)>div:first-child>div:first-child,
+#app:has(main .rk) main>.card:has(.tw)>div:first-child>div:first-child {
+  display:flex!important;align-items:center!important;gap:10px!important;
+  min-height:40px!important;
+}
+#app:has(main .rk) main>.card:has(.jad-table-scroll)>div:first-child>div:first-child::before,
+#app:has(main .rk) main>.card:has(.rk)>div:first-child>div:first-child::before,
+#app:has(main .rk) main>.card:has(.tw)>div:first-child>div:first-child::before {
+  content:""!important;display:inline-block!important;flex:0 0 40px!important;
+  width:40px!important;height:40px!important;min-width:40px!important;
+  border-radius:12px!important;background-repeat:no-repeat!important;
+  background-position:center!important;background-size:24px 24px!important;
+}
+#app:has(main .rk) main>.card:has(.jad-table-scroll)>div:first-child>div:first-child::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M8 3v4M16 3v4M3 10h18M8 14h2M8 17h2M14 14h2'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main>.card:has(.rk)>div:first-child>div:first-child::before {
+  background-color:#FBEBDD!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B86620' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1M17 5a3 3 0 0 1 0 6M18 14a4 4 0 0 1 3 4v2'/%3E%3C/svg%3E")!important;
+}
+#app:has(main .rk) main>.card:has(.tw)>div:first-child>div:first-child::before {
+  background-color:#E8EDDF!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2344624F' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21c-4.5 0-8-3.4-8-8a8 8 0 1 1 16 0v1.5M8 13a4 4 0 1 1 8 0v2.5M10 15v2a2 2 0 0 0 4 0v-4a2 2 0 1 0-4 0M7 17.5c.8 1.4 2.2 2.4 3.8 2.8M17 18.5c-.4 1-1.1 1.8-2 2.3'/%3E%3C/svg%3E")!important;
+}
+@media(max-width:600px) {
+  #app:has(main .rk) main>.card:has(.jad-table-scroll)>div:first-child>div:first-child,
+  #app:has(main .rk) main>.card:has(.rk)>div:first-child>div:first-child,
+  #app:has(main .rk) main>.card:has(.tw)>div:first-child>div:first-child {gap:9px!important;font-size:15px!important;}
+  #app:has(main .rk) main>.card:has(.jad-table-scroll)>div:first-child>div:first-child::before,
+  #app:has(main .rk) main>.card:has(.rk)>div:first-child>div:first-child::before,
+  #app:has(main .rk) main>.card:has(.tw)>div:first-child>div:first-child::before {
+    flex-basis:36px!important;width:36px!important;height:36px!important;min-width:36px!important;
+    background-size:22px 22px!important;
+  }
+}
+</style>
+
 </head><body>
 
 <div id="t"></div><div id="m"></div><div id="app"><div style="margin:24px auto;max-width:520px;padding:24px;background:#FFFCF6;color:#2C1A14;border:2px solid #2C1A14;border-radius:16px;font:16px/1.5 system-ui,sans-serif;box-shadow:4px 4px 0 #2C1A14"><strong style="font-size:22px">BARAPP · Operasional</strong><p style="margin:12px 0 0">Aplikasi sedang dimuat. Jika pesan ini tidak hilang, JavaScript aplikasi gagal berjalan. Muat ulang halaman atau periksa koneksi internet.</p></div></div>
