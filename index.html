@@ -6320,8 +6320,8 @@ function opsOpenProductionDetail(groupIndex){
  if(!g)return;
  const items=g.items.slice().sort((a,b)=>String(a.produced_at||'').localeCompare(String(b.produced_at||'')));
  const cards=items.map((b,i)=>{
-  const raw=String(b.produced_at||''),d=raw.includes('T')?new Date(raw):null;
-  const time=d&&!Number.isNaN(d.getTime())?d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',hour12:false}):'Jam tidak tersedia';
+  const raw=String(b.created_at||''),d=raw?new Date(raw):null;
+  const time=d&&!Number.isNaN(d.getTime())?d.toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false}):'Jam tidak tersedia';
   const status=b.status==='posted'?'<span class="cogs-pill">Tersimpan</span>':'<span class="cogs-pill bad">Dibatalkan</span>';
   return '<div class="ops-production-detail-batch"><div class="ops-production-detail-head"><b>Batch '+(i+1)+'</b><b>'+time+'</b></div><div class="ops-production-detail-grid"><div><small>Qty produksi</small><b>'+cgNum(b.produced_qty)+' '+esc(b.yield_unit||g.unit)+'</b></div><div><small>HPP per unit</small><b>'+cgMoney(b.unit_cost_snapshot)+' / '+esc(b.yield_unit||g.unit)+'</b></div></div><div class="ops-production-detail-foot">'+status+(b.status==='posted'?opsCancelButton('production',b.id):'')+'</div></div>';
  }).join('');
