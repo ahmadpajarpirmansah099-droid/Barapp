@@ -20,6 +20,7 @@
     const periodRows=(D.att||[]).filter(a=>a.d>=f&&a.d<=t);
     const count=key=>periodRows.filter(a=>a.s===key).length;
     const totalDays=ds.length;
+    const missingRange=rows.reduce((n,e)=>n+ds.filter(d=>!rec(e.id,d)).length,0);
     const dateLabel=(value)=>fd(value);
     const summary=[
       ['Total karyawan',active.length,'Aktif di outlet ini','users','neutral'],
@@ -46,7 +47,7 @@
           </tr></thead>
           <tbody>${rows.map(e=>{
             const c={M:0,L:0,I:0,S:0,PH:0,B:0};
-            return `<tr>
+            return `<tr data-fsearch="${esc((e.nama+e.id).toLowerCase())}">
               <td class="abx-employee">
                 <span class="abx-avatar">${esc((e.nama||'').trim().charAt(0).toUpperCase())}</span>
                 <span><b>${esc(e.nama)}</b><small>${esc(e.jab)||'Karyawan'}</small></span>
@@ -82,7 +83,7 @@
             <span class="abx-result-count">${rows.length} karyawan</span>
           </div>
           ${message}${table}
-          <div class="abx-legend">${statusLegend.map(([key,label])=>`<span><i class="abx-dot ${key.toLowerCase()}"></i>${label} <small>${count(key)}</small></span>`).join('')}<span><i class="abx-dot missing"></i>Belum ada data <small>${count('B')+(rows.reduce((n,e)=>n+ds.filter(d=>!rec(e.id,d)).length,0)-count('B'))}</small></span></div>
+          <div class="abx-legend">${statusLegend.map(([key,label])=>`<span><i class="abx-dot ${key.toLowerCase()}"></i>${label} <small>${count(key)}</small></span>`).join('')}<span><i class="abx-dot missing"></i>Belum ada data <small>${missingRange}</small></span></div>
         </section>
       </section>`;
   }
