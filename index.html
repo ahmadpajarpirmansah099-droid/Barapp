@@ -5223,141 +5223,7 @@ main .card input:disabled,main .card select:disabled,main .card textarea:disable
   .inv-actions .btn{flex:1 1 100%}
 }
 `;
-const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt>
-<style id="barapp-global-button-colors">
-/* Global pastel button palette for every Barapp module.
-   The five Daily SO shortcuts keep their individually approved colors. */
-:root{
-  --barapp-btn-sage:#DDEBDD;
-  --barapp-btn-sage-hover:#CFE2D0;
-  --barapp-btn-blue:#DFEAF2;
-  --barapp-btn-blue-hover:#D0E1EB;
-  --barapp-btn-lilac:#E9E1F0;
-  --barapp-btn-lilac-hover:#DED3E9;
-  --barapp-btn-coral:#F4DDD8;
-  --barapp-btn-coral-hover:#EECBC4;
-  --barapp-btn-butter:#F5EACF;
-  --barapp-btn-butter-hover:#EEDFB9;
-  --barapp-btn-border:#AAB9AC;
-}
-.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not(.s):not(.o):not(.d):not(.x){
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-.btn.s:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
-  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
-}
-.btn.o:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
-  background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important;
-}
-.btn.x:not(.s):not(.o):not(.d):not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
-  background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important;
-}
-.btn.d:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
-  background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important;
-}
-.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not([disabled]):not(:disabled):hover{
-  filter:none!important;
-}
-.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not(.s):not(.o):not(.d):not(.x):hover{background:var(--barapp-btn-sage-hover)!important}
-.btn.s:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-blue-hover)!important}
-.btn.o:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-lilac-hover)!important}
-.btn.x:not(.s):not(.o):not(.d):not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-butter-hover)!important}
-.btn.d:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-coral-hover)!important}
-
-/* Header, icon, floating, and navigation controls. */
-.ibtn,.sidebar-collapse-toggle{
-  background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important;
-}
-.ibtn:hover,.sidebar-collapse-toggle:hover{background:var(--barapp-btn-lilac-hover)!important}
-.brand-m{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
-.fab{
-  background:linear-gradient(145deg,#DDEBDD,#BFD9C2)!important;
-  color:#45634A!important;border-color:#809B82!important;
-}
-.nvb:hover{background:var(--barapp-btn-blue)!important;border-color:#B7CBD8!important}
-.nvb.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
-.nvb.on .ic{color:inherit!important}
-.start{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
-.task{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
-.task.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
-
-/* Filters, tabs, selectable settings, and expandable controls. */
-.sb button,.fb{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
-.sb button.on,.fb.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
-.pc{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
-summary{background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important}
-.dd button,.sdi button{
-  background:#EDF3F6!important;color:#496579!important;border:1px solid #D5E1E8!important;
-}
-.dd button:hover,.sdi button:hover{background:var(--barapp-btn-blue)!important}
-.cb,.cdx{background:var(--barapp-btn-coral)!important;color:#984D43!important}
-.cb:hover,.cdx:hover{background:var(--barapp-btn-coral-hover)!important}
-
-/* Custom dropdown and searchable option buttons used across inventory and COGS. */
-.cs-btn{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
-.cs-it,.inv-receipt-option,.out-item-option,.cg-component-option{
-  background:#EDF3F6!important;color:#496579!important;
-}
-.cs-it:hover,.inv-receipt-option:hover,.out-item-option:hover,.out-item-option:focus-visible,.cg-component-option:hover{
-  background:var(--barapp-btn-blue)!important;
-}
-.cs-it.on,.cs-sheet .cs-it.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
-
-/* Admin & Divisi account selectors and tabs. */
-.ad-role-filters button,.ad-tabs button{
-  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
-}
-.ad-role-filters button.on,.ad-tabs button.on{
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-.ad-account{background:#EDF3F6!important;border-color:#D2DFE6!important}
-.ad-account.selected{background:var(--barapp-btn-sage)!important;border-color:#A9C2AA!important}
-.ad-modal-close{background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important}
-
-/* Home feature tiles are also buttons; tint them in a repeating pastel sequence. */
-.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+1){background:#F2E2DC!important;color:#744F45!important}
-.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+2){background:#E1EBDD!important;color:#45634A!important}
-.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+3){background:#DFEAF2!important;color:#496579!important}
-.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+4){background:#F5EACF!important;color:#80662F!important}
-.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n){background:#E9E1F0!important;color:#665477!important}
-
-/* Guest Arrival has its own button classes in guest-arrival.js; keep them in the same palette. */
-#app.in .ga-wrap .ga-btn.primary{
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-#app.in .ga-wrap .ga-btn.secondary{
-  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
-}
-#app.in .ga-wrap .ga-btn.danger{
-  background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important;
-}
-#app.in .ga-wrap .ga-btn.primary:hover{background:var(--barapp-btn-sage-hover)!important}
-#app.in .ga-wrap .ga-btn.secondary:hover{background:var(--barapp-btn-blue-hover)!important}
-#app.in .ga-wrap .ga-btn.danger:hover{background:var(--barapp-btn-coral-hover)!important}
-#app.in .ga-wrap .ga-seated-shortcut,#app.in .ga-wrap .ga-reservations-shortcut{
-  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
-}
-#app.in .ga-wrap .ga-tab{
-  background:#EDF3F6!important;color:#496579!important;border:1px solid #D5E1E8!important;
-}
-#app.in .ga-wrap .ga-tab.active{
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-#app.in .ga-wrap .ga-preference-btn{
-  background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important;
-}
-#app.in .ga-wrap .ga-preference-btn.active{
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-#app.in .ga-wrap .ga-rsv-day:not(.empty){
-  background:#EDF3F6!important;color:#496579!important;border-color:#D5E1E8!important;
-}
-#app.in .ga-wrap .ga-rsv-day.selected{
-  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
-}
-</style>
-
-</body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><title>Jadwal '+ws+'</title><style>'+css+extraCss+'</style></head><body>'+(pages||'<p>Belum ada karyawan.</p>')+'<scr'+'ipt>window.onload=function(){window.print()}</scr'+'ipt></body></html>';
   const w=window.open('','_blank');
   if(!w)return toast('Izinkan pop-up untuk mengunduh PDF','err');
   w.document.open();w.document.write(html);w.document.close();
@@ -6731,6 +6597,138 @@ window.cgRemoveLine=function(type,i){
  .ops-production-compact-sub{display:grid;grid-template-columns:minmax(0,1fr) 116px;align-items:center;gap:10px;width:100%}
  .ops-production-compact-sub small{font-size:11px}
  .ops-production-compact-sub .btn{width:116px;min-height:30px;padding:4px 12px;font-size:11px;line-height:1;justify-self:end}
+}
+</style>
+<style id="barapp-global-button-colors">
+/* Global pastel button palette for every Barapp module.
+   The five Daily SO shortcuts keep their individually approved colors. */
+:root{
+  --barapp-btn-sage:#DDEBDD;
+  --barapp-btn-sage-hover:#CFE2D0;
+  --barapp-btn-blue:#DFEAF2;
+  --barapp-btn-blue-hover:#D0E1EB;
+  --barapp-btn-lilac:#E9E1F0;
+  --barapp-btn-lilac-hover:#DED3E9;
+  --barapp-btn-coral:#F4DDD8;
+  --barapp-btn-coral-hover:#EECBC4;
+  --barapp-btn-butter:#F5EACF;
+  --barapp-btn-butter-hover:#EEDFB9;
+  --barapp-btn-border:#AAB9AC;
+}
+.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not(.s):not(.o):not(.d):not(.x){
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
+}
+.btn.s:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
+  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
+}
+.btn.o:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
+  background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important;
+}
+.btn.x:not(.s):not(.o):not(.d):not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
+  background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important;
+}
+.btn.d:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production){
+  background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important;
+}
+.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not([disabled]):not(:disabled):hover{
+  filter:none!important;
+}
+.btn:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):not(.s):not(.o):not(.d):not(.x):hover{background:var(--barapp-btn-sage-hover)!important}
+.btn.s:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-blue-hover)!important}
+.btn.o:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-lilac-hover)!important}
+.btn.x:not(.s):not(.o):not(.d):not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-butter-hover)!important}
+.btn.d:not(.daily-shortcut-pengeluaran):not(.daily-shortcut-supplies):not(.daily-shortcut-masuk):not(.daily-shortcut-cogs_sales):not(.daily-shortcut-cogs_production):hover{background:var(--barapp-btn-coral-hover)!important}
+
+/* Header, icon, floating, and navigation controls. */
+.ibtn,.sidebar-collapse-toggle{
+  background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important;
+}
+.ibtn:hover,.sidebar-collapse-toggle:hover{background:var(--barapp-btn-lilac-hover)!important}
+.brand-m{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
+.fab{
+  background:linear-gradient(145deg,#DDEBDD,#BFD9C2)!important;
+  color:#45634A!important;border-color:#809B82!important;
+}
+.nvb:hover{background:var(--barapp-btn-blue)!important;border-color:#B7CBD8!important}
+.nvb.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
+.nvb.on .ic{color:inherit!important}
+.start{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
+.task{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
+.task.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
+
+/* Filters, tabs, selectable settings, and expandable controls. */
+.sb button,.fb{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
+.sb button.on,.fb.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
+.pc{background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important}
+summary{background:var(--barapp-btn-lilac)!important;color:#665477!important;border-color:#C8BBD5!important}
+.dd button,.sdi button{
+  background:#EDF3F6!important;color:#496579!important;border:1px solid #D5E1E8!important;
+}
+.dd button:hover,.sdi button:hover{background:var(--barapp-btn-blue)!important}
+.cb,.cdx{background:var(--barapp-btn-coral)!important;color:#984D43!important}
+.cb:hover,.cdx:hover{background:var(--barapp-btn-coral-hover)!important}
+
+/* Custom dropdown and searchable option buttons used across inventory and COGS. */
+.cs-btn{background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important}
+.cs-it,.inv-receipt-option,.out-item-option,.cg-component-option{
+  background:#EDF3F6!important;color:#496579!important;
+}
+.cs-it:hover,.inv-receipt-option:hover,.out-item-option:hover,.out-item-option:focus-visible,.cg-component-option:hover{
+  background:var(--barapp-btn-blue)!important;
+}
+.cs-it.on,.cs-sheet .cs-it.on{background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important}
+
+/* Admin & Divisi account selectors and tabs. */
+.ad-role-filters button,.ad-tabs button{
+  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
+}
+.ad-role-filters button.on,.ad-tabs button.on{
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
+}
+.ad-account{background:#EDF3F6!important;border-color:#D2DFE6!important}
+.ad-account.selected{background:var(--barapp-btn-sage)!important;border-color:#A9C2AA!important}
+.ad-modal-close{background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important}
+
+/* Home feature tiles are also buttons; tint them in a repeating pastel sequence. */
+.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+1){background:#F2E2DC!important;color:#744F45!important}
+.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+2){background:#E1EBDD!important;color:#45634A!important}
+.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+3){background:#DFEAF2!important;color:#496579!important}
+.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n+4){background:#F5EACF!important;color:#80662F!important}
+.mods-feature-grid>.mods-feature-card:not(.mods-feature-locked):not(.mods-feature-disabled):nth-child(5n){background:#E9E1F0!important;color:#665477!important}
+
+/* Guest Arrival has its own button classes in guest-arrival.js; keep them in the same palette. */
+#app.in .ga-wrap .ga-btn.primary{
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
+}
+#app.in .ga-wrap .ga-btn.secondary{
+  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
+}
+#app.in .ga-wrap .ga-btn.danger{
+  background:var(--barapp-btn-coral)!important;color:#984D43!important;border-color:#DAB2A9!important;
+}
+#app.in .ga-wrap .ga-btn.primary:hover{background:var(--barapp-btn-sage-hover)!important}
+#app.in .ga-wrap .ga-btn.secondary:hover{background:var(--barapp-btn-blue-hover)!important}
+#app.in .ga-wrap .ga-btn.danger:hover{background:var(--barapp-btn-coral-hover)!important}
+#app.in .ga-wrap .ga-seated-shortcut,#app.in .ga-wrap .ga-reservations-shortcut{
+  background:var(--barapp-btn-blue)!important;color:#496579!important;border-color:#B7CBD8!important;
+}
+#app.in .ga-wrap .ga-tab{
+  background:#EDF3F6!important;color:#496579!important;border:1px solid #D5E1E8!important;
+}
+#app.in .ga-wrap .ga-tab.active{
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
+}
+#app.in .ga-wrap .ga-preference-btn{
+  background:var(--barapp-btn-butter)!important;color:#80662F!important;border-color:#D9C89B!important;
+}
+#app.in .ga-wrap .ga-preference-btn.active{
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
+}
+#app.in .ga-wrap .ga-rsv-day:not(.empty){
+  background:#EDF3F6!important;color:#496579!important;border-color:#D5E1E8!important;
+}
+#app.in .ga-wrap .ga-rsv-day.selected{
+  background:var(--barapp-btn-sage)!important;color:#45634A!important;border-color:#A9C2AA!important;
 }
 </style>
 </body></html>
