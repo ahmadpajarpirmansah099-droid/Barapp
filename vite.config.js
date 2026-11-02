@@ -9,7 +9,8 @@ const featureFiles = [
   { source: "src/features/guest-arrival/guest-arrival.js", destination: "guest-arrival.js" },
   { source: "src/features/attendance/attendance-excel.js", destination: "attendance-excel.js" },
   { source: "src/features/attendance/attendance.js", destination: "attendance.js" },
-  { source: "src/features/schedule/schedule.js", destination: "schedule.js" }
+  { source: "src/features/schedule/schedule.js", destination: "schedule.js" },
+  { source: "src/features/inventory/unit-conversion.js", destination: "unit-conversion.js" }
 ];
 
 export default defineConfig({
