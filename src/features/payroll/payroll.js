@@ -13,14 +13,8 @@ const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer da
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
 
-async function otLoad(){const oid=await outInit();if(!oid)return;const rows=await payQ('overtime_entries','*');const emps=await payQ('employees','id,outlet_id');const ok=new Set(emps.filter(e=>e.outlet_id==oid||(!e.outlet_id&&oid==D.ljId)).map(e=>String(e.id)));D.ot=rows.filter(r=>ok.has(String(r.employee_id))).map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
-/* Periode payroll (sama dengan fungsi payroll_period_for di database) */
-const mkd=(y,m,d)=>{const q=new Date(Date.UTC(y,m,1)),yy=q.getUTCFullYear(),mm=q.getUTCMonth(),dim=new Date(Date.UTC(yy,mm+1,0)).getUTCDate();return iso(Date.UTC(yy,mm,Math.min(d,dim)))};
 const payNext=()=>{const [,pt]=perFor(today());return iso(U(pt)+864e5)};
-function perFor(ref){const y=+ref.slice(0,4),m=+ref.slice(5,7)-1,d=+ref.slice(8,10),s=PAY.s||{},mode=s.period_mode||'calendar',cs=s.custom_start_day,ce=s.custom_end_day;
- if(mode=='day_24_23')return d>=24?[mkd(y,m,24),mkd(y,m+1,23)]:[mkd(y,m-1,24),mkd(y,m,23)];
- if(mode=='custom'&&cs&&ce){if(cs<=ce)return [mkd(y,m,cs),mkd(y,m,ce)];return d>=cs?[mkd(y,m,cs),mkd(y,m+1,ce)]:[mkd(y,m-1,cs),mkd(y,m,ce)]}
- return [mkd(y,m,1),mkd(y,m,31)]}
+
 
 /* Estimasi dari absensi yang sudah diinput (angka resmi dihitung database saat Hitung & Final) */
 function payEst(e,f,t){const nd=days(f,t).length,c={M:0,L:0,I:0,S:0,PH:0};let rec=0;
