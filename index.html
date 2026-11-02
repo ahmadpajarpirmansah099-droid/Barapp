@@ -6601,3 +6601,16 @@ window.cgRemoveLine=function(type,i){
 </style>
 
 </body></html>
+
+
+<style id="absensi-hide-desktop-date-strip">
+/* Desktop only: hide the duplicate date selector in the header and the fixed green status strip. */
+@media (min-width: 900px) {
+  #app:has(main .rk) .app-top .hd-r > .hd-range-mobile {
+    display: none !important;
+  }
+  #app:has(main .rk) .statusbar.status-home {
+    display: none !important;
+  }
+}
+</style>
