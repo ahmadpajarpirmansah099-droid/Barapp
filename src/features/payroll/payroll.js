@@ -9,7 +9,6 @@ const payAcc=(k,def)=>{T.acc=T.acc||{};const cur=(k in T.acc)?T.acc[k]:!!def;con
 const payPeriods=()=>{const [y,mo]=today().split('-').map(Number),out=[],seen={};for(let k=0;k<7;k++){const [a,b]=perFor(mkd(y,mo-1-k,15));const key=a+'|'+b;if(!seen[key]){seen[key]=1;out.push([a,b])}}return out};
 const payPick=val=>{if(val=='custom')return;const [a,b]=val.split('|');T.rf=a;T.rt=b;R()};
 const payPickers=(f,t)=>`<button class="btn s x" onclick="rOpen('T')">📅 ${fdp(f)} s/d ${fdp(t)}</button>`;
-const payNext=()=>{const [,pt]=perFor(today());return iso(U(pt)+864e5)};
 const payDenied=()=>'<div class="card empty">Fitur Gaji hanya untuk Developer dan HR.</div>';
 const payEnsure=()=>{if(PAY.need&&!PAY.busy){PAY.busy=true;setTimeout(payLoad,0)}};
 const payHead=t=>'';
