@@ -11,7 +11,8 @@ const featureFiles = [
   { source: "src/features/attendance/attendance.js", destination: "attendance.js" },
   { source: "src/features/schedule/schedule.js", destination: "schedule.js" },
   { source: "src/features/inventory/unit-conversion.js", destination: "unit-conversion.js" },
-  { source: "src/features/overtime/overtime.js", destination: "overtime.js" }
+  { source: "src/features/overtime/overtime.js", destination: "overtime.js" },
+  { source: "src/features/payroll/payroll.js", destination: "payroll.js" }
 ];
 
 export default defineConfig({
