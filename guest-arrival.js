@@ -24,7 +24,7 @@ const gaRpc = async (name, params) => {
 };
 const gaOutletParams = async () => {
   if (typeof isDeveloper !== 'function' || !isDeveloper()) return { p_outlet_id: null };
-  const outletId = typeof outInit === 'function' ? await outInit() : (D && D.outId);
+  const outletId = typeof outInit === 'function' ? await outInit() : (typeof D !== 'undefined' && D ? D.outId : null);
   if (!outletId || outletId === 'ALL') throw new Error('Pilih outlet aktif pada header Barapp terlebih dahulu.');
   return { p_outlet_id: String(outletId) };
 };
@@ -140,7 +140,7 @@ async function guestArrivalRefresh(silent) {
       GA.ready = false;
       GA.error = '';
       GA.queue = []; GA.pending = []; GA.seated = []; GA.history = []; GA.dashboard = null; GA.showSeated = false;
-      if (pg === 'guest_arrival') setTimeout(() => guestArrivalRefresh(true), 0);
+      if (typeof pg !== 'undefined' && pg === 'guest_arrival') setTimeout(() => guestArrivalRefresh(true), 0);
     }
     R();
     if (GA.showPending && document.querySelector('#m .ov')) guestArrivalRenderPendingModal();
@@ -155,10 +155,10 @@ function guestArrivalOutletChanged() {
   GA.queue = []; GA.pending = []; GA.seated = []; GA.history = []; GA.dashboard = null; GA.showSeated = false;
   if (GA.loading) {
     GA.reloadAfterCurrent = true;
-    if (pg === 'guest_arrival') R();
+    if (typeof pg !== 'undefined' && pg === 'guest_arrival') R();
     return;
   }
-  if (pg === 'guest_arrival') void guestArrivalRefresh(true);
+  if (typeof pg !== 'undefined' && pg === 'guest_arrival') void guestArrivalRefresh(true);
 }
 function guestArrivalSetTab(tab) {
   if (!['queue','dashboard','history','reservations'].includes(tab)) return;
@@ -1482,10 +1482,10 @@ window.guestArrivalHandleNavigation = function(nextPage) {
 };
 function guestArrivalResumeEditing() { if (GA.tableMove) guestArrivalShowMoveTable(); else if (GA.seat) guestArrivalShowSeatModal(); else if (GA.edit) guestArrivalShowEdit(); else if (GA.form) guestArrivalShowForm(); }
 function guestArrivalDiscardAndNavigate(nextPage) {
-  GA.form=null; GA.edit=null; GA.seat=null; GA.tableMove=null; closeM(); pg=nextPage; R();
+  GA.form=null; GA.edit=null; GA.seat=null; GA.tableMove=null; closeM(); if (typeof pg !== 'undefined') pg=nextPage; R();
 }
 window.addEventListener('beforeunload', function(e) {
-  if (D && D.me && (D.me.r==='G'||pg==='guest_arrival') && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
+  if (typeof D !== 'undefined' && D && D.me && ((D.me.r==='G') || (typeof pg !== 'undefined' && pg==='guest_arrival')) && guestArrivalHasUnsaved()) { e.preventDefault(); e.returnValue=''; }
 });
 async function guestArrivalExport() {
   if (GA.busy) return;
@@ -1526,7 +1526,7 @@ if (typeof window.__barappRegisterViews === 'function') {
 }
 if (window.__barappRefreshUI) window.__barappRefreshUI();
 setInterval(() => {
-  if (!D || !D.me || pg!=='guest_arrival') return;
+  if (typeof D === 'undefined' || !D || !D.me || typeof pg === 'undefined' || pg!=='guest_arrival') return;
   const today = gaToday();
   if (today !== GA.lastOperationalDate && !GA.loading) {
     GA.lastOperationalDate = today;
