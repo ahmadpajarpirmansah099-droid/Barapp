@@ -14,3 +14,100 @@ svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke
 .table-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:13px}.legend{display:flex;flex-wrap:wrap;gap:13px}.legend span{display:flex;align-items:center;gap:6px;font-size:10px;color:#748093}.dot{width:7px;height:7px;border-radius:50%}.present-dot{background:#57977a}.off-dot{background:#a1a8b1}.leave-dot{background:#d59b4d}.sick-dot{background:#ce806f}.empty-dot{background:#c8ced6}.footnote{font-size:9px;color:#a1a9b4}.preview-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:21px;color:#a0a8b3;font:9px 'IBM Plex Mono',monospace;letter-spacing:.7px}.preview-dot{width:6px;height:6px;border-radius:50%;background:#d89a51}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);opacity:0;pointer-events:none;background:#17243a;color:#fff;border-radius:9px;padding:11px 15px;font-size:11px;box-shadow:0 8px 28px #17243a24;transition:.2s;max-width:calc(100vw - 32px);z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:900px){.shell{padding:27px 22px}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.page-heading{align-items:flex-start;flex-direction:column}.period-button{width:100%;justify-content:space-between}.period-panel{gap:12px}.table-footer{align-items:flex-start;flex-direction:column}}
 @media(max-width:600px){.topbar{height:60px;padding:0 15px}.brand small{display:none}.shell{padding:23px 13px}.page-heading{gap:15px;margin-bottom:18px}.page-heading h1{font-size:25px}.summary-grid{gap:9px}.metric{padding:13px;min-height:105px}.metric strong{font-size:22px}.period-panel{align-items:flex-start;flex-direction:column;padding:15px}.select-period{width:100%}.accordion-head{padding:13px}.section-title small{display:none}.head-meta{font-size:9px}.attendance-panel{padding:14px 11px}.attendance-heading{align-items:flex-start;flex-direction:column}.primary-button{width:100%}.toolbar{align-items:stretch;flex-direction:column}.search-box{max-width:none;width:100%;min-height:37px}.toolbar-right{justify-content:space-between}.table-count{margin-right:auto}.attendance-table th.employee-col,.attendance-table td.employee-cell{min-width:145px;width:145px}.attendance-table th{min-width:35px}.preview-note{font-size:8px;text-align:center}}
+
+
+/* DESKTOP-ONLY LAYOUT REFINEMENT
+   Kept above the mobile breakpoint: tablet/mobile presentation remains unchanged. */
+@media (min-width: 901px) {
+  .topbar {
+    height: 76px;
+    padding-left: max(40px, calc((100vw - 1600px) / 2));
+    padding-right: max(40px, calc((100vw - 1600px) / 2));
+  }
+  .shell {
+    width: min(100% - 80px, 1600px);
+    max-width: 1600px;
+    padding: 42px 0 38px;
+  }
+  .page-heading {
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .page-heading h1 { font-size: 32px; }
+  .subtitle { font-size: 13px; }
+  .period-button {
+    min-width: 290px;
+    min-height: 44px;
+    justify-content: space-between;
+    padding: 0 15px;
+  }
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+  .metric {
+    min-height: 132px;
+    padding: 19px 21px;
+    border-radius: 13px;
+  }
+  .metric-top { font-size: 12px; }
+  .metric strong { font-size: 29px; margin-top: 10px; }
+  .period-panel {
+    min-height: 96px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .period-panel h2 { font-size: 16px; }
+  .period-panel p { font-size: 12px; }
+  .select-period { min-width: 180px; min-height: 40px; }
+  .section-stack { gap: 14px; }
+  .accordion-head { min-height: 76px; padding: 17px 22px; }
+  .section-icon { width: 42px; height: 42px; }
+  .section-title b { font-size: 15px; }
+  .section-title small { font-size: 11px; }
+  .attendance-panel {
+    padding: 24px;
+    border-radius: 14px;
+  }
+  .attendance-heading h2 { font-size: 18px; }
+  .attendance-heading p { font-size: 12px; }
+  .primary-button { min-width: 154px; height: 42px; font-size: 12px; }
+  .toolbar { margin: 22px 0 14px; }
+  .search-box { max-width: 340px; height: 40px; }
+  .search-box input { font-size: 12px; }
+  .toolbar-right { gap: 11px; }
+  .table-count { font-size: 11px; }
+  .attendance-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .attendance-table th {
+    height: 52px;
+    min-width: 0;
+    font-size: 10px;
+  }
+  .attendance-table th.employee-col {
+    width: 220px;
+    min-width: 220px;
+    padding-left: 16px;
+  }
+  .attendance-table th.total-col { width: 76px; }
+  .attendance-table td { height: 56px; }
+  .attendance-table td.employee-cell {
+    min-width: 220px;
+    padding: 0 16px;
+    gap: 11px;
+  }
+  .employee-avatar { width: 31px; height: 31px; font-size: 11px; }
+  .employee-cell b { font-size: 12px; }
+  .employee-cell small { font-size: 10px; }
+  .status { width: 28px; height: 28px; font-size: 11px; }
+  .total-cell { font-size: 12px; }
+  .table-footer { padding-top: 16px; }
+  .legend { gap: 17px; }
+  .legend span { font-size: 11px; }
+  .footnote { font-size: 10px; }
+  .preview-note { margin-top: 24px; }
+}
