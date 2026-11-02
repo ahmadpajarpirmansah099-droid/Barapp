@@ -19,7 +19,7 @@
 .abx-attendance{padding:20px 21px}
 .abx-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}
 .abx-heading h2{font-size:17px;margin:4px 0 3px;font-weight:700;letter-spacing:-.3px}
-.abx-primary{height:40px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ac);border-radius:9px;background:var(--ac);color:#fff;font:600 11px inherit;cursor:pointer;white-space:nowrap}
+.abx-primary{height:40px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ac);border-radius:9px;background:var(--ac);color:#fff;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
 .abx-primary span{font-size:17px;line-height:1}
 .abx-toolbar{display:flex;align-items:center;gap:12px;margin:18px 0 12px}
 .abx-search{height:38px;max-width:330px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--br);border-radius:8px;background:var(--lt);color:var(--mu)}
