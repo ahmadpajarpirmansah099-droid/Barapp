@@ -5352,17 +5352,6 @@ modal(`<h3>${esc(e.nama)}</h3><p class="mu">${esc(e.jab)||'-'}</p><b>${fd(f)} â€
 <div class="calw">${calHtml()}</div>
 <div class="btns" style="margin-top:12px"><button class="btn s" onclick="closeM()">Tutup</button></div>`)}
 
-/* ---------- Lembur ---------- */
-V.ot=()=>{const {f,t}=rng(),l=D.ot.map((o,i)=>({...o,i})).filter(o=>(adm()||o.e==D.me.id)&&o.d>=f&&o.d<=t&&(!F.e||o.e==F.e)&&(!F.q||(name(o.e)+(o.n||'')).toLowerCase().includes(F.q.toLowerCase()))).sort((a,b)=>a.d<b.d?1:-1),tot=l.reduce((s,o)=>s+hrs(o),0),ids=[...new Set(l.map(o=>o.e))];
-return(adm()?'<div style="margin-bottom:12px"><button class="btn" onclick="openOt(-1)">+ Tambah lembur</button></div>':'')+fbar(1)+(l.length?`<div class="card" data-ot-summary><b>Total jam lembur: ${fh(tot)}</b>${ids.map(e=>`<div>${esc(name(e))}: <b>${fh(l.filter(o=>o.e==e).reduce((s,o)=>s+hrs(o),0))}</b></div>`).join('')}</div><div class="tw"><table><tr><th>Nama</th><th>Tanggal</th><th>Jam</th>${adm()?'<th></th>':''}</tr>${l.map(o=>`<tr data-fsearch="${esc((name(o.e)+(o.n||'')).toLowerCase())}" data-hours="${hrs(o)}" data-employee-name="${esc(name(o.e))}"><td>${esc(name(o.e))}</td><td>${fd(o.d)}</td><td>${Math.round(hrs(o)*100)/100}</td>${adm()?`<td><button class="btn s x" onclick="openOt(${o.i})">Edit</button> <button class="btn d x" onclick="delOt(${o.i})">Hapus</button></td>`:''}</tr>`).join('')}</table></div><div class="card empty" data-fsearch-empty style="display:none">Tidak ada hasil.</div>`:'<div class="card empty">Belum ada lembur pada rentang ini.</div>')};
-function openOt(i){if(!guard())return;if(!D.emp.length)return toast('Tambah karyawan dulu','warn');const o=i>=0?D.ot[i]:{d:today()};T.i=i;
-modal(`<h3>${i>=0?'Edit':'Tambah'} Lembur / Extend</h3>${i>=0?`<label>Karyawan<select id="oe">${D.emp.map(e=>`<option value="${esc(e.id)}" ${e.id==o.e?'selected':''}>${esc(e.nama)}</option>`).join('')}</select></label>`:`<label>Pilih karyawan (boleh lebih dari satu) Â· <a class="nm" onclick="document.querySelectorAll('#oc input').forEach(x=>x.checked=true)">Pilih semua</a></label><div id="oc" style="margin-bottom:10px">${D.emp.filter(e=>e.aktif).map(e=>`<label class="ck"><input type="checkbox" value="${esc(e.id)}"> ${esc(e.nama)}</label>`).join('')}</div>`}<label>Tanggal<input id="od" type="date" value="${o.d}"></label><label>Total jam lembur<input id="oh" type="number" min="0.25" max="24" step="0.25" inputmode="decimal" value="${i>=0?Math.round(hrs(o)*100)/100:''}" placeholder="mis. 2.5"></label><div class="row"><button class="btn s" onclick="closeM()">Batal</button><button class="btn" onclick="saveOt()">Simpan</button></div>`)}
-async function saveOt(){if(!guard())return;const d=v('od'),h=+v('oh'),n=v('on').trim(),ids=T.i>=0?[v('oe')]:[...document.querySelectorAll('#oc input:checked')].map(x=>x.value);
-if(!ids.length||!ids[0])return toast('Pilih minimal satu karyawan','err');if(!d)return toast('Tanggal wajib diisi','err');if(!(h>0&&h<=24))return toast('Total jam harus antara 0 dan 24','err');if(ids.some(x=>lockedD(d,x))||(T.i>=0&&lockedD(D.ot[T.i].d,D.ot[T.i].e)))return toast('Periode LOCKED','err');
-const ok=await sbRun(async()=>{const c=sb();if(T.i>=0){const r=D.ot[T.i];if(!r.db)throw new Error('Data lembur lama belum ada di database. Hapus lalu input ulang.');const {error}=await c.from('overtime_entries').update({employee_id:ids[0],work_date:d,hours:h,note:n||null}).eq('id',r.db);if(error)throw error}else{const {error}=await c.from('overtime_entries').insert(ids.map(e=>({employee_id:e,work_date:d,hours:h,note:n||null})));if(error)throw error}});
-if(!ok)return;jump(d);closeM();toast('Lembur tersimpan ('+ids.length+' karyawan)');await otLoad();R()}
-function delOt(i){if(!guard())return;cf('Hapus data lembur ini?',()=>{if(lockedD(D.ot[i].d,D.ot[i].e))return toast('Periode LOCKED','err');if(!D.ot[i].db)return toast('Data lama, input ulang dulu','err');return sbRun(async()=>{const {error}=await sb().from('overtime_entries').delete().eq('id',D.ot[i].db);if(error)throw error}).then(async ok=>{if(ok){toast('Lembur dihapus');await otLoad();R()}})})}
-
 const rp=n=>'Rp '+Math.round(n||0).toLocaleString(LANG=='en'?'en-US':'id-ID'),rp2=n=>'Rp '+(Math.round((n||0)*100)/100).toLocaleString(LANG=='en'?'en-US':'id-ID',{maximumFractionDigits:2}),norm=s=>String(s||'').trim().toLowerCase(),pct=x=>(Math.round(x*10)/10)+'%';
 
 
@@ -6171,6 +6160,7 @@ window.cgRemoveLine=function(type,i){
 };
 </script>
 <script>window.__barappStockOutCategories=['Move','Waste','QC','R&D','Kalibrasi','Lainnya'];</script>
+<script src="./overtime.js?v=20261102-overtime-v1"></script>
 <script src="./unit-conversion.js?v=20261102-unit-conversion-v1"></script>
 <script src="./schedule.js?v=20261102-weekly-schedule-v1"></script>
 <script src="./attendance-excel.js?v=20261102-attendance-excel-v1"></script>
