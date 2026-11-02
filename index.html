@@ -185,6 +185,30 @@ main{padding:18px 14px;max-width:1180px;margin:0 auto}
 .dlg>.i-err,.mbx>.i-err{background:color-mix(in srgb,var(--terra) 16%,transparent);color:var(--terra);border-color:color-mix(in srgb,var(--terra) 40%,transparent)}
 
 
+
+/* ---------- GLOBAL SOFT SHADOW: subtle depth across Barapp ---------- */
+:root{
+  --barapp-shadow-soft:0 2px 5px rgba(42,58,46,.10);
+  --barapp-shadow-control:0 1px 3px rgba(42,58,46,.10);
+  --barapp-shadow-float:0 5px 14px rgba(42,58,46,.13);
+}
+.card,.cogs-wrap .card,.ops-feature-page .card,.ops-history-card,.ops-entry-card,
+.statusbar,.taskbar,.sdi,.popup,.toast,
+input:not([type=range]):not([type=checkbox]):not([type=radio]),
+select,textarea,.cs-btn,.cs-list,.inv-receipt-results,.out-item-results,
+.cg-component-results,.cg-dashboard-metric,.account-search-wrap{
+  box-shadow:var(--barapp-shadow-soft)!important;
+}
+.btn,.ibtn,.fab,.sb button,.cs-it,.inv-receipt-option,.out-item-option,.cg-component-option{
+  box-shadow:var(--barapp-shadow-control)!important;
+}
+.dd,.md,#cdpop,.modal{
+  box-shadow:var(--barapp-shadow-float)!important;
+}
+input:focus,select:focus,textarea:focus{
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 18%,transparent),var(--barapp-shadow-control)!important;
+}
+
 /* ---------- GLOBAL FLAT UI: hapus bayangan di seluruh fitur ---------- */
 *,*::before,*::after{box-shadow:none!important;text-shadow:none!important;filter:none!important}
 .btn,.btn:hover,.btn:active,.btn:focus,.btn.s,.btn.o,.btn.d,.btn.x,.ibtn,.ibtn:hover,.ibtn:active,.fab,.fab:hover,.fab:active,.card,.card:hover,.dd,.md,#cdpop,#t .w,.statusbar,.taskbar,.sdi,.modal,.popup,.toast,input:focus,select:focus,textarea:focus,.sb button.on{box-shadow:none!important;text-shadow:none!important}
