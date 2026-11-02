@@ -4079,6 +4079,10 @@ window.__barappRegisterViews=views=>{Object.assign(V,views||{});if(typeof R==='f
 Object.assign(V,window.__barappPendingViews||{});
 /* Format angka dan query data bersama tetap berada di index.html. */
 const hasDivMgr=()=>isDeveloper()||!!(T.perms&&T.perms.includes('division.manage'));
+const fmtN=n=>{const r=Math.round(+n||0);return (r<0?'-':'')+String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')};
+const rupiah=n=>'Rp '+fmtN(n);
+const fdp=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'-';
+const payQ=async(tbl,sel,f)=>{let q=sb().from(tbl).select(sel);if(f)q=f(q);const {data,error}=await q;if(error)throw error;return data||[]};
 /* ===== PEMILIH RENTANG TANGGAL (dipakai semua menu yang ada tanggal) ===== */
 const RBULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const rPresets=()=>{const t0=today(),d=U(t0),dow=(new Date(d).getUTCDay()+6)%7,y=+t0.slice(0,4),m=+t0.slice(5,7)-1;
