@@ -1377,6 +1377,11 @@ html{scroll-padding-top:var(--app-sticky-header-height,76px)}
 .daily-so-page .daily-so-shortcuts>.mu{margin:0 0 10px;line-height:1.45}
 .daily-so-page .daily-so-shortcut-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
 .daily-so-page .daily-so-shortcut-grid>.btn{box-sizing:border-box;width:100%;min-width:0;min-height:48px;margin:0;padding:9px 8px;gap:7px;line-height:1.25;white-space:normal;text-align:center;overflow-wrap:anywhere;font-size:14px}
+.daily-so-page .daily-so-shortcut-grid>.daily-shortcut-pengeluaran{background:#F2D9D4!important;color:#A65D53!important;border-color:var(--dk)!important}
+.daily-so-page .daily-so-shortcut-grid>.daily-shortcut-supplies{background:#DFEADB!important;color:#506D54!important;border-color:var(--dk)!important}
+.daily-so-page .daily-so-shortcut-grid>.daily-shortcut-masuk{background:#DFEAEB!important;color:#496A70!important;border-color:var(--dk)!important}
+.daily-so-page .daily-so-shortcut-grid>.daily-shortcut-cogs_sales{background:#F4E9CE!important;color:#80652E!important;border-color:var(--dk)!important}
+.daily-so-page .daily-so-shortcut-grid>.daily-shortcut-cogs_production{background:#E9E1EF!important;color:#685879!important;border-color:var(--dk)!important}
 .daily-so-page .daily-so-shortcut-grid>.btn .ic{flex:0 0 auto}
 .daily-so-page .daily-so-shortcut-grid>.btn:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc(50% - 4px)}
 .daily-so-page .daily-so-main-card .cogs-top{gap:8px;margin-bottom:10px}
@@ -6412,7 +6417,7 @@ function opsOpenProductionDetail(groupIndex){
  }
  const active=CG.dailySO.find(s=>String(s.division_id)===String(division)&&String(s.so_date)===String(date)&&s.status==='submitted');
  const divOptions=CG.divs.map(d=>'<option value="'+d.id+'" '+(String(division)===String(d.id)?'selected':'')+'>'+esc(d.name)+'</option>').join('');
- const dailyShortcuts='<div class="card daily-so-shortcuts"><h3>Operasional Daily SO</h3><div class="grid daily-so-shortcut-grid">'+[['pengeluaran','Pengeluaran','arrow-left-right'],['supplies','Suplies','clipboard-list'],['masuk','Barang Masuk','truck'],['cogs_sales','Penjualan Menu','receipt-text'],['cogs_production','Produksi WIP','cooking-pot']].filter(x=>allowed().includes(x[0])).map(x=>'<button class="btn s" style="min-width:0;white-space:normal" onclick="go(&quot;'+x[0]+'&quot;)">'+IC(x[2],18)+' '+x[1]+'</button>').join('')+'</div></div>';
+ const dailyShortcuts='<div class="card daily-so-shortcuts"><h3>Operasional Daily SO</h3><div class="grid daily-so-shortcut-grid">'+[['pengeluaran','Pengeluaran','arrow-left-right'],['supplies','Suplies','clipboard-list'],['masuk','Barang Masuk','truck'],['cogs_sales','Penjualan Menu','receipt-text'],['cogs_production','Produksi WIP','cooking-pot']].filter(x=>allowed().includes(x[0])).map(x=>'<button class="btn s daily-shortcut-'+x[0]+'" style="min-width:0;white-space:normal" onclick="go(&quot;'+x[0]+'&quot;)">'+IC(x[2],18)+' '+x[1]+'</button>').join('')+'</div></div>';
  const rows=OPS.position.map(p=>{
   const k=opsKey(p.component_type,p.component_id),stored=active&&p.stored_counted_qty!=null;
   const units=opsUnitList(p),factor=opsUnitFactor(p,k),baseVal=OPS.counts[k]??'',val=baseVal===''?'':Number(baseVal)/factor;
