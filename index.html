@@ -4875,6 +4875,14 @@ async function perLoad(){const oid=await outInit();const rows=await payQ('payrol
 async function perSaveNew(s0,e0){const oid=await outInit();if(!oid)return toast('Pilih satu outlet dulu (bukan Semua outlet)','err');
   const ok=await sbRun(async()=>{const {error}=await sb().from('payroll_periods').insert({outlet_id:oid,start_date:s0,end_date:e0,locked:false});if(error)throw error});
   if(ok){await perLoad();toast('Periode dibuat');R()}}
+async function otLoad(){const oid=await outInit();if(!oid)return;const rows=await payQ('overtime_entries','*');const emps=await payQ('employees','id,outlet_id');const ok=new Set(emps.filter(e=>e.outlet_id==oid||(!e.outlet_id&&oid==D.ljId)).map(e=>String(e.id)));D.ot=rows.filter(r=>ok.has(String(r.employee_id))).map(r=>({db:r.id,e:r.employee_id,d:String(r.work_date).slice(0,10),h:+r.hours,n:r.note||''}))}
+/* Periode payroll (sama dengan fungsi payroll_period_for di database) */
+const mkd=(y,m,d)=>{const q=new Date(Date.UTC(y,m,1)),yy=q.getUTCFullYear(),mm=q.getUTCMonth(),dim=new Date(Date.UTC(yy,mm+1,0)).getUTCDate();return iso(Date.UTC(yy,mm,Math.min(d,dim)))};
+function perFor(ref){const y=+ref.slice(0,4),m=+ref.slice(5,7)-1,d=+ref.slice(8,10),s=PAY.s||{},mode=s.period_mode||'calendar',cs=s.custom_start_day,ce=s.custom_end_day;
+ if(mode=='day_24_23')return d>=24?[mkd(y,m,24),mkd(y,m+1,23)]:[mkd(y,m-1,24),mkd(y,m,23)];
+ if(mode=='custom'&&cs&&ce){if(cs<=ce)return [mkd(y,m,cs),mkd(y,m,ce)];return d>=cs?[mkd(y,m,cs),mkd(y,m+1,ce)]:[mkd(y,m-1,cs),mkd(y,m,ce)]}
+ return [mkd(y,m,1),mkd(y,m,31)]}
+
 function payDefRange(){const l=D.per.at(-1);return l?[l.s,l.e]:perFor(today())}
 
 function perPick(v){const a=v.split('|');F.f=a[0];F.t=a[1];R()}
