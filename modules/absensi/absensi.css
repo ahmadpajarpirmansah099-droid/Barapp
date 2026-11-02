@@ -1,0 +1,58 @@
+/* Absensi independent UI module — desktop-first */
+.abx-view{display:flex;flex-direction:column;gap:16px;min-width:0;color:var(--tx)}
+.abx-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.abx-metric,.abx-panel{background:var(--cd);border:1px solid var(--br);border-radius:14px;box-shadow:0 2px 8px rgba(25,35,45,.045)}
+.abx-metric{padding:17px 19px;min-height:112px}
+.abx-metric-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--mu);font-size:12px}
+.abx-metric-top>span:first-child{font-weight:600}
+.abx-metric-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#eef1f4;color:#667386}
+.abx-metric-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.abx-metric-icon.green{background:#eaf3ee;color:#43856d}.abx-metric-icon.amber{background:#fff2e3;color:#bd7b32}.abx-metric-icon.blue{background:#edf2f9;color:#5779aa}
+.abx-metric strong{display:block;margin-top:7px;font-size:26px;line-height:1.1;letter-spacing:-.6px;color:var(--tx)}
+.abx-metric small{display:block;margin-top:5px;font-size:10px;color:var(--mu)}
+.abx-period{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px 21px}
+.abx-eyebrow{font:500 9px/1.4 'IBM Plex Mono',monospace;letter-spacing:1.15px;color:var(--mu);opacity:.85}
+.abx-period h3{font-size:16px;margin:5px 0 3px;font-weight:700}
+.abx-period p,.abx-heading p{font-size:11px;color:var(--mu);margin:0}
+.abx-period-meta{display:flex;gap:8px;flex-wrap:wrap}
+.abx-period-meta span{border:1px solid var(--br);border-radius:8px;padding:8px 11px;font:10px 'IBM Plex Mono',monospace;color:var(--mu);white-space:nowrap}
+.abx-attendance{padding:20px 21px}
+.abx-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.abx-heading h2{font-size:17px;margin:4px 0 3px;font-weight:700;letter-spacing:-.3px}
+.abx-primary{height:40px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ac);border-radius:9px;background:var(--ac);color:#fff;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.abx-primary span{font-size:17px;line-height:1}
+.abx-toolbar{display:flex;align-items:center;gap:12px;margin:18px 0 12px}
+.abx-search{height:38px;max-width:330px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid var(--br);border-radius:8px;background:var(--lt);color:var(--mu)}
+.abx-search>span{font-size:19px;line-height:1}
+.abx-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--tx);font:11px inherit}
+.abx-search input::placeholder{color:var(--mu);opacity:.7}
+.abx-result-count{font:10px 'IBM Plex Mono',monospace;color:var(--mu)}
+.abx-table-scroll{width:100%;overflow:auto;border:1px solid var(--br);border-radius:9px}
+.abx-table{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:auto;font-variant-numeric:tabular-nums}
+.abx-table th{height:46px;padding:5px 6px;background:var(--lt);border-bottom:1px solid var(--br);color:var(--mu);font:500 9px 'IBM Plex Mono',monospace;text-align:center;white-space:nowrap}
+.abx-table th span{display:block;color:var(--tx);font-size:11px}
+.abx-table th small{display:block;margin-top:2px;font-size:8px;opacity:.75}
+.abx-table th.abx-employee-col{position:sticky;left:0;z-index:2;width:205px;min-width:205px;padding-left:14px;text-align:left}
+.abx-table th.abx-total-col{min-width:57px}
+.abx-table td{height:48px;padding:5px 6px;border-bottom:1px solid var(--br);text-align:center;font-size:11px;color:var(--tx);background:var(--cd)}
+.abx-table tbody tr:last-child td{border-bottom:0}
+.abx-table td.abx-employee{position:sticky;left:0;z-index:1;display:flex;align-items:center;gap:9px;min-width:205px;text-align:left;padding:5px 12px;background:var(--cd)}
+.abx-avatar{width:29px;height:29px;flex:none;display:grid;place-items:center;border-radius:8px;background:var(--lt);color:var(--tx);font-size:10px;font-weight:700}
+.abx-employee b{display:block;font-size:11px;font-weight:600;white-space:nowrap}
+.abx-employee small{display:block;margin-top:2px;font-size:9px;color:var(--mu)}
+.abx-table td.abx-day{cursor:pointer}
+.abx-table td.abx-day:hover{background:var(--lt)}
+.abx-dash{color:var(--mu);opacity:.65}
+.abx-table td.abx-total{font-weight:700;background:var(--lt)}
+.abx-table-foot{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:9px;color:var(--mu)}
+.abx-legend{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:15px;padding-top:13px;border-top:1px solid var(--br)}
+.abx-legend span{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--mu)}
+.abx-legend small{font:9px 'IBM Plex Mono',monospace;opacity:.75}
+.abx-dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#9ca3af}
+.abx-dot.m{background:#57977a}.abx-dot.l{background:#a1a8b1}.abx-dot.i{background:#d59b4d}.abx-dot.s{background:#ce806f}.abx-dot.ph{background:#6fa0c8}.abx-dot.missing{background:#c8ced6}
+.abx-empty{padding:18px;border:1px dashed var(--br);border-radius:9px;color:var(--mu);font-size:11px;text-align:center}
+.abx-locked{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #d9a05c;border-radius:9px;background:#fff7eb;color:#8a5b22;font-size:10px}
+.abx-locked b{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.6px}
+@media(min-width:901px){.abx-view{gap:18px}.abx-summary{gap:17px}.abx-metric{min-height:124px;padding:19px 21px}.abx-metric strong{font-size:29px}.abx-period{min-height:94px;padding:20px 24px}.abx-attendance{padding:23px 24px}.abx-table th{height:50px}.abx-table td{height:53px}}
+@media(max-width:900px){.abx-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.abx-period{align-items:flex-start;flex-direction:column}.abx-heading{align-items:flex-start;flex-direction:column}.abx-primary{width:100%}.abx-table-foot{flex-direction:column}}
+@media(max-width:600px){.abx-view{gap:11px}.abx-summary{gap:8px}.abx-metric{padding:12px;min-height:98px}.abx-metric strong{font-size:22px}.abx-metric-top{font-size:10px}.abx-metric-icon{width:29px;height:29px}.abx-period,.abx-attendance{padding:14px}.abx-toolbar{align-items:stretch;flex-direction:column}.abx-search{max-width:none}.abx-locked{align-items:flex-start;flex-direction:column}}

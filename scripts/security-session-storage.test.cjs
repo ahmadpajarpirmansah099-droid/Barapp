@@ -1,11 +1,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-const html = fs.readFileSync('index.html', 'utf8');
-const svStart = html.indexOf('const sv=()=>{try{const {emp,att,...rest}=D;');
-const svEnd = html.indexOf('const $=', svStart);
-assert.ok(svStart >= 0 && svEnd > svStart, 'Could not locate Barapp sv() persistence function');
-const svSource = html.slice(svStart, html.lastIndexOf(';', svEnd) + 1);
+const source = fs.readFileSync('assets/js/barapp-core.js', 'utf8');
+const svStart = source.indexOf('const sv=()=>{');
+const svEnd = source.indexOf('\nconst $=', svStart);
+assert.ok(svStart >= 0 && svEnd > svStart, 'Could not locate Barapp sv() persistence function in assets/js/barapp-core.js');
+const svSource = source.slice(svStart, svEnd);
 const makeStorage = (seed = {}) => {
   const map = new Map(Object.entries(seed).map(([k, v]) => [k, String(v)]));
   return {
@@ -38,10 +38,10 @@ D.me = null;
 sv();
 assert.equal(sessionStorage.getItem(STAFF_SESSION_KEY), null, 'signed-out state must clear staff token');
 
-const migrationStart = html.indexOf("try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');");
-const migrationEnd = html.indexOf('\n/* ===== DATA LOKAL LAMA', migrationStart);
-assert.ok(migrationStart >= 0 && migrationEnd > migrationStart, 'Could not locate legacy-token cleanup block');
-const migrationSource = html.slice(migrationStart, migrationEnd);
+const migrationStart = source.indexOf("try{const persisted=JSON.parse(localStorage.getItem(K)||'{}');");
+const migrationEnd = source.indexOf('\n/* ===== DATA LOKAL LAMA', migrationStart);
+assert.ok(migrationStart >= 0 && migrationEnd > migrationStart, 'Could not locate legacy-token cleanup block in assets/js/barapp-core.js');
+const migrationSource = source.slice(migrationStart, migrationEnd);
 const runMigration = new Function('D', 'K', 'STAFF_SESSION_KEY', 'localStorage', 'sessionStorage', migrationSource);
 
 const oldLocal = makeStorage({ [K]: JSON.stringify({ me: { r: 'K', id: 'emp-old', tok: 'LEGACY_TOKEN' }, emp: [] }) });
