@@ -6,7 +6,8 @@ const publicRootFiles = ["manifest.json", "sw.js", "icon-192.png", "icon-512.png
 
 const featureFiles = [
   { source: "src/features/closing/closing.js", destination: "closing.js" },
-  { source: "src/features/guest-arrival/guest-arrival.js", destination: "guest-arrival.js" }
+  { source: "src/features/guest-arrival/guest-arrival.js", destination: "guest-arrival.js" },
+  { source: "src/features/attendance/attendance.js", destination: "attendance.js" }
 ];
 
 export default defineConfig({
