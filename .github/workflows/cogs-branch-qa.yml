@@ -24,25 +24,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check inline JavaScript syntax
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-            .map(match => match[1])
-            .filter(script => script.trim().length > 0);
-          if (!scripts.length) throw new Error('No inline scripts found');
-          scripts.forEach((script, index) => {
-            try {
-              new Function(script);
-              console.log(`Inline script ${index + 1}: syntax OK (${script.length} chars)`);
-            } catch (error) {
-              console.error(`Inline script ${index + 1}: syntax ERROR`);
-              throw error;
-            }
-          });
-          NODE
+      - name: Check inline and external JavaScript syntax and assets
+        run: node scripts/check-frontend-assets.cjs
 
       - name: Check employee session token storage
         run: node scripts/security-session-storage.test.cjs
@@ -54,7 +37,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          const html = fs.readFileSync('index.html', 'utf8');
+          const html = fs.readFileSync('index.html', 'utf8') + '\n' + fs.readFileSync('assets/js/barapp-core.js', 'utf8') + '\n' + fs.readFileSync('closing.js', 'utf8') + '\n' + fs.readFileSync('guest-arrival.js', 'utf8');
           const sql = fs.readFileSync('barapp_cogs_daily_so_active_only_v1.sql', 'utf8');
           const required = [
             'Master Bahan',
