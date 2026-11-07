@@ -1,0 +1,668 @@
+/*
+ * Barapp UI system — Anti-AI-Slop polish
+ * Direction: Enterprise Control Plane for F&B operations.
+ * Presentation only. Uses the existing Developer-controlled theme variables.
+ * Do not add business logic, alter module flow, or change data behavior here.
+ */
+
+:root {
+  --barapp-radius-control: 10px;
+  --barapp-radius-panel: 14px;
+  --barapp-radius-dialog: 18px;
+  --barapp-border: 1px solid var(--br);
+  --barapp-border-strong: 1px solid color-mix(in srgb, var(--dk) 24%, var(--br));
+  --barapp-shadow-panel: 0 1px 2px rgba(31, 42, 35, .045), 0 5px 16px rgba(31, 42, 35, .035);
+  --barapp-shadow-popover: 0 14px 34px rgba(24, 35, 28, .16);
+  --barapp-focus: 0 0 0 3px color-mix(in srgb, var(--ac) 20%, transparent);
+  --barapp-space-1: 4px;
+  --barapp-space-2: 8px;
+  --barapp-space-3: 12px;
+  --barapp-space-4: 16px;
+  --barapp-space-5: 20px;
+  --barapp-space-6: 24px;
+  --barapp-content-width: 1440px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 82px;
+}
+
+body {
+  letter-spacing: 0;
+  background-image: none !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body:has(#app.in) {
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--tx);
+}
+
+#app.in main {
+  width: 100%;
+  max-width: var(--barapp-content-width);
+  padding: clamp(14px, 2vw, 28px) clamp(12px, 2.1vw, 30px) calc(148px + var(--sf));
+}
+
+@media (min-width: 900px) {
+  #app.in main {
+    padding-bottom: 34px;
+  }
+}
+
+/* App frame and navigation */
+.app-top {
+  background: var(--cd) !important;
+  border-bottom: 1px solid var(--br) !important;
+  box-shadow: 0 1px 0 rgba(28, 48, 37, .025) !important;
+}
+
+.side {
+  background: var(--cd) !important;
+  border-right: 1px solid var(--br) !important;
+}
+
+.brand,
+.side .brand {
+  border-bottom: 1px solid var(--br) !important;
+}
+
+.nvl {
+  padding: 17px 18px 7px !important;
+  color: var(--mu) !important;
+  font-size: 10px !important;
+  letter-spacing: .11em !important;
+}
+
+.nvb {
+  min-height: 42px;
+  padding: 9px 12px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  color: var(--tx) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease !important;
+}
+
+.nvb:hover {
+  background: color-mix(in srgb, var(--tint) 72%, var(--cd)) !important;
+  border-color: var(--br) !important;
+}
+
+.nvb.on {
+  color: var(--ac) !important;
+  background: var(--tint) !important;
+  border-color: color-mix(in srgb, var(--ac) 28%, var(--br)) !important;
+  box-shadow: inset 2px 0 0 var(--ac) !important;
+}
+
+.nvb.on .ic {
+  color: var(--ac) !important;
+}
+
+.brand-m,
+.ibtn {
+  border: 1px solid var(--br) !important;
+  border-radius: 11px !important;
+  background: var(--cd) !important;
+  box-shadow: none !important;
+}
+
+.ibtn:hover,
+.brand-m:hover {
+  border-color: color-mix(in srgb, var(--ac) 45%, var(--br)) !important;
+  background: var(--tint) !important;
+}
+
+/* Shared surfaces: hierarchy comes from spacing and grouping, not heavy outlines */
+#app.in main .card,
+#app.in main .cogs-section,
+#app.in main .ad-panel,
+#app.in main .ops-history-card,
+#app.in main .ops-entry-card,
+#app.in main .cg-dashboard-ingredients,
+#app.in main .cg-dashboard-summary-card,
+#app.in main .division-manager-card,
+#app.in main .account-manager-card {
+  border: var(--barapp-border) !important;
+  border-radius: var(--barapp-radius-panel) !important;
+  box-shadow: var(--barapp-shadow-panel) !important;
+}
+
+#app.in main .card {
+  padding: clamp(13px, 1.5vw, 20px);
+  margin-bottom: 12px;
+  background: var(--cd);
+}
+
+#app.in main .card > h3:first-child,
+#app.in main .md > h3:first-child {
+  min-height: 30px;
+  margin: 0 0 12px;
+  padding-right: 34px;
+  gap: 10px;
+  font: 700 15px/1.35 var(--fn, system-ui), system-ui, sans-serif;
+  letter-spacing: -.015em;
+}
+
+#app.in main .card > h3:first-child::before,
+#app.in main .md > h3:first-child::before {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--br) !important;
+  border-radius: 9px !important;
+  background-color: var(--tint) !important;
+  background-size: 16px !important;
+}
+
+#app.in main .card > h3:first-child::after,
+#app.in main .md > h3:first-child::after {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+/* Buttons: stable controls, clear hierarchy, restrained interaction */
+#app.in main .btn,
+#app.in .md .btn,
+#app.in .modal .btn,
+#app.in .ga-btn,
+#app.in .cl-actions .btn {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid color-mix(in srgb, var(--ac) 24%, var(--br)) !important;
+  border-radius: var(--barapp-radius-control) !important;
+  box-shadow: none !important;
+  font: 650 13px/1.25 var(--fn, system-ui), system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease !important;
+}
+
+#app.in main .btn:not(.s):not(.o):not(.d):not(.x),
+#app.in .md .btn:not(.s):not(.o):not(.d):not(.x),
+#app.in .modal .btn:not(.s):not(.o):not(.d):not(.x),
+#app.in .ga-btn.primary {
+  color: var(--onac, #fff) !important;
+  background: var(--ac) !important;
+  border-color: var(--ac) !important;
+}
+
+#app.in main .btn.s,
+#app.in main .btn.o,
+#app.in main .btn.x:not(.d),
+#app.in .md .btn.s,
+#app.in .md .btn.o,
+#app.in .md .btn.x:not(.d),
+#app.in .modal .btn.s,
+#app.in .modal .btn.o,
+#app.in .modal .btn.x:not(.d),
+#app.in .ga-btn.secondary {
+  color: var(--tx) !important;
+  background: var(--cd) !important;
+  border-color: var(--br) !important;
+}
+
+#app.in main .btn.d,
+#app.in .md .btn.d,
+#app.in .modal .btn.d,
+#app.in .ga-btn.danger {
+  color: var(--dg) !important;
+  background: color-mix(in srgb, var(--dg) 8%, var(--cd)) !important;
+  border-color: color-mix(in srgb, var(--dg) 28%, var(--br)) !important;
+}
+
+#app.in main .btn:hover:not(:disabled),
+#app.in .md .btn:hover:not(:disabled),
+#app.in .modal .btn:hover:not(:disabled),
+#app.in .ga-btn:hover:not(:disabled) {
+  filter: none !important;
+  transform: none !important;
+  background-color: color-mix(in srgb, var(--ac) 9%, var(--cd)) !important;
+  border-color: color-mix(in srgb, var(--ac) 48%, var(--br)) !important;
+  color: var(--tx) !important;
+}
+
+#app.in main .btn:not(.s):not(.o):not(.d):not(.x):hover:not(:disabled),
+#app.in .ga-btn.primary:hover:not(:disabled) {
+  color: var(--onac, #fff) !important;
+  background: var(--tt2, var(--ac)) !important;
+  border-color: var(--tt2, var(--ac)) !important;
+}
+
+#app.in main .btn:active,
+#app.in .md .btn:active,
+#app.in .ga-btn:active {
+  transform: translateY(1px) !important;
+}
+
+#app.in main .btn.x,
+#app.in .md .btn.x,
+#app.in .modal .btn.x {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 11px !important;
+}
+
+#app.in main .btn:focus-visible,
+#app.in main button:focus-visible,
+#app.in .md button:focus-visible,
+#app.in .ga-wrap button:focus-visible {
+  outline: 2px solid var(--ac) !important;
+  outline-offset: 2px;
+}
+
+/* Forms: calm borders, clear focus, consistent field rhythm */
+#app.in main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#app.in main select,
+#app.in main textarea,
+#app.in .md input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+#app.in .md select,
+#app.in .md textarea,
+#app.in .ga-wrap input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+#app.in .ga-wrap select,
+#app.in .ga-wrap textarea {
+  border: 1px solid var(--br) !important;
+  border-radius: 9px !important;
+  background-color: var(--cd) !important;
+  box-shadow: none !important;
+  color: var(--tx) !important;
+}
+
+#app.in main input:focus,
+#app.in main select:focus,
+#app.in main textarea:focus,
+#app.in .md input:focus,
+#app.in .md select:focus,
+#app.in .md textarea:focus,
+#app.in .ga-wrap input:focus,
+#app.in .ga-wrap select:focus,
+#app.in .ga-wrap textarea:focus {
+  border-color: var(--ac) !important;
+  box-shadow: var(--barapp-focus) !important;
+  outline: none !important;
+}
+
+#app.in main label,
+#app.in .md label,
+#app.in .ga-wrap .ga-field {
+  color: var(--mu);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+/* Data tables: retain existing horizontal scrolling and sticky first columns */
+#app.in main table th,
+#app.in .md table th {
+  background: color-mix(in srgb, var(--tint) 48%, var(--cd)) !important;
+  color: var(--mu) !important;
+  border-bottom: 1px solid var(--br) !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  letter-spacing: .06em !important;
+}
+
+#app.in main table td,
+#app.in .md table td {
+  border-bottom: 1px solid var(--br) !important;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+#app.in main table tr:hover td {
+  background-color: color-mix(in srgb, var(--tint) 56%, var(--cd)) !important;
+}
+
+#app.in main td:first-child {
+  background-color: var(--cd);
+}
+
+#app.in main .tag,
+#app.in main .b,
+#app.in main .cogs-pill {
+  border: 1px solid color-mix(in srgb, var(--ac) 22%, var(--br));
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+#app.in main .empty,
+#app.in main .cogs-empty {
+  color: var(--mu);
+}
+
+/* Searchable pickers and popovers */
+#app.in .dd,
+#app.in .sdi,
+#app.in .cs-list,
+#app.in .out-item-results,
+#app.in .cg-component-results,
+#app.in .inv-receipt-results,
+#app.in .settings-dd {
+  border: 1px solid var(--br) !important;
+  border-radius: 12px !important;
+  background: var(--cd) !important;
+  box-shadow: var(--barapp-shadow-popover) !important;
+}
+
+#app.in .dd button,
+#app.in .sdi button,
+#app.in .cs-it {
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+#app.in .md,
+#app.in .modal,
+#app.in .ad-modal {
+  border: 1px solid var(--br) !important;
+  border-radius: var(--barapp-radius-dialog) !important;
+  background: var(--cd) !important;
+  box-shadow: var(--barapp-shadow-popover) !important;
+}
+
+#app.in .ov,
+#app.in .ad-modal-backdrop {
+  background: rgba(21, 31, 25, .42);
+}
+
+#app.in .toast,
+#app.in #t .w {
+  border: 1px solid var(--br) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--barapp-shadow-popover) !important;
+}
+
+/* Operational modules: one shared surface language */
+#app.in .cogs-stat,
+#app.in .cogs-section,
+#app.in .ad-stat,
+#app.in .ad-context,
+#app.in .ad-panel,
+#app.in .ad-info-grid > div,
+#app.in .ad-scope-row,
+#app.in .ad-feature,
+#app.in .division-item,
+#app.in .admin-account-row,
+#app.in .account-permissions-body,
+#app.in .cl-summary > div,
+#app.in .cl-callout {
+  border: 1px solid var(--br) !important;
+  border-radius: 11px !important;
+  background: var(--cd) !important;
+  box-shadow: none !important;
+}
+
+#app.in .ad-page-head h2,
+#app.in .cg-dashboard-item-title,
+#app.in .ga-heading h2 {
+  letter-spacing: -.025em !important;
+  line-height: 1.2 !important;
+}
+
+#app.in .ad-panel-head h3,
+#app.in .ad-feature-title b,
+#app.in .cl-module-info b {
+  letter-spacing: -.01em;
+}
+
+/* Guest Arrival: theme-aware queue, reservation and history surfaces */
+#app.in .ga-wrap {
+  max-width: 1240px !important;
+  padding: clamp(12px, 1.8vw, 22px) !important;
+}
+
+#app.in .ga-wrap .ga-heading {
+  margin: 0 0 14px !important;
+}
+
+#app.in .ga-wrap .ga-date-pill,
+#app.in .ga-wrap .ga-outlet-pill {
+  border: 1px solid var(--br) !important;
+  border-radius: 8px !important;
+  background: var(--cd) !important;
+  color: var(--mu) !important;
+}
+
+#app.in .ga-wrap .ga-tabs {
+  padding: 4px !important;
+  gap: 4px !important;
+  border: 1px solid var(--br) !important;
+  border-radius: 11px !important;
+  background: color-mix(in srgb, var(--tint) 55%, var(--cd)) !important;
+}
+
+#app.in .ga-wrap .ga-tab {
+  min-height: 40px;
+  border-radius: 8px !important;
+  color: var(--mu) !important;
+  font-size: 12px !important;
+}
+
+#app.in .ga-wrap .ga-tab.active {
+  color: var(--ac) !important;
+  background: var(--cd) !important;
+  box-shadow: 0 1px 3px rgba(20, 35, 26, .08) !important;
+}
+
+#app.in .ga-wrap .ga-card,
+#app.in .ga-wrap .ga-stat,
+#app.in .ga-wrap .ga-report-card,
+#app.in .ga-wrap .ga-month,
+#app.in .ga-wrap .ga-empty,
+#app.in .ga-wrap .ga-seated-shortcut,
+#app.in .ga-wrap .ga-reservations-shortcut {
+  border: 1px solid var(--br) !important;
+  border-radius: 12px !important;
+  background: var(--cd) !important;
+  box-shadow: none !important;
+}
+
+#app.in .ga-wrap .ga-card-list .ga-card {
+  border-left: 3px solid color-mix(in srgb, var(--ac) 52%, var(--br)) !important;
+}
+
+#app.in .ga-wrap .ga-card-list .ga-card.ga-card-reservation {
+  border-left-color: #6d966e !important;
+  background: color-mix(in srgb, #6d966e 5%, var(--cd)) !important;
+}
+
+#app.in .ga-wrap .ga-name {
+  color: var(--tx) !important;
+  font-weight: 750 !important;
+}
+
+#app.in .ga-wrap .ga-btn {
+  min-height: 38px;
+  padding: 8px 11px !important;
+  border: 1px solid var(--br) !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+#app.in .ga-wrap .ga-btn.primary {
+  color: var(--onac, #fff) !important;
+  background: var(--ac) !important;
+  border-color: var(--ac) !important;
+}
+
+#app.in .ga-wrap .ga-btn.danger {
+  color: var(--dg) !important;
+  background: color-mix(in srgb, var(--dg) 8%, var(--cd)) !important;
+  border-color: color-mix(in srgb, var(--dg) 26%, var(--br)) !important;
+}
+
+#app.in .ga-wrap .ga-error {
+  border: 1px solid color-mix(in srgb, var(--dg) 35%, var(--br)) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--dg) 7%, var(--cd)) !important;
+}
+
+/* Closing: keep module states semantically distinct without fixed light-only panels */
+#app.in .cl-module {
+  border: 1px solid var(--br) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+#app.in .cl-module-foot {
+  border-top: 1px solid var(--br) !important;
+}
+
+#app.in .cl-summary > div,
+#app.in .cl-callout {
+  color: var(--tx);
+  background: color-mix(in srgb, var(--tint) 35%, var(--cd)) !important;
+}
+
+/* Login screen: retain Barapp identity, remove cartoon framing and decorative noise */
+body:not(:has(#app.in)) .lgs::before,
+body:not(:has(#app.in)) .lgs::after {
+  display: none !important;
+}
+
+body:not(:has(#app.in)) .lgc {
+  max-width: 420px;
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid var(--br) !important;
+  border-radius: 20px !important;
+  background: var(--cd) !important;
+  box-shadow: 0 14px 40px rgba(36, 48, 39, .09) !important;
+}
+
+body:not(:has(#app.in)) .lgc h1 {
+  color: var(--tx) !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none !important;
+  font-size: 25px;
+  letter-spacing: -.03em;
+}
+
+body:not(:has(#app.in)) .lgc .logo {
+  border: 1px solid var(--br) !important;
+  box-shadow: none !important;
+}
+
+/* Fixed navigation remains clear without a heavy floating frame */
+#app.in .taskbar {
+  border: 1px solid var(--br) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--cd) 96%, transparent) !important;
+  box-shadow: 0 7px 24px rgba(24, 36, 28, .11) !important;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+#app.in .taskbar .task,
+#app.in .taskbar .start {
+  min-height: 40px;
+  border-radius: 9px !important;
+  font-size: 11px;
+}
+
+#app.in .taskbar .task.on {
+  border: 1px solid color-mix(in srgb, var(--ac) 30%, var(--br)) !important;
+  color: var(--ac) !important;
+  background: var(--tint) !important;
+  box-shadow: none !important;
+}
+
+#app.in .statusbar {
+  border: 1px solid var(--br) !important;
+  border-radius: 10px !important;
+  background: var(--cd) !important;
+  box-shadow: 0 2px 8px rgba(24, 36, 28, .05) !important;
+}
+
+#app.in .fab {
+  border: 1px solid color-mix(in srgb, var(--ac) 28%, var(--br)) !important;
+  background: var(--ac) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--ac) 28%, transparent) !important;
+}
+
+@media (max-width: 600px) {
+  #app.in main {
+    padding: 12px 10px calc(144px + var(--sf));
+  }
+
+  #app.in main .card {
+    padding: 12px !important;
+    margin-bottom: 10px;
+  }
+
+  #app.in main .card > h3:first-child {
+    font-size: 14px !important;
+    margin-bottom: 10px !important;
+  }
+
+  #app.in main .btn,
+  #app.in .md .btn,
+  #app.in .modal .btn {
+    min-height: 40px;
+  }
+
+  #app.in main .btn.x,
+  #app.in .md .btn.x,
+  #app.in .modal .btn.x {
+    min-height: 34px;
+  }
+
+  #app.in .taskbar {
+    left: 8px;
+    right: 8px;
+    bottom: calc(7px + var(--sf));
+    padding: 5px !important;
+    gap: 3px !important;
+  }
+
+  #app.in .statusbar {
+    left: 10px;
+    right: 10px;
+  }
+
+  #app.in .ga-wrap {
+    padding: 10px !important;
+  }
+
+  #app.in .ga-wrap .ga-heading h2 {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  #app.in .ga-wrap .ga-card-actions .ga-btn {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 380px) {
+  #app.in main {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  #app.in .ga-wrap {
+    padding: 8px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  #app.in *,
+  #app.in *::before,
+  #app.in *::after,
+  body:not(:has(#app.in)) .lgc {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

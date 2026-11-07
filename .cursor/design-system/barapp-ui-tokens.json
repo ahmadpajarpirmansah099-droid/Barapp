@@ -1,0 +1,117 @@
+{
+  "product": "Barapp",
+  "visualDirection": "Enterprise Control Plane with a warm F&B identity",
+  "themeContract": {
+    "source": "Existing Developer-controlled runtime theme (TH/applyTheme)",
+    "preserve": [
+      "--bg",
+      "--cd",
+      "--tx",
+      "--mu",
+      "--br",
+      "--ac",
+      "--ac2",
+      "--dg",
+      "--gd",
+      "--tt",
+      "--tt2",
+      "--lt",
+      "--dk",
+      "--in",
+      "--tint",
+      "--onac",
+      "--fn",
+      "--fh",
+      "--r"
+    ],
+    "noStaticPaletteOverride": true,
+    "noThemeSettingsReset": true
+  },
+  "paletteRoles": {
+    "page": "var(--bg)",
+    "surface": "var(--cd)",
+    "textPrimary": "var(--tx)",
+    "textSecondary": "var(--mu)",
+    "border": "var(--br)",
+    "accentPrimary": "var(--ac)",
+    "accentSecondary": "var(--ac2)",
+    "success": "Existing semantic success treatment; keep current state mapping",
+    "warning": "var(--gd)",
+    "danger": "var(--dg)",
+    "selectedSurface": "var(--tint)"
+  },
+  "typography": {
+    "uiFont": "var(--fn)",
+    "displayFont": "var(--fh)",
+    "monoFont": "ui-monospace for IDs, technical values, and tabular codes only",
+    "rules": [
+      "Keep Developer theme typography variables intact",
+      "Use numeric alignment for quantities, money, times, and IDs",
+      "Use strong labels with restrained tracking",
+      "Avoid oversized marketing-style headings"
+    ]
+  },
+  "spacing": {
+    "density": "balanced operational",
+    "scale": [
+      "4px",
+      "8px",
+      "12px",
+      "16px",
+      "20px",
+      "24px"
+    ],
+    "rules": [
+      "Tighten repetitive panel gaps",
+      "Keep mobile touch targets comfortably usable",
+      "Avoid decorative whitespace"
+    ]
+  },
+  "radius": {
+    "control": "10px",
+    "panel": "14px",
+    "dialog": "18px",
+    "rules": [
+      "Radius reflects component role",
+      "Do not use pill shapes for every control"
+    ]
+  },
+  "elevation": {
+    "panel": "0 1px 2px rgba(31,42,35,.045), 0 5px 16px rgba(31,42,35,.035)",
+    "popover": "0 14px 34px rgba(24,35,28,.16)",
+    "rules": [
+      "Subtle elevation only for floating surfaces",
+      "No hard offset cartoon shadows",
+      "No decorative glow"
+    ]
+  },
+  "icons": {
+    "set": "Existing Barapp SVG line icons",
+    "emojiAllowed": false,
+    "rules": [
+      "Consistent stroke weight",
+      "Do not replace working SVG icons"
+    ]
+  },
+  "motion": {
+    "principle": "functional only",
+    "rules": [
+      "Preserve existing reduced-motion support",
+      "No decorative scroll reveal",
+      "No extra animation without functional purpose"
+    ]
+  },
+  "responsive": {
+    "mobile": "Shift operations first; preserve existing compact cards and touch targets",
+    "desktop": "Dense data workspace with clear navigation, tables and filters"
+  },
+  "antiSlopConstraints": [
+    "No generic SaaS dashboard template",
+    "No AI purple/indigo gradient",
+    "No emoji UI icons",
+    "No unnecessary glass/blur/glow",
+    "No heavy outline on every panel",
+    "Do not override runtime theme variables",
+    "Preserve all existing behavior and business logic"
+  ]
+}
