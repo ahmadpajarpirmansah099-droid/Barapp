@@ -652,6 +652,89 @@ body:not(:has(#app.in)) .lgc .logo {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Daily SO shortcuts (Barang → Daily SO)
+   The launcher that opens the five operational modules. Presentation only:
+   a firmer theme-aware outline, a divider under the heading, one icon well per
+   tile, and a full-width closing tile so five shortcuts resolve into a stable
+   grid instead of a floating half row.
+   -------------------------------------------------------------------------- */
+#app.in main .card.daily-so-shortcuts {
+  --ds-line: color-mix(in srgb, var(--tx) 16%, var(--br));
+  --ds-line-strong: color-mix(in srgb, var(--tx) 30%, var(--br));
+  padding: clamp(15px, 1.7vw, 19px) !important;
+  border: 1px solid var(--ds-line-strong) !important;
+}
+
+#app.in main .card.daily-so-shortcuts > h3:first-child {
+  margin: 0 0 14px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--ds-line);
+  font-weight: 750;
+}
+
+#app.in main .daily-so-shortcuts .card-head-icon {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+  border-color: var(--ds-line-strong);
+  background: color-mix(in srgb, var(--ac) 10%, var(--cd));
+  color: var(--ac);
+}
+
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid > .btn {
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 12px 8px 9px;
+  text-align: left;
+  color: var(--tx) !important;
+  background: var(--cd) !important;
+  border: 1px solid var(--ds-line-strong) !important;
+  border-radius: 12px !important;
+}
+
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid > .btn .ic {
+  box-sizing: content-box;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--ac) 26%, var(--br));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ac) 10%, var(--cd));
+  color: var(--ac);
+}
+
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid > .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ac) 7%, var(--cd)) !important;
+  border-color: color-mix(in srgb, var(--ac) 52%, var(--br)) !important;
+}
+
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid > .btn:focus-visible {
+  outline: none !important;
+  box-shadow: var(--barapp-focus) !important;
+}
+
+/* Odd count (5 shortcuts): close the grid with one full-width tile. */
+#app.in main .daily-so-shortcuts .daily-so-shortcut-grid > .btn:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  width: auto;
+}
+
+@media (max-width: 560px) {
+  #app.in main .daily-so-shortcuts .daily-so-shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
