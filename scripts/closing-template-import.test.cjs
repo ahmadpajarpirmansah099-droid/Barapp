@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const closingSource = fs.readFileSync(path.join(root, 'closing.js'), 'utf8');
+const closingSource = fs.readFileSync(path.join(root, 'src/features/closing/closing.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const migrationSource = fs.readFileSync(
   path.join(root, 'supabase/migrations/20261024_add_atomic_operational_template_v2.sql'),
